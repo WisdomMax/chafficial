@@ -123,3 +123,105 @@ def test_snapshot_raw_sql_update_and_delete_blocked(db_session):
     reloaded = db_session.get(ListingSnapshot, snap.snapshot_id)
     assert reloaded is not None
     assert reloaded.price_krw == 20_000_000
+
+
+# ==============================================================================
+# 수정 C: 과거 시점 조회의 일관성 및 지연 입력 누출 차단
+# ==============================================================================
+
+def test_time_travel_candidate_lifecycle_and_delayed_ingest_protection(db_session):
+    """10/1 등록 -> 10/5 인하 -> 10/10 삭제 및 10/15 지연 입력 처리 검증."""
+    reg_mgr = RegionManager()
+    reg_mgr.seed_default_regions(db_session)
+
+    t_oct01 = datetime(2026, 10, 1, 10, 0, tzinfo=UTC)
+    t_oct05 = datetime(2026, 10, 5, 10, 0, tzinfo=UTC)
+    t_oct10 = datetime(2026, 10, 10, 10, 0, tzinfo=UTC)
+    t_oct15 = datetime(2026, 10, 15, 10, 0, tzinfo=UTC)
+
+    # 매물 생성 (현재 상태는 삭제 상태로 세팅해둠)
+    listing = Listing(
+        source_platform="ENCAR",
+        source_listing_id="TIME-TRAVEL-001",
+        raw_location="서울 동대문구 장안동 장안평 매매단지",
+        normalized_region_id="REGION_JANGANPYEONG",
+        first_observed_at=t_oct01,
+        current_status="DELISTED",
+    )
+    db_session.add(listing)
+    db_session.flush()
+
+    # 10/1 스냅샷: 최초 등록 1,000만원
+    snap_oct01 = ListingSnapshot(
+        listing_id=listing.listing_id,
+        observed_at=t_oct01,
+        ingested_at=t_oct01 + timedelta(minutes=5),
+        price_krw=10_000_000,
+        mileage_km=30_000,
+        listing_status="ACTIVE",
+    )
+    # 10/5 스냅샷: 가격 인하 950만원
+    snap_oct05 = ListingSnapshot(
+        listing_id=listing.listing_id,
+        observed_at=t_oct05,
+        ingested_at=t_oct05 + timedelta(minutes=5),
+        price_krw=9_500_000,
+        mileage_km=30_050,
+        listing_status="PRICE_CHANGED",
+    )
+    # 10/10 스냅샷: 매물 삭제
+    snap_oct10 = ListingSnapshot(
+        listing_id=listing.listing_id,
+        observed_at=t_oct10,
+        ingested_at=t_oct10 + timedelta(minutes=5),
+        price_krw=9_500_000,
+        mileage_km=30_100,
+        listing_status="DELISTED",
+    )
+    # 10/15에 뒤늦게 입력된 과거(10/4 관측) 기록
+    snap_delayed = ListingSnapshot(
+        listing_id=listing.listing_id,
+        observed_at=datetime(2026, 10, 4, 12, 0, tzinfo=UTC),
+        ingested_at=t_oct15,  # 시스템 입력 시각이 10/15!
+        price_krw=9_800_000,
+        mileage_km=30_020,
+        listing_status="PRICE_CHANGED",
+    )
+    db_session.add_all([snap_oct01, snap_oct05, snap_oct10, snap_delayed])
+    db_session.commit()
+
+    # 1. 10월 3일 조회: 최초 가격(1,000만원) 및 판매 가능 매물에 포함
+    t_query_oct03 = datetime(2026, 10, 3, 0, 0, tzinfo=UTC)
+    snap_at_oct03 = TimeTravelQueryEngine.get_listing_snapshot_at(db_session, listing.listing_id, t_query_oct03)
+    assert snap_at_oct03 is not None
+    assert snap_at_oct03.price_krw == 10_000_000
+    assert snap_at_oct03.listing_status == "ACTIVE"
+
+    candidates_oct03 = TimeTravelQueryEngine.get_sales_candidates_as_of(
+        db_session, target_region_id="REGION_JANGANPYEONG", as_of_time=t_query_oct03
+    )
+    assert any(c["listing_id"] == listing.listing_id for c in candidates_oct03)
+
+    # 2. 10월 7일 조회: 변경된 가격(950만원) 및 판매 가능 매물에 포함
+    # 주의: 10/15에 입력된 980만원짜리 지연 스냅샷은 당시 시스템에 없었으므로 배제되어야 함!
+    t_query_oct07 = datetime(2026, 10, 7, 0, 0, tzinfo=UTC)
+    snap_at_oct07 = TimeTravelQueryEngine.get_listing_snapshot_at(db_session, listing.listing_id, t_query_oct07)
+    assert snap_at_oct07 is not None
+    assert snap_at_oct07.price_krw == 9_500_000  # 980만원이 아님!
+    assert snap_at_oct07.listing_status == "PRICE_CHANGED"
+
+    candidates_oct07 = TimeTravelQueryEngine.get_sales_candidates_as_of(
+        db_session, target_region_id="REGION_JANGANPYEONG", as_of_time=t_query_oct07
+    )
+    assert any(c["listing_id"] == listing.listing_id for c in candidates_oct07)
+
+    # 3. 10월 12일 조회: 매물 삭제 상태 (판매 가능 후보 목록에서 완전히 제외되어야 함!)
+    t_query_oct12 = datetime(2026, 10, 12, 0, 0, tzinfo=UTC)
+    snap_at_oct12 = TimeTravelQueryEngine.get_listing_snapshot_at(db_session, listing.listing_id, t_query_oct12)
+    assert snap_at_oct12 is not None
+    assert snap_at_oct12.listing_status == "DELISTED"
+
+    candidates_oct12 = TimeTravelQueryEngine.get_sales_candidates_as_of(
+        db_session, target_region_id="REGION_JANGANPYEONG", as_of_time=t_query_oct12
+    )
+    assert not any(c["listing_id"] == listing.listing_id for c in candidates_oct12)
