@@ -47,5 +47,9 @@ class Listing(Base):
     vehicle = relationship("VehicleIdentity", lazy="joined")
     normalized_region = relationship("Region", lazy="joined")
     snapshots = relationship(
-        "ListingSnapshot", back_populates="listing", order_by="ListingSnapshot.observed_at"
+        "ListingSnapshot",
+        back_populates="listing",
+        order_by="ListingSnapshot.observed_at",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )

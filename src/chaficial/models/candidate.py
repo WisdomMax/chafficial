@@ -13,6 +13,8 @@ class SalesCandidate(Base):
     """AI 알고리즘 또는 전문가가 선정한 실제 판매 후보 차량.
     
     저렴하다는 이유만으로 자동 추천되지 않으며, 파트너의 실제 재고·판매 가능 여부 검토를 거칩니다.
+    - selected_at: 의사결정상 선정 시각
+    - created_at: 시스템 데이터베이스에 적재된 시각
     """
     __tablename__ = "sales_candidates"
 
@@ -26,7 +28,10 @@ class SalesCandidate(Base):
         ForeignKey("regions.region_id", ondelete="RESTRICT"), nullable=False, index=True
     )
     selected_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
     )
     selected_by: Mapped[str] = mapped_column(
         String(30), nullable=False, default="AI_AGENT"

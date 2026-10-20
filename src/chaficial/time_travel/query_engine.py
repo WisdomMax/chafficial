@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
+from chaficial.models.candidate import SalesCandidate
 from chaficial.models.condition import VehicleCondition
 from chaficial.models.listing import Listing
 from chaficial.models.snapshot import ListingSnapshot
@@ -38,28 +39,28 @@ class TimeTravelQueryEngine:
         return session.scalar(stmt)
 
     @staticmethod
-    def get_sales_candidates_as_of(
+    def get_eligible_listings_as_of(
         session: Session, target_region_id: str, as_of_time: datetime
     ) -> list[dict[str, Any]]:
-        """특정 과거 시점(as_of_time) 당시 실제 판매 가능(활성) 상태였던 매물 후보 목록을 반환합니다.
+        """특정 과거 시점(as_of_time) 당시 시장에서 추천 대상이 될 수 있었던 매물 풀(Listing)을 반환합니다.
         
-        - 미래의 매물 삭제(DELISTED)나 사후 가격 변경이 과거 조회에 유입되지 않습니다.
-        - 당시 시점까지 확보된 스냅샷의 상태가 ACTIVE 또는 PRICE_CHANGED인 경우만 포함합니다.
+        - [지역 누출 차단]: 현재 Listing.normalized_region_id가 아닌 당시 스냅샷에 기록된 normalized_region_id를 검사합니다.
+        - [상태 누출 차단]: 당시 스냅샷 상태가 ACTIVE 또는 PRICE_CHANGED인 경우만 포함합니다.
         """
         stmt = (
             select(Listing)
-            .where(
-                and_(
-                    Listing.normalized_region_id == target_region_id,
-                    Listing.first_observed_at <= as_of_time,
-                )
-            )
+            .where(Listing.first_observed_at <= as_of_time)
         )
-        candidates: list[dict[str, Any]] = []
+        eligible_pool: list[dict[str, Any]] = []
         for listing in session.scalars(stmt).all():
             snap = TimeTravelQueryEngine.get_listing_snapshot_at(session, listing.listing_id, as_of_time)
-            if snap and snap.listing_status in ("ACTIVE", "PRICE_CHANGED"):
-                candidates.append({
+            # 당시 스냅샷이 활성 상태이고, 당시 스냅샷의 normalized_region_id가 target_region_id와 일치하는 경우만 포함
+            if (
+                snap
+                and snap.listing_status in ("ACTIVE", "PRICE_CHANGED")
+                and snap.normalized_region_id == target_region_id
+            ):
+                eligible_pool.append({
                     "listing_id": listing.listing_id,
                     "source_platform": listing.source_platform,
                     "source_listing_id": listing.source_listing_id,
@@ -70,14 +71,61 @@ class TimeTravelQueryEngine:
                     "observed_at": snap.observed_at,
                     "ingested_at": snap.ingested_at,
                 })
-        return candidates
+        return eligible_pool
+
+    @staticmethod
+    def get_sales_candidates_as_of(
+        session: Session, target_region_id: str, as_of_time: datetime
+    ) -> list[dict[str, Any]]:
+        """기존 호환용 별칭: get_eligible_listings_as_of를 호출합니다."""
+        return TimeTravelQueryEngine.get_eligible_listings_as_of(
+            session=session, target_region_id=target_region_id, as_of_time=as_of_time
+        )
+
+    @staticmethod
+    def get_selected_candidates_as_of(
+        session: Session, target_region_id: str, as_of_time: datetime
+    ) -> list[dict[str, Any]]:
+        """특정 과거 시점(as_of_time) 이전에 실제로 선정되어 SalesCandidate에 기록된 후보 목록을 반환합니다.
+        
+        - selected_at <= as_of_time
+        - created_at <= as_of_time
+        """
+        stmt = (
+            select(SalesCandidate)
+            .where(
+                and_(
+                    SalesCandidate.target_region_id == target_region_id,
+                    SalesCandidate.selected_at <= as_of_time,
+                    SalesCandidate.created_at <= as_of_time,
+                )
+            )
+            .order_by(SalesCandidate.selected_at.asc())
+        )
+        selected_candidates: list[dict[str, Any]] = []
+        for cand in session.scalars(stmt).all():
+            snap = TimeTravelQueryEngine.get_listing_snapshot_at(session, cand.listing_id, as_of_time)
+            selected_candidates.append({
+                "candidate_id": cand.candidate_id,
+                "listing_id": cand.listing_id,
+                "target_region_id": cand.target_region_id,
+                "selected_at": cand.selected_at,
+                "created_at": cand.created_at,
+                "selected_by": cand.selected_by,
+                "selection_reason": cand.selection_reason,
+                "selection_score": cand.selection_score,
+                "availability_status": cand.availability_status,
+                "partner_review_status": cand.partner_review_status,
+                "current_price_krw": snap.price_krw if snap else None,
+            })
+        return selected_candidates
 
     @staticmethod
     def get_current_sales_candidates(
         session: Session, target_region_id: str
     ) -> list[dict[str, Any]]:
-        """현재 시점 기준 판매 가능 매물 목록을 반환합니다."""
-        return TimeTravelQueryEngine.get_sales_candidates_as_of(
+        """현재 시점 기준 추천 가능 매물 풀을 반환합니다."""
+        return TimeTravelQueryEngine.get_eligible_listings_as_of(
             session=session,
             target_region_id=target_region_id,
             as_of_time=datetime.now(UTC),

@@ -13,6 +13,14 @@ from chaficial.models.listing import Listing
 from chaficial.models.region import Region, RegionConfiguration
 
 
+class InvalidRegionError(ValueError):
+    """존재하지 않는 지역 ID를 설정하려고 할 때 발생하는 예외."""
+
+
+class InactiveRegionError(ValueError):
+    """비활성화된 지역을 판매 대상으로 설정하려고 할 때 발생하는 예외."""
+
+
 @dataclass(frozen=True)
 class RegionResolution:
     """지역 판정 세부 결과.
@@ -74,16 +82,37 @@ class RegionManager:
         return cfg
 
     def get_active_sales_region_ids(self, session: Session) -> list[str]:
-        """현재 활성화된 판매 대상 지역 ID 목록을 반환합니다."""
+        """현재 활성화된 판매 대상 지역 ID 목록을 반환합니다.
+        
+        - sales_region_ids가 빈 리스트([])인 경우 판매 지역 없음을 의미하므로 []를 정상 반환합니다.
+        - None인 경우에만 초기 기본값(["REGION_JANGANPYEONG"])을 반환합니다.
+        """
         cfg = self.get_active_configuration(session)
-        if cfg and cfg.sales_region_ids:
+        if cfg and cfg.sales_region_ids is not None:
             return list(cfg.sales_region_ids)
         return ["REGION_JANGANPYEONG"]
 
     def update_sales_regions(self, session: Session, region_ids: list[str]) -> None:
-        """판매 대상 매물 지역 설정을 동적으로 변경합니다."""
+        """판매 대상 매물 지역 설정을 동적으로 변경합니다.
+        
+        - 중복 ID는 자동으로 제거하여 유일화합니다.
+        - 존재하지 않는 지역 ID는 InvalidRegionError를 발생시킵니다.
+        - 비활성화된(is_active=False) 지역 ID는 InactiveRegionError를 발생시킵니다.
+        """
         cfg = self.get_active_configuration(session)
-        cfg.sales_region_ids = list(region_ids)
+
+        # 중복 제거 (순서 보존)
+        unique_ids = list(dict.fromkeys(region_ids))
+
+        # 지역 유효성 및 활성 상태 검사
+        for rid in unique_ids:
+            reg = session.get(Region, rid)
+            if reg is None:
+                raise InvalidRegionError(f"존재하지 않는 지역 ID입니다: '{rid}'")
+            if not reg.is_active:
+                raise InactiveRegionError(f"비활성화된 지역은 판매 대상으로 설정할 수 없습니다: '{rid}'")
+
+        cfg.sales_region_ids = unique_ids
         cfg.updated_at = datetime.now(UTC)
         session.commit()
 
@@ -143,6 +172,9 @@ class RegionManager:
     def get_configured_sales_listings(self, session: Session) -> list[Listing]:
         """설정된 모든 판매 대상 지역(예: 장안평, 수원, 인천 등)의 활성 매물을 조회합니다."""
         active_regions = self.get_active_sales_region_ids(session)
+        if not active_regions:
+            return []
+
         stmt = (
             select(Listing)
             .where(Listing.normalized_region_id.in_(active_regions))

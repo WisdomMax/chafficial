@@ -158,6 +158,7 @@ def test_time_travel_candidate_lifecycle_and_delayed_ingest_protection(db_sessio
         price_krw=10_000_000,
         mileage_km=30_000,
         listing_status="ACTIVE",
+        normalized_region_id="REGION_JANGANPYEONG",
     )
     # 10/5 스냅샷: 가격 인하 950만원
     snap_oct05 = ListingSnapshot(
@@ -167,6 +168,7 @@ def test_time_travel_candidate_lifecycle_and_delayed_ingest_protection(db_sessio
         price_krw=9_500_000,
         mileage_km=30_050,
         listing_status="PRICE_CHANGED",
+        normalized_region_id="REGION_JANGANPYEONG",
     )
     # 10/10 스냅샷: 매물 삭제
     snap_oct10 = ListingSnapshot(
@@ -176,6 +178,7 @@ def test_time_travel_candidate_lifecycle_and_delayed_ingest_protection(db_sessio
         price_krw=9_500_000,
         mileage_km=30_100,
         listing_status="DELISTED",
+        normalized_region_id="REGION_JANGANPYEONG",
     )
     # 10/15에 뒤늦게 입력된 과거(10/4 관측) 기록
     snap_delayed = ListingSnapshot(
@@ -185,6 +188,7 @@ def test_time_travel_candidate_lifecycle_and_delayed_ingest_protection(db_sessio
         price_krw=9_800_000,
         mileage_km=30_020,
         listing_status="PRICE_CHANGED",
+        normalized_region_id="REGION_JANGANPYEONG",
     )
     db_session.add_all([snap_oct01, snap_oct05, snap_oct10, snap_delayed])
     db_session.commit()
