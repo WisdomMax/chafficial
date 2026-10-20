@@ -43,11 +43,11 @@ def db_session():
 
 
 def test_migration_does_not_create_false_past_approval():
-    """[결함 A 반례] 마이그레이션 시 기존 APPROVED 후보가 과거 시점에 APPROVED로 날조되지 않는지 검증.
+    """[결함 A 반례] 마이그레이션 시 기존 레거시 후보가 과거 시점에 이미 적재된 것으로 날조되지 않는지 검증.
     
-    10월 5일 선정 후 딜러가 승인한 구버전 후보(현재 상태 APPROVED)가 있을 때,
-    10월 21일 마이그레이션을 거치더라도
-    원래 승인 시점이 입증되지 않는 과거 시점(10월 6일) 조회에서는 APPROVED가 아니라 미확정(PENDING)으로 안전하게 조회되어야 한다.
+    10월 5일 선정되었으나 실제 DB 적재(마이그레이션) 시점이 10월 21일인 레거시 후보는,
+    시스템에 존재하지 않았던 과거 시점(10월 6일) 조회에 나타나지 않아야 한다 (created_at 소급 누출 차단).
+    마이그레이션 이후 시점(10월 22일)에서는 정상 조회되어야 한다.
     """
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -84,13 +84,12 @@ def test_migration_does_not_create_false_past_approval():
     assert report["success"] is True
 
     with Session(engine) as session:
-        # 10월 6일 시점 조회 시: 승인 시점이 불명확한 과거이므로 APPROVED가 누출되지 않고 PENDING이어야 함!
+        # 1. 10월 6일 시점 조회 시: 시스템에 아직 적재(created_at)되지 않은 과거이므로 조회 결과가 0건이어야 함! (적재 시점 누출 차단)
         t_oct6 = datetime(2026, 10, 6, 12, 0, tzinfo=UTC)
         results = TimeTravelQueryEngine.get_selected_candidates_as_of(session, "janganpyeong", t_oct6)
-        assert len(results) == 1
-        assert results[0]["partner_review_status"] == "PENDING"
+        assert len(results) == 0
 
-        # 마이그레이션 이후 시점(10월 22일) 조회 시: 최신 승인 상태인 APPROVED 정상 확인
+        # 2. 마이그레이션 이후 시점(10월 22일) 조회 시: 정상 적재되어 조회 가능 확인
         t_oct22 = datetime(2026, 10, 22, 12, 0, tzinfo=UTC)
         results_after = TimeTravelQueryEngine.get_selected_candidates_as_of(session, "janganpyeong", t_oct22)
         assert len(results_after) == 1

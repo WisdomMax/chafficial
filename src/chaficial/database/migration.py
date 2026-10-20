@@ -83,6 +83,8 @@ def migrate_database(
                 applied_changes.append("listing_snapshots: added normalized_region_id column")
 
         # 2. sales_candidates 스키마 검사 및 보완
+        # [역사적 정확성 보존]: 원본 시스템 적재 시점이 불명확한 구버전 후보의 created_at을
+        # 과거 selected_at으로 임의 소급하지 않고, 보수적으로 마이그레이션 시점(run_time_str)으로 기록
         if table_exists(conn, "sales_candidates"):
             cand_cols = get_table_columns(conn, "sales_candidates")
             if "created_at" not in cand_cols:
@@ -90,9 +92,9 @@ def migrate_database(
                     text("ALTER TABLE sales_candidates ADD COLUMN created_at TIMESTAMP;")
                 )
                 conn.execute(
-                    text(f"UPDATE sales_candidates SET created_at = COALESCE(selected_at, '{run_time_str}') WHERE created_at IS NULL;")
+                    text(f"UPDATE sales_candidates SET created_at = '{run_time_str}' WHERE created_at IS NULL;")
                 )
-                applied_changes.append("sales_candidates: added created_at column")
+                applied_changes.append("sales_candidates: added created_at column (set to migration time for legacy data)")
 
         # 3. candidate_status_histories 테이블 생성
         if not table_exists(conn, "candidate_status_histories"):
