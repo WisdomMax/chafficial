@@ -1,13 +1,20 @@
-"""매물 상태 및 가격의 시계열 스냅샷 모델."""
+"""매물 상태 및 가격의 시계열 스냅샷 모델.
 
-import uuid
+시계열 불변성(Append-only)을 보장하며, DB 트리거 및 ORM 리스너를 통해
+UPDATE 및 DELETE를 영구적으로 차단합니다.
+"""
+
 from datetime import UTC, datetime
 from typing import Any
-
-from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, Integer, String
+import uuid
+from sqlalchemy import JSON, CheckConstraint, DateTime, DDL, ForeignKey, Integer, String, event
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from chaficial.database.base import Base
+
+
+class ImmutableSnapshotError(Exception):
+    """스냅샷 수정 또는 삭제 시도 시 발생하는 예외."""
+    pass
 
 
 class ListingSnapshot(Base):
@@ -16,7 +23,7 @@ class ListingSnapshot(Base):
     가격 변경이나 상태 변경 시 이전 기록을 절대 덮어쓰지 않고 새로 추가합니다.
     - observed_at: 실제 시장에서 관측된 시점
     - ingested_at: 차피셜 시스템 데이터베이스에 적재된 시점
-    과거 특정 시점 조회 시 observed_at <= T and ingested_at <= T 조건으로 미래 정보 누출을 방지합니다.
+    - DB 트리거를 통해 SQL UPDATE 및 DELETE를 원천 차단합니다.
     """
     __tablename__ = "listing_snapshots"
 
@@ -50,3 +57,47 @@ class ListingSnapshot(Base):
     )
 
     listing = relationship("Listing", back_populates="snapshots")
+
+
+# ==============================================================================
+# 시계열 데이터 불변성(Append-only) 강제 장치
+# ==============================================================================
+
+# 1. ORM 레벨 UPDATE/DELETE 차단
+@event.listens_for(ListingSnapshot, "before_update")
+def _prevent_orm_update(mapper, connection, target):
+    raise ImmutableSnapshotError("ListingSnapshot is immutable and cannot be updated.")
+
+
+@event.listens_for(ListingSnapshot, "before_delete")
+def _prevent_orm_delete(mapper, connection, target):
+    raise ImmutableSnapshotError("ListingSnapshot is immutable and cannot be deleted.")
+
+
+# 2. SQLite DB 트리거 레벨 UPDATE/DELETE 차단 (Raw SQL 방어)
+_trg_prevent_update_sqlite = DDL("""
+CREATE TRIGGER IF NOT EXISTS trg_prevent_snapshot_update
+BEFORE UPDATE ON listing_snapshots
+BEGIN
+    SELECT RAISE(ABORT, 'ListingSnapshot is immutable and cannot be updated.');
+END;
+""")
+
+_trg_prevent_delete_sqlite = DDL("""
+CREATE TRIGGER IF NOT EXISTS trg_prevent_snapshot_delete
+BEFORE DELETE ON listing_snapshots
+BEGIN
+    SELECT RAISE(ABORT, 'ListingSnapshot is immutable and cannot be deleted.');
+END;
+""")
+
+event.listen(
+    ListingSnapshot.__table__,
+    "after_create",
+    _trg_prevent_update_sqlite.execute_if(dialect="sqlite"),
+)
+event.listen(
+    ListingSnapshot.__table__,
+    "after_create",
+    _trg_prevent_delete_sqlite.execute_if(dialect="sqlite"),
+)

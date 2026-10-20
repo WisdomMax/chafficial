@@ -58,3 +58,68 @@ def test_region_partner_verified_origin_preservation(db_session):
     )
     assert res.region_id == "REGION_JANGANPYEONG"
     assert res.confidence == "CONFIRMED_BY_PARTNER"
+
+
+# ==============================================================================
+# 수정 B: 시계열 데이터 불변성 (Append-only 강제)
+# ==============================================================================
+
+def test_snapshot_orm_update_blocked(db_session):
+    """SQLAlchemy ORM을 통한 ListingSnapshot UPDATE 시도가 차단되어야 함."""
+    listing = Listing(source_platform="ENCAR", source_listing_id="IMMUTABLE-1", raw_location="장안평")
+    db_session.add(listing)
+    db_session.flush()
+
+    snap = ListingSnapshot(
+        listing_id=listing.listing_id,
+        observed_at=datetime.now(UTC),
+        price_krw=10_000_000,
+        mileage_km=50_000,
+    )
+    db_session.add(snap)
+    db_session.commit()
+
+    # ORM을 통한 업데이트 시도
+    snap.price_krw = 9_000_000
+    with pytest.raises((IntegrityError, Exception)):
+        db_session.commit()
+    db_session.rollback()
+
+
+def test_snapshot_raw_sql_update_and_delete_blocked(db_session):
+    """Raw SQL을 통한 ListingSnapshot UPDATE 및 DELETE가 DB 트리거 레벨에서 차단되어야 함."""
+    listing = Listing(source_platform="ENCAR", source_listing_id="IMMUTABLE-2", raw_location="장안평")
+    db_session.add(listing)
+    db_session.flush()
+
+    snap = ListingSnapshot(
+        listing_id=listing.listing_id,
+        observed_at=datetime.now(UTC),
+        price_krw=20_000_000,
+        mileage_km=30_000,
+    )
+    db_session.add(snap)
+    db_session.commit()
+
+    # 1. Raw SQL UPDATE 시도
+    with pytest.raises(Exception):
+        db_session.execute(
+            text("UPDATE listing_snapshots SET price_krw = 15000000 WHERE snapshot_id = :sid"),
+            {"sid": snap.snapshot_id},
+        )
+        db_session.commit()
+    db_session.rollback()
+
+    # 2. Raw SQL DELETE 시도
+    with pytest.raises(Exception):
+        db_session.execute(
+            text("DELETE FROM listing_snapshots WHERE snapshot_id = :sid"),
+            {"sid": snap.snapshot_id},
+        )
+        db_session.commit()
+    db_session.rollback()
+
+    # 불변성 검증: 원본 데이터가 변경/삭제되지 않고 그대로 유지되어야 함
+    reloaded = db_session.get(ListingSnapshot, snap.snapshot_id)
+    assert reloaded is not None
+    assert reloaded.price_krw == 20_000_000
