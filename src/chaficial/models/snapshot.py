@@ -1,7 +1,7 @@
 """매물 상태 및 가격의 시계열 스냅샷 모델.
 
-시계열 불변성(Append-only)을 보장하며, DB 트리거 및 ORM 리스너를 통해
-UPDATE 및 DELETE를 영구적으로 차단합니다.
+시계열 불변성(Append-only) 및 영구 보존을 보장하며, DB 트리거 및 ORM 리스너를 통해
+UPDATE 및 DELETE를 원천 차단합니다.
 """
 
 import uuid
@@ -30,7 +30,7 @@ class ImmutableSnapshotError(Exception):
 
 
 class ListingSnapshot(Base):
-    """매물 관측 시점별 불변(Immutable) 스냅샷.
+    """매물 관측 시점별 불변(Immutable) 영구 보존 스냅샷.
     
     가격 변경이나 상태 변경, 지역 정정 시 이전 기록을 절대 덮어쓰지 않고 새로 추가합니다.
     - observed_at: 실제 시장에서 관측된 시점
@@ -44,7 +44,7 @@ class ListingSnapshot(Base):
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     listing_id: Mapped[str] = mapped_column(
-        ForeignKey("listings.listing_id", ondelete="CASCADE"), nullable=False, index=True
+        ForeignKey("listings.listing_id", ondelete="RESTRICT"), nullable=False, index=True
     )
     observed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, index=True
@@ -76,10 +76,10 @@ class ListingSnapshot(Base):
 
 
 # ==============================================================================
-# 시계열 데이터 불변성(Append-only) 강제 장치
+# 시계열 데이터 영구 보존 및 불변성(Append-only) 강제 장치
 # ==============================================================================
 
-# 1. ORM 레벨 UPDATE/DELETE 차단
+# 1. ORM 레벨 UPDATE/DELETE 원천 차단
 @event.listens_for(ListingSnapshot, "before_update")
 def _prevent_orm_update(mapper, connection, target):
     raise ImmutableSnapshotError("ListingSnapshot is immutable and cannot be updated.")
@@ -87,13 +87,7 @@ def _prevent_orm_update(mapper, connection, target):
 
 @event.listens_for(ListingSnapshot, "before_delete")
 def _prevent_orm_delete(mapper, connection, target):
-    # 부모 매물이 DB에 여전히 존재하는 상태에서 스냅샷만 직접 삭제하려는 경우 차단
-    res = connection.execute(
-        text("SELECT 1 FROM listings WHERE listing_id = :lid"),
-        {"lid": target.listing_id},
-    ).scalar()
-    if res is not None:
-        raise ImmutableSnapshotError("ListingSnapshot is immutable and cannot be deleted directly.")
+    raise ImmutableSnapshotError("ListingSnapshot is permanent training data and cannot be deleted.")
 
 
 # 2. SQLite DB 트리거 정의 (DDL)
@@ -105,12 +99,12 @@ BEGIN
 END;
 """
 
+# 부모 존재 여부와 무관하게 스냅샷 삭제는 무조건 원천 차단
 SQLITE_TRIGGER_DELETE = """
 CREATE TRIGGER IF NOT EXISTS trg_prevent_snapshot_delete
 BEFORE DELETE ON listing_snapshots
-WHEN EXISTS (SELECT 1 FROM listings WHERE listing_id = OLD.listing_id)
 BEGIN
-    SELECT RAISE(ABORT, 'ListingSnapshot is immutable and direct deletion is prohibited.');
+    SELECT RAISE(ABORT, 'ListingSnapshot is permanent training data and deletion is prohibited.');
 END;
 """
 
@@ -130,14 +124,14 @@ event.listen(
 
 
 def ensure_snapshot_immutability_triggers(engine_or_connection: Engine | Any) -> None:
-    """기존 데이터베이스에 누락된 스냅샷 불변성 트리거를 무손실로 주입합니다.
-    
-    여러 번 호출해도 안전(멱등성)하며, 기존 데이터를 손상시키지 않습니다.
-    """
+    """기존 데이터베이스에 스냅샷 불변성 및 삭제 방지 트리거를 멱등하게 주입/갱신합니다."""
     is_engine = isinstance(engine_or_connection, Engine)
     conn = engine_or_connection.connect() if is_engine else engine_or_connection
     try:
         if conn.dialect.name == "sqlite":
+            # 구버전 조건부 트리거가 있을 수 있으므로 DROP 후 재생성
+            conn.execute(text("DROP TRIGGER IF EXISTS trg_prevent_snapshot_update;"))
+            conn.execute(text("DROP TRIGGER IF EXISTS trg_prevent_snapshot_delete;"))
             conn.execute(text(SQLITE_TRIGGER_UPDATE))
             conn.execute(text(SQLITE_TRIGGER_DELETE))
             if is_engine:

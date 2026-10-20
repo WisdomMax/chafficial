@@ -40,3 +40,9 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Chat automation temp dumps
+chatgpt_full_thread.txt
+directive_002c_raw.txt
+latest_gpt_response.txt
+chat_messages.json

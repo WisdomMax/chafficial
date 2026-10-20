@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
-from chaficial.models.candidate import SalesCandidate
+from chaficial.models.candidate import CandidateStatusHistory, SalesCandidate
 from chaficial.models.condition import VehicleCondition
 from chaficial.models.listing import Listing
 from chaficial.models.snapshot import ListingSnapshot
@@ -90,6 +90,8 @@ class TimeTravelQueryEngine:
         
         - selected_at <= as_of_time
         - created_at <= as_of_time
+        - [승인 상태 누출 차단]: 미래에 발생한 파트너 승인(APPROVED/REJECTED) 상태가 유입되지 않도록
+          해당 시점(as_of_time) 이전의 최신 이력(CandidateStatusHistory)만 반영합니다.
         """
         stmt = (
             select(SalesCandidate)
@@ -105,6 +107,30 @@ class TimeTravelQueryEngine:
         selected_candidates: list[dict[str, Any]] = []
         for cand in session.scalars(stmt).all():
             snap = TimeTravelQueryEngine.get_listing_snapshot_at(session, cand.listing_id, as_of_time)
+            
+            # 당시 시점 이전의 상태 이력 조회
+            hist_stmt = (
+                select(CandidateStatusHistory)
+                .where(
+                    and_(
+                        CandidateStatusHistory.candidate_id == cand.candidate_id,
+                        CandidateStatusHistory.changed_at <= as_of_time,
+                        CandidateStatusHistory.ingested_at <= as_of_time,
+                    )
+                )
+                .order_by(CandidateStatusHistory.changed_at.desc(), CandidateStatusHistory.ingested_at.desc())
+                .limit(1)
+            )
+            latest_hist = session.scalar(hist_stmt)
+            
+            if latest_hist:
+                partner_review_status = latest_hist.partner_review_status
+                availability_status = latest_hist.availability_status
+            else:
+                # 상태 변경 이력이 없거나 선정 시점 직후인 경우 기본값(초기 대기 상태)으로 안전하게 보존
+                partner_review_status = "PENDING"
+                availability_status = "UNCONFIRMED"
+
             selected_candidates.append({
                 "candidate_id": cand.candidate_id,
                 "listing_id": cand.listing_id,
@@ -114,8 +140,8 @@ class TimeTravelQueryEngine:
                 "selected_by": cand.selected_by,
                 "selection_reason": cand.selection_reason,
                 "selection_score": cand.selection_score,
-                "availability_status": cand.availability_status,
-                "partner_review_status": cand.partner_review_status,
+                "availability_status": availability_status,
+                "partner_review_status": partner_review_status,
                 "current_price_krw": snap.price_krw if snap else None,
             })
         return selected_candidates

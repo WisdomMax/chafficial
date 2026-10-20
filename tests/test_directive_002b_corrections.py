@@ -13,6 +13,7 @@ from chaficial.models import (
     Region,
     SalesCandidate,
 )
+from chaficial.models.listing import ListingDeletionRestrictedError
 from chaficial.models.snapshot import (
     ensure_snapshot_immutability_triggers,
 )
@@ -276,13 +277,15 @@ def test_existing_database_immutability_enforcement_and_cascade(tmp_path):
             session.commit()
         session.rollback()
 
-    # 5. 부모 매물 삭제 시 CASCADE 영향 검증:
-    # 매물 삭제 시 연관 스냅샷은 안전하게 CASCADE 처리되거나 무결성이 보호되어야 함
+    # 5. [DIRECTIVE 002-C] 부모 매물 물리 삭제 시도 시 차단 및 스냅샷 보존 검증:
+    # 매물 정리 시 과거 시계열 스냅샷이 연쇄 삭제되지 않도록 물리 삭제를 차단하고 이력을 보존함
     with SessionLocal() as session:
         l = session.get(Listing, listing_id)
-        session.delete(l)
-        session.commit()
+        with pytest.raises(ListingDeletionRestrictedError):
+            session.delete(l)
+            session.commit()
+        session.rollback()
 
     with SessionLocal() as session:
-        # 부모가 삭제되었으므로 자식 스냅샷도 정상 정리됨
-        assert session.get(ListingSnapshot, snap_id) is None
+        # 부모 매물 삭제 시도가 차단되었으므로 스냅샷은 안전하게 영구 보존됨
+        assert session.get(ListingSnapshot, snap_id) is not None

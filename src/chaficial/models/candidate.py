@@ -1,4 +1,8 @@
-"""판매 후보 매물 모델."""
+"""판매 후보 매물 및 파트너 승인/상태 이력 모델.
+
+과거 시점 재현 시 미래의 파트너 승인 상태 유입을 방지하기 위해,
+상태 변경 시점별 불변 이력을 보존합니다.
+"""
 
 import uuid
 from datetime import UTC, datetime
@@ -22,7 +26,7 @@ class SalesCandidate(Base):
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     listing_id: Mapped[str] = mapped_column(
-        ForeignKey("listings.listing_id", ondelete="CASCADE"), nullable=False, index=True
+        ForeignKey("listings.listing_id", ondelete="RESTRICT"), nullable=False, index=True
     )
     target_region_id: Mapped[str] = mapped_column(
         ForeignKey("regions.region_id", ondelete="RESTRICT"), nullable=False, index=True
@@ -63,3 +67,50 @@ class SalesCandidate(Base):
 
     listing = relationship("Listing", lazy="joined")
     target_region = relationship("Region", lazy="joined")
+    status_histories = relationship(
+        "CandidateStatusHistory",
+        back_populates="candidate",
+        order_by="CandidateStatusHistory.changed_at",
+        cascade="all, delete-orphan",
+    )
+
+
+class CandidateStatusHistory(Base):
+    """후보 차량의 파트너 승인 및 재고 상태 변경 이력.
+    
+    시간 경과에 따른 승인 상태 전이를 불변으로 기록하여 Time-Travel 시 미래 승인 누출을 차단합니다.
+    """
+    __tablename__ = "candidate_status_histories"
+
+    history_id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    candidate_id: Mapped[str] = mapped_column(
+        ForeignKey("sales_candidates.candidate_id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    partner_review_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="PENDING"
+    )
+    availability_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="UNCONFIRMED"
+    )
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    ingested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    review_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "partner_review_status IN ('APPROVED', 'REJECTED', 'PENDING')",
+            name="chk_history_partner_review",
+        ),
+        CheckConstraint(
+            "availability_status IN ('AVAILABLE', 'RESERVED', 'SOLD_OUT', 'UNCONFIRMED')",
+            name="chk_history_availability",
+        ),
+    )
+
+    candidate = relationship("SalesCandidate", back_populates="status_histories")
