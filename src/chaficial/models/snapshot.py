@@ -4,17 +4,18 @@
 UPDATE 및 DELETE를 영구적으로 차단합니다.
 """
 
+import uuid
 from datetime import UTC, datetime
 from typing import Any
-import uuid
-from sqlalchemy import JSON, CheckConstraint, DateTime, DDL, ForeignKey, Integer, String, event
+
+from sqlalchemy import DDL, JSON, CheckConstraint, DateTime, ForeignKey, Integer, String, event
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from chaficial.database.base import Base
 
 
 class ImmutableSnapshotError(Exception):
     """스냅샷 수정 또는 삭제 시도 시 발생하는 예외."""
-    pass
 
 
 class ListingSnapshot(Base):

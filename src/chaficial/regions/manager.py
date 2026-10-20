@@ -4,9 +4,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
 import yaml
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
 from chaficial.models.listing import Listing
 from chaficial.models.region import Region, RegionConfiguration
 

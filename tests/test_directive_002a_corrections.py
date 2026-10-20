@@ -1,19 +1,18 @@
 """DIRECTIVE 002-A 감사 결함 수정 및 회귀 방지 테스트 스위트."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timedelta, UTC
-from chaficial.regions.manager import RegionManager
+from sqlalchemy.exc import IntegrityError, OperationalError
+
 from chaficial.models import (
     Listing,
     ListingSnapshot,
-    SalesCandidate,
-    SalesOutcome,
-    Settlement,
 )
+from chaficial.models.snapshot import ImmutableSnapshotError
+from chaficial.regions.manager import RegionManager
 from chaficial.time_travel.query_engine import TimeTravelQueryEngine
-
 
 # ==============================================================================
 # 수정 A: 지역 판정 정확성 (행정구역 vs 매매단지 오분류 방지)
@@ -81,7 +80,7 @@ def test_snapshot_orm_update_blocked(db_session):
 
     # ORM을 통한 업데이트 시도
     snap.price_krw = 9_000_000
-    with pytest.raises((IntegrityError, Exception)):
+    with pytest.raises((IntegrityError, ImmutableSnapshotError)):
         db_session.commit()
     db_session.rollback()
 
@@ -102,7 +101,7 @@ def test_snapshot_raw_sql_update_and_delete_blocked(db_session):
     db_session.commit()
 
     # 1. Raw SQL UPDATE 시도
-    with pytest.raises(Exception):
+    with pytest.raises((OperationalError, IntegrityError)):
         db_session.execute(
             text("UPDATE listing_snapshots SET price_krw = 15000000 WHERE snapshot_id = :sid"),
             {"sid": snap.snapshot_id},
@@ -111,7 +110,7 @@ def test_snapshot_raw_sql_update_and_delete_blocked(db_session):
     db_session.rollback()
 
     # 2. Raw SQL DELETE 시도
-    with pytest.raises(Exception):
+    with pytest.raises((OperationalError, IntegrityError)):
         db_session.execute(
             text("DELETE FROM listing_snapshots WHERE snapshot_id = :sid"),
             {"sid": snap.snapshot_id},

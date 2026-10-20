@@ -2,8 +2,10 @@
 
 from datetime import UTC, datetime
 from typing import Any
+
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
+
 from chaficial.models.condition import VehicleCondition
 from chaficial.models.listing import Listing
 from chaficial.models.snapshot import ListingSnapshot

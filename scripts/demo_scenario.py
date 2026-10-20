@@ -8,6 +8,7 @@
 """
 
 from datetime import UTC, datetime, timedelta
+
 from chaficial.database.base import Base, get_engine, get_session_factory
 from chaficial.models import (
     Listing,
