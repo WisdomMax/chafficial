@@ -103,6 +103,7 @@ class SyntheticDataGenerator:
                 price_krw=base_price,
                 mileage_km=mileage,
                 listing_status="ACTIVE",
+                normalized_region_id=resolved_region,
                 raw_specs={"color": "화이트", "sunroof": self.rng.choice([True, False])},
             )
             self.session.add(snap1)
@@ -118,6 +119,7 @@ class SyntheticDataGenerator:
                     price_krw=reduced_price,
                     mileage_km=mileage + self.rng.randint(10, 50),
                     listing_status="PRICE_CHANGED",
+                    normalized_region_id=resolved_region,
                 )
                 self.session.add(snap2)
                 listing.current_status = "PRICE_CHANGED"
@@ -132,6 +134,7 @@ class SyntheticDataGenerator:
                     price_krw=base_price,
                     mileage_km=mileage,
                     listing_status="DELISTED",
+                    normalized_region_id=resolved_region,
                 )
                 self.session.add(snap_delist)
                 listing.current_status = "DELISTED"

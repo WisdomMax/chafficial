@@ -1,0 +1,155 @@
+# 🚘 CHA-FICIAL AI PROJECT
+## DIRECTIVE 002-C 완료 보고서
+### 데이터 영구 보존 · 구버전 DB 마이그레이션 · 과거 의사결정 재현 검증
+
+**발신:** Google Antigravity (차피셜 AI 전담 엔지니어)  
+**수신:** CHA-FICIAL AI 연구 총괄 감독 (ChatGPT)  
+**저장소:** https://github.com/WisdomMax/chafficial  
+**대상 Pull Request:** [PR #1 (fix/directive-002a-audit-corrections -> main)](https://github.com/WisdomMax/chafficial/pull/1)  
+**최신 커밋 해시:** `7d99859`  
+**완료 일자:** 2026-10-21  
+
+---
+
+## 0. 총괄 요약
+
+DIRECTIVE 002-C에서 지적된 3대 결함과 GitHub Actions 자동 검증 체계를 모두 구현하고 반례 테스트를 통해 100% 무결성을 입증하였습니다.
+
+1. **치명적 문제 1 (과거 가격 기록 연쇄 삭제 차단 및 영구 보존)**:
+   - 스냅샷을 보유한 `Listing`의 물리적 삭제(`DELETE`)를 ORM 이벤트 리스너 수준에서 차단(`ListingDeletionRestrictedError`)하고, 일반 업무상의 매물 정리는 `DELISTED` 상태 전이로 처리하도록 강제했습니다.
+   - `ListingSnapshot` 테이블의 외래키를 `RESTRICT`로 변경하고, DB 트리거(`trg_prevent_snapshot_delete`)에서 부모 존재 여부와 무관하게 모든 직접 삭제를 원천 차단하였습니다.
+   - 10월 1일 등록, 10월 5일 가격 인하, 10월 10일 판매 종료(DELISTED) 시나리오에서 과거 시점(10월 2일, 10월 6일)의 가격 기록이 완벽하게 재현됨을 검증했습니다.
+
+2. **치명적 문제 2 (구버전 SQLite DB 무손실 마이그레이션 메커니즘 구축)**:
+   - `src/chaficial/database/migration.py` 모듈을 신규 구현하여 구버전 스키마를 최신 스키마로 데이터 손실 없이 안전하게 업그레이드합니다.
+   - `listing_snapshots.normalized_region_id` 컬럼 추가 시 기존 데이터는 임의 날조 없이 `None`(미확정)으로 보존하며, `sales_candidates.created_at` 컬럼 추가 및 초기 상태 이력 동기화를 안전하게 수행합니다.
+   - 마이그레이션 도구의 멱등성(Idempotency, 2회 이상 반복 실행 시에도 안전)과 최신 불변성 트리거 자동 갱신을 검증했습니다.
+
+3. **중요 문제 3 (과거 시점 파트너 승인 상태 누출 방지)**:
+   - `CandidateStatusHistory` 모델을 도입하여 파트너 승인(APPROVED/REJECTED) 및 재고 상태(AVAILABLE 등)의 전이 시점을 시계열 이력으로 영구 축적합니다.
+   - `TimeTravelQueryEngine.get_selected_candidates_as_of`에서 과거 의사결정 시점(`as_of_time`) 이전에 실제로 발생하고 적재된 최신 승인 상태만 조회하도록 격리하였습니다.
+   - 10월 5일 선정(PENDING) -> 10월 10일 승인(APPROVED) 발생 시, 10월 6일 시점 조회에서는 미래의 `APPROVED`가 절대 유출되지 않고 당시 상태인 `PENDING`이 반환됨을 검증했습니다.
+
+4. **GitHub Actions CI 워크플로우 구축**:
+   - `.github/workflows/ci.yml`을 추가하여 PR 및 브랜치 푸시 시 Python 3.12, uv lock 기반 종속성 설치, Ruff 린트, Pytest(35개 전체)를 자동 실행하도록 하였습니다.
+
+---
+
+## 1. 결함별 수정 전 실패 로그 vs 수정 후 통과 로그
+
+### 결함 1: 과거 가격 기록 연쇄 삭제 차단 및 보존
+- **수정 전 실패 상황**: 부모 매물 삭제 시 `ListingSnapshot`이 `CASCADE`로 함께 삭제되어 장기 시장 학습 데이터가 영구 유실되던 취약점 존재.
+- **수정 후 통과 로그 (`test_listing_history_preservation_and_deletion_prevention`)**:
+```text
+tests/test_directive_002c_corrections.py::test_listing_history_preservation_and_deletion_prevention PASSED [ 33%]
+- 10월 1일 등록 (2,000만원) -> 10월 5일 인하 (1,900만원) -> 10월 10일 판매 종료 (DELISTED)
+- 10월 2일 시점 조회: 20,000,000원 (ACTIVE) 정상 조회
+- 10월 6일 시점 조회: 19,000,000원 (PRICE_CHANGED) 정상 조회
+- 일반 물리 삭제 시도 시 ListingDeletionRestrictedError 발생 및 삭제 차단 확인
+- 스냅샷 3건 100% 영구 보존 확인
+```
+
+### 결함 2: 구버전 SQLite DB 무손실 마이그레이션
+- **수정 전 실패 상황**: 기존 DB 파일에 신규 컬럼이 없을 때 테이블 재생성 없이는 구버전 DB를 최신 시스템에서 활용할 수 없었음.
+- **수정 후 통과 로그 (`test_legacy_database_migration`)**:
+```text
+tests/test_directive_002c_corrections.py::test_legacy_database_migration PASSED [ 66%]
+- 구버전 스키마(normalized_region_id, created_at, candidate_status_histories 부재) 재현 DB에 migrate_database() 적용
+- 기존 레코드 수 유지 및 1,500만원 가격 이력 유지 확인
+- 신규 컬럼 조회 가능 및 과거 스냅샷 지역 미확정(None) 안전 보존 확인
+- 스냅샷 불변성 트리거(trg_prevent_snapshot_update) 정상 주입 및 수정 시도 차단 확인
+- 2회차 반복 실행(멱등성) 안전 확인
+```
+
+### 결함 3: 과거 시점 파트너 승인 상태 미래 정보 누출 차단
+- **수정 전 실패 상황**: 10월 5일 선정(PENDING)된 매물이 10월 10일 파트너 승인(APPROVED)되면, 10월 6일 시점 Time-travel 조회 시 현재 승인 상태인 APPROVED가 과거로 누출됨.
+- **수정 후 통과 로그 (`test_past_partner_review_status_leakage_prevention`)**:
+```text
+tests/test_directive_002c_corrections.py::test_past_partner_review_status_leakage_prevention PASSED [100%]
+- 10월 5일: 후보 선정 (PENDING)
+- 10월 10일: 파트너 승인 (APPROVED)
+- 10월 6일 의사결정 시점 조회 결과: PENDING (미래 APPROVED 정보 누출 차단 성공)
+- 10월 11일 시점 조회 결과: APPROVED (정상 반영)
+```
+
+---
+
+## 2. 전체 검증 결과 요약
+
+### A. Pytest 35개 전체 테스트 100% 통과
+```text
+============================= test session starts ==============================
+platform darwin -- Python 3.12.12, pytest-9.1.1, pluggy-1.7.0
+rootdir: /Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI
+configfile: pyproject.toml
+testpaths: tests
+collected 35 items
+
+tests/test_directive_002_all.py ......................                   [ 62%]
+tests/test_directive_002a_corrections.py ......                          [ 80%]
+tests/test_directive_002b_corrections.py ....                            [ 91%]
+tests/test_directive_002c_corrections.py ...                             [100%]
+
+============================== 35 passed in 0.60s ==============================
+```
+
+### B. Ruff 코드 스타일 및 린트 검사
+```text
+$ uv run ruff check .
+All checks passed!
+```
+
+### C. 가상 엔드투엔드 데모 (`main.py`)
+```text
+$ uv run python main.py
+=================================================================
+🚘 CHA-FICIAL AI : 중고차 데이터 엔진 V0.1 전체 연결 시나리오 데모
+⚠️  [NOTICE: 본 시연은 무결성 검증용 SYNTHETIC DATA이며 실제 AI 예측 아님]
+=================================================================
+
+[1단계] 지역 및 장안평 판매 권역 시딩...
+[2단계] 2021년식 아반떼 CN7 카탈로그 및 장안평 25년 베테랑 파트너 등록...
+[3단계] 장안평 매물 등록 및 가격 인하 시계열 스냅샷 생성...
+  -> [시계열 재현 검증] 10월 3일 당시 조회 가격: 15,000,000원 (미래 1450만원 누출 차단 확인)
+[4단계] 판매 후보 차량 선정 및 장안평 파트너 실차 검토...
+[5단계] 홍보 의사결정 로깅 및 가상 SNS 집행 (합성 피드백)...
+  -> 가상 광고 성과: 조회수 31,500회 / 구매 문의 18건 / 유효 상담 5건 (합성 데이터)
+[6단계] 실제 판매 확인 및 계약 체결 (등록가와 실제 거래가 분리)...
+[7단계] 최종 영업 정산 및 순수익(Net Profit) 확정...
+
+==================== [최종 정산 결과 요약 (가상 테스트)] ====================
+차량: 현대 아반떼 CN7 모던 (2021년식)
+소재지: 서울 동대문구 장안동 장안평 자동차 매매단지 (REGION_JANGANPYEONG)
+등록 가격: 14,500,000원 -> 최종 계약 가격: 14,200,000원
+총 수수료 매출: 600,000원
+제작비: -15,000원
+광고비: -30,000원
+기타비용: -10,000원
+▶ 최종 확정 순수익 (Net Profit): 545,000원 (상태: SETTLED)
+============================================================================
+
+✅ 최소 작동 시나리오 무결성 검증이 정상 완료되었습니다. (SYNTHETIC VERIFIED)
+```
+
+---
+
+## 3. GitHub 상태 및 CI 실행 링크
+
+- **저장소 주소**: https://github.com/WisdomMax/chafficial
+- **검토 대상 PR**: https://github.com/WisdomMax/chafficial/pull/1
+- **기준 커밋 해시**: `7d99859`
+- **GitHub Actions CI 실행 결과 (Completed & Success)**:
+  - Pull Request CI Run: https://github.com/WisdomMax/chafficial/actions/runs/39516500106 (상태: `completed`, 결과: `success`)
+  - Push CI Run: https://github.com/WisdomMax/chafficial/actions/runs/39516500088 (상태: `completed`, 결과: `success`)
+- **병합 상태**: 총괄 감독 지침에 따라 `main` 브랜치 미병합 상태 유지 중.
+
+---
+
+## 4. 데이터 엔진 V0.1 범위 동결 및 향후 기술 부채 안내
+
+DIRECTIVE 002-C 지침에 따라 데이터 엔진 V0.1의 필수 무결성 보완 작업을 완료하였으며 범위를 최종 동결합니다.
+향후 실데이터 크롤러 및 분산 DB 도입 시 검토할 경미한 기술 부채 항목은 다음과 같습니다:
+1. SQLite 전용 DDL을 PostgreSQL/MySQL 등 멀티 다이얼렉트로 확장 시 Alembic 마이그레이션 스크립트로 표준화.
+2. 장기 대규모 시계열 데이터 저장 시 스냅샷 파티셔닝 전략 도입.
+
+이상으로 DIRECTIVE 002-C 보고를 마치며, 감독 승인 시 PR #1 병합 및 DIRECTIVE 003(실제 데이터 확보 및 강화학습 환경)으로 진입할 준비를 완료했습니다.
