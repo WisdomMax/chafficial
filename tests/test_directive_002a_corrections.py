@@ -225,3 +225,40 @@ def test_time_travel_candidate_lifecycle_and_delayed_ingest_protection(db_sessio
         db_session, target_region_id="REGION_JANGANPYEONG", as_of_time=t_query_oct12
     )
     assert not any(c["listing_id"] == listing.listing_id for c in candidates_oct12)
+
+
+# ==============================================================================
+# 수정 D: 지역 설정값 실제 반영 (동적 확장)
+# ==============================================================================
+
+def test_region_configuration_dynamic_sales_regions(db_session):
+    """RegionConfiguration의 sales_region_ids 변경 시 코드 수정 없이 조회 대상이 확장되는지 검증."""
+    reg_mgr = RegionManager()
+    reg_mgr.seed_default_regions(db_session)
+
+    # 1. 장안평, 수원, 인천 매물 각각 생성
+    l_jangan = Listing(source_platform="ENCAR", source_listing_id="D-JNG", raw_location="장안평 매매단지", normalized_region_id="REGION_JANGANPYEONG", current_status="ACTIVE")
+    l_suwon = Listing(source_platform="ENCAR", source_listing_id="D-SWN", raw_location="도이치오토월드", normalized_region_id="REGION_SUWON", current_status="ACTIVE")
+    l_incheon = Listing(source_platform="ENCAR", source_listing_id="D-INC", raw_location="인천 M파크", normalized_region_id="REGION_INCHEON", current_status="ACTIVE")
+    db_session.add_all([l_jangan, l_suwon, l_incheon])
+    db_session.commit()
+
+    # 초기 기본 상태: 장안평 매물만 조회되어야 함
+    default_listings = reg_mgr.get_configured_sales_listings(db_session)
+    assert len(default_listings) == 1
+    assert default_listings[0].listing_id == l_jangan.listing_id
+
+    # 2. 설정을 수원 및 인천까지 확장
+    reg_mgr.update_sales_regions(db_session, ["REGION_JANGANPYEONG", "REGION_SUWON", "REGION_INCHEON"])
+
+    # 확장 후 조회: 3개 매물이 모두 조회되어야 함
+    expanded_listings = reg_mgr.get_configured_sales_listings(db_session)
+    expanded_ids = [l.listing_id for l in expanded_listings]
+    assert len(expanded_listings) == 3
+    assert l_jangan.listing_id in expanded_ids
+    assert l_suwon.listing_id in expanded_ids
+    assert l_incheon.listing_id in expanded_ids
+
+    # 3. 전국 분석 범위(NATIONWIDE)는 판매 지역 설정 변경과 무관하게 독립 유지되는지 확인
+    cfg = reg_mgr.get_active_configuration(db_session)
+    assert cfg.analysis_region_scope == "NATIONWIDE"
