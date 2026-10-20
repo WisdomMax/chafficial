@@ -2,10 +2,12 @@
 
 아반떼 가상 매물 등록 -> 1500만 -> 1450만 가격 인하 -> 장안평 파트너 승인
 -> AI 홍보 의사결정 -> 마케팅 집행 -> 계약 체결 -> 순수익 정산까지 전체 흐름을 시연합니다.
+
+[주의: 본 스크립트의 데이터와 선정 이유는 파이프라인 무결성 검증을 위한 가상 합성 데이터(SYNTHETIC DATA)이며,
+실제 AI 모델의 예측 결과나 실측 시장 분석 성과가 아닙니다.]
 """
 
 from datetime import UTC, datetime, timedelta
-
 from chaficial.database.base import Base, get_engine, get_session_factory
 from chaficial.models import (
     Listing,
@@ -26,6 +28,7 @@ from chaficial.time_travel.query_engine import TimeTravelQueryEngine
 def run_demo():
     print("=================================================================")
     print("🚘 CHA-FICIAL AI : 중고차 데이터 엔진 V0.1 전체 연결 시나리오 데모")
+    print("⚠️  [NOTICE: 본 시연은 무결성 검증용 SYNTHETIC DATA이며 실제 AI 예측 아님]")
     print("=================================================================\n")
 
     engine = get_engine("sqlite:///:memory:", echo=False)
@@ -70,7 +73,7 @@ def run_demo():
         vehicle_id=vehicle.vehicle_id,
         seller_reference=partner.partner_id,
         first_observed_at=t0,
-        raw_location="서울 동대문구 장안동 장안평 매매단지",
+        raw_location="서울 동대문구 장안동 장안평 자동차 매매단지",
         normalized_region_id="REGION_JANGANPYEONG",
         current_status="ACTIVE",
     )
@@ -104,30 +107,30 @@ def run_demo():
     print(f"  -> [시계열 재현 검증] 10월 3일 당시 조회 가격: {past_snap.price_krw:,}원 (미래 1450만원 누출 차단 확인)")
 
     # 4. 판매 후보 선정 및 파트너 실차 검토
-    print("[4단계] 판매 후보 차량 선정 및 장안평 파트너 실차 승인...")
+    print("[4단계] 판매 후보 차량 선정 및 장안평 파트너 실차 검토...")
     candidate = SalesCandidate(
         listing_id=listing.listing_id,
         target_region_id="REGION_JANGANPYEONG",
-        selected_by="AI_AGENT",
-        selection_reason="장안평 무사고 아반떼 CN7, 시장 평균 대비 7% 저렴 및 회전율 우수",
-        selection_score=0.94,
+        selected_by="RULE_BASED",  # AI 모델 미학습 상태이므로 규칙 기반 테스트로 표기
+        selection_reason="[가상 시나리오 테스트] 장안평 아반떼 CN7 무사고 가정 (파이프라인 무결성 검증용)",
+        selection_score=None,  # AI 예측 점수가 아니므로 None 처리 (허위 AI 성과 표현 배제)
         availability_status="AVAILABLE",
         partner_review_status="APPROVED",
-        review_note="실차 입고 및 점검 완료. 골격 손상 없음, 즉시 출고 가능",
+        review_note="실차 입고 및 점검 완료 가정. 골격 손상 없음, 즉시 출고 가능",
     )
     session.add(candidate)
     session.flush()
 
-    # 5. AI 홍보 의사결정 및 가상 마케팅 성과
-    print("[5단계] 차피셜 AI 숏폼 영상 제작 결정 및 가상 SNS 집행...")
+    # 5. 홍보 의사결정 및 가상 마케팅 성과
+    print("[5단계] 홍보 의사결정 로깅 및 가상 SNS 집행 (합성 피드백)...")
     decision = PromotionDecision(
         candidate_id=candidate.candidate_id,
         partner_id=partner.partner_id,
-        policy_version="V0.1_HEURISTIC_EXPLORE",
-        decision_source="AI_AGENT",
+        policy_version="V0.1_SYNTHETIC_TEST",
+        decision_source="HEURISTIC_RULE",
         eligible_actions=["PRODUCE_SHORT_VIDEO", "PROMOTE_CAROUSEL", "WAIT_ORGANIC"],
         chosen_action="PRODUCE_SHORT_VIDEO",
-        action_probability=0.90,
+        action_probability=None,  # 무작위 탐색 또는 반사실적 확률이 아니므로 None 처리
         planned_budget_krw=30_000,
         execution_status="EXECUTED",
     )
@@ -148,7 +151,7 @@ def run_demo():
     )
     session.add(marketing)
     session.flush()
-    print(f"  -> 광고 성과: 조회수 {marketing.views:,}회 / 구매 문의 {marketing.inquiries}건 / 유효 상담 {marketing.verified_leads}건")
+    print(f"  -> 가상 광고 성과: 조회수 {marketing.views:,}회 / 구매 문의 {marketing.inquiries}건 / 유효 상담 {marketing.verified_leads}건 (합성 데이터)")
 
     # 6. 실제 판매 확인 및 계약 체결
     print("[6단계] 실제 판매 확인 및 계약 체결 (등록가와 실제 거래가 분리)...")
@@ -180,7 +183,7 @@ def run_demo():
     session.add(settlement)
     session.commit()
 
-    print("\n==================== [최종 정산 결과 요약] ====================")
+    print("\n==================== [최종 정산 결과 요약 (가상 테스트)] ====================")
     print(f"차량: {cat.full_name()}")
     print(f"소재지: {listing.raw_location} ({listing.normalized_region_id})")
     print(f"등록 가격: 14,500,000원 -> 최종 계약 가격: {outcome.confirmed_sale_price_krw:,}원")
@@ -189,8 +192,8 @@ def run_demo():
     print(f"광고비: -{settlement.advertising_cost_krw:,}원")
     print(f"기타비용: -{settlement.other_costs_krw:,}원")
     print(f"▶ 최종 확정 순수익 (Net Profit): {settlement.net_profit_krw:,}원 (상태: {settlement.settlement_status})")
-    print("=================================================================\n")
-    print("✅ 최소 작동 시나리오 데모가 성공적으로 완료되었습니다.")
+    print("============================================================================\n")
+    print("✅ 최소 작동 시나리오 무결성 검증이 정상 완료되었습니다. (SYNTHETIC VERIFIED)")
 
 
 if __name__ == "__main__":
