@@ -74,7 +74,7 @@ await run();
 """
 
     res = subprocess.run(
-        ["/Users/wisdom/.local/bin/aside", "repl", js_code],
+        ["/Users/wisdom/.local/bin/aside", "--profile", "c759b216-69cc-436b-941a-dab4e621632d", "repl", js_code],
         check=False,
         capture_output=True,
         text=True,

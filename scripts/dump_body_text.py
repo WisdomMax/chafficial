@@ -23,7 +23,7 @@ async function run() {{
 await run();
 """
 
-res = subprocess.run(["/Users/wisdom/.local/bin/aside", "repl", js_code], check=False, capture_output=True, text=True)
+res = subprocess.run(["/Users/wisdom/.local/bin/aside", "--profile", "c759b216-69cc-436b-941a-dab4e621632d", "repl", js_code], check=False, capture_output=True, text=True)
 with open("chatgpt_full_thread.txt", "w", encoding="utf-8") as f:
     f.write(res.stdout)
 print(f"Dumped {len(res.stdout)} chars to chatgpt_full_thread.txt")
