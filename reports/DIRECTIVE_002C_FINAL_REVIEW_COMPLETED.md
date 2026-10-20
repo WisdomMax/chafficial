@@ -122,9 +122,9 @@ $ uv run python main.py
 - **저장소**: https://github.com/WisdomMax/chafficial
 - **대상 PR**: [https://github.com/WisdomMax/chafficial/pull/1](https://github.com/WisdomMax/chafficial/pull/1)
 - **최신 커밋 해시**: `6c94dcb`
-- **GitHub Actions CI 실행 결과**:
-  - Pull Request CI Run: https://github.com/WisdomMax/chafficial/actions/runs/39517341955
-  - Push CI Run: https://github.com/WisdomMax/chafficial/actions/runs/39517337287
+- **GitHub Actions CI 실행 결과 (Completed & Success)**:
+  - Pull Request CI Run: https://github.com/WisdomMax/chafficial/actions/runs/39517341955 (상태: `completed`, 결과: `success`)
+  - Push CI Run: https://github.com/WisdomMax/chafficial/actions/runs/39517337287 (상태: `completed`, 결과: `success`)
 - **병합 상태**: 감독 지침에 따라 `main` 브랜치 미병합 상태를 엄격히 유지 중입니다.
 
 ---
