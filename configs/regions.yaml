@@ -1,0 +1,66 @@
+# 차피셜(CHA-FICIAL) 지역 설정 명세서
+# 전국 시장 분석과 지역별 판매 대상 분리
+
+defaults:
+  market_analysis_scope: "NATIONWIDE"
+  primary_sales_region_id: "REGION_JANGANPYEONG"
+  customer_target_mode: "CAMPAIGN_SPECIFIED"
+
+regions:
+  - region_id: "REGION_NATIONWIDE"
+    region_name: "전국"
+    region_type: "COUNTRY"
+    parent_region_id: null
+    is_active: true
+
+  # 서울권역 및 장안평 시장권역
+  - region_id: "REGION_SEOUL"
+    region_name: "서울특별시"
+    region_type: "METROPOLIS"
+    parent_region_id: "REGION_NATIONWIDE"
+    is_active: true
+
+  - region_id: "REGION_JANGANPYEONG"
+    region_name: "서울 장안평 중고차 시장"
+    region_type: "MARKET_COMPLEX"
+    parent_region_id: "REGION_SEOUL"
+    is_active: true
+    matched_keywords:
+      - "장안평"
+      - "장한평"
+      - "동대문구 장안동"
+      - "성동구 용답동"
+
+  # 경기 수원 권역
+  - region_id: "REGION_SUWON"
+    region_name: "경기 수원 자동차 매매단지"
+    region_type: "MARKET_COMPLEX"
+    parent_region_id: "REGION_NATIONWIDE"
+    is_active: true
+    matched_keywords:
+      - "수원"
+      - "도이치오토월드"
+      - "SK V1 모터스"
+      - "수원시 권선구"
+
+  # 인천 권역
+  - region_id: "REGION_INCHEON"
+    region_name: "인천 자동차 매매단지"
+    region_type: "MARKET_COMPLEX"
+    parent_region_id: "REGION_NATIONWIDE"
+    is_active: true
+    matched_keywords:
+      - "인천 M파크"
+      - "엠파크"
+      - "인천 서구"
+
+  # 경기 부천 권역
+  - region_id: "REGION_BUCHEON"
+    region_name: "경기 부천 자동차 매매단지"
+    region_type: "MARKET_COMPLEX"
+    parent_region_id: "REGION_NATIONWIDE"
+    is_active: true
+    matched_keywords:
+      - "부천 오토맥스"
+      - "DY카랜드"
+      - "부천시"
