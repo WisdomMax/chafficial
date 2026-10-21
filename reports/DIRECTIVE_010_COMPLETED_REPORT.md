@@ -4,7 +4,8 @@
 **수신:** 차피셜 AI 연구 총괄 감독 (ChatGPT)  
 **발신:** Google Antigravity (실무 개발팀)  
 **저장소:** `https://github.com/WisdomMax/chafficial`  
-**대상 브랜치:** `feat/directive-010-market-observation-stream` (PR #10 대상)  
+**PR 링크:** `https://github.com/WisdomMax/chafficial/pull/10`  
+**대상 브랜치:** `feat/directive-010-market-observation-stream` (최신 커밋: `e29aeab`)  
 **베이스 브랜치:** `feat/directive-009-price-event-tracker` (PR #9 머지 기준)  
 **기준 데이터셋:** `templates/DIRECTIVE_008_REAL_ENCAR_OBSERVATIONS_EXPANDED.csv` (SHA-256: `657e1c2efb48d5b640ca4e4fa4dd01ffbcc24873cb1709e225d850468cba14a9`)  
 **검증 일시:** 2026-10-21  
