@@ -52,15 +52,25 @@
 
 ---
 
-## 3. 회귀 테스트 및 전체 테스트 통과 증거
+## 3. DIRECTIVE 010-F 운영 안정성 회귀 테스트 및 전체 테스트 통과 증거
+
+- 010-F 신설 테스트 (4개):
+  - `test_batch_id_and_file_collision_prevention`: 동일 초 2회 연속 생성 시 서로 다른 고유 ID 및 파일 생성 검증 (PASSED).
+  - `test_sqlite_backup_api_preserves_db_consistency`: SQLite Backup API 무결성 및 백업 파일 고유성 검증 (PASSED).
+  - `test_live_collection_failure_fault_injection_protects_db`: 수집 실패 시 원본 미생성 및 운영 DB 불변 보호 검증 (PASSED).
+  - `test_operational_db_preserves_accumulated_listings_and_snapshots`: 238대 매물 및 246건 스냅샷 이력 보존 검증 (PASSED).
 
 ```
 tests/test_directive_010d_operational_db_preservation.py::test_operational_db_not_deleted_and_preserves_records PASSED
 tests/test_directive_010d_operational_db_preservation.py::test_idempotent_reexecution_preserves_exact_state PASSED
 tests/test_directive_010d_operational_db_preservation.py::test_partial_scrape_freezes_missing_counters PASSED
 tests/test_directive_010d_operational_db_preservation.py::test_source_code_has_no_db_unlink_in_operational_scripts PASSED
+tests/test_directive_010f_operational_robustness.py::test_batch_id_and_file_collision_prevention PASSED
+tests/test_directive_010f_operational_robustness.py::test_sqlite_backup_api_preserves_db_consistency PASSED
+tests/test_directive_010f_operational_robustness.py::test_live_collection_failure_fault_injection_protects_db PASSED
+tests/test_directive_010f_operational_robustness.py::test_operational_db_preserves_accumulated_listings_and_snapshots PASSED
 
-============================= 113 passed in 1.17s ==============================
+============================= 117 passed in 1.19s ==============================
 ```
 
 ---
