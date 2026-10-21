@@ -80,6 +80,7 @@ class OpportunityScoreResult:
     selection_reason: str = ""
     evaluation_notes: list[str] = field(default_factory=list)
     evaluated_at: datetime | None = None
+    vehicle_fingerprint: str | None = None  # DIRECTIVE 008-B: 실차 단위 고유 물리 지문
 
 
 class OpportunityScorer:
@@ -179,6 +180,7 @@ class OpportunityScorer:
                 price_krw=target.price_krw,
                 product_type=target.product_type,
                 data_origin=target.data_origin,
+                vehicle_fingerprint=target.vehicle_fingerprint,
                 benchmark_cohort_key=cohort_key,
                 sample_count=0,
                 benchmark_median_price_krw=None,
@@ -246,6 +248,7 @@ class OpportunityScorer:
                 price_krw=target.price_krw,
                 product_type=target.product_type,
                 data_origin=target.data_origin,
+                vehicle_fingerprint=target.vehicle_fingerprint,
                 benchmark_cohort_key=cohort_key,
                 sample_count=sample_count,
                 benchmark_median_price_krw=None,
@@ -324,6 +327,7 @@ class OpportunityScorer:
                 price_krw=target.price_krw,
                 product_type=target.product_type,
                 data_origin=target.data_origin,
+                vehicle_fingerprint=target.vehicle_fingerprint,
                 benchmark_cohort_key=cohort_key,
                 sample_count=sample_count,
                 benchmark_median_price_krw=raw_median_price,
@@ -458,6 +462,7 @@ class OpportunityScorer:
             price_krw=target.price_krw,
             product_type=target.product_type,
             data_origin=target.data_origin,
+            vehicle_fingerprint=target.vehicle_fingerprint,
             benchmark_cohort_key=cohort_key,
             sample_count=sample_count,
             benchmark_median_price_krw=raw_median_price,

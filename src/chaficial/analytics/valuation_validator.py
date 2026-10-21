@@ -24,7 +24,7 @@ class ValuationErrorSummary:
     total_evaluated_count: int
     mae_krw: float  # Mean Absolute Error (평균 절대 오차)
     mdae_krw: float  # Median Absolute Error (중앙값 절대 오차)
-    mape_pct: float  # Mean Absolute Percentage Error (평균 백분율 오차 %)
+    mape_pct: float  # Mean Absolute Percentage Error (평균 백분율 오차 % - 분모: actual_price)
     smape_pct: float  # Symmetric Mean Absolute Percentage Error (대칭 백분율 오차 %)
 
     # 분위수 (Quantiles)
@@ -36,6 +36,13 @@ class ValuationErrorSummary:
     p75_mape: float = 0.0
     p90_mape: float = 0.0
     p95_mape: float = 0.0
+
+    # DIRECTIVE 008-B: 베이스라인(단순 코호트 중앙가) 대비 상태보정 모델 성능 비교
+    baseline_mae_krw: float = 0.0
+    baseline_mdae_krw: float = 0.0
+    baseline_mape_pct: float = 0.0
+    mae_improvement_pct: float = 0.0  # MAE 오차 감소율 (%)
+    mape_improvement_pct: float = 0.0  # MAPE 오차 감소율 (%)
 
     # 연식 확정 vs 미확인 코호트 분리 통계
     confirmed_year_stats: dict[str, Any] = field(default_factory=dict)
@@ -79,6 +86,8 @@ class ValuationValidator:
         errors_abs: list[float] = []
         errors_pct: list[float] = []
         errors_smape: list[float] = []
+        baseline_errors_abs: list[float] = []
+        baseline_errors_pct: list[float] = []
         individual_records: list[dict[str, Any]] = []
         cohort_groups: dict[str, list[dict[str, Any]]] = {}
 
@@ -94,12 +103,20 @@ class ValuationValidator:
                 predicted_price = float(res.adjusted_fair_value_krw)
 
                 abs_err = abs(actual_price - predicted_price)
-                pct_err = (abs_err / predicted_price) * 100.0
+                # DIRECTIVE 008-B: 정통 MAPE 공식 적용 (분모: actual_price)
+                pct_err = (abs_err / actual_price) * 100.0
                 smape_val = (2.0 * abs_err / (actual_price + predicted_price)) * 100.0
 
                 errors_abs.append(abs_err)
                 errors_pct.append(pct_err)
                 errors_smape.append(smape_val)
+
+                # 베이스라인(단순 코호트 중앙가) 오차 계산
+                baseline_price = float(res.benchmark_median_price_krw) if res.benchmark_median_price_krw else actual_price
+                base_abs_err = abs(actual_price - baseline_price)
+                base_pct_err = (base_abs_err / actual_price) * 100.0
+                baseline_errors_abs.append(base_abs_err)
+                baseline_errors_pct.append(base_pct_err)
 
                 # 비교군에 실제로 사용된 독립 표본 ID 추출
                 independent_ids = []
@@ -117,6 +134,7 @@ class ValuationValidator:
 
                 item_info = {
                     "listing_id": rec.source_listing_id,
+                    "vehicle_fingerprint": rec.vehicle_fingerprint or "N/A",
                     "cohort_key": res.benchmark_cohort_key,
                     "model_year_category": year_cat,
                     "accident_category": accident_cat,
@@ -126,6 +144,9 @@ class ValuationValidator:
                     "abs_error_krw": int(abs_err),
                     "pct_error": round(pct_err, 2),
                     "smape_error": round(smape_val, 2),
+                    "baseline_price_krw": int(baseline_price),
+                    "baseline_abs_error_krw": int(base_abs_err),
+                    "baseline_pct_error": round(base_pct_err, 2),
                     "data_completeness": res.data_completeness_score,
                     "accident_state": rec.accident_state,
                     "independent_sample_ids": "; ".join(independent_ids),
@@ -148,6 +169,18 @@ class ValuationValidator:
 
         sorted_abs = sorted(errors_abs)
         sorted_pct = sorted(errors_pct)
+
+        mae_val = round(mean(errors_abs), 0)
+        mdae_val = round(median(errors_abs), 0)
+        mape_val = round(mean(errors_pct), 2)
+        smape_val_mean = round(mean(errors_smape), 2)
+
+        base_mae = round(mean(baseline_errors_abs), 0) if baseline_errors_abs else 0.0
+        base_mdae = round(median(baseline_errors_abs), 0) if baseline_errors_abs else 0.0
+        base_mape = round(mean(baseline_errors_pct), 2) if baseline_errors_pct else 0.0
+
+        mae_improvement = round(((base_mae - mae_val) / base_mae) * 100.0, 2) if base_mae > 0 else 0.0
+        mape_improvement = round(((base_mape - mape_val) / base_mape) * 100.0, 2) if base_mape > 0 else 0.0
 
         # 코호트별 세부 오차 집계
         cohort_stats = {}
@@ -179,10 +212,10 @@ class ValuationValidator:
 
         return ValuationErrorSummary(
             total_evaluated_count=len(errors_abs),
-            mae_krw=round(mean(errors_abs), 0),
-            mdae_krw=round(median(errors_abs), 0),
-            mape_pct=round(mean(errors_pct), 2),
-            smape_pct=round(mean(errors_smape), 2),
+            mae_krw=mae_val,
+            mdae_krw=mdae_val,
+            mape_pct=mape_val,
+            smape_pct=smape_val_mean,
             p50_krw=round(_calc_percentile(sorted_abs, 0.50), 0),
             p75_krw=round(_calc_percentile(sorted_abs, 0.75), 0),
             p90_krw=round(_calc_percentile(sorted_abs, 0.90), 0),
@@ -191,6 +224,11 @@ class ValuationValidator:
             p75_mape=round(_calc_percentile(sorted_pct, 0.75), 2),
             p90_mape=round(_calc_percentile(sorted_pct, 0.90), 2),
             p95_mape=round(_calc_percentile(sorted_pct, 0.95), 2),
+            baseline_mae_krw=base_mae,
+            baseline_mdae_krw=base_mdae,
+            baseline_mape_pct=base_mape,
+            mae_improvement_pct=mae_improvement,
+            mape_improvement_pct=mape_improvement,
             confirmed_year_stats=_sub_stats(conf_items),
             unknown_year_stats=_sub_stats(unkn_items),
             cohort_breakdown=cohort_stats,
@@ -198,17 +236,44 @@ class ValuationValidator:
         )
 
     @classmethod
+    def evaluate_unique_vehicles(
+        cls,
+        records: list[StandardListingRecord],
+        params: ScorerParameters | None = None,
+    ) -> ValuationErrorSummary:
+        """DIRECTIVE 008-B: 고유 실차(Canonical Record) 기준 시세 예측 오차 집계.
+
+        동일 물리 지문(vehicle_fingerprint)을 가진 중복 매물 중 대표 1건(Canonical Record)만 선별하여
+        독립 실차 집합 기준으로 Leave-One-Out 교차 검증을 수행합니다.
+        """
+        seen_fingerprints: set[str] = set()
+        canonical_records: list[StandardListingRecord] = []
+
+        # 대표 레코드 선별 (완전성 및 최신성 우선)
+        for rec in records:
+            fp = rec.vehicle_fingerprint
+            if not fp:
+                canonical_records.append(rec)
+                continue
+            if fp not in seen_fingerprints:
+                seen_fingerprints.add(fp)
+                canonical_records.append(rec)
+
+        return cls.evaluate_valuation_accuracy(canonical_records, params=params)
+
+    @classmethod
     def export_raw_valuation_records_csv(
         cls,
         summary: ValuationErrorSummary,
         output_path: str | Path,
     ) -> None:
-        """DIRECTIVE 008-A: 모든 평가 매물의 실제 호가, 예측가, 오차, 사용된 비교 표본 ID 목록 CSV 저장."""
+        """DIRECTIVE 008-B: 모든 평가 매물의 실제 호가, 상태보정예측가, 베이스라인예측가, 오차, 사용된 비교 표본 ID 목록 CSV 저장."""
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
 
         fieldnames = [
             "listing_id",
+            "vehicle_fingerprint",
             "cohort_key",
             "model_year_category",
             "accident_category",
@@ -218,6 +283,9 @@ class ValuationValidator:
             "abs_error_krw",
             "pct_error",
             "smape_error",
+            "baseline_price_krw",
+            "baseline_abs_error_krw",
+            "baseline_pct_error",
             "data_completeness",
             "accident_state",
             "independent_sample_ids",

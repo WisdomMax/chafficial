@@ -317,3 +317,170 @@ def test_directive_008a_duplicate_vehicle_loo_leakage_prevention():
     assert res_a.sample_count == 3  # 쌍둥이 B가 완벽히 배제되었음을 입증!
     # 중앙값은 1,650만, 1,670만, 1,690만의 중앙값인 1,670만원이어야 함 (1,400만원이 오염되지 않음!)
     assert res_a.benchmark_median_price_krw == 16700000
+
+
+def test_directive_008b_mape_denominator_is_actual_price():
+    """DIRECTIVE 008-B: MAPE 산출 공식의 분모가 예측가가 아닌 실제 등록 호가(actual_price)인지 검증."""
+    now = datetime.now(UTC)
+    cfg = ScorerParameters(min_benchmark_samples=3)
+
+    # 4대의 매물: 3대는 1,500만원, 1대는 1,000만원
+    # 1,000만원 매물의 경우 Leave-One-Out 비교군(3대)의 중앙가는 1,500만원
+    # 상태 보정 후 예측가가 1,500만원이라면:
+    # abs_error = |1000 - 1500| = 500만원
+    # 정통 MAPE (분모 actual_price = 1000만원) = 500 / 1000 * 100 = 50.0%
+    # (구 방식: 분모 predicted = 1500만원인 경우 500 / 1500 * 100 = 33.33%)
+    records = [
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="TARGET_01",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2021,
+            registration_year_month="2021-05",
+            mileage_km=50000,
+            price_krw=10000000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint="FP_TARGET",
+            observed_at=now,
+        )
+    ] + [
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id=f"COHORT_{i}",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2021,
+            registration_year_month="2021-05",
+            mileage_km=50000,
+            price_krw=15000000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint=f"FP_COHORT_{i}",
+            observed_at=now,
+        )
+        for i in range(3)
+    ]
+
+    summary = ValuationValidator.evaluate_valuation_accuracy(records, params=cfg)
+    target_rec = next(r for r in summary.individual_errors if r["listing_id"] == "TARGET_01")
+    assert target_rec["actual_price_krw"] == 10000000
+    assert target_rec["predicted_price_krw"] == 15000000
+    assert target_rec["abs_error_krw"] == 5000000
+    # 분모가 actual_price(10,000,000)이므로 pct_error는 50.0%여야 함! (33.33%가 아님)
+    assert target_rec["pct_error"] == 50.0
+
+
+def test_directive_008b_top_20_unique_vehicles_no_duplicate_fingerprint(tmp_path):
+    """DIRECTIVE 008-B: Top 기회 매물 선별 시 실차 지문 기준 디듀플리케이션으로 중복 실차 0건 검증."""
+    now = datetime.now(UTC)
+    cfg = ScorerParameters(min_benchmark_samples=3)
+
+    fp_dup = "현대_아반떼_CN7_PRE_FACELIFT_STANDARD_2022-09_2023_30000_가솔린_모던"
+
+    # 동일 실차 2건(DUP_A, DUP_B)과 다른 실차 3건(IND_1, IND_2, IND_3)
+    records = [
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="DUP_A",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            registration_year_month="2022-09",
+            mileage_km=30000,
+            price_krw=13000000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint=fp_dup,
+            observed_at=now,
+        ),
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="DUP_B",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            registration_year_month="2022-09",
+            mileage_km=30000,
+            price_krw=13200000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint=fp_dup,
+            observed_at=now,
+        ),
+    ] + [
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id=f"IND_{i}",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            registration_year_month="2022-09",
+            mileage_km=30000,
+            price_krw=16000000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint=f"FP_IND_{i}",
+            observed_at=now,
+        )
+        for i in range(3)
+    ]
+
+    all_evaluated = OpportunityPipeline.evaluate_all(records, params=cfg)
+    out_csv = tmp_path / "top_unique.csv"
+    top_candidates = OpportunityPipeline.export_top_opportunities_to_csv(
+        all_evaluated, out_csv, top_n=5, deduplicate_by_fingerprint=True
+    )
+
+    fps = [c.vehicle_fingerprint for c in top_candidates if c.vehicle_fingerprint]
+    # DUP_A와 DUP_B 중 1건만 선별되어 고유해야 함!
+    assert len(fps) == len(set(fps))
+    assert sum(1 for fp in fps if fp == fp_dup) == 1
+
+
+def test_directive_008b_fingerprint_excludes_price_invariant_to_price_change():
+    """DIRECTIVE 008-B: 차량 지문이 가격을 제외한 물리 불변 제원으로 구성되어 가격 인하 시에도 동일 지문 유지 검증."""
+    now_iso = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    card_before = {
+        "carid": "5001",
+        "raw_text": "현대 아반떼 CN7 1.6 모던 21/09식(22년형) 38,000km 1,550만원",
+    }
+    card_after = {
+        "carid": "5001",
+        "raw_text": "현대 아반떼 CN7 1.6 모던 21/09식(22년형) 38,000km 1,450만원",  # 100만원 인하
+    }
+
+    p_before = EncarCardParser.parse_card(card_before, now_iso)
+    p_after = EncarCardParser.parse_card(card_after, now_iso)
+
+    # 가격이 1,550만원에서 1,450만원으로 변했더라도 물리 지문은 100% 동일해야 함!
+    assert p_before["vehicle_fingerprint"] == p_after["vehicle_fingerprint"]
+    assert "15500000" not in p_before["vehicle_fingerprint"]
+    assert "14500000" not in p_after["vehicle_fingerprint"]

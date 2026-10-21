@@ -141,8 +141,9 @@ class EncarCardParser:
 
         url = f"https://car.encar.com/detail?carid={carid}"
 
-        # 실차 고유 지문 생성 (동일 차량 중복 등록 및 Leave-One-Out 데이터 누출 차단용)
-        fp = f"현대_아반떼_CN7_{sub_model}_{powertrain_line}_{reg_ym}_{model_year_str or 'NOYEAR'}_{mileage_km}_{price_krw or 'NOPRICE'}_{trim_name or 'NOTRIM'}"
+        # 실차 고유 지문 생성 (가격 변경 시에도 동일 실차로 추적할 수 있도록 가격을 지문에서 제외)
+        # 물리적 불변 제원: 제조사_모델_세대_서브모델_라인_등록연월_연식_주행거리_연료_트림
+        fp = f"현대_아반떼_CN7_{sub_model}_{powertrain_line}_{reg_ym}_{model_year_str or 'NOYEAR'}_{mileage_km}_{fuel_type}_{trim_name or 'NOTRIM'}"
 
         price_status = "VERIFIED"
         if product_type == "CASH_OR_INSTALLMENT":

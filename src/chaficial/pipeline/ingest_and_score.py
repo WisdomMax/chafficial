@@ -19,7 +19,11 @@ from chaficial.models.listing import Listing
 from chaficial.models.snapshot import ListingSnapshot
 from chaficial.platforms.base import PlatformUrlParser, StandardListingRecord
 from chaficial.regions.manager import RegionManager
-from chaficial.scorer.opportunity import OpportunityScoreResult, OpportunityScorer
+from chaficial.scorer.opportunity import (
+    OpportunityScoreResult,
+    OpportunityScorer,
+    ScorerParameters,
+)
 
 
 def _to_utc(dt: datetime) -> datetime:
@@ -104,9 +108,11 @@ class OpportunityPipeline:
                 data_origin = row.get("data_origin", "MANUALLY_OBSERVED").strip() or "MANUALLY_OBSERVED"
                 raw_text = row.get("raw_card_text", "").strip() or None
                 trim = row.get("trim_name", "").strip() or None
+                gen = row.get("model_generation", "CN7").strip() or "CN7"
                 fp = row.get("vehicle_fingerprint", "").strip()
                 if not fp:
-                    fp = f"{mfg}_{model}_{sub_model}_{powertrain_line}_{reg_ym}_{model_year}_{mileage_km}_{price_krw}_{trim}"
+                    # DIRECTIVE 008-B: 가격을 지문에서 제외한 순수 물리 제원 실차 지문
+                    fp = f"{mfg}_{model}_{gen}_{sub_model}_{powertrain_line}_{reg_ym}_{model_year or 'NOYEAR'}_{mileage_km}_{fuel_type}_{trim or 'NOTRIM'}"
 
                 record = StandardListingRecord(
                     source_platform=platform,
@@ -254,6 +260,7 @@ class OpportunityPipeline:
     def evaluate_all(
         records: list[StandardListingRecord],
         price_drop_flags: dict[str, bool] | None = None,
+        params: ScorerParameters | None = None,
     ) -> list[OpportunityScoreResult]:
         """전체 매물 레코드에 대해 Leave-One-Out 독립 코호트 기회 평가 수행."""
         drop_flags = price_drop_flags or {}
@@ -270,7 +277,7 @@ class OpportunityPipeline:
             has_drop = drop_flags.get(rec_key, False)
 
             res = OpportunityScorer.evaluate_listing(
-                target=rec, cohort_records=cohort, recent_price_drop=has_drop
+                target=rec, cohort_records=cohort, params=params, recent_price_drop=has_drop
             )
             results.append(res)
 
@@ -290,12 +297,31 @@ class OpportunityPipeline:
         results: list[OpportunityScoreResult],
         output_path: str | Path,
         top_n: int = 10,
+        deduplicate_by_fingerprint: bool = True,
     ) -> list[OpportunityScoreResult]:
-        """유효하게 평가된 상위 N개 기회 매물만 선별하여 CSV 파일로 저장."""
+        """유효하게 평가된 상위 N개 기회 매물만 선별하여 CSV 파일로 저장.
+
+        DIRECTIVE 008-B:
+        deduplicate_by_fingerprint=True 시 동일 실차(vehicle_fingerprint) 중복 매물은
+        점수 순으로 1건(Canonical Record)만 선별하여 Top N 목록에 쌍둥이 매물 중복 노출을 원천 차단.
+        """
         evaluated_candidates = [
             r for r in results if r.evaluation_status == "EVALUATED"
         ]
-        top_candidates = evaluated_candidates[:top_n]
+
+        if deduplicate_by_fingerprint:
+            seen_fingerprints: set[str] = set()
+            unique_candidates: list[OpportunityScoreResult] = []
+            for item in evaluated_candidates:
+                fp = item.vehicle_fingerprint
+                if fp:
+                    if fp in seen_fingerprints:
+                        continue
+                    seen_fingerprints.add(fp)
+                unique_candidates.append(item)
+            top_candidates = unique_candidates[:top_n]
+        else:
+            top_candidates = evaluated_candidates[:top_n]
 
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -311,6 +337,7 @@ class OpportunityPipeline:
             "data_confidence",
             "data_origin",
             "vehicle_summary",
+            "vehicle_fingerprint",
             "price_krw",
             "adjusted_fair_value_krw",
             "adjusted_advantage_pct",
@@ -344,6 +371,7 @@ class OpportunityPipeline:
                         "data_confidence": item.data_confidence,
                         "data_origin": item.data_origin,
                         "vehicle_summary": item.vehicle_summary,
+                        "vehicle_fingerprint": item.vehicle_fingerprint or "N/A",
                         "price_krw": f"{item.price_krw:,}원" if item.price_krw else "N/A",
                         "adjusted_fair_value_krw": f"{item.adjusted_fair_value_krw:,}원"
                         if item.adjusted_fair_value_krw
