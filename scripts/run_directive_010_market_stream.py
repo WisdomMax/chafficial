@@ -103,7 +103,7 @@ def generate_collision_safe_batch_id(prefix: str = "ENCAR_CN7_LIVE") -> tuple[st
 
 
 def backup_operational_db_safe(db_path: Path) -> Path | None:
-    """SQLite Backup API를 사용하여 실행 중 일관성을 보장하며 충돌 없이 고유 백업 생성 후 PRAGMA integrity_check 무결성 검증."""
+    """SQLite Backup API를 사용하여 실행 중 일관성을 보장하며 배타적 파일 예약 및 PRAGMA integrity_check 무결성 검증."""
     if not db_path.exists():
         return None
     backup_dir = Path("data/backups")
@@ -112,22 +112,27 @@ def backup_operational_db_safe(db_path: Path) -> Path | None:
     _, ts_str = generate_collision_safe_batch_id()
     backup_file = backup_dir / f"market_timeseries_backup_{ts_str}.db"
 
-    if backup_file.exists():
-        raise FileExistsError(f"백업 파일이 이미 존재합니다: {backup_file}")
+    # DIRECTIVE 010-I: OS 수준의 배타적 파일 생성(O_CREAT | O_EXCL)으로 경쟁 조건 차단
+    import os
+    try:
+        fd = os.open(backup_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+        os.close(fd)
+    except FileExistsError:
+        raise FileExistsError(f"백업 파일이 이미 존재하거나 예약 충돌이 발생했습니다: {backup_file}")
 
     # SQLite Backup API 사용: 일관된 스냅샷 덤프 보장
     with sqlite3.connect(db_path) as src_conn:
         with sqlite3.connect(backup_file) as dst_conn:
             src_conn.backup(dst_conn)
 
-    # DIRECTIVE 010-G: 백업 대상 DB 무결성 PRAGMA integrity_check 검증
+    # 백업 대상 DB 무결성 PRAGMA integrity_check 검증
     with sqlite3.connect(backup_file) as check_conn:
         cursor = check_conn.cursor()
         res = cursor.execute("PRAGMA integrity_check;").fetchall()
         if not res or res[0][0] != "ok":
             raise RuntimeError(f"백업 파일 SQLite 무결성 검사 실패: {res}")
 
-    print(f"[+] [DIRECTIVE 010-G] SQLite Backup API 및 PRAGMA integrity_check 완료: {backup_file}")
+    print(f"[+] [DIRECTIVE 010-I] SQLite Backup API 및 PRAGMA integrity_check 완료: {backup_file}")
     return backup_file
 
 
@@ -240,10 +245,16 @@ await run();
     return raw_cards, raw_file, raw_sha, batch_id, start_utc, end_utc
 
 
-def run_pipeline(mode: str = "live", input_file: str | None = None, db_path_override: Path | None = None, lock_file_path: Path | None = None):
-    """DIRECTIVE 010-H 실행 메인 파이프라인 (REPLAY/LIVE 완전 격리 및 실행 잠금)."""
+def run_pipeline(
+    mode: str = "live",
+    input_file: str | None = None,
+    db_path_override: Path | None = None,
+    lock_file_path: Path | None = None,
+    test_hook_fail_after_records: int | None = None,
+):
+    """DIRECTIVE 010-I 실행 메인 파이프라인 (REPLAY/LIVE 완전 격리, 실행 잠금, 부분 쓰기 롤백 보장)."""
     print("=" * 80)
-    print(f"CHA-FICIAL AI PROJECT - DIRECTIVE 010-H 실행 (모드: {mode.upper()})")
+    print(f"CHA-FICIAL AI PROJECT - DIRECTIVE 010-I 실행 (모드: {mode.upper()})")
     print("=" * 80)
 
     # DIRECTIVE 010-H: 모드별 대상 DB 및 data_origin 엄격 분리
@@ -361,20 +372,32 @@ def run_pipeline(mode: str = "live", input_file: str | None = None, db_path_over
 
         print(f"[*] 적재 전 DB({target_db_path.name}) 상태: 매물 {pre_listings}대, 스냅샷 {pre_snapshots}건, 이벤트 {pre_events}건, 배치 {pre_batches}건.")
 
-        # 4. 배치 실행 (부분 수집 보호 및 3대 시각 기록, data_origin 엄격 전달)
-        res = pipeline.execute_batch(
-            records=live_records,
-            session=session,
-            batch_id=batch_id,
-            scope=scope_cn7,
-            observation_time=web_start_utc,
-            is_partial_scrape=True,
-            data_origin=data_origin,
-            web_fetch_started_at=web_start_utc,
-            web_fetch_completed_at=web_end_utc,
-            notes=f"엔카 아반떼 CN7 관측 ({mode.upper()} 모드, 카드 {len(raw_cards)}개 중 {len(live_records)}대 적재, 부분수집 보호)",
-        )
-        session.commit()
+        # 4. 배치 실행 (부분 쓰기 보호, 롤백 보장 및 3대 시각 기록)
+        try:
+            if test_hook_fail_after_records is not None and test_hook_fail_after_records > 0:
+                # DIRECTIVE 010-I: 실제 부분 쓰기(flush) 후 런타임 예외 발생 시뮬레이션
+                for r in live_records[:test_hook_fail_after_records]:
+                    tracker.process_observation(r, session, data_origin=data_origin)
+                session.flush()
+                raise RuntimeError(f"Simulated DB Ingest Failure After {test_hook_fail_after_records} Records Written")
+
+            res = pipeline.execute_batch(
+                records=live_records,
+                session=session,
+                batch_id=batch_id,
+                scope=scope_cn7,
+                observation_time=web_start_utc,
+                is_partial_scrape=True,
+                data_origin=data_origin,
+                web_fetch_started_at=web_start_utc,
+                web_fetch_completed_at=web_end_utc,
+                notes=f"엔카 아반떼 CN7 관측 ({mode.upper()} 모드, 카드 {len(raw_cards)}개 중 {len(live_records)}대 적재, 부분수집 보호)",
+            )
+            session.commit()
+        except Exception:
+            session.rollback()
+            session.close()
+            raise
 
         # 실행 후 DB 통계
         post_listings = session.execute(select(func.count(Listing.listing_id))).scalar()
