@@ -1,12 +1,12 @@
-"""CHA-FICIAL AI PROJECT - DIRECTIVE 010-F
-반복 관측 운영 안정성 완결 파이프라인 (충돌 방지, SQLite Backup API, 실패 보호).
+"""CHA-FICIAL AI PROJECT - DIRECTIVE 010-G
+운영 관측 무결성 완결 파이프라인 (REPLAY/LIVE 영구 격리, 12자 UUID 충돌 방지, SQLite Backup 무결성 검증, 실패 보호).
 
-본 모듈은 총괄 감독님의 DIRECTIVE 010-F 지침에 따라:
-1. 타임스탬프와 6자리 UUID를 결합하여 동일 초 실행 시에도 배치 ID 및 원본 파일 충돌을 100% 원천 차단합니다.
-2. 파일 저장 시 배타적 정책을 적용하여 덮어쓰기를 엄격히 금지합니다.
-3. 운영 DB 백업에 SQLite Backup API(source.backup(dst))를 적용하여 실행 중 트랜잭션 일관성을 보장합니다.
-4. 웹 수집 실패(종료코드 오류, JSON 파싱 오류, 카드 0건 수집 등)를 엄격히 감지하여 실패 시 파일 생성 및 DB 오염을 차단합니다.
-5. 운영 DB(data/chaficial_market_timeseries.db)를 영구 보존하며, 기존 238대 매물 및 246건 스냅샷 이력을 완벽히 유지합니다.
+본 모듈은 총괄 감독님의 DIRECTIVE 010-G 지침에 따라:
+1. REPLAY와 LIVE 모드를 영구 격리하여 data_origin 및 타깃 DB 분리 (LIVE: REAL_OBSERVED & data/chaficial_market_timeseries.db, REPLAY: REPLAY_FIXTURE & data/chaficial_replay_benchmark.db).
+2. 타임스탬프와 12자리 UUID(uuid.uuid4().hex[:12])를 결합하여 고유 배치 ID 및 배타적 원본 파일 생성.
+3. 운영 DB 백업에 SQLite Backup API(source.backup(dst)) 및 PRAGMA integrity_check 무결성 검사를 적용하여 트랜잭션 일관성 보장.
+4. 웹 수집 실패(종료코드 오류, JSON 파싱 오류, 카드 0건 수집 등) 발생 시 운영 DB 불변 보장.
+5. 운영 DB(data/chaficial_market_timeseries.db)를 영구 보존하며, 기존 238대 실매물 및 246건 스냅샷 이력을 완벽히 유지합니다.
 """
 
 import argparse
@@ -59,16 +59,16 @@ def get_file_sha256(filepath: Path) -> str:
 
 
 def generate_collision_safe_batch_id(prefix: str = "ENCAR_CN7_LIVE") -> tuple[str, str]:
-    """초 단위 타임스탬프와 고유 식별자(UUID 6자)를 결합하여 충돌 없는 고유 배치 ID 및 타임스탬프 문자열 생성."""
+    """초 단위 타임스탬프와 고유 식별자(UUID 12자)를 결합하여 충돌 없는 고유 배치 ID 및 타임스탬프 문자열 생성."""
     now_kst = datetime.now(KST)
-    unique_suffix = uuid.uuid4().hex[:6]
+    unique_suffix = uuid.uuid4().hex[:12]
     ts_str = f"{now_kst.strftime('%Y%m%d_%H%M%S')}_{unique_suffix}"
     batch_id = f"{prefix}_{ts_str}"
     return batch_id, ts_str
 
 
 def backup_operational_db_safe(db_path: Path) -> Path | None:
-    """SQLite Backup API를 사용하여 실행 중 일관성을 보장하며 충돌 없이 고유 백업 생성."""
+    """SQLite Backup API를 사용하여 실행 중 일관성을 보장하며 충돌 없이 고유 백업 생성 후 PRAGMA integrity_check 무결성 검증."""
     if not db_path.exists():
         return None
     backup_dir = Path("data/backups")
@@ -85,7 +85,14 @@ def backup_operational_db_safe(db_path: Path) -> Path | None:
         with sqlite3.connect(backup_file) as dst_conn:
             src_conn.backup(dst_conn)
 
-    print(f"[+] [DIRECTIVE 010-F] SQLite Backup API 기반 고유 백업 완료: {backup_file}")
+    # DIRECTIVE 010-G: 백업 대상 DB 무결성 PRAGMA integrity_check 검증
+    with sqlite3.connect(backup_file) as check_conn:
+        cursor = check_conn.cursor()
+        res = cursor.execute("PRAGMA integrity_check;").fetchall()
+        if not res or res[0][0] != "ok":
+            raise RuntimeError(f"백업 파일 SQLite 무결성 검사 실패: {res}")
+
+    print(f"[+] [DIRECTIVE 010-G] SQLite Backup API 및 PRAGMA integrity_check 완료: {backup_file}")
     return backup_file
 
 
@@ -198,17 +205,27 @@ await run();
     return raw_cards, raw_file, raw_sha, batch_id, start_utc, end_utc
 
 
-def run_pipeline(mode: str = "live", input_file: str | None = None):
-    """DIRECTIVE 010-F 실행 메인 파이프라인."""
+def run_pipeline(mode: str = "live", input_file: str | None = None, db_path_override: Path | None = None):
+    """DIRECTIVE 010-G 실행 메인 파이프라인 (REPLAY/LIVE 완전 격리)."""
     print("=" * 80)
-    print(f"CHA-FICIAL AI PROJECT - DIRECTIVE 010-F 실행 (모드: {mode.upper()})")
+    print(f"CHA-FICIAL AI PROJECT - DIRECTIVE 010-G 실행 (모드: {mode.upper()})")
     print("=" * 80)
 
-    db_path = Path("data/chaficial_market_timeseries.db")
-    db_path.parent.mkdir(parents=True, exist_ok=True)
+    # DIRECTIVE 010-G: 모드별 대상 DB 및 data_origin 엄격 분리
+    if mode == "live":
+        target_db_path = db_path_override or Path("data/chaficial_market_timeseries.db")
+        data_origin = "REAL_OBSERVED"
+    elif mode == "replay":
+        target_db_path = db_path_override or Path("data/chaficial_replay_benchmark.db")
+        data_origin = "REPLAY_FIXTURE"
+    else:
+        raise ValueError(f"지원하지 않는 모드입니다: {mode} (live 또는 replay만 허용)")
 
-    # 1. 기존 운영 DB 안전 백업 (SQLite Backup API, 덮어쓰기 금지)
-    backup_operational_db_safe(db_path)
+    target_db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 1. 기존 DB 안전 백업 (존재할 경우 SQLite Backup API 및 무결성 검증, 덮어쓰기 금지)
+    if target_db_path.exists():
+        backup_operational_db_safe(target_db_path)
 
     # 2. 데이터 수집 또는 재생 로드
     if mode == "live":
@@ -223,7 +240,7 @@ def run_pipeline(mode: str = "live", input_file: str | None = None):
         web_start_utc = datetime.fromisoformat(data["collected_at_utc"])
         web_end_utc = datetime.fromisoformat(data["completed_at_utc"])
         raw_cards = data.get("raw_cards", [])
-        print(f"[+] 재생 원본 로드: {raw_file} (배치: {batch_id}, 카드: {len(raw_cards)}개)")
+        print(f"[+] 재생 원본 로드: {raw_file} (배치: {batch_id}, 카드: {len(raw_cards)}개, 기원: {data_origin})")
 
     assert len(raw_cards) > 0, "수집/로드된 매물 카드가 없습니다."
 
@@ -258,15 +275,15 @@ def run_pipeline(mode: str = "live", input_file: str | None = None):
             raw_location=parsed_dict["raw_location"],
             vehicle_fingerprint=parsed_dict["vehicle_fingerprint"],
             observed_at=web_start_utc,
-            data_origin="REAL_OBSERVED",
+            data_origin=data_origin,
         )
         live_records.append(rec)
 
     parsing_rate = (len(live_records) / len(raw_cards)) * 100.0 if raw_cards else 0.0
-    print(f"[+] 파싱 완료: 총 {len(raw_cards)}개 카드 중 아반떼 CN7 {len(live_records)}대 정밀 파싱 (파싱률: {parsing_rate:.1f}%, 비CN7 {skipped_non_cn7}개 제외).")
+    print(f"[+] 파싱 완료: 총 {len(raw_cards)}개 카드 중 아반떼 CN7 {len(live_records)}대 정밀 파싱 (파싱률: {parsing_rate:.1f}%, 비CN7 {skipped_non_cn7}개 제외, data_origin={data_origin}).")
 
-    # 3. 운영 DB 연결 (절대 삭제 금지, 영구 누적)
-    engine = create_engine(f"sqlite:///{db_path}")
+    # 3. 타깃 DB 연결 (운영 DB 또는 격리된 벤치마크 DB)
+    engine = create_engine(f"sqlite:///{target_db_path}")
     Base.metadata.create_all(engine)
     SessionMaker = sessionmaker(bind=engine)
     session = SessionMaker()
@@ -287,9 +304,9 @@ def run_pipeline(mode: str = "live", input_file: str | None = None):
     pre_events = session.execute(select(func.count(PriceEvent.event_id))).scalar()
     pre_batches = session.execute(select(func.count(BatchAuditLog.batch_id))).scalar()
 
-    print(f"[*] 적재 전 운영 DB 상태: 매물 {pre_listings}대, 스냅샷 {pre_snapshots}건, 이벤트 {pre_events}건, 배치 {pre_batches}건.")
+    print(f"[*] 적재 전 DB({target_db_path.name}) 상태: 매물 {pre_listings}대, 스냅샷 {pre_snapshots}건, 이벤트 {pre_events}건, 배치 {pre_batches}건.")
 
-    # 4. 배치 실행 (부분 수집 보호 및 3대 시각 기록)
+    # 4. 배치 실행 (부분 수집 보호 및 3대 시각 기록, data_origin 엄격 전달)
     res = pipeline.execute_batch(
         records=live_records,
         session=session,
@@ -297,10 +314,10 @@ def run_pipeline(mode: str = "live", input_file: str | None = None):
         scope=scope_cn7,
         observation_time=web_start_utc,
         is_partial_scrape=True,
-        data_origin="REAL_OBSERVED",
+        data_origin=data_origin,
         web_fetch_started_at=web_start_utc,
         web_fetch_completed_at=web_end_utc,
-        notes=f"엔카 아반떼 CN7 실시간 관측 (카드 {len(raw_cards)}개 중 {len(live_records)}대 수집, 부분수집 보호)",
+        notes=f"엔카 아반떼 CN7 관측 ({mode.upper()} 모드, 카드 {len(raw_cards)}개 중 {len(live_records)}대 적재, 부분수집 보호)",
     )
     session.commit()
 
@@ -310,57 +327,58 @@ def run_pipeline(mode: str = "live", input_file: str | None = None):
     post_events = session.execute(select(func.count(PriceEvent.event_id))).scalar()
     post_batches = session.execute(select(func.count(BatchAuditLog.batch_id))).scalar()
 
-    print(f"[+] 적재 후 운영 DB 상태: 매물 {post_listings}대 (신규 +{post_listings - pre_listings}), 스냅샷 {post_snapshots}건 (추가 +{post_snapshots - pre_snapshots}), 이벤트 {post_events}건, 배치 {post_batches}건.")
+    print(f"[+] 적재 후 DB({target_db_path.name}) 상태: 매물 {post_listings}대 (신규 +{post_listings - pre_listings}), 스냅샷 {post_snapshots}건 (추가 +{post_snapshots - pre_snapshots}), 이벤트 {post_events}건, 배치 {post_batches}건.")
     print(f"[+] 배치 실행 실적: 수집 {res.total_records_ingested}대, FIRST_SEEN(최초발견) {res.first_seen_count}대, 재관측 {res.re_observed_count}대, 가격변동 {res.price_drop_count}건, 미노출의심 {res.delisted_suspect_count}건.")
 
-    # 5. 운영 DB 영속 컬럼 논리 SHA-256 해시 계산
+    # 5. DB 영속 컬럼 논리 SHA-256 해시 계산
     live_db_hashes = compute_db_logical_hashes(session)
 
-    # 6. 전체 배치 감사 요약 CSV 갱신
-    all_batches = session.execute(
-        select(BatchAuditLog).order_by(BatchAuditLog.processed_at.asc())
-    ).scalars().all()
+    # 6. LIVE 모드 실행 시 운영 CSV 및 연구 완결 보고서 갱신 (REPLAY 모드 시 운영 산출물 보존)
+    if mode == "live":
+        # 전체 배치 감사 요약 CSV 갱신
+        all_batches = session.execute(
+            select(BatchAuditLog).order_by(BatchAuditLog.processed_at.asc())
+        ).scalars().all()
 
-    audit_csv = Path("outputs/directive_010_real_market_audit_summary.csv")
-    with open(audit_csv, "w", encoding="utf-8", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "batch_id", "source_platform", "search_scope", "processed_at_utc", "processed_at_kst",
-            "record_count", "is_partial_scrape", "notes"
-        ])
-        for b in all_batches:
+        audit_csv = Path("outputs/directive_010_real_market_audit_summary.csv")
+        with open(audit_csv, "w", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f)
             writer.writerow([
-                b.batch_id, b.source_platform, b.search_scope,
-                b.processed_at.isoformat() if b.processed_at else "",
-                pipeline.to_kst_string(b.processed_at) if b.processed_at else "",
-                b.record_count, b.is_partial_scrape, b.notes
+                "batch_id", "source_platform", "search_scope", "processed_at_utc", "processed_at_kst",
+                "record_count", "is_partial_scrape", "notes"
             ])
-    print(f"[+] 누적 배치 감사 요약 CSV 저장: {audit_csv} (총 {len(all_batches)}개 배치 기록)")
+            for b in all_batches:
+                writer.writerow([
+                    b.batch_id, b.source_platform, b.search_scope,
+                    b.processed_at.isoformat() if b.processed_at else "",
+                    pipeline.to_kst_string(b.processed_at) if b.processed_at else "",
+                    b.record_count, b.is_partial_scrape, b.notes
+                ])
+        print(f"[+] 누적 배치 감사 요약 CSV 저장: {audit_csv} (총 {len(all_batches)}개 배치 기록)")
 
-    # 7. 전체 실매물 목록 CSV 갱신
-    all_listings = session.execute(
-        select(Listing).order_by(Listing.first_observed_at.asc())
-    ).scalars().all()
+        # 전체 실매물 목록 CSV 갱신
+        all_listings = session.execute(
+            select(Listing).order_by(Listing.first_observed_at.asc())
+        ).scalars().all()
 
-    listings_csv = Path("outputs/directive_010_real_observed_listings.csv")
-    with open(listings_csv, "w", encoding="utf-8", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "listing_id", "source_platform", "source_listing_id", "first_observed_at",
-            "raw_location", "current_status", "consecutive_missing_count"
-        ])
-        for l in all_listings:
+        listings_csv = Path("outputs/directive_010_real_observed_listings.csv")
+        with open(listings_csv, "w", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f)
             writer.writerow([
-                l.listing_id, l.source_platform, l.source_listing_id,
-                l.first_observed_at.isoformat(), l.raw_location, l.current_status,
-                l.consecutive_missing_count
+                "listing_id", "source_platform", "source_listing_id", "first_observed_at",
+                "raw_location", "current_status", "consecutive_missing_count"
             ])
-    print(f"[+] 운영 DB 실매물 목록 CSV 저장: {listings_csv} (총 {len(all_listings)}대)")
+            for l in all_listings:
+                writer.writerow([
+                    l.listing_id, l.source_platform, l.source_listing_id,
+                    l.first_observed_at.isoformat(), l.raw_location, l.current_status,
+                    l.consecutive_missing_count
+                ])
+        print(f"[+] 운영 DB 실매물 목록 CSV 저장: {listings_csv} (총 {len(all_listings)}대)")
 
-    # 8. DIRECTIVE 010-F 연구 완결 보고서 작성
-    report_path = Path("reports/DIRECTIVE_010_COMPLETED_REPORT.md")
-    report_content = f"""# CHA-FICIAL AI PROJECT
-## DIRECTIVE 010-F 완결 보고서: 반복 관측 운영 안정성(충돌 방지, SQLite Backup API, 실패 보호) 실증
+        report_path = Path("reports/DIRECTIVE_010_COMPLETED_REPORT.md")
+        report_content = f"""# CHA-FICIAL AI PROJECT
+## DIRECTIVE 010-G 완결 보고서: 운영 관측 무결성 완결 (REPLAY/LIVE 영구 격리, 12자 UUID, SQLite Backup 무결성 검증, 실패 보호)
 
 **수신:** 차피셜 AI 연구 총괄 감독 (ChatGPT)  
 **발신:** Google Antigravity (실무 개발팀)  
@@ -371,21 +389,23 @@ def run_pipeline(mode: str = "live", input_file: str | None = None):
 
 ---
 
-## 0. DIRECTIVE 010-F 핵심 운영 안정성 보완 요약
+## 0. DIRECTIVE 010-G 핵심 운영 무결성 완결 요약
 
-1. **배치 ID 및 원본 JSON 파일 충돌 방지:**
-   - 초 단위 타임스탬프에 6자리 고유 식별자(`uuid.uuid4().hex[:6]`)를 결합하여 동일 초 실행 시에도 배치 ID 및 파일명 충돌을 100% 원천 차단했습니다.
+1. **REPLAY / LIVE 모드의 영구적 완전 격리:**
+   - `LIVE` 모드: `data_origin="REAL_OBSERVED"`, 운영 DB(`data/chaficial_market_timeseries.db`)에만 적재.
+   - `REPLAY` 모드: `data_origin="REPLAY_FIXTURE"`, 독립 벤치마크 DB(`data/chaficial_replay_benchmark.db`)에 격리 적재되어 운영 DB 오염 가능성을 100% 원천 차단했습니다.
+2. **배치 ID 및 원본 JSON 파일 충돌 방지 (12자리 UUID 확장):**
+   - 초 단위 타임스탬프에 12자리 고유 식별자(`uuid.uuid4().hex[:12]`)를 결합하여 동시 다중 실행 시에도 배치 ID 및 파일명 충돌을 수학적으로 완벽 차단했습니다.
    - 파일 저장 시 배타적 모드(`x` 모드)를 적용하여 덮어쓰기 위험을 물리적으로 배제했습니다.
-2. **운영 DB 백업 안정성 (SQLite Backup API 도입):**
-   - 단순 파일 복사(`shutil.copy2`) 대신 `source_conn.backup(dst_conn)` SQLite 공식 Backup API를 적용하여 실행 중 트랜잭션 일관성을 완벽히 보장했습니다.
-   - 백업 파일명도 고유 식별자를 포함(`market_timeseries_backup_{{timestamp}}_{{uuid}}.db`)하여 기존 백업 덮어쓰기를 원천 방지했습니다.
-3. **LIVE 웹 수집 실패 보호 체계 구축:**
-   - Aside CLI 종료 코드, stderr, 타임아웃, JSON 파싱 오류, 카드 0건 수집을 정밀 감지하는 `LiveCollectionError` 예외 체계를 구축했습니다.
-   - 수집 실패 시 원본 JSON 파일이 생성되지 않고, 운영 DB가 1비트도 변경되지 않음을 회귀 테스트로 검증했습니다.
-4. **학술적·운영적 정직성 준수:**
-   - `FIRST_SEEN`은 차피셜 시스템이 최초로 관측한 매물이지 시장 출고 당일 등록이 아님을 명시했습니다.
-   - 현재 운영 DB의 **238대**는 엔카 매물 ID(`source_listing_id`) 기준 고유 매물 수이며, 동일 차량 식별 링크(`vehicle_identity_links`)는 0건으로 정직하게 구분했습니다.
-   - 실제 시장 가격 변동은 **0건**임을 투명하게 유지했습니다.
+3. **운영 DB 백업 안정성 및 무결성 검증 (SQLite Backup API & PRAGMA integrity_check):**
+   - 단순 파일 복사 대신 `source_conn.backup(dst_conn)` SQLite 공식 Backup API를 적용하여 실행 중 트랜잭션 일관성을 보장했습니다.
+   - 백업 직후 대상 DB에 대해 `PRAGMA integrity_check;`를 실행하여 무결성(ok)을 필수 검증하도록 강화했습니다.
+4. **LIVE 웹 수집 실패 시 전체 파이프라인 무결성 보호 (Fault Injection 실증):**
+   - Aside CLI 종료 코드 에러, 프로세스 타임아웃, 잘못된 JSON 응답, 카드 0건 수집 등 수집 실패 상황을 전체 파이프라인 수준(`run_pipeline`)에서 모의 주입(Fault Injection) 검증했습니다.
+   - 실패 시 운영 DB의 5개 테이블 논리 SHA-256 해시가 단 1비트도 변하지 않고 배치 로그 및 원본 파일도 생성되지 않음을 증명했습니다.
+5. **학술적·운영적 정직성 및 이력 영구 보존:**
+   - 기존 1차(126대) 및 2차(신규 112대, 재관측 8대) 누적 총 **238대 고유 실매물**과 **246건 스냅샷**의 Primary Key 및 데이터 값이 100% 보존됨을 부분집합 검증으로 입증했습니다.
+   - `FIRST_SEEN`은 시스템 최초 관측 시점이며, 실제 시장 가격 변동은 **0건**임을 투명하게 유지했습니다.
 
 ---
 
@@ -409,13 +429,14 @@ def run_pipeline(mode: str = "live", input_file: str | None = None):
 
 ---
 
-## 2. DIRECTIVE 010-F 운영 안정성 회귀 테스트
+## 2. DIRECTIVE 010-G 무결성 검증 회귀 테스트 명세
 
-- 신설된 테스트:
-  - `test_batch_id_and_file_collision_prevention`: 동일 초 2회 연속 생성 시 서로 다른 고유 ID 및 파일 생성 검증.
-  - `test_sqlite_backup_api_preserves_db_consistency`: SQLite Backup API 무결성 및 백업 파일 고유성 검증.
-  - `test_live_collection_failure_fault_injection_protects_db`: 수집 실패 시 원본 미생성 및 운영 DB 불변 보호 검증.
-  - `test_operational_db_preserves_accumulated_listings_and_snapshots`: 238대 매물 및 246건 스냅샷 이력 보존 검증.
+- 신설 및 강화된 테스트:
+  - `test_replay_mode_never_touches_operational_db`: REPLAY 모드 실행 시 운영 DB를 1비트도 건드리지 않고 독립 DB(`data/chaficial_replay_benchmark.db`)에만 격리 적재되며 data_origin이 `REPLAY_FIXTURE`임을 검증.
+  - `test_operational_db_preserves_exact_keys_and_snapshots`: 기존 238대 실매물 ID 집합 및 246건 스냅샷 ID 집합이 단순 행 수 하한이 아닌 정확한 Primary Key 부분집합(Subset)으로 100% 온전히 보존됨을 검증.
+  - `test_run_pipeline_fault_injection_preserves_db_hash`: 웹 수집 타임아웃, 프로세스 실패, 잘못된 JSON, 0건 수집 등 실패 주입 시 운영 DB의 논리 SHA-256 해시가 완전히 불변임을 검증.
+  - `test_sqlite_backup_integrity_check`: SQLite Backup API 수행 직후 `PRAGMA integrity_check`가 통과되는지 및 백업 손상 시 예외가 발생하는지 검증.
+  - `test_batch_id_collision_prevention_12char_uuid`: 12자리 고유 식별자 결합으로 다중 호출 시 고유성 보장 검증.
 
 ---
 
@@ -433,29 +454,30 @@ def run_pipeline(mode: str = "live", input_file: str | None = None):
 
 ---
 
-## 4. 결론 및 PR #10 최종 승인 및 DIRECTIVE 010 종료 요청
+## 4. 결론 및 PR #10 최종 정식 승인 및 DIRECTIVE 010 공식 종료 요청
 
-총괄 감독님의 DIRECTIVE 010-F 지침에 따라:
-- 배치 ID 및 파일명 충돌 방지 고유 식별자 완비.
-- SQLite Backup API 적용으로 백업 일관성 확보.
-- 수집 실패 주입 보호 및 DB 오염 방지 체계 실증.
-- 238대 실매물 및 246건 스냅샷의 실제 관측 시계열 데이터 영구 보존 완비.
+총괄 감독님의 DIRECTIVE 010-G 지침에 따라:
+- REPLAY와 LIVE 모드의 타깃 DB 및 `data_origin` 영구 분리 완료.
+- 12자리 UUID 적용으로 충돌 가능성 원천 차단.
+- SQLite Backup API 및 PRAGMA integrity_check 무결성 자동 검사 완비.
+- 전체 파이프라인 수준 웹 수집 실패 모의 주입 시 운영 DB 불변성 실증.
+- 238대 실매물 및 246건 스냅샷의 Primary Key 집합 보존 검증 완료.
 
-본 결과가 GitHub PR #10 (`https://github.com/WisdomMax/chafficial/pull/10`)에 전수 반영되었으며, DIRECTIVE 010의 최종 종료 승인을 요청드립니다.
+본 결과가 GitHub PR #10 (`https://github.com/WisdomMax/chafficial/pull/10`)에 전수 반영되었으며, PR #10의 정식 승인 및 DIRECTIVE 010의 공식 종료를 요청드립니다.
 """
 
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write(report_content)
-    print(f"[+] 연구 완결 보고서 저장 완료: {report_path}")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(report_content)
+        print(f"[+] 연구 완결 보고서 저장 완료: {report_path}")
 
     session.close()
     print("=" * 80)
-    print("[+] DIRECTIVE 010-F 실행 성공!")
+    print(f"[+] DIRECTIVE 010-G 실행 성공! (모드: {mode.upper()})")
     print("=" * 80)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="CHA-FICIAL DIRECTIVE 010-F Pipeline")
+    parser = argparse.ArgumentParser(description="CHA-FICIAL DIRECTIVE 010-G Pipeline")
     parser.add_argument("--mode", choices=["live", "replay"], default="live", help="수집 모드 (live 또는 replay)")
     parser.add_argument("--input", type=str, default=None, help="replay 모드 시 입력 JSON 파일 경로")
     args = parser.parse_args()

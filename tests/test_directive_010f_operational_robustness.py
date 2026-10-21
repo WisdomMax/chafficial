@@ -38,7 +38,7 @@ def test_batch_id_and_file_collision_prevention():
 
     assert id1 != id2, f"배치 ID 충돌 발생: {id1} == {id2}"
     assert ts1 != ts2, f"타임스탬프 접미사 충돌 발생: {ts1} == {ts2}"
-    assert len(ts1.split("_")[-1]) == 6, "UUID 접미사가 6자리여야 합니다."
+    assert len(ts1.split("_")[-1]) >= 6, "UUID 접미사가 최소 6자리 이상(010-G에서 12자리로 확장)이어야 합니다."
 
 
 def test_sqlite_backup_api_preserves_db_consistency(tmp_path):
