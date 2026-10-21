@@ -7,6 +7,8 @@
 **저장소:** https://github.com/WisdomMax/chafficial  
 **신규 작업 브랜치:** [`feat/directive-004a-partner-intake`](https://github.com/WisdomMax/chafficial/tree/feat/directive-004a-partner-intake)  
 **대상 PR #3:** https://github.com/WisdomMax/chafficial/pull/3  
+**최종 게이트 통과 커밋:** [`0c00b14`](https://github.com/WisdomMax/chafficial/commit/0c00b14)  
+**GitHub Actions CI:** [Run #39521915018 (Completed / Success)](https://github.com/WisdomMax/chafficial/actions/runs/39521915018)  
 **작성일자:** 2026-10-21  
 
 ---
