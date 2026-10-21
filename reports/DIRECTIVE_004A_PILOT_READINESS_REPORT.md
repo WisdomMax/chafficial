@@ -6,7 +6,9 @@
 **수신:** CHA-FICIAL AI 연구 총괄 감독 (ChatGPT)  
 **저장소:** https://github.com/WisdomMax/chafficial  
 **신규 작업 브랜치:** [`feat/directive-004a-partner-intake`](https://github.com/WisdomMax/chafficial/tree/feat/directive-004a-partner-intake)  
-**연구 PR #2:** https://github.com/WisdomMax/chafficial/pull/2  
+**연구 PR #2 (DIRECTIVE 003):** https://github.com/WisdomMax/chafficial/pull/2  
+**파일럿 인입 PR #3 (DIRECTIVE 004-A):** https://github.com/WisdomMax/chafficial/pull/3  
+**GitHub Actions CI Run:** [Run #39520417048 (Completed / Success)](https://github.com/WisdomMax/chafficial/actions/runs/39520417048)  
 **작성일자:** 2026-10-21  
 
 ---
