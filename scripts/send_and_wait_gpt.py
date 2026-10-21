@@ -43,11 +43,12 @@ async function run() {{
   await page.keyboard.insertText(fullText);
   await sleep(2500);
 
-  // 5. 전송 버튼 클릭
+  // 5. 전송 버튼 클릭 (또는 Enter)
   const clickRes = await page.evaluate(() => {{
-    const sendBtn = document.querySelector('button[aria-label="보내기"]') || 
-                    document.querySelector('button[data-testid="send-button"]') ||
-                    document.querySelector('button[aria-label="메시지 전송"]');
+    const sendBtn = document.querySelector('button[data-testid="send-button"]') ||
+                    document.querySelector('button[data-testid="fruitjuice-send-button"]') ||
+                    document.querySelector('button[aria-label*="보내기"]') ||
+                    document.querySelector('button[aria-label*="Send"]');
     if (sendBtn && !sendBtn.disabled) {{
       sendBtn.click();
       return {{ success: true }};
@@ -60,39 +61,38 @@ async function run() {{
   }}
   console.log("SENT_CLICKED");
 
-  // 6. 생성 시작 대기 (최대 10초)
-  let started = false;
-  for (let i = 0; i < 15; i++) {{
-    await sleep(800);
-    started = await page.evaluate(() => {{
-      const stopBtn = document.querySelector('button[aria-label="생성 중지"]') ||
-                      document.querySelector('button[data-testid="stop-button"]');
-      return !!stopBtn;
-    }});
-    if (started) break;
-  }}
-  console.log("GENERATION_STARTED:" + started);
+  // 6. 생성 시작 및 완료 대기
+  console.log("WAITING_FOR_GENERATION...");
+  await sleep(4000);
 
-  // 7. 생성 완료 대기 (stop 버튼이 사라질 때까지, 최대 120초)
-  for (let i = 0; i < 60; i++) {{
+  for (let i = 0; i < 90; i++) {{
     await sleep(2000);
-    const stillGenerating = await page.evaluate(() => {{
-      const stopBtn = document.querySelector('button[aria-label="생성 중지"]') ||
-                      document.querySelector('button[data-testid="stop-button"]');
-      return !!stopBtn;
+    const isBusy = await page.evaluate(() => {{
+      const stopBtn = document.querySelector('button[data-testid="stop-button"]') ||
+                      document.querySelector('button[aria-label*="중지"]') ||
+                      document.querySelector('button[aria-label*="중단"]') ||
+                      document.querySelector('button[aria-label*="Stop"]');
+      if (stopBtn) return true;
+
+      const bodyText = document.body.innerText;
+      if (bodyText.includes("작업 중입니다") || bodyText.includes("생각 중")) {{
+        return true;
+      }}
+      return false;
     }});
-    if (!stillGenerating) {{
+
+    if (!isBusy && i >= 3) {{
       console.log("GENERATION_FINISHED_AT_STEP:" + i);
       break;
     }}
   }}
 
-  // 8. 안정화 대기
-  await sleep(3000);
+  // 7. 안정화 대기
+  await sleep(4000);
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await sleep(1500);
+  await sleep(2000);
 
-  // 9. 최신 Assistant 응답 추출
+  // 8. 최신 Assistant 응답 추출
   const res = await page.evaluate(() => {{
     const turns = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
     if (turns.length > 0) {{

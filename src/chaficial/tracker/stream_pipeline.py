@@ -10,6 +10,8 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+import json
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -80,6 +82,8 @@ class MarketObservationStreamPipeline:
         web_fetch_started_at: datetime | None = None,
         web_fetch_completed_at: datetime | None = None,
         notes: str | None = None,
+        raw_file_path: str | Path | None = None,
+        raw_file_sha256: str | None = None,
     ) -> BatchExecutionResult:
         """단일 수집 배치를 원자적으로 실행하고 상세 통계를 반환합니다."""
         # 1. 배치 ID 필수성 검증
@@ -154,6 +158,19 @@ class MarketObservationStreamPipeline:
 
         # 4. 미노출 매물 처리 (완전 성공 배치인 경우에만 수행)
         delisted_suspect_events = []
+        audit_metadata = {
+            "raw_file_path": str(raw_file_path) if raw_file_path else None,
+            "raw_file_sha256": raw_file_sha256,
+            "web_fetch_started_at": web_fetch_started_at.isoformat() if web_fetch_started_at else None,
+            "web_fetch_completed_at": web_fetch_completed_at.isoformat() if web_fetch_completed_at else None,
+            "first_seen_count": first_seen_count,
+            "re_observed_count": re_observed_count,
+            "price_drop_count": price_drop_count,
+            "price_increase_count": price_increase_count,
+            "total_price_drop_krw": total_price_drop_krw,
+            "user_notes": notes,
+        }
+
         if is_success and not is_partial_scrape:
             delisted_suspect_events = self.tracker.process_missing_listings(
                 observed_source_listing_ids=observed_source_ids,
@@ -164,7 +181,7 @@ class MarketObservationStreamPipeline:
                 is_partial_scrape=is_partial_scrape,
                 search_scope_success=is_success,
                 data_origin=data_origin,
-                notes=notes,
+                notes=json.dumps(audit_metadata, ensure_ascii=False, sort_keys=True),
             )
         else:
             # 부분 수집 또는 실패 시 감사 로그만 별도 기록
@@ -175,8 +192,8 @@ class MarketObservationStreamPipeline:
                 processed_at=obs_utc,
                 record_count=len(records),
                 is_partial_scrape=is_partial_scrape,
-                notes=f"PARTIAL_OR_FAILED_BATCH: {notes or ''}",
             )
+            audit_log.set_audit_metadata(audit_metadata)
             session.add(audit_log)
             session.commit()
 

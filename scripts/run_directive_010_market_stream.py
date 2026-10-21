@@ -470,6 +470,8 @@ def run_pipeline(
                 web_fetch_started_at=web_start_utc,
                 web_fetch_completed_at=web_end_utc,
                 notes=f"엔카 아반떼 CN7 관측 ({mode.upper()} 모드, 카드 {len(raw_cards)}개 중 {len(live_records)}대 적재, 부분수집 보호)",
+                raw_file_path=raw_file,
+                raw_file_sha256=raw_sha,
             )
             session.commit()
         except Exception:
