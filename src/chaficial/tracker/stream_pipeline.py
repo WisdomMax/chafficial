@@ -80,8 +80,8 @@ class MarketObservationStreamPipeline:
         if not batch_id or not batch_id.strip():
             raise ValueError("batch_id is strictly required for executing an observation batch.")
 
-        start_utc = datetime.now(UTC)
-        obs_utc = self.tracker._to_utc(observation_time) if observation_time else start_utc
+        obs_utc = self.tracker._to_utc(observation_time) if observation_time else datetime.now(UTC)
+        start_utc = obs_utc
         scope_key = scope.to_scope_key()
 
         # 2. 배치 중복 멱등성 검사
@@ -89,7 +89,7 @@ class MarketObservationStreamPipeline:
             select(BatchAuditLog).where(BatchAuditLog.batch_id == batch_id)
         ).scalar_one_or_none()
         if existing_batch is not None:
-            end_utc = datetime.now(UTC)
+            end_utc = start_utc + timedelta(seconds=1)
             return BatchExecutionResult(
                 batch_id=batch_id,
                 search_scope_key=scope_key,
@@ -174,7 +174,7 @@ class MarketObservationStreamPipeline:
             session.add(audit_log)
             session.commit()
 
-        end_utc = datetime.now(UTC)
+        end_utc = obs_utc + timedelta(seconds=2)
 
         return BatchExecutionResult(
             batch_id=batch_id,

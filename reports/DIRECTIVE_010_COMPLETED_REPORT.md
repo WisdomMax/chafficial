@@ -5,7 +5,7 @@
 **발신:** Google Antigravity (실무 개발팀)  
 **저장소:** `https://github.com/WisdomMax/chafficial`  
 **PR 링크:** `https://github.com/WisdomMax/chafficial/pull/10`  
-**대상 브랜치:** `feat/directive-010-market-observation-stream` (최신 커밋: `e29aeab`)  
+**대상 브랜치:** `feat/directive-010-market-observation-stream`  
 **베이스 브랜치:** `feat/directive-009-price-event-tracker` (PR #9 머지 기준)  
 **기준 데이터셋:** `templates/DIRECTIVE_008_REAL_ENCAR_OBSERVATIONS_EXPANDED.csv` (SHA-256: `657e1c2efb48d5b640ca4e4fa4dd01ffbcc24873cb1709e225d850468cba14a9`)  
 **검증 일시:** 2026-10-21  
@@ -25,7 +25,7 @@
 4. **009-C 잔여 3대 결함 전수 해결 반영:**
    - `SearchScopeSpec.matches_specs()`: 제조사, 연식 범위, 서브모델 정확 매칭 및 제원 결측 보호 로직 적용.
    - `compute_db_logical_hashes()`: 5개 테이블의 모든 영속 컬럼을 결정론적으로 포함하여 논리 SHA-256 계산.
-   - 배치 트랜잭션 롤백 테스트 추가 및 전체 103개 테스트 100% PASS 확인.
+   - 배치 트랜잭션 롤백 테스트 추가 및 전체 109개 테스트 100% PASS 확인.
 
 ---
 
@@ -49,10 +49,10 @@
 
 | 테이블 명 | 관리 레코드 수 | 논리 데이터 전체 행 SHA-256 해시 | 무결성 검증 |
 | :--- | :---: | :---: | :---: |
-| `listings` | **419행** | `a72c56d99efe68764bb883160c75ed403493794fa2a5167a5d7089b57548b7a4` | **전체 10개 영속 컬럼 직렬화 검증 완료** |
-| `listing_snapshots` | **1,252행** | `e633356d119b361016d412b5a91f09843ef84d9960486530248c101eafeea53d` | **전체 10개 영속 컬럼 직렬화 검증 완료** |
-| `price_events` | **419행** | `b798e6bbe5ee98c99ec732f5d448ec58ecbf63f3eaaf75ae89ffd48cb674417f` | **전체 19개 영속 컬럼 직렬화 검증 완료** |
-| `vehicle_identity_links` | **135행** | `4590297e4726a10f9c55867c78ecd9d4ab66095e76a998732f69a9c46d9b6c63` | **전체 7개 영속 컬럼 직렬화 검증 완료** |
+| `listings` | **419행** | `cd9933da5f79aa6663652dbd37d74490f6ece665b2b2c64482cba994f0572194` | **전체 10개 영속 컬럼 직렬화 검증 완료** |
+| `listing_snapshots` | **1,252행** | `82e799783b3aa27a4aa0660ab73f6d050cb2b2c429bedc4cb1550c854323a338` | **전체 10개 영속 컬럼 직렬화 검증 완료** |
+| `price_events` | **419행** | `4b783a704b22b80501d963aea735ae6ccef977655988f4f203bd3c919b073e88` | **전체 19개 영속 컬럼 직렬화 검증 완료** |
+| `vehicle_identity_links` | **135행** | `5e38af6989ecd89b5471b589eadf2426a07ed551d0baa74bb79593668064670f` | **전체 7개 영속 컬럼 직렬화 검증 완료** |
 | `batch_audit_logs` | **3행** | `0231f5fa48e787b13c4e6d517d492ed1b365a8319718246dbe0356c2df619242` | **전체 7개 영속 컬럼 직렬화 검증 완료** |
 
 ---

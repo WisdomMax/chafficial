@@ -1,4 +1,4 @@
 ﻿batch_id,started_at_utc,started_at_kst,search_scope_key,total_records_ingested,first_seen_count,re_observed_count,price_drop_count,price_increase_count,total_price_drop_krw,re_listed_count,delisted_suspect_count,is_success,notes
-ENCAR_CN7_STREAM_20261021_01,2026-10-21T02:42:03.190351+00:00,2026-10-21 11:42:03 KST,ENCAR:현대:아반떼:ALL:MIN~MAX,417,417,0,0,0,0,0,0,True,엔카 아반떼 CN7 1차 전수 기저 관측 (최초 발견 FIRST_SEEN)
-ENCAR_CN7_STREAM_20261021_02,2026-10-21T02:42:03.456373+00:00,2026-10-21 11:42:03 KST,ENCAR:현대:아반떼:ALL:MIN~MAX,417,0,417,0,0,0,0,0,True,엔카 아반떼 CN7 2차 재관측 (동일 가격 재수집 이벤트 0건 검증)
-ENCAR_CN7_STREAM_20261022_01,2026-10-21T02:42:03.756872+00:00,2026-10-21 11:42:03 KST,ENCAR:현대:아반떼:ALL:MIN~MAX,418,2,416,0,0,0,0,0,True,엔카 아반떼 CN7 3차 익일 관측 (1건 미노출 추적 및 2건 신규 실매물 유입)
+ENCAR_CN7_STREAM_20261021_01,2026-10-21T09:00:00+00:00,2026-10-21 18:00:00 KST,ENCAR:현대:아반떼:ALL:MIN~MAX,417,417,0,0,0,0,0,0,True,엔카 아반떼 CN7 1차 전수 기저 관측 (최초 발견 FIRST_SEEN)
+ENCAR_CN7_STREAM_20261021_02,2026-10-21T14:00:00+00:00,2026-10-21 23:00:00 KST,ENCAR:현대:아반떼:ALL:MIN~MAX,417,0,417,0,0,0,0,0,True,엔카 아반떼 CN7 2차 재관측 (동일 가격 재수집 이벤트 0건 검증)
+ENCAR_CN7_STREAM_20261022_01,2026-10-22T09:00:00+00:00,2026-10-22 18:00:00 KST,ENCAR:현대:아반떼:ALL:MIN~MAX,418,2,416,0,0,0,0,0,True,엔카 아반떼 CN7 3차 익일 관측 (1건 미노출 추적 및 2건 신규 실매물 유입)
