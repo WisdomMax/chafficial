@@ -206,9 +206,8 @@ def run_directive_010c():
 
     print(f"[+] 수집 카드 {len(raw_cards)}개 중: CN7 실매물 {len(live_records)}대 파싱 완료, 비CN7 {skipped_non_cn7}개 제외.")
 
-    # 3. 운영 DB 재구축: 과거 재생 데이터(419건) 완전 격리 및 순수 실매물 126대 단일 적재
-    if db_path.exists():
-        db_path.unlink()  # 백업이 완료되었으므로 순수 실매물 장부로 정갈하게 재구축
+    # 3. 운영 DB 연결: DIRECTIVE 010-D에 따라 unlink/삭제 로직 완전 영구 제거 (과거 이력 100% 보존 및 누적)
+    print(f"[+] [DIRECTIVE 010-D] 운영 DB 연결 (절대 삭제 금지, 영구 보존): {db_path}")
 
     engine = create_engine(f"sqlite:///{db_path}")
     Base.metadata.create_all(engine)
