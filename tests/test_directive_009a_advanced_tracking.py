@@ -173,6 +173,7 @@ def test_009a_consecutive_missing_threshold_and_delisted_suspect(db_session: Ses
         observed_source_listing_ids=set(),
         session=db_session,
         observation_time=datetime(2026, 10, 2, 10, 0, tzinfo=UTC),
+        batch_id="TEST_009A_BATCH_01",
         search_scope_success=True,
     )
     assert len(events_m1) == 0
@@ -184,6 +185,7 @@ def test_009a_consecutive_missing_threshold_and_delisted_suspect(db_session: Ses
         observed_source_listing_ids=set(),
         session=db_session,
         observation_time=datetime(2026, 10, 3, 10, 0, tzinfo=UTC),
+        batch_id="TEST_009A_BATCH_02",
         search_scope_success=True,
     )
     assert len(events_m2) == 0
@@ -195,6 +197,7 @@ def test_009a_consecutive_missing_threshold_and_delisted_suspect(db_session: Ses
         observed_source_listing_ids=set(),
         session=db_session,
         observation_time=datetime(2026, 10, 4, 10, 0, tzinfo=UTC),
+        batch_id="TEST_009A_BATCH_03",
         search_scope_success=True,
     )
     assert len(events_m3) == 1
@@ -224,6 +227,7 @@ def test_009a_search_failure_preserves_missing_counter(db_session: Session):
         observed_source_listing_ids=set(),
         session=db_session,
         observation_time=now + timedelta(days=1),
+        batch_id="TEST_009A_FAIL_BATCH_01",
         search_scope_success=False,
     )
     # 수집 실패 시에는 무고한 매물이 누락 처리되지 않도록 카운터가 0으로 보존되어야 함!
@@ -248,7 +252,13 @@ def test_009a_reappearance_resets_counter_and_creates_relisted_suspect(db_sessio
     tracker.process_observation(rec, db_session)
 
     # 1회 누락으로 비노출 전이
-    tracker.process_missing_listings(set(), db_session, t1, search_scope_success=True)
+    tracker.process_missing_listings(
+        observed_source_listing_ids=set(),
+        session=db_session,
+        observation_time=t1,
+        batch_id="TEST_009A_REAPPEAR_BATCH_01",
+        search_scope_success=True,
+    )
     listing = db_session.execute(select(Listing).where(Listing.source_listing_id == "REAPPEAR_CAR")).scalar_one()
     assert listing.current_status == "DELISTED_SUSPECT"
 

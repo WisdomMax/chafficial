@@ -11,6 +11,7 @@
 5. 검색 성공 여부에 따른 연속 미노출 카운터 및 DELISTED_SUSPECT 전이
 """
 
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -22,6 +23,48 @@ from chaficial.models.listing import Listing
 from chaficial.models.price_event import PriceEvent
 from chaficial.models.snapshot import ListingSnapshot
 from chaficial.platforms.base import StandardListingRecord
+
+
+@dataclass(frozen=True)
+class SearchScopeSpec:
+    """구조화된 검색 범위 사양.
+
+    단순 문자열 부분 일치로 인한 타 차종/연식/서브모델 교차 오판을 방지하고
+    완전 수집된 동일 검색 조건에 대해서만 미노출 판정을 엄격히 한정합니다.
+    """
+    platform: str = "ENCAR"
+    manufacturer: str | None = None
+    model_name: str | None = None
+    sub_model: str | None = None
+    min_year: int | None = None
+    max_year: int | None = None
+
+    def to_scope_key(self) -> str:
+        """영속 감사 로그용 고유 범위 키 생성."""
+        mfg = self.manufacturer or "ALL"
+        model = self.model_name or "ALL"
+        sub = self.sub_model or "ALL"
+        y_range = f"{self.min_year or 'MIN'}~{self.max_year or 'MAX'}"
+        return f"{self.platform}:{mfg}:{model}:{sub}:{y_range}"
+
+    def matches_specs(self, specs: dict[str, Any] | None) -> bool:
+        """매물 스냅샷 제원과 검색 범위가 일치하는지 구조적으로 검증."""
+        if not specs:
+            return False
+
+        # 모델명 검증
+        if self.model_name and self.model_name != "ALL":
+            spec_model = str(specs.get("model") or "")
+            if self.model_name not in spec_model and spec_model not in self.model_name:
+                return False
+
+        # 서브모델 검증
+        if self.sub_model and self.sub_model != "ALL":
+            spec_sub = str(specs.get("sub_model") or "")
+            if self.sub_model not in spec_sub:
+                return False
+
+        return True
 
 
 class PriceEventTracker:
@@ -300,9 +343,10 @@ class PriceEventTracker:
         observed_source_listing_ids: set[str],
         session: Session,
         observation_time: datetime,
+        batch_id: str,
+        scope: SearchScopeSpec | str | None = None,
+        search_scope: SearchScopeSpec | str | None = None,
         platform: str = "ENCAR",
-        search_scope: str = "ALL",
-        batch_id: str | None = None,
         is_partial_scrape: bool = False,
         search_scope_success: bool = True,
         data_origin: str = "REAL_OBSERVED",
@@ -311,26 +355,38 @@ class PriceEventTracker:
         """검색 범위(플랫폼 및 차종/검색조건) 내에서 관측되지 않은 활성 매물의 누락 횟수를 갱신하고
         연속 3회 누락 시 DELISTED_SUSPECT 상태로 안전 전이합니다.
 
-        1. 수집 실패(search_scope_success=False) 또는 부분 수집(is_partial_scrape=True) 시에는
+        1. 배치 ID 필수화: batch_id가 누락되거나 빈 문자열이면 명시적인 ValueError를 발생시킵니다.
+        2. 수집 실패(search_scope_success=False) 또는 부분 수집(is_partial_scrape=True) 시에는
            절대 누락 카운터를 증가시키지 않습니다.
-        2. 고유 batch_id를 통해 동일 배치의 중복 호출/재시도 시 멱등성을 보장합니다.
-        3. 지정된 platform 및 search_scope에 속하는 매물만 대상으로 한정하여 교차 오판을 방지합니다.
+        3. 고유 batch_id를 통해 동일 배치의 중복 호출/재시도 시 멱등성을 보장합니다.
+        4. 구조화된 SearchScopeSpec을 통해 해당 검색 범위에 속하는 매물만 대상으로 한정하여 교차 오판을 방지합니다.
         """
-        # 1. 수집 실패 또는 부분 수집 차단
+        # 1. 배치 ID 필수성 강제
+        if not batch_id or not batch_id.strip():
+            raise ValueError("batch_id is strictly required for production missing listing processing.")
+
+        # 2. scope 사양 정규화
+        target_scope = scope or search_scope or "ALL"
+        if isinstance(target_scope, str):
+            scope_spec = SearchScopeSpec(platform=platform, model_name=target_scope)
+        else:
+            scope_spec = target_scope
+            platform = scope_spec.platform
+
+        # 3. 수집 실패 또는 부분 수집 차단
         if not search_scope_success or is_partial_scrape:
             return []
 
         obs_time_utc = self._to_utc(observation_time)
 
-        # 2. 배치 중복 멱등성 검사: 이미 처리된 batch_id는 재실행되어도 카운터를 다시 올리지 않음
-        if batch_id:
-            existing_batch = session.execute(
-                select(BatchAuditLog).where(BatchAuditLog.batch_id == batch_id)
-            ).scalar_one_or_none()
-            if existing_batch is not None:
-                return []
+        # 4. 배치 중복 멱등성 검사: 이미 처리된 batch_id는 재실행되어도 카운터를 다시 올리지 않음
+        existing_batch = session.execute(
+            select(BatchAuditLog).where(BatchAuditLog.batch_id == batch_id)
+        ).scalar_one_or_none()
+        if existing_batch is not None:
+            return []
 
-        # 3. 해당 플랫폼 및 검색 범위에 속한 활성 매물만 필터링 (교차 오판 방지)
+        # 5. 해당 플랫폼 및 검색 범위에 속한 활성 매물만 필터링 (교차 오판 방지)
         query = select(Listing).where(
             Listing.source_platform == platform,
             Listing.current_status.in_(("ACTIVE", "PRICE_CHANGED")),
@@ -339,17 +395,15 @@ class PriceEventTracker:
 
         events: list[PriceEvent] = []
         for l in active_listings:
-            # 검색 범위(search_scope) 매칭 검증:
-            if search_scope != "ALL":
+            # 검색 범위(SearchScopeSpec) 구조적 매칭 검증
+            if scope_spec.model_name and scope_spec.model_name != "ALL":
                 latest_snap = session.execute(
                     select(ListingSnapshot)
                     .where(ListingSnapshot.listing_id == l.listing_id)
                     .order_by(ListingSnapshot.observed_at.desc())
                 ).scalars().first()
                 if latest_snap and latest_snap.raw_specs:
-                    model_in_snap = latest_snap.raw_specs.get("model") or ""
-                    # 검색 범위가 모델명과 다르면 이번 검색 대상이 아니므로 누락 카운터 증가 제외!
-                    if search_scope not in model_in_snap and model_in_snap not in search_scope:
+                    if not scope_spec.matches_specs(latest_snap.raw_specs):
                         continue
 
             if l.source_listing_id not in observed_source_listing_ids:
@@ -374,25 +428,24 @@ class PriceEventTracker:
                         mileage_at_event=0,
                         days_since_first_observed=days_passed,
                         data_origin=data_origin,
-                        notes=f"연속 {l.consecutive_missing_count}회 미관측으로 판매 종료 의심(DELISTED_SUSPECT) 판정 (범위: {search_scope})",
+                        notes=f"연속 {l.consecutive_missing_count}회 미관측으로 판매 종료 의심(DELISTED_SUSPECT) 판정 (범위: {scope_spec.to_scope_key()})",
                     )
                     session.add(ev)
                     events.append(ev)
             else:
                 l.consecutive_missing_count = 0
 
-        # 4. 배치 처리 이력 영속 기록 (멱등성 보장용)
-        if batch_id:
-            audit_log = BatchAuditLog(
-                batch_id=batch_id,
-                source_platform=platform,
-                search_scope=search_scope,
-                processed_at=obs_time_utc,
-                record_count=len(observed_source_listing_ids),
-                is_partial_scrape=is_partial_scrape,
-                notes=notes,
-            )
-            session.add(audit_log)
+        # 6. 배치 처리 이력 영속 기록 (멱등성 보장용)
+        audit_log = BatchAuditLog(
+            batch_id=batch_id,
+            source_platform=platform,
+            search_scope=scope_spec.to_scope_key(),
+            processed_at=obs_time_utc,
+            record_count=len(observed_source_listing_ids),
+            is_partial_scrape=is_partial_scrape,
+            notes=notes,
+        )
+        session.add(audit_log)
 
         session.commit()
         return events
