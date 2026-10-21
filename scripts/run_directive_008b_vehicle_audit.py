@@ -71,10 +71,11 @@ def run_directive_008b():
         canonical_records.append(best_rec)
 
         all_ids = [r.source_listing_id for r in group]
-        all_prices = [r.price_krw for r in group if r.price_krw is not None]
-        min_p = min(all_prices) if all_prices else 0
-        max_p = max(all_prices) if all_prices else 0
-        price_diff = max_p - min_p
+        valid_prices = [r.price_krw for r in group if r.price_krw is not None and r.price_krw > 0]
+        min_p = min(valid_prices) if valid_prices else "NULL"
+        max_p = max(valid_prices) if valid_prices else "NULL"
+        price_diff = (max_p - min_p) if valid_prices else "NULL"
+        canon_price_val = best_rec.price_krw if (best_rec.price_krw is not None and best_rec.price_krw > 0) else "NULL"
 
         unique_vehicles_rows.append({
             "vehicle_fingerprint": fp,
@@ -90,7 +91,7 @@ def run_directive_008b():
             "fuel_type": best_rec.fuel_type,
             "trim_name": best_rec.trim_name or "UNKNOWN",
             "accident_state": best_rec.accident_state,
-            "canonical_price_krw": best_rec.price_krw or 0,
+            "canonical_price_krw": canon_price_val,
             "min_observed_price_krw": min_p,
             "max_observed_price_krw": max_p,
             "price_spread_krw": price_diff,
