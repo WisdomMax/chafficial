@@ -397,6 +397,90 @@ class OpportunityPipeline:
         return top_candidates
 
     @staticmethod
+    def export_actionable_recommendations_csv(
+        results: list[OpportunityScoreResult],
+        output_path: str | Path,
+        max_n: int = 20,
+    ) -> list[OpportunityScoreResult]:
+        """DIRECTIVE 008-C: 실질 검토 및 추천 가능한 고신뢰도 기회 매물만 선별.
+
+        선별 기준:
+        1. evaluation_status == 'EVALUATED'
+        2. recommendation_category == 'RECOMMENDED' (MANUAL_REVIEW_NEEDED 배제)
+        3. overall_confidence in ('HIGH', 'MEDIUM') (LOW, UNRELIABLE 배제)
+        4. price_krw is not None and price_krw > 0 (가격 결측/금융상품 원천 배제)
+        5. 실차 지문 기준 중복 제거 (고유 실차당 최고점 1건만 선별)
+        6. 조건을 만족하는 실제 수량만 출력 (부족분을 채우기 위해 기준을 완화하지 않음)
+        """
+        valid_actionable = [
+            r for r in results
+            if r.evaluation_status == "EVALUATED"
+            and r.recommendation_category == "RECOMMENDED"
+            and r.overall_confidence in ("HIGH", "MEDIUM")
+            and r.price_krw is not None
+            and r.price_krw > 0
+        ]
+
+        seen_fingerprints: set[str] = set()
+        unique_actionable: list[OpportunityScoreResult] = []
+        for item in valid_actionable:
+            fp = item.vehicle_fingerprint
+            if fp:
+                if fp in seen_fingerprints:
+                    continue
+                seen_fingerprints.add(fp)
+            unique_actionable.append(item)
+
+        final_candidates = unique_actionable[:max_n]
+
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        fieldnames = [
+            "rank",
+            "opportunity_score",
+            "overall_confidence",
+            "data_completeness_score",
+            "valuation_uncertainty_score",
+            "vehicle_summary",
+            "vehicle_fingerprint",
+            "price_krw",
+            "adjusted_fair_value_krw",
+            "adjusted_advantage_pct",
+            "sample_count",
+            "source_platform",
+            "source_listing_id",
+            "source_url",
+            "selection_reason",
+        ]
+
+        with open(path, mode="w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for idx, item in enumerate(final_candidates, start=1):
+                writer.writerow(
+                    {
+                        "rank": idx,
+                        "opportunity_score": item.opportunity_score,
+                        "overall_confidence": item.overall_confidence,
+                        "data_completeness_score": f"{item.data_completeness_score * 100:.0f}%",
+                        "valuation_uncertainty_score": f"±{item.valuation_uncertainty_score}%",
+                        "vehicle_summary": item.vehicle_summary,
+                        "vehicle_fingerprint": item.vehicle_fingerprint or "N/A",
+                        "price_krw": f"{item.price_krw:,}원",
+                        "adjusted_fair_value_krw": f"{item.adjusted_fair_value_krw:,}원" if item.adjusted_fair_value_krw else "N/A",
+                        "adjusted_advantage_pct": f"{item.adjusted_advantage_pct:+0.2f}%" if item.adjusted_advantage_pct is not None else "N/A",
+                        "sample_count": item.sample_count,
+                        "source_platform": item.source_platform,
+                        "source_listing_id": item.source_listing_id,
+                        "source_url": item.source_url or "",
+                        "selection_reason": item.selection_reason,
+                    }
+                )
+
+        return final_candidates
+
+    @staticmethod
     def export_manual_review_candidates_to_csv(
         results: list[OpportunityScoreResult],
         output_path: str | Path,

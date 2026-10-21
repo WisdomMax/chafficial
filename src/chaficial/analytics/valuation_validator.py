@@ -50,6 +50,8 @@ class ValuationErrorSummary:
 
     cohort_breakdown: dict[str, dict[str, Any]] = field(default_factory=dict)
     individual_errors: list[dict[str, Any]] = field(default_factory=list)
+    # DIRECTIVE 008-C: 평가 제외 표본 및 상세 제외 사유 전수 추적
+    excluded_records: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _calc_percentile(sorted_list: list[float], percentile: float) -> float:
@@ -89,7 +91,39 @@ class ValuationValidator:
         baseline_errors_abs: list[float] = []
         baseline_errors_pct: list[float] = []
         individual_records: list[dict[str, Any]] = []
+        excluded_records: list[dict[str, Any]] = []
         cohort_groups: dict[str, list[dict[str, Any]]] = {}
+
+        # 1. 가격 결측 또는 금융 상품 매물은 즉시 제외 목록으로 분류
+        for rec in records:
+            if rec.product_type != "CASH_OR_INSTALLMENT":
+                excluded_records.append({
+                    "listing_id": rec.source_listing_id,
+                    "vehicle_fingerprint": rec.vehicle_fingerprint or "N/A",
+                    "model_name": rec.model_name,
+                    "sub_model": rec.sub_model,
+                    "model_year": rec.model_year or "UNKNOWN",
+                    "trim_name": rec.trim_name or "UNKNOWN",
+                    "product_type": rec.product_type,
+                    "price_krw": "NULL",
+                    "exclusion_category": "FINANCIAL_PRODUCT",
+                    "exclusion_reason": f"금융상품({rec.product_type}): 월 납입액 매물로 일반 시세 평가 대상 제외",
+                    "sample_count": 0,
+                })
+            elif rec.price_krw is None or rec.price_krw <= 0:
+                excluded_records.append({
+                    "listing_id": rec.source_listing_id,
+                    "vehicle_fingerprint": rec.vehicle_fingerprint or "N/A",
+                    "model_name": rec.model_name,
+                    "sub_model": rec.sub_model,
+                    "model_year": rec.model_year or "UNKNOWN",
+                    "trim_name": rec.trim_name or "UNKNOWN",
+                    "product_type": rec.product_type,
+                    "price_krw": "NULL",
+                    "exclusion_category": "MISSING_PRICE",
+                    "exclusion_reason": "가격 미확인 또는 0원 결측 매물",
+                    "sample_count": 0,
+                })
 
         for rec in valid_records:
             # Leave-One-Out 단일 매물 평가 (지문 일치 중복 매물도 비교군에서 제외됨)
@@ -157,6 +191,21 @@ class ValuationValidator:
                 if ckey not in cohort_groups:
                     cohort_groups[ckey] = []
                 cohort_groups[ckey].append(item_info)
+            else:
+                # 독립 표본 부족 등으로 평가 보류된 매물 추적
+                excluded_records.append({
+                    "listing_id": rec.source_listing_id,
+                    "vehicle_fingerprint": rec.vehicle_fingerprint or "N/A",
+                    "model_name": rec.model_name,
+                    "sub_model": rec.sub_model,
+                    "model_year": rec.model_year or "UNKNOWN",
+                    "trim_name": rec.trim_name or "UNKNOWN",
+                    "product_type": rec.product_type,
+                    "price_krw": rec.price_krw,
+                    "exclusion_category": res.evaluation_status,
+                    "exclusion_reason": res.selection_reason,
+                    "sample_count": res.sample_count,
+                })
 
         if not errors_abs:
             return ValuationErrorSummary(
@@ -233,6 +282,7 @@ class ValuationValidator:
             unknown_year_stats=_sub_stats(unkn_items),
             cohort_breakdown=cohort_stats,
             individual_errors=individual_records,
+            excluded_records=excluded_records,
         )
 
     @classmethod
@@ -402,3 +452,32 @@ class ValuationValidator:
             "top_10_overlap_count_low": len(set(top_base[:10]) & set(top_low[:10])),
             "top_10_overlap_count_high": len(set(top_base[:10]) & set(top_high[:10])),
         }
+
+    @classmethod
+    def export_excluded_records_csv(
+        cls,
+        summary: ValuationErrorSummary,
+        output_path: str | Path,
+    ) -> None:
+        """DIRECTIVE 008-C: 시세 평가에서 제외된 표본(표본부족, 금융상품, 가격결측 등) 전수 명세 CSV 저장."""
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        fieldnames = [
+            "listing_id",
+            "vehicle_fingerprint",
+            "model_name",
+            "sub_model",
+            "model_year",
+            "trim_name",
+            "product_type",
+            "price_krw",
+            "exclusion_category",
+            "exclusion_reason",
+            "sample_count",
+        ]
+
+        with open(path, mode="w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(summary.excluded_records)
