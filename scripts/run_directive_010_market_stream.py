@@ -1,16 +1,18 @@
-"""CHA-FICIAL AI PROJECT - DIRECTIVE 010-G
-운영 관측 무결성 완결 파이프라인 (REPLAY/LIVE 영구 격리, 12자 UUID 충돌 방지, SQLite Backup 무결성 검증, 실패 보호).
+"""CHA-FICIAL AI PROJECT - DIRECTIVE 010-H
+운영 관측 무결성 및 격리 보완 파이프라인 (REPLAY 경로 강제 차단, 파일 락 동시성 제어, SQLite Backup 무결성 검증, 실패 보호).
 
-본 모듈은 총괄 감독님의 DIRECTIVE 010-G 지침에 따라:
-1. REPLAY와 LIVE 모드를 영구 격리하여 data_origin 및 타깃 DB 분리 (LIVE: REAL_OBSERVED & data/chaficial_market_timeseries.db, REPLAY: REPLAY_FIXTURE & data/chaficial_replay_benchmark.db).
-2. 타임스탬프와 12자리 UUID(uuid.uuid4().hex[:12])를 결합하여 고유 배치 ID 및 배타적 원본 파일 생성.
-3. 운영 DB 백업에 SQLite Backup API(source.backup(dst)) 및 PRAGMA integrity_check 무결성 검사를 적용하여 트랜잭션 일관성 보장.
-4. 웹 수집 실패(종료코드 오류, JSON 파싱 오류, 카드 0건 수집 등) 발생 시 운영 DB 불변 보장.
-5. 운영 DB(data/chaficial_market_timeseries.db)를 영구 보존하며, 기존 238대 실매물 및 246건 스냅샷 이력을 완벽히 유지합니다.
+본 모듈은 총괄 감독님의 DIRECTIVE 010-H 지침에 따라:
+1. REPLAY 모드에서 운영 DB(data/chaficial_market_timeseries.db) 경로 지정 시 resolve() 검증으로 즉시 거부하여 운영 DB 오염 원천 차단.
+2. 프로세스 간 실행 잠금(File Lock: fcntl.flock)을 도입하여 LIVE 관측의 동시 실행 및 경쟁 조건 방지.
+3. 타임스탬프와 12자리 UUID(uuid.uuid4().hex[:12])를 결합하여 고유 배치 ID 및 배타적 원본 파일 생성.
+4. 운영 DB 백업에 SQLite Backup API(source.backup(dst)) 및 PRAGMA integrity_check 무결성 검사를 적용하여 트랜잭션 일관성 보장.
+5. 웹 수집 실패(CLI 오류, 타임아웃, 잘못된 JSON, 카드 0건, CN7 0건 등) 시 운영 DB 불변 보장.
+6. 운영 DB의 기존 238대 실매물 및 246건 스냅샷 이력을 영구 보존합니다.
 """
 
 import argparse
 import csv
+import fcntl
 import hashlib
 import json
 import sqlite3
@@ -43,10 +45,43 @@ from chaficial.tracker.stream_pipeline import (
 )
 
 KST = ZoneInfo("Asia/Seoul")
+OFFICIAL_OPERATIONAL_DB_PATH = Path("data/chaficial_market_timeseries.db").resolve()
 
 
 class LiveCollectionError(Exception):
     """실시간 웹 수집 실패 시 발생하는 예외."""
+
+
+class OperationalLockError(Exception):
+    """동시 실행 방지 잠금 획득 실패 시 발생하는 예외."""
+
+
+class FileLockContext:
+    """fcntl 기반 프로세스 간 배타적 파일 락 컨텍스트 매니저."""
+
+    def __init__(self, lock_file: Path):
+        self.lock_file = lock_file
+        self.fp = None
+
+    def __enter__(self):
+        self.lock_file.parent.mkdir(parents=True, exist_ok=True)
+        self.fp = open(self.lock_file, "w")
+        try:
+            fcntl.flock(self.fp.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (BlockingIOError, OSError):
+            self.fp.close()
+            self.fp = None
+            raise OperationalLockError(f"다른 관측 프로세스가 이미 실행 중입니다 (잠금 파일: {self.lock_file}).")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.fp:
+            try:
+                fcntl.flock(self.fp.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass
+            self.fp.close()
+            self.fp = None
 
 
 def get_file_sha256(filepath: Path) -> str:
@@ -205,133 +240,153 @@ await run();
     return raw_cards, raw_file, raw_sha, batch_id, start_utc, end_utc
 
 
-def run_pipeline(mode: str = "live", input_file: str | None = None, db_path_override: Path | None = None):
-    """DIRECTIVE 010-G 실행 메인 파이프라인 (REPLAY/LIVE 완전 격리)."""
+def run_pipeline(mode: str = "live", input_file: str | None = None, db_path_override: Path | None = None, lock_file_path: Path | None = None):
+    """DIRECTIVE 010-H 실행 메인 파이프라인 (REPLAY/LIVE 완전 격리 및 실행 잠금)."""
     print("=" * 80)
-    print(f"CHA-FICIAL AI PROJECT - DIRECTIVE 010-G 실행 (모드: {mode.upper()})")
+    print(f"CHA-FICIAL AI PROJECT - DIRECTIVE 010-H 실행 (모드: {mode.upper()})")
     print("=" * 80)
 
-    # DIRECTIVE 010-G: 모드별 대상 DB 및 data_origin 엄격 분리
+    # DIRECTIVE 010-H: 모드별 대상 DB 및 data_origin 엄격 분리
     if mode == "live":
         target_db_path = db_path_override or Path("data/chaficial_market_timeseries.db")
         data_origin = "REAL_OBSERVED"
     elif mode == "replay":
         target_db_path = db_path_override or Path("data/chaficial_replay_benchmark.db")
         data_origin = "REPLAY_FIXTURE"
+        # DIRECTIVE 010-H 지침 1: resolve() 기반 운영 DB 지정 차단 (심볼릭 링크 포함)
+        if target_db_path.resolve() == OFFICIAL_OPERATIONAL_DB_PATH:
+            raise ValueError(
+                f"[REPLAY 격리 오류] 운영 DB({OFFICIAL_OPERATIONAL_DB_PATH})는 REPLAY 모드의 대상이 될 수 없습니다. "
+                "독립된 벤치마크 DB 또는 임시 DB 경로를 지정하십시오."
+            )
     else:
         raise ValueError(f"지원하지 않는 모드입니다: {mode} (live 또는 replay만 허용)")
 
-    target_db_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # 1. 기존 DB 안전 백업 (존재할 경우 SQLite Backup API 및 무결성 검증, 덮어쓰기 금지)
-    if target_db_path.exists():
-        backup_operational_db_safe(target_db_path)
-
-    # 2. 데이터 수집 또는 재생 로드
+    # DIRECTIVE 010-H 지침 2: LIVE 모드 실행 시 프로세스 간 실행 잠금 (동시 실행 방지)
+    lock_file = lock_file_path or Path("data/.live_run.lock")
     if mode == "live":
-        raw_cards, raw_file, raw_sha, batch_id, web_start_utc, web_end_utc = fetch_live_encar_cn7()
+        lock_context = FileLockContext(lock_file)
     else:
-        assert input_file and Path(input_file).exists(), f"입력 파일이 존재하지 않습니다: {input_file}"
-        raw_file = Path(input_file)
-        raw_sha = get_file_sha256(raw_file)
-        with open(raw_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        batch_id = data.get("batch_id") or f"REPLAY_{raw_file.stem}"
-        web_start_utc = datetime.fromisoformat(data["collected_at_utc"])
-        web_end_utc = datetime.fromisoformat(data["completed_at_utc"])
-        raw_cards = data.get("raw_cards", [])
-        print(f"[+] 재생 원본 로드: {raw_file} (배치: {batch_id}, 카드: {len(raw_cards)}개, 기원: {data_origin})")
+        # replay 모드는 테스트 병렬 실행 등을 고려하여 별도 잠금 없이 격리 DB 사용
+        from contextlib import nullcontext
+        lock_context = nullcontext()
 
-    assert len(raw_cards) > 0, "수집/로드된 매물 카드가 없습니다."
+    with lock_context:
+        target_db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    now_iso = web_start_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-    live_records: list[StandardListingRecord] = []
-    skipped_non_cn7 = 0
+        # 1. 기존 DB 안전 백업 (존재할 경우 SQLite Backup API 및 무결성 검증, 덮어쓰기 금지)
+        if target_db_path.exists():
+            backup_operational_db_safe(target_db_path)
 
-    for c in raw_cards:
-        parsed_dict = EncarCardParser.parse_card(c, now_iso)
-        if not parsed_dict:
-            skipped_non_cn7 += 1
-            continue
+        # 2. 데이터 수집 또는 재생 로드
+        if mode == "live":
+            raw_cards, raw_file, raw_sha, batch_id, web_start_utc, web_end_utc = fetch_live_encar_cn7()
+        else:
+            assert input_file and Path(input_file).exists(), f"입력 파일이 존재하지 않습니다: {input_file}"
+            raw_file = Path(input_file)
+            raw_sha = get_file_sha256(raw_file)
+            with open(raw_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            batch_id = data.get("batch_id") or f"REPLAY_{raw_file.stem}"
+            web_start_utc = datetime.fromisoformat(data["collected_at_utc"])
+            web_end_utc = datetime.fromisoformat(data["completed_at_utc"])
+            raw_cards = data.get("raw_cards", [])
+            print(f"[+] 재생 원본 로드: {raw_file} (배치: {batch_id}, 카드: {len(raw_cards)}개, 기원: {data_origin})")
 
-        price_val = int(parsed_dict["price_krw"]) if parsed_dict["price_krw"] else None
-        m_val = int(parsed_dict["monthly_payment_krw"]) if parsed_dict["monthly_payment_krw"] else None
+        if not raw_cards:
+            raise LiveCollectionError("수집/로드된 매물 카드가 0건입니다.")
 
-        rec = StandardListingRecord(
-            source_platform=parsed_dict["source_platform"],
-            source_listing_id=parsed_dict["source_listing_id"],
-            manufacturer=parsed_dict["manufacturer"],
-            model_name=parsed_dict["model_name"],
-            model_generation=parsed_dict["model_generation"],
-            sub_model=parsed_dict["sub_model"],
-            powertrain_line=parsed_dict["powertrain_line"],
-            trim_name=parsed_dict["trim_name"],
-            model_year=parsed_dict["model_year"],
-            registration_year_month=parsed_dict["registration_year_month"],
-            mileage_km=int(parsed_dict["mileage_km"]),
-            price_krw=price_val,
-            monthly_payment_krw=m_val,
-            product_type=parsed_dict["product_type"],
-            raw_location=parsed_dict["raw_location"],
-            vehicle_fingerprint=parsed_dict["vehicle_fingerprint"],
-            observed_at=web_start_utc,
-            data_origin=data_origin,
+        now_iso = web_start_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+        live_records: list[StandardListingRecord] = []
+        skipped_non_cn7 = 0
+
+        for c in raw_cards:
+            parsed_dict = EncarCardParser.parse_card(c, now_iso)
+            if not parsed_dict:
+                skipped_non_cn7 += 1
+                continue
+
+            price_val = int(parsed_dict["price_krw"]) if parsed_dict["price_krw"] else None
+            m_val = int(parsed_dict["monthly_payment_krw"]) if parsed_dict["monthly_payment_krw"] else None
+
+            rec = StandardListingRecord(
+                source_platform=parsed_dict["source_platform"],
+                source_listing_id=parsed_dict["source_listing_id"],
+                manufacturer=parsed_dict["manufacturer"],
+                model_name=parsed_dict["model_name"],
+                model_generation=parsed_dict["model_generation"],
+                sub_model=parsed_dict["sub_model"],
+                powertrain_line=parsed_dict["powertrain_line"],
+                trim_name=parsed_dict["trim_name"],
+                model_year=parsed_dict["model_year"],
+                registration_year_month=parsed_dict["registration_year_month"],
+                mileage_km=int(parsed_dict["mileage_km"]),
+                price_krw=price_val,
+                monthly_payment_krw=m_val,
+                product_type=parsed_dict["product_type"],
+                raw_location=parsed_dict["raw_location"],
+                vehicle_fingerprint=parsed_dict["vehicle_fingerprint"],
+                observed_at=web_start_utc,
+                data_origin=data_origin,
+            )
+            live_records.append(rec)
+
+        if not live_records:
+            raise LiveCollectionError(f"파싱된 아반떼 CN7 매물이 0건입니다 (원천 카드 {len(raw_cards)}개 중 CN7 파싱 실패).")
+
+        parsing_rate = (len(live_records) / len(raw_cards)) * 100.0 if raw_cards else 0.0
+        print(f"[+] 파싱 완료: 총 {len(raw_cards)}개 카드 중 아반떼 CN7 {len(live_records)}대 정밀 파싱 (파싱률: {parsing_rate:.1f}%, 비CN7 {skipped_non_cn7}개 제외, data_origin={data_origin}).")
+
+        # 3. 타깃 DB 연결 (운영 DB 또는 격리된 벤치마크 DB)
+        engine = create_engine(f"sqlite:///{target_db_path}")
+        Base.metadata.create_all(engine)
+        SessionMaker = sessionmaker(bind=engine)
+        session = SessionMaker()
+
+        tracker = PriceEventTracker(consecutive_missing_threshold=3)
+        pipeline = MarketObservationStreamPipeline(tracker=tracker)
+
+        scope_cn7 = SearchScopeSpec(
+            platform="ENCAR",
+            manufacturer="현대",
+            model_name="아반떼",
+            sub_model="ALL",
         )
-        live_records.append(rec)
 
-    parsing_rate = (len(live_records) / len(raw_cards)) * 100.0 if raw_cards else 0.0
-    print(f"[+] 파싱 완료: 총 {len(raw_cards)}개 카드 중 아반떼 CN7 {len(live_records)}대 정밀 파싱 (파싱률: {parsing_rate:.1f}%, 비CN7 {skipped_non_cn7}개 제외, data_origin={data_origin}).")
+        # 실행 전 DB 통계
+        pre_listings = session.execute(select(func.count(Listing.listing_id))).scalar()
+        pre_snapshots = session.execute(select(func.count(ListingSnapshot.snapshot_id))).scalar()
+        pre_events = session.execute(select(func.count(PriceEvent.event_id))).scalar()
+        pre_batches = session.execute(select(func.count(BatchAuditLog.batch_id))).scalar()
 
-    # 3. 타깃 DB 연결 (운영 DB 또는 격리된 벤치마크 DB)
-    engine = create_engine(f"sqlite:///{target_db_path}")
-    Base.metadata.create_all(engine)
-    SessionMaker = sessionmaker(bind=engine)
-    session = SessionMaker()
+        print(f"[*] 적재 전 DB({target_db_path.name}) 상태: 매물 {pre_listings}대, 스냅샷 {pre_snapshots}건, 이벤트 {pre_events}건, 배치 {pre_batches}건.")
 
-    tracker = PriceEventTracker(consecutive_missing_threshold=3)
-    pipeline = MarketObservationStreamPipeline(tracker=tracker)
+        # 4. 배치 실행 (부분 수집 보호 및 3대 시각 기록, data_origin 엄격 전달)
+        res = pipeline.execute_batch(
+            records=live_records,
+            session=session,
+            batch_id=batch_id,
+            scope=scope_cn7,
+            observation_time=web_start_utc,
+            is_partial_scrape=True,
+            data_origin=data_origin,
+            web_fetch_started_at=web_start_utc,
+            web_fetch_completed_at=web_end_utc,
+            notes=f"엔카 아반떼 CN7 관측 ({mode.upper()} 모드, 카드 {len(raw_cards)}개 중 {len(live_records)}대 적재, 부분수집 보호)",
+        )
+        session.commit()
 
-    scope_cn7 = SearchScopeSpec(
-        platform="ENCAR",
-        manufacturer="현대",
-        model_name="아반떼",
-        sub_model="ALL",
-    )
+        # 실행 후 DB 통계
+        post_listings = session.execute(select(func.count(Listing.listing_id))).scalar()
+        post_snapshots = session.execute(select(func.count(ListingSnapshot.snapshot_id))).scalar()
+        post_events = session.execute(select(func.count(PriceEvent.event_id))).scalar()
+        post_batches = session.execute(select(func.count(BatchAuditLog.batch_id))).scalar()
 
-    # 실행 전 DB 통계
-    pre_listings = session.execute(select(func.count(Listing.listing_id))).scalar()
-    pre_snapshots = session.execute(select(func.count(ListingSnapshot.snapshot_id))).scalar()
-    pre_events = session.execute(select(func.count(PriceEvent.event_id))).scalar()
-    pre_batches = session.execute(select(func.count(BatchAuditLog.batch_id))).scalar()
+        print(f"[+] 적재 후 DB({target_db_path.name}) 상태: 매물 {post_listings}대 (신규 +{post_listings - pre_listings}), 스냅샷 {post_snapshots}건 (추가 +{post_snapshots - pre_snapshots}), 이벤트 {post_events}건, 배치 {post_batches}건.")
+        print(f"[+] 배치 실행 실적: 수집 {res.total_records_ingested}대, FIRST_SEEN(최초발견) {res.first_seen_count}대, 재관측 {res.re_observed_count}대, 가격변동 {res.price_drop_count}건, 미노출의심 {res.delisted_suspect_count}건.")
 
-    print(f"[*] 적재 전 DB({target_db_path.name}) 상태: 매물 {pre_listings}대, 스냅샷 {pre_snapshots}건, 이벤트 {pre_events}건, 배치 {pre_batches}건.")
-
-    # 4. 배치 실행 (부분 수집 보호 및 3대 시각 기록, data_origin 엄격 전달)
-    res = pipeline.execute_batch(
-        records=live_records,
-        session=session,
-        batch_id=batch_id,
-        scope=scope_cn7,
-        observation_time=web_start_utc,
-        is_partial_scrape=True,
-        data_origin=data_origin,
-        web_fetch_started_at=web_start_utc,
-        web_fetch_completed_at=web_end_utc,
-        notes=f"엔카 아반떼 CN7 관측 ({mode.upper()} 모드, 카드 {len(raw_cards)}개 중 {len(live_records)}대 적재, 부분수집 보호)",
-    )
-    session.commit()
-
-    # 실행 후 DB 통계
-    post_listings = session.execute(select(func.count(Listing.listing_id))).scalar()
-    post_snapshots = session.execute(select(func.count(ListingSnapshot.snapshot_id))).scalar()
-    post_events = session.execute(select(func.count(PriceEvent.event_id))).scalar()
-    post_batches = session.execute(select(func.count(BatchAuditLog.batch_id))).scalar()
-
-    print(f"[+] 적재 후 DB({target_db_path.name}) 상태: 매물 {post_listings}대 (신규 +{post_listings - pre_listings}), 스냅샷 {post_snapshots}건 (추가 +{post_snapshots - pre_snapshots}), 이벤트 {post_events}건, 배치 {post_batches}건.")
-    print(f"[+] 배치 실행 실적: 수집 {res.total_records_ingested}대, FIRST_SEEN(최초발견) {res.first_seen_count}대, 재관측 {res.re_observed_count}대, 가격변동 {res.price_drop_count}건, 미노출의심 {res.delisted_suspect_count}건.")
-
-    # 5. DB 영속 컬럼 논리 SHA-256 해시 계산
-    live_db_hashes = compute_db_logical_hashes(session)
+        # 5. DB 영속 컬럼 논리 SHA-256 해시 계산
+        live_db_hashes = compute_db_logical_hashes(session)
 
     # 6. LIVE 모드 실행 시 운영 CSV 및 연구 완결 보고서 갱신 (REPLAY 모드 시 운영 산출물 보존)
     if mode == "live":
@@ -472,12 +527,12 @@ def run_pipeline(mode: str = "live", input_file: str | None = None, db_path_over
 
     session.close()
     print("=" * 80)
-    print(f"[+] DIRECTIVE 010-G 실행 성공! (모드: {mode.upper()})")
+    print(f"[+] DIRECTIVE 010-H 실행 성공! (모드: {mode.upper()})")
     print("=" * 80)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="CHA-FICIAL DIRECTIVE 010-G Pipeline")
+    parser = argparse.ArgumentParser(description="CHA-FICIAL DIRECTIVE 010-H Pipeline")
     parser.add_argument("--mode", choices=["live", "replay"], default="live", help="수집 모드 (live 또는 replay)")
     parser.add_argument("--input", type=str, default=None, help="replay 모드 시 입력 JSON 파일 경로")
     args = parser.parse_args()
