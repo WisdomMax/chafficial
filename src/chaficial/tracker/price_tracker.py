@@ -326,8 +326,10 @@ class PriceEventTracker:
                 mileage_km=record.mileage_km,
                 listing_status="ACTIVE",
                 raw_specs={
+                    "manufacturer": record.manufacturer,
                     "model": record.model_name,
                     "sub_model": record.sub_model,
+                    "model_year": record.model_year,
                     "product_type": record.product_type,
                     "monthly_payment": record.monthly_payment_krw,
                     "vehicle_fingerprint": record.vehicle_fingerprint,
@@ -496,8 +498,10 @@ class PriceEventTracker:
             mileage_km=record.mileage_km,
             listing_status=existing_listing.current_status,
             raw_specs={
+                "manufacturer": record.manufacturer,
                 "model": record.model_name,
                 "sub_model": record.sub_model,
+                "model_year": record.model_year,
                 "product_type": record.product_type,
                 "monthly_payment": record.monthly_payment_krw,
                 "vehicle_fingerprint": record.vehicle_fingerprint,
