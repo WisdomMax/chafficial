@@ -362,3 +362,234 @@ def test_real_encar_30_dataset_pipeline_roundtrip(tmp_path):
     assert all(c.evaluation_status == "EVALUATED" for c in top_candidates)
     assert len(top_candidates) <= 10
     assert out_csv.exists()
+
+
+def test_directive_007b_financial_product_exclusion_from_benchmark():
+    """금융상품(렌트/리스 월납입형)이 일반 매매 시세 중앙값 산정에서 완벽히 배제되는지 검증."""
+    now = datetime.now(UTC)
+    cfg = ScorerParameters(min_benchmark_samples=3)
+
+    records = [
+        # 일반 정상 매매 매물 4대 (1,400만 ~ 1,600만원)
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="CASH_01",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2021,
+            mileage_km=50000,
+            product_type="CASH_OR_INSTALLMENT",
+            price_krw=15000000,
+            accident_state="NO_ACCIDENT",
+            observed_at=now,
+        ),
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="CASH_02",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2021,
+            mileage_km=50000,
+            product_type="CASH_OR_INSTALLMENT",
+            price_krw=14800000,
+            accident_state="NO_ACCIDENT",
+            observed_at=now,
+        ),
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="CASH_03",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2021,
+            mileage_km=50000,
+            product_type="CASH_OR_INSTALLMENT",
+            price_krw=15200000,
+            accident_state="NO_ACCIDENT",
+            observed_at=now,
+        ),
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="CASH_04",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2021,
+            mileage_km=50000,
+            product_type="CASH_OR_INSTALLMENT",
+            price_krw=15000000,
+            accident_state="NO_ACCIDENT",
+            observed_at=now,
+        ),
+        # 렌트 상품 매물 (월 납입금 28만원, price_krw=None)
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="RENT_01",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2021,
+            mileage_km=50000,
+            product_type="RENT",
+            price_krw=None,
+            monthly_payment_krw=280000,
+            accident_state="NO_ACCIDENT",
+            observed_at=now,
+        ),
+    ]
+
+    target = records[0]  # CASH_01
+    res = OpportunityScorer.evaluate_listing(target, records, params=cfg)
+
+    # CASH_01 평가 시 유효 비교군은 CASH_02, CASH_03, CASH_04 (3대). RENT_01은 배제됨
+    assert res.sample_count == 3
+    assert res.evaluation_status == "EVALUATED"
+    # 중앙값은 1480만, 1500만, 1520만의 중앙값인 1500만원이어야 함
+    assert res.normalized_baseline_median_krw == 15000000
+
+    # 렌트 매물 자체 평가 시 매매가가 없으므로 안전하게 FINANCIAL_PRODUCT 처리
+    rent_target = records[4]
+    rent_res = OpportunityScorer.evaluate_listing(rent_target, records, params=cfg)
+    assert rent_res.evaluation_status == "FINANCIAL_PRODUCT"
+    assert rent_res.opportunity_score is None
+
+
+def test_directive_007b_facelift_and_powertrain_line_cohort_separation():
+    """더 뉴 아반떼(FACELIFT) 및 N_LINE이 동일 연식/트림 일반형과 분리되는지 검증."""
+    now = datetime.now(UTC)
+    cfg = ScorerParameters(min_benchmark_samples=3)
+
+    records = [
+        # CN7 전기형(PRE_FACELIFT) STANDARD 모던 3대
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id=f"PRE_STD_{i}",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            mileage_km=30000,
+            product_type="CASH_OR_INSTALLMENT",
+            price_krw=17000000 + (i * 100000),
+            accident_state="NO_ACCIDENT",
+            observed_at=now,
+        )
+        for i in range(3)
+    ] + [
+        # 더 뉴 아반떼(FACELIFT) STANDARD 모던 1대 (신형이라 2,100만원)
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="PE_STD_01",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            mileage_km=30000,
+            product_type="CASH_OR_INSTALLMENT",
+            price_krw=21000000,
+            accident_state="NO_ACCIDENT",
+            observed_at=now,
+        ),
+        # CN7 전기형(PRE_FACELIFT) N_LINE 모던 1대
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="PRE_NLINE_01",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="N_LINE",
+            trim_name="모던",
+            model_year=2023,
+            mileage_km=30000,
+            product_type="CASH_OR_INSTALLMENT",
+            price_krw=20000000,
+            accident_state="NO_ACCIDENT",
+            observed_at=now,
+        ),
+    ]
+
+    # 더 뉴 아반떼 대상 평가: 비교군에 FACELIFT 표본이 1대뿐이므로(자기 자신 제외 0대) INSUFFICIENT_DATA
+    pe_target = records[3]
+    pe_res = OpportunityScorer.evaluate_listing(pe_target, records, params=cfg)
+    assert pe_res.evaluation_status == "INSUFFICIENT_DATA"
+    assert pe_res.sample_count == 0
+
+    # N_LINE 대상 평가: N_LINE 표본이 1대뿐이므로 INSUFFICIENT_DATA
+    nline_target = records[4]
+    nline_res = OpportunityScorer.evaluate_listing(nline_target, records, params=cfg)
+    assert nline_res.evaluation_status == "INSUFFICIENT_DATA"
+    assert nline_res.sample_count == 0
+
+
+def test_directive_007b_mathematical_intermediate_calculation_consistency(tmp_path):
+    """스코어 중간 계산값의 수학적 일치성 및 CSV Breakdown 내역 검증."""
+    now = datetime.now(UTC)
+    cfg = ScorerParameters(min_benchmark_samples=3)
+
+    records = [
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id=f"CALC_{i}",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2021,
+            mileage_km=40000 + (i * 5000),
+            product_type="CASH_OR_INSTALLMENT",
+            price_krw=13000000 + (i * 500000),
+            accident_state="NO_ACCIDENT",
+            observed_at=now,
+        )
+        for i in range(4)
+    ]
+
+    target = records[0]
+    res = OpportunityScorer.evaluate_listing(target, records, params=cfg)
+    assert res.evaluation_status == "EVALUATED"
+
+    # 중간 계산값 산술 일치 검증:
+    # raw_score = base_score + price_component + mileage_component + condition_component + momentum_component
+    expected_raw = (
+        res.base_score
+        + res.price_component
+        + res.mileage_component
+        + res.condition_component
+        + res.momentum_component
+    )
+    assert abs(res.raw_score - expected_raw) < 1e-4
+
+    # opportunity_score = round(raw_score * confidence_multiplier, 1)
+    expected_final = round(res.raw_score * res.confidence_multiplier, 1)
+    assert abs(res.opportunity_score - expected_final) < 1e-4
+
+    # Breakdown CSV 내보내기 검증
+    out_breakdown = tmp_path / "directive_007b_score_breakdown.csv"
+    OpportunityPipeline.export_score_breakdown_csv([res], out_breakdown)
+    assert out_breakdown.exists()

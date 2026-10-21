@@ -1,10 +1,9 @@
-"""차피셜 기회 매물 평가 점수 산정 엔진 (Opportunity Scorer V0.2).
+"""차피셜 기회 매물 평가 점수 산정 엔진 (Opportunity Scorer V0.2.1 - DIRECTIVE 007-B).
 
-DIRECTIVE 007 핵심 감사 결함 수정 반영:
-1. Leave-One-Out (자기 자신 비교 표본 완전 배제)
-2. 비교 표본 각각의 기준 조건화(Normalized Baseline Fair Price) 역보정 후 공정 시세 도출
-3. 조작·추정 파라미터 분리 및 EXPERIMENTAL_ESTIMATE 명시
-4. 누락값 위조 금지 및 표본 부족 시 INSUFFICIENT_DATA 강제
+개선 사항:
+1. 금융상품(렌트/리스) 시세 비교군 원천 배제 (Filter-Out)
+2. 정밀 코호트 키: 제조사_모델_세대_서브모델(전기/PE)_라인(일반/N라인/N)_연식_트림_연료
+3. 중간 계산값 투명성 강화 (가격경쟁력, 주행거리, 사고인증, 신뢰도가중치 등 중간 세부 수치 DTO 보존)
 """
 
 from dataclasses import dataclass
@@ -39,7 +38,8 @@ class OpportunityScoreResult:
     vehicle_summary: str
     model_year: int
     mileage_km: int
-    price_krw: int
+    price_krw: int | None
+    product_type: str
     data_origin: str
 
     # 비교 통계 (Leave-One-Out 적용)
@@ -53,11 +53,19 @@ class OpportunityScoreResult:
     adjusted_advantage_krw: int | None  # 적정 가치 대비 가격 차액 (수익·마진 아님)
     adjusted_advantage_pct: float | None  # 적정 가치 대비 우위율 (%)
 
-    # 점수 및 등급
-    opportunity_score: float | None  # 0.0 ~ 100.0 (표본 부족 시 None)
-    evaluation_status: str  # EVALUATED, INSUFFICIENT_DATA, ANOMALOUS_DATA
-    data_confidence: str  # HIGH, MEDIUM, LOW
-    has_recent_price_drop: bool
+    # 점수 구성요소 중간 계산값 (수학적 검산 투명성)
+    base_score: float = 50.0
+    price_component: float = 0.0
+    mileage_component: float = 0.0
+    condition_component: float = 0.0
+    momentum_component: float = 0.0
+    raw_score: float = 0.0
+    confidence_multiplier: float = 1.0
+    opportunity_score: float | None = None  # 최종 산출 점수
+
+    evaluation_status: str = "EVALUATED"  # EVALUATED, INSUFFICIENT_DATA, FINANCIAL_PRODUCT, ANOMALOUS_DATA
+    data_confidence: str = "LOW"  # HIGH, MEDIUM, LOW
+    has_recent_price_drop: bool = False
     estimation_nature: str = "EXPERIMENTAL_ESTIMATE"
 
     # 근거 및 한계
@@ -67,16 +75,18 @@ class OpportunityScoreResult:
 
 
 class OpportunityScorer:
-    """CHA-FICIAL OPPORTUNITY SCORER V0.2 정규화 기준 엔진."""
+    """CHA-FICIAL OPPORTUNITY SCORER V0.2.1 정밀 코호트 엔진."""
 
     DEFAULT_PARAMS = ScorerParameters()
 
     @classmethod
     def make_cohort_key(cls, record: StandardListingRecord) -> str:
-        """비교 표본 그룹핑 키: 제조사_모델_세대_연식_트림_연료."""
+        """비교 표본 그룹핑 키: 제조사_모델_세대_서브모델_파워트레인라인_연식_트림_연료."""
         gen = record.model_generation or "BASE"
+        sub = record.sub_model or "STANDARD"
+        line = record.powertrain_line or "STANDARD"
         trim = record.trim_name or "STANDARD"
-        return f"{record.manufacturer}_{record.model_name}_{gen}_{record.model_year}_{trim}_{record.fuel_type}"
+        return f"{record.manufacturer}_{record.model_name}_{gen}_{sub}_{line}_{record.model_year}_{trim}_{record.fuel_type}"
 
     @classmethod
     def evaluate_listing(
@@ -92,22 +102,61 @@ class OpportunityScorer:
         now_dt = datetime.now(UTC)
         vehicle_summary = (
             f"{target.manufacturer} {target.model_name} {target.model_generation or ''} "
-            f"{target.trim_name or ''} ({target.model_year}년식 / {target.mileage_km:,}km)"
+            f"[{target.sub_model}/{target.powertrain_line}] {target.trim_name or ''} "
+            f"({target.model_year}년식 / {target.mileage_km:,}km)"
         ).replace("  ", " ")
 
-        # 1. Leave-One-Out: 대상 차량 자기 자신을 비교 표본에서 완전히 배제
+        # 1. 금융 상품(렌트/리스) 사전 격리 (시세 비교군 편입 원천 제외)
+        if target.product_type != "CASH_OR_INSTALLMENT" or target.price_krw is None:
+            return OpportunityScoreResult(
+                listing_id=f"{target.source_platform}:{target.source_listing_id}",
+                source_platform=target.source_platform,
+                source_listing_id=target.source_listing_id,
+                source_url=target.source_url,
+                vehicle_summary=vehicle_summary,
+                model_year=target.model_year,
+                mileage_km=target.mileage_km,
+                price_krw=target.price_krw,
+                product_type=target.product_type,
+                data_origin=target.data_origin,
+                benchmark_cohort_key=cohort_key,
+                sample_count=0,
+                benchmark_median_price_krw=None,
+                normalized_baseline_median_krw=None,
+                adjusted_fair_value_krw=None,
+                adjusted_advantage_krw=None,
+                adjusted_advantage_pct=None,
+                opportunity_score=None,
+                evaluation_status="FINANCIAL_PRODUCT",
+                data_confidence="LOW",
+                has_recent_price_drop=recent_price_drop,
+                selection_reason=f"금융상품({target.product_type}): 월 납입액(월 {target.monthly_payment_krw:,}원) 매물이므로 일반 시세 비교군에서 원천 제외.",
+                evaluation_notes=["금융상품은 총판매가격이 아니므로 일반 현금/할부 시세 비교 대상이 아님."],
+                evaluated_at=now_dt,
+            )
+
+        # 2. Leave-One-Out: 대상 차량, 타 코호트 매물, 및 금융상품을 비교 표본에서 완전히 배제
         independent_cohort: list[StandardListingRecord] = []
         for r in cohort_records:
+            # 다른 코호트 매물 원천 배제 (동일 연식/트림/서브모델/파워트레인라인 등 일치 필수)
+            if cls.make_cohort_key(r) != cohort_key:
+                continue
             is_same = (
                 r.source_platform == target.source_platform
                 and r.source_listing_id == target.source_listing_id
             )
-            if not is_same and r.price_krw > 0:
+            # 금융상품 제외 및 유효 가격 매물만 비교군 편입
+            is_valid_cash_car = (
+                r.product_type == "CASH_OR_INSTALLMENT"
+                and r.price_krw is not None
+                and r.price_krw > 0
+            )
+            if not is_same and is_valid_cash_car:
                 independent_cohort.append(r)
 
         sample_count = len(independent_cohort)
 
-        # 2. 표본 수 검증: 대상 제외 후 최소 표본 수 미달 시 점수 산정 불가
+        # 3. 표본 수 검증: 대상 제외 후 최소 표본 수 미달 시 점수 산정 불가
         if sample_count < cfg.min_benchmark_samples:
             return OpportunityScoreResult(
                 listing_id=f"{target.source_platform}:{target.source_listing_id}",
@@ -118,6 +167,7 @@ class OpportunityScorer:
                 model_year=target.model_year,
                 mileage_km=target.mileage_km,
                 price_krw=target.price_krw,
+                product_type=target.product_type,
                 data_origin=target.data_origin,
                 benchmark_cohort_key=cohort_key,
                 sample_count=sample_count,
@@ -130,15 +180,14 @@ class OpportunityScorer:
                 evaluation_status="INSUFFICIENT_DATA",
                 data_confidence="LOW",
                 has_recent_price_drop=recent_price_drop,
-                selection_reason=f"독립 비교 표본 부족 (대상 제외 후 {sample_count}대 / 최소 {cfg.min_benchmark_samples}대 필요)",
+                selection_reason=f"동일 정밀 코호트 표본 부족 (대상 제외 후 {sample_count}대 / 최소 {cfg.min_benchmark_samples}대 필요)",
                 evaluation_notes=[
-                    "자기 자신을 제외한 유효 비교 매물 표본이 부족하여 왜곡 방지를 위해 점수 산출을 차단함."
+                    "동일 서브모델/파워트레인/연식/트림의 독립 비교 매물 표본이 부족하여 왜곡 방지를 위해 점수 산출을 보류함."
                 ],
                 evaluated_at=now_dt,
             )
 
-        # 3. 비교 표본 각각의 기준 조건화 (무사고, 기준 주행거리 역보정)
-        # 기준 주행거리는 비교군 전체의 중앙 주행거리로 설정
+        # 4. 비교 표본 각각의 기준 조건화 (무사고, 기준 주행거리 역보정)
         all_mileages = [r.mileage_km for r in independent_cohort]
         baseline_mileage = int(median(all_mileages))
 
@@ -147,11 +196,9 @@ class OpportunityScorer:
 
         for r in independent_cohort:
             raw_prices.append(r.price_krw)
-            # r의 주행거리 보정액: 기준보다 길면 감가(-)되어 있었으므로 역으로 빼서(+) 환원
             m_delta = baseline_mileage - r.mileage_km
             m_adj = int((m_delta / 10_000.0) * cfg.km_rate_per_10k)
 
-            # r의 사고 감가액 환원
             acc_penalty = 0
             if r.accident_state == "SIMPLE_REPAIR":
                 acc_penalty = -cfg.simple_repair_penalty
@@ -160,14 +207,13 @@ class OpportunityScorer:
             elif r.accident_state == "UNKNOWN":
                 acc_penalty = -cfg.unknown_accident_penalty
 
-            # 정규화 기준가격: "r이 기준 주행거리 및 완전 무사고였다면 얼마였을까?"
             norm_price = r.price_krw - m_adj - acc_penalty
             normalized_prices.append(norm_price)
 
         raw_median_price = int(median(raw_prices))
         norm_median_price = int(median(normalized_prices))
 
-        # 4. 대상 차량(Target)의 상태 반영 공정 시세 (Adjusted Fair Value) 산출
+        # 5. 대상 차량(Target)의 상태 반영 공정 시세 (Adjusted Fair Value) 산출
         target_mileage_delta = baseline_mileage - target.mileage_km
         target_mileage_adj = int((target_mileage_delta / 10_000.0) * cfg.km_rate_per_10k)
 
@@ -179,12 +225,11 @@ class OpportunityScorer:
         elif target.accident_state == "UNKNOWN":
             target_acc_penalty = -cfg.unknown_accident_penalty
 
-        # 대상 차량의 상태를 정규화 기준 시세에 적용
         adjusted_fair_value = max(
             1_000_000, norm_median_price + target_mileage_adj + target_acc_penalty
         )
 
-        # 이상치 및 미끼/리스승계 의심 매물 탐지 (정규화 시세의 35% 미만인 경우)
+        # 이상치 및 미끼/리스승계 잔여금 의심 매물 탐지
         if target.price_krw < (norm_median_price * 0.35):
             return OpportunityScoreResult(
                 listing_id=f"{target.source_platform}:{target.source_listing_id}",
@@ -195,6 +240,7 @@ class OpportunityScorer:
                 model_year=target.model_year,
                 mileage_km=target.mileage_km,
                 price_krw=target.price_krw,
+                product_type=target.product_type,
                 data_origin=target.data_origin,
                 benchmark_cohort_key=cohort_key,
                 sample_count=sample_count,
@@ -209,9 +255,7 @@ class OpportunityScorer:
                 has_recent_price_drop=recent_price_drop,
                 estimation_nature="EXPERIMENTAL_ESTIMATE",
                 selection_reason=f"비정상적 극단 저가 매물 (시세 {norm_median_price:,}원 대비 {target.price_krw:,}원: 리스승계/선납금/미끼매물 의심)",
-                evaluation_notes=[
-                    "호가가 정상 시세의 35% 미만으로 확인되어 이상치(ANOMALOUS_DATA)로 분류하고 기회 추천에서 자동 배제함."
-                ],
+                evaluation_notes=["호가가 정상 시세의 35% 미만으로 확인되어 이상치(ANOMALOUS_DATA)로 자동 격리함."],
                 evaluated_at=now_dt,
             )
 
@@ -220,7 +264,7 @@ class OpportunityScorer:
             (adjusted_advantage_krw / adjusted_fair_value) * 100, 2
         )
 
-        # 5. 다차원 점수 산정 (0 ~ 100)
+        # 6. 다차원 점수 산정 (모든 중간 계산값 보존)
         base_score = 50.0
 
         # A. 가격 경쟁력 (상태 조정 할인율 1%당 2.0점, 최대 ±30점)
@@ -236,7 +280,10 @@ class OpportunityScorer:
         if target.has_inspection_record:
             cond_component += 5.0
         if target.accident_state == "NO_ACCIDENT":
-            cond_component += 5.0
+            if target.accident_verification == "OFFICIAL_VERIFIED":
+                cond_component += 5.0  # 공인 진단 무사고 (+5점)
+            else:
+                cond_component += 2.0  # 단순 판매자 주장 무사고 (+2점)
         elif target.accident_state == "SIMPLE_REPAIR":
             cond_component -= 3.0
         elif target.accident_state in ("MAJOR_ACCIDENT", "STRUCTURAL_DAMAGE"):
@@ -256,23 +303,22 @@ class OpportunityScorer:
         )
 
         confidence = cls._calculate_confidence(target, sample_count)
+        confidence_multiplier = 1.0
         if confidence == "MEDIUM":
-            raw_score *= 0.95
+            confidence_multiplier = 0.95
         elif confidence == "LOW":
-            raw_score *= 0.85
+            confidence_multiplier = 0.85
 
-        final_score = round(max(0.0, min(100.0, raw_score)), 1)
+        final_score = round(max(0.0, min(100.0, raw_score * confidence_multiplier)), 1)
 
-        # 6. 평가 노트 작성
         notes = [
             f"[Leave-One-Out] 대상 제외 독립 표본 {sample_count}대 대상 분석",
             f"표본 단순 중앙가: {raw_median_price:,}원 -> 무사고·기준주행 정규화 시세: {norm_median_price:,}원",
-            f"대상 차량 주행거리({target.mileage_km:,}km vs 기준 {baseline_mileage:,}km) 보정: {target_mileage_adj:+,}원",
-            f"대상 차량 사고 상태({target.accident_state}) 보정: {target_acc_penalty:+,}원",
-            "주의: Adjusted Advantage는 단순 호가 시세 경쟁력 지표이며 확정 순익이나 판매 수수료가 아닙니다.",
+            f"주행거리({target.mileage_km:,}km vs 기준 {baseline_mileage:,}km) 보정: {target_mileage_adj:+,}원",
+            f"사고 상태({target.accident_state}/{target.accident_verification}) 보정: {target_acc_penalty:+,}원",
+            f"점수 계산식: ({base_score} + 가격경쟁력 {price_component:+.1f} + 주행거리 {mileage_component:+.1f} + 상태 {cond_component:+.1f} + 모멘텀 {momentum_component:+.1f}) x {confidence_multiplier} = {final_score}점",
+            "주의: Adjusted Advantage는 단순 시세 호가 경쟁력 지표이며 확정 순익이나 판매 수수료가 아닙니다.",
         ]
-        if recent_price_drop:
-            notes.append("최근 가격 인하 관측으로 모멘텀 가점 반영됨.")
 
         reason = (
             f"정규화 상태조정 시세({adjusted_fair_value:,}원) 대비 {adjusted_advantage_pct:+.1f}% 가격 우위. "
@@ -288,6 +334,7 @@ class OpportunityScorer:
             model_year=target.model_year,
             mileage_km=target.mileage_km,
             price_krw=target.price_krw,
+            product_type=target.product_type,
             data_origin=target.data_origin,
             benchmark_cohort_key=cohort_key,
             sample_count=sample_count,
@@ -296,6 +343,13 @@ class OpportunityScorer:
             adjusted_fair_value_krw=adjusted_fair_value,
             adjusted_advantage_krw=adjusted_advantage_krw,
             adjusted_advantage_pct=adjusted_advantage_pct,
+            base_score=base_score,
+            price_component=price_component,
+            mileage_component=mileage_component,
+            condition_component=cond_component,
+            momentum_component=momentum_component,
+            raw_score=raw_score,
+            confidence_multiplier=confidence_multiplier,
             opportunity_score=final_score,
             evaluation_status="EVALUATED",
             data_confidence=confidence,

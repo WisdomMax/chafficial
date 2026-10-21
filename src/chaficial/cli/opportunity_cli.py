@@ -84,6 +84,11 @@ def main():
         evaluated_results, args.output, top_n=args.top
     )
 
+    # 4-1. DIRECTIVE 007-B: 세부 중간 계산값 breakdown CSV 출력
+    breakdown_path = "outputs/directive_007b_score_breakdown.csv"
+    OpportunityPipeline.export_score_breakdown_csv(evaluated_results, breakdown_path)
+    print(f"[+] 점수 산출 상세 중간 계산값 저장 완료: {breakdown_path}")
+
     # 5. 콘솔 리포트 요약
     print("\n" + "=" * 70)
     print(f"🏆 CHA-FICIAL AI 선정 상위 {len(top_items)}대 판매 기회 추천 매물 리스트")

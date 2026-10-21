@@ -1,11 +1,9 @@
 """전국 중고차 매물 데이터 인입, 시계열 무결성 적재 및 기회 매물 자동 선별 파이프라인.
 
-DIRECTIVE 007 무결성 수정:
-- 누락 데이터 위조 금지 (기본값 남발 방지)
-- 늦게 도착한 과거 관측 자료의 최신 상태 오염 방지
-- 동일 시각/동일 가격 재입력 중복 스냅샷 방지
-- 장안평 기본 지역 강제 연결 배제
-- 평가 불가 차량 Top 추천 목록 분리
+DIRECTIVE 007-B 규격:
+- 007-B 확장 필드(sub_model, powertrain_line, product_type, monthly_payment 등) 지원
+- 금융상품 시세 비교군 원천 격리
+- 점수 산출 중간 계산값 상세 CSV(export_score_breakdown_csv) 출력 지원
 """
 
 import csv
@@ -21,7 +19,7 @@ from chaficial.models.listing import Listing
 from chaficial.models.snapshot import ListingSnapshot
 from chaficial.platforms.base import PlatformUrlParser, StandardListingRecord
 from chaficial.regions.manager import RegionManager
-from chaficial.scorer.opportunity import OpportunityScorer, OpportunityScoreResult
+from chaficial.scorer.opportunity import OpportunityScoreResult, OpportunityScorer
 
 
 def _to_utc(dt: datetime) -> datetime:
@@ -45,27 +43,31 @@ class OpportunityPipeline:
         with open(path, mode="r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row_idx, row in enumerate(reader, start=2):
-                # 1. 필수 제원 검증 (누락 시 위조 금지, 즉시 에러)
                 mfg = row.get("manufacturer", "").strip()
                 model = row.get("model_name", "").strip()
                 if not mfg or not model:
                     raise ValueError(
-                        f"[Line {row_idx}] 제조사(manufacturer) 또는 모델명(model_name) 누락: 데이터를 임의 생성할 수 없습니다."
+                        f"[Line {row_idx}] 제조사 또는 모델명 누락."
                     )
 
-                price_raw = row.get("price_krw", "").strip()
-                mileage_raw = row.get("mileage_km", "").strip()
                 year_raw = row.get("model_year", "").strip()
-                if not price_raw or not mileage_raw or not year_raw:
+                mileage_raw = row.get("mileage_km", "").strip()
+                if not year_raw or not mileage_raw:
                     raise ValueError(
-                        f"[Line {row_idx}] 필수 숫자 제원(가격/주행거리/연식) 누락: 검증 오류."
+                        f"[Line {row_idx}] 필수 숫자 제원(연식/주행거리) 누락."
                     )
 
-                price_krw = int(price_raw)
-                mileage_km = int(mileage_raw)
                 model_year = int(year_raw)
+                mileage_km = int(mileage_raw)
 
-                # 2. 플랫폼 및 매물 ID 식별
+                # 금융상품 및 가격 파싱
+                product_type = row.get("product_type", "CASH_OR_INSTALLMENT").strip() or "CASH_OR_INSTALLMENT"
+                price_raw = row.get("price_krw", "").strip()
+                price_krw = int(price_raw) if price_raw else None
+
+                monthly_raw = row.get("monthly_payment_krw", "").strip()
+                monthly_payment = int(monthly_raw) if monthly_raw else None
+
                 url = row.get("source_url", "").strip() or None
                 platform = row.get("source_platform", "").strip()
                 source_id = row.get("source_listing_id", "").strip()
@@ -82,34 +84,25 @@ class OpportunityPipeline:
                 if not platform or platform == "UNKNOWN_PLATFORM":
                     platform = "OTHER"
                 if not source_id:
-                    raise ValueError(
-                        f"[Line {row_idx}] 매물 고유 ID(source_listing_id) 누락: 식별 불가 매물입니다."
-                    )
+                    raise ValueError(f"[Line {row_idx}] 매물 고유 ID 누락.")
 
-                # 3. 관측 시각 파싱
                 observed_str = row.get("observed_at", "").strip()
                 if not observed_str:
-                    raise ValueError(
-                        f"[Line {row_idx}] 관측 시각(observed_at) 누락: 시계열 무결성을 위해 관측 시각은 필수입니다."
-                    )
-                try:
-                    observed_at = datetime.fromisoformat(observed_str)
-                except ValueError as err:
-                    raise ValueError(
-                        f"[Line {row_idx}] 관측 시각 형식 오류 ({observed_str}): {err}"
-                    ) from err
+                    raise ValueError(f"[Line {row_idx}] 관측 시각 누락.")
+                observed_at = datetime.fromisoformat(observed_str)
 
-                # 4. 사고 및 성능점검 상태 (누락 시 정상으로 위조 금지 -> UNKNOWN / False)
-                raw_accident = row.get("accident_state", "").strip()
-                accident_state = raw_accident if raw_accident else "UNKNOWN"
+                accident_state = row.get("accident_state", "UNKNOWN").strip() or "UNKNOWN"
+                accident_verification = row.get("accident_verification", "UNVERIFIED").strip() or "UNVERIFIED"
+                has_inspection = row.get("has_inspection_record", "N").strip().upper() in ("Y", "TRUE", "1")
 
-                raw_inspection = row.get("has_inspection_record", "").strip().upper()
-                has_inspection = raw_inspection in ("Y", "TRUE", "1", "YES")
-
-                # 데이터 출처 메타데이터
-                data_origin = (
-                    row.get("data_origin", "").strip() or "MANUALLY_OBSERVED"
-                )
+                sub_model = row.get("sub_model", "PRE_FACELIFT").strip() or "PRE_FACELIFT"
+                powertrain_line = row.get("powertrain_line", "STANDARD").strip() or "STANDARD"
+                reg_ym = row.get("registration_year_month", "").strip() or None
+                fuel_type = row.get("fuel_type", "UNKNOWN").strip() or "UNKNOWN"
+                transmission = row.get("transmission", "UNKNOWN").strip() or "UNKNOWN"
+                raw_loc = row.get("raw_location", "UNKNOWN").strip() or "UNKNOWN"
+                data_origin = row.get("data_origin", "MANUALLY_OBSERVED").strip() or "MANUALLY_OBSERVED"
+                raw_text = row.get("raw_card_text", "").strip() or None
 
                 record = StandardListingRecord(
                     source_platform=platform,
@@ -118,20 +111,26 @@ class OpportunityPipeline:
                     seller_reference=row.get("seller_reference", "").strip() or None,
                     manufacturer=mfg,
                     model_name=model,
-                    model_generation=row.get("model_generation", "").strip() or None,
+                    model_generation=row.get("model_generation", "CN7").strip() or "CN7",
+                    sub_model=sub_model,
+                    powertrain_line=powertrain_line,
                     trim_name=row.get("trim_name", "").strip() or None,
                     model_year=model_year,
+                    registration_year_month=reg_ym,
                     mileage_km=mileage_km,
-                    fuel_type=row.get("fuel_type", "가솔린").strip() or "UNKNOWN",
-                    transmission=row.get("transmission", "자동").strip() or "UNKNOWN",
+                    fuel_type=fuel_type,
+                    transmission=transmission,
+                    product_type=product_type,
                     price_krw=price_krw,
-                    raw_location=row.get("raw_location", "").strip() or "UNKNOWN",
+                    monthly_payment_krw=monthly_payment,
+                    raw_location=raw_loc,
                     accident_state=accident_state,
+                    accident_verification=accident_verification,
                     has_inspection_record=has_inspection,
                     observed_at=observed_at,
-                    listing_status=row.get("listing_status", "ACTIVE").strip()
-                    or "ACTIVE",
+                    listing_status=row.get("listing_status", "ACTIVE").strip() or "ACTIVE",
                     data_origin=data_origin,
+                    raw_card_text=raw_text,
                 )
                 records.append(record)
 
@@ -153,7 +152,6 @@ class OpportunityPipeline:
 
         region_mgr = RegionManager()
         for rec in records:
-            # 주소 기반 매매단지 정밀 판정 (하드코딩된 기본값 배제)
             resolved_region_id = (
                 region_mgr.resolve_region_from_text(rec.raw_location)
                 if rec.raw_location != "UNKNOWN"
@@ -169,6 +167,9 @@ class OpportunityPipeline:
 
             has_price_drop = False
             rec_key = f"{rec.source_platform}:{rec.source_listing_id}"
+
+            # 금융상품은 가격이 None일 수 있으므로 0원으로 안전 저장하거나 스냅샷 보존
+            record_price = rec.price_krw if rec.price_krw is not None else 0
 
             if existing_listing is None:
                 new_listing = Listing(
@@ -186,11 +187,11 @@ class OpportunityPipeline:
                 snapshot = ListingSnapshot(
                     listing_id=new_listing.listing_id,
                     observed_at=rec.observed_at,
-                    price_krw=rec.price_krw,
+                    price_krw=record_price,
                     mileage_km=rec.mileage_km,
                     listing_status=rec.listing_status,
                     normalized_region_id=resolved_region_id,
-                    raw_specs={"model": rec.model_name, "trim": rec.trim_name},
+                    raw_specs={"model": rec.model_name, "trim": rec.trim_name, "product_type": rec.product_type},
                 )
                 session.add(snapshot)
                 stats["new_listings"] += 1
@@ -198,7 +199,6 @@ class OpportunityPipeline:
 
             else:
                 stats["existing_listings"] += 1
-                # 최신 스냅샷 확인
                 latest_snapshot = session.execute(
                     select(ListingSnapshot)
                     .where(ListingSnapshot.listing_id == existing_listing.listing_id)
@@ -209,40 +209,33 @@ class OpportunityPipeline:
                     rec_obs_utc = _to_utc(rec.observed_at)
                     latest_obs_utc = _to_utc(latest_snapshot.observed_at)
 
-                    # 1. 늦게 도착한 과거 관측 자료인지 확인 (과거 자료는 상태 덮어쓰기 금지)
                     is_newer = rec_obs_utc >= latest_obs_utc
-
-                    # 2. 동일 시각, 동일 가격, 동일 상태 중복 입력 차단
                     is_duplicate_snapshot = (
                         rec_obs_utc == latest_obs_utc
-                        and rec.price_krw == latest_snapshot.price_krw
+                        and record_price == latest_snapshot.price_krw
                         and rec.mileage_km == latest_snapshot.mileage_km
                         and rec.listing_status == latest_snapshot.listing_status
                     )
 
                     if is_newer and not is_duplicate_snapshot:
-                        if rec.price_krw < latest_snapshot.price_krw:
+                        if record_price > 0 and record_price < latest_snapshot.price_krw:
                             has_price_drop = True
                             existing_listing.current_status = "PRICE_CHANGED"
                             stats["price_changed_count"] += 1
 
                         if (
-                            rec.price_krw != latest_snapshot.price_krw
+                            record_price != latest_snapshot.price_krw
                             or rec.mileage_km != latest_snapshot.mileage_km
                             or rec.listing_status != latest_snapshot.listing_status
                         ):
                             new_snapshot = ListingSnapshot(
                                 listing_id=existing_listing.listing_id,
                                 observed_at=rec.observed_at,
-                                price_krw=rec.price_krw,
+                                price_krw=record_price,
                                 mileage_km=rec.mileage_km,
                                 listing_status=rec.listing_status,
-                                normalized_region_id=resolved_region_id
-                                or existing_listing.normalized_region_id,
-                                raw_specs={
-                                    "model": rec.model_name,
-                                    "trim": rec.trim_name,
-                                },
+                                normalized_region_id=resolved_region_id or existing_listing.normalized_region_id,
+                                raw_specs={"model": rec.model_name, "trim": rec.trim_name, "product_type": rec.product_type},
                             )
                             session.add(new_snapshot)
                             stats["new_snapshots"] += 1
@@ -271,7 +264,6 @@ class OpportunityPipeline:
             rec_key = f"{rec.source_platform}:{rec.source_listing_id}"
             has_drop = drop_flags.get(rec_key, False)
 
-            # OpportunityScorer 내부에서 Leave-One-Out 자동 적용
             res = OpportunityScorer.evaluate_listing(
                 target=rec, cohort_records=cohort, recent_price_drop=has_drop
             )
@@ -295,7 +287,6 @@ class OpportunityPipeline:
         top_n: int = 10,
     ) -> list[OpportunityScoreResult]:
         """유효하게 평가된 상위 N개 기회 매물만 선별하여 CSV 파일로 저장."""
-        # 표본 부족(INSUFFICIENT_DATA) 차량은 상위 추천 목록에서 제외!
         evaluated_candidates = [
             r for r in results if r.evaluation_status == "EVALUATED"
         ]
@@ -337,7 +328,7 @@ class OpportunityPipeline:
                         "data_confidence": item.data_confidence,
                         "data_origin": item.data_origin,
                         "vehicle_summary": item.vehicle_summary,
-                        "price_krw": f"{item.price_krw:,}원",
+                        "price_krw": f"{item.price_krw:,}원" if item.price_krw else "N/A",
                         "adjusted_fair_value_krw": f"{item.adjusted_fair_value_krw:,}원"
                         if item.adjusted_fair_value_krw
                         else "N/A",
@@ -359,3 +350,58 @@ class OpportunityPipeline:
                 )
 
         return top_candidates
+
+    @staticmethod
+    def export_score_breakdown_csv(
+        results: list[OpportunityScoreResult],
+        output_path: str | Path,
+    ) -> None:
+        """DIRECTIVE 007-B: 모든 평가 매물의 세부 중간 계산값을 투명하게 CSV로 출력."""
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        fieldnames = [
+            "listing_id",
+            "evaluation_status",
+            "opportunity_score",
+            "base_score",
+            "price_component",
+            "mileage_component",
+            "condition_component",
+            "momentum_component",
+            "raw_score",
+            "confidence_multiplier",
+            "data_confidence",
+            "sample_count",
+            "price_krw",
+            "normalized_baseline_median_krw",
+            "adjusted_fair_value_krw",
+            "adjusted_advantage_pct",
+            "source_url",
+        ]
+
+        with open(path, mode="w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for r in results:
+                writer.writerow(
+                    {
+                        "listing_id": r.listing_id,
+                        "evaluation_status": r.evaluation_status,
+                        "opportunity_score": r.opportunity_score if r.opportunity_score is not None else "N/A",
+                        "base_score": r.base_score,
+                        "price_component": f"{r.price_component:+.2f}",
+                        "mileage_component": f"{r.mileage_component:+.2f}",
+                        "condition_component": f"{r.condition_component:+.2f}",
+                        "momentum_component": f"{r.momentum_component:+.2f}",
+                        "raw_score": f"{r.raw_score:.2f}",
+                        "confidence_multiplier": r.confidence_multiplier,
+                        "data_confidence": r.data_confidence,
+                        "sample_count": r.sample_count,
+                        "price_krw": r.price_krw if r.price_krw is not None else "N/A",
+                        "normalized_baseline_median_krw": r.normalized_baseline_median_krw if r.normalized_baseline_median_krw else "N/A",
+                        "adjusted_fair_value_krw": r.adjusted_fair_value_krw if r.adjusted_fair_value_krw else "N/A",
+                        "adjusted_advantage_pct": f"{r.adjusted_advantage_pct:+.2f}%" if r.adjusted_advantage_pct is not None else "N/A",
+                        "source_url": r.source_url or "",
+                    }
+                )
