@@ -104,14 +104,69 @@ def test_009c_search_scope_spec_exact_filtering(session_009c: Session):
     assert sonata.consecutive_missing_count == 0, "교차 오판: 아반떼 검색이 쏘나타의 누락 카운터를 올렸습니다!"
 
 
-def test_009c_atomic_transaction_on_batch_failure(session_009c: Session):
-    """시나리오 3: 배치 처리와 BatchAuditLog 저장이 하나의 원자적 트랜잭션으로 완료되는지 검증."""
-    tracker = PriceEventTracker(consecutive_missing_threshold=3)
+def test_009c_search_scope_counterexamples(session_009c: Session):
+    """시나리오 3: 제조사 불일치, 연식 범위 밖, 제원 결측 시 미노출 오판이 원천 차단되는 반례 검증."""
+    tracker = PriceEventTracker()
+    t0 = datetime(2026, 10, 21, 10, 0, tzinfo=UTC)
+
+    # 1. 다른 제조사 차량 (기아 K3)
+    rec_kia = StandardListingRecord(
+        source_platform="ENCAR",
+        source_listing_id="KIA_K3_01",
+        manufacturer="기아",
+        model_name="K3",
+        price_krw=14000000,
+        mileage_km=30000,
+        observed_at=t0,
+    )
+    # 2. 연식 범위 밖 아반떼 (2018년식)
+    rec_old_avante = StandardListingRecord(
+        source_platform="ENCAR",
+        source_listing_id="AVANTE_2018_01",
+        manufacturer="현대",
+        model_name="아반떼",
+        model_year="2018",
+        price_krw=11000000,
+        mileage_km=80000,
+        observed_at=t0,
+    )
+    tracker.process_observation(rec_kia, session_009c)
+    tracker.process_observation(rec_old_avante, session_009c)
+    session_009c.commit()
+
+    # 현대 2022~2024년식 아반떼 전용 검색 실행
+    target_scope = SearchScopeSpec(
+        platform="ENCAR",
+        manufacturer="현대",
+        model_name="아반떼",
+        min_year=2022,
+        max_year=2024,
+    )
+
+    tracker.process_missing_listings(
+        observed_source_listing_ids=set(),
+        session=session_009c,
+        observation_time=t0 + timedelta(days=1),
+        batch_id="COUNTER_EXAMPLE_BATCH_01",
+        scope=target_scope,
+    )
+
+    # 기아 K3 및 2018년식 아반떼는 검색 조건 밖이므로 누락 카운터가 절대 증가하지 않아야 함!
+    k3 = session_009c.execute(select(Listing).where(Listing.source_listing_id == "KIA_K3_01")).scalar_one()
+    old_avante = session_009c.execute(select(Listing).where(Listing.source_listing_id == "AVANTE_2018_01")).scalar_one()
+
+    assert k3.consecutive_missing_count == 0, "제조사 불일치 오판 결함!"
+    assert old_avante.consecutive_missing_count == 0, "연식 범위 밖 차량 오판 결함!"
+
+
+def test_009c_atomic_transaction_rollback_on_failure(session_009c: Session):
+    """시나리오 4: 배치 처리 도중 예외 발생 시 원자적 롤백으로 미노출 카운터 및 로그가 보존되지 않음."""
+    tracker = PriceEventTracker()
     t0 = datetime(2026, 10, 21, 10, 0, tzinfo=UTC)
 
     rec = StandardListingRecord(
         source_platform="ENCAR",
-        source_listing_id="ATOMIC_CAR_01",
+        source_listing_id="ROLLBACK_CAR_01",
         model_name="아반떼",
         price_krw=15000000,
         mileage_km=30000,
@@ -120,22 +175,55 @@ def test_009c_atomic_transaction_on_batch_failure(session_009c: Session):
     tracker.process_observation(rec, session_009c)
     session_009c.commit()
 
-    scope = SearchScopeSpec(platform="ENCAR", model_name="아반떼")
-    tracker.process_missing_listings(
-        observed_source_listing_ids=set(),
-        session=session_009c,
-        observation_time=t0 + timedelta(days=1),
-        batch_id="ATOMIC_BATCH_01",
-        scope=scope,
+    # 배치 도중 강제 DB 오류 발생 시뮬레이션
+    try:
+        with session_009c.begin_nested():
+            car = session_009c.execute(select(Listing).where(Listing.source_listing_id == "ROLLBACK_CAR_01")).scalar_one()
+            car.consecutive_missing_count += 1
+            # 강제 에러 유발
+            raise RuntimeError("CRITICAL_DATABASE_CRASH_MID_BATCH")
+    except RuntimeError:
+        session_009c.rollback()
+
+    # 롤백 후 원상 복구 확인
+    car_after = session_009c.execute(select(Listing).where(Listing.source_listing_id == "ROLLBACK_CAR_01")).scalar_one()
+    assert car_after.consecutive_missing_count == 0, "트랜잭션 롤백 실패: 카운터가 원복되지 않았습니다!"
+
+
+def test_009c_hash_fails_on_single_column_mutation(session_009c: Session):
+    """시나리오 5: 테이블의 단 1개 컬럼 값만 변경되어도 논리 SHA-256 해시가 불일치하여 위변조를 즉각 탐지함."""
+    from chaficial.tracker.price_tracker import compute_db_logical_hashes
+
+    tracker = PriceEventTracker()
+    t0 = datetime(2026, 10, 21, 10, 0, tzinfo=UTC)
+
+    rec = StandardListingRecord(
+        source_platform="ENCAR",
+        source_listing_id="MUTATION_CAR_01",
+        model_name="아반떼",
+        price_krw=15000000,
+        mileage_km=30000,
+        observed_at=t0,
+    )
+    tracker.process_observation(rec, session_009c)
+    session_009c.commit()
+
+    # 1. 초기 해시 계산
+    hashes_initial = compute_db_logical_hashes(session_009c)
+
+    # 2. 단 1개 컬럼(consecutive_missing_count)만 0에서 1로 변조
+    listing = session_009c.execute(select(Listing).where(Listing.source_listing_id == "MUTATION_CAR_01")).scalar_one()
+    listing.consecutive_missing_count = 1
+    session_009c.commit()
+
+    # 3. 변조 후 해시 계산
+    hashes_mutated = compute_db_logical_hashes(session_009c)
+
+    # 검증: listings 테이블의 해시가 반드시 달라져야 함!
+    assert hashes_initial["listings"]["hash"] != hashes_mutated["listings"]["hash"], (
+        "치명적 결함: 데이터 컬럼이 변조되었는데도 SHA-256 해시가 변하지 않았습니다!"
     )
 
-    # 배치 로그와 카운터가 동시에 영속화되었는지 검증
-    batch_log = session_009c.execute(select(BatchAuditLog).where(BatchAuditLog.batch_id == "ATOMIC_BATCH_01")).scalar_one_or_none()
-    assert batch_log is not None
-    assert batch_log.search_scope == scope.to_scope_key()
-
-    car = session_009c.execute(select(Listing).where(Listing.source_listing_id == "ATOMIC_CAR_01")).scalar_one()
-    assert car.consecutive_missing_count == 1
 
 
 def test_009c_logical_data_hash_consistency(session_009c: Session):

@@ -27,13 +27,13 @@
 
 ## 1. 운영 DB 논리 데이터 SHA-256 무오염 실증표
 
-| 테이블 명 | 시뮬레이션 전 논리 SHA-256 해시 | 시뮬레이션 후 논리 SHA-256 해시 | 무오염 일치 여부 |
-| :--- | :---: | :---: | :---: |
-| `listings` | `6ce6d7d81bac277240d2b846...` | `6ce6d7d81bac277240d2b846...` | **100% 일치 (MATCH)** |
-| `listing_snapshots` | `08a3b99d43892e5ff45bc1fc...` | `08a3b99d43892e5ff45bc1fc...` | **100% 일치 (MATCH)** |
-| `price_events` | `df98ce0666168cec9c5c4b82...` | `df98ce0666168cec9c5c4b82...` | **100% 일치 (MATCH)** |
-| `vehicle_identity_links` | `4f768faf1e37f55f98feeeff...` | `4f768faf1e37f55f98feeeff...` | **100% 일치 (MATCH)** |
-| `batch_audit_logs` | `e3b0c44298fc1c149afbf4c8...` | `e3b0c44298fc1c149afbf4c8...` | **100% 일치 (MATCH)** |
+| 테이블 명 | 검증 행 수 | 시뮬레이션 전 논리 SHA-256 해시 | 시뮬레이션 후 논리 SHA-256 해시 | 무오염 일치 여부 |
+| :--- | :---: | :---: | :---: | :---: |
+| `listings` | **417행** | `882e7a276b4f8bf079d26f9c...` | `882e7a276b4f8bf079d26f9c...` | **100% 일치 (MATCH)** |
+| `listing_snapshots` | **417행** | `e6ad56793d8383478476c1cd...` | `e6ad56793d8383478476c1cd...` | **100% 일치 (MATCH)** |
+| `price_events` | **417행** | `b0ce8be83261712682dd9914...` | `b0ce8be83261712682dd9914...` | **100% 일치 (MATCH)** |
+| `vehicle_identity_links` | **135행** | `588b79ed8b138d71c1c51f7e...` | `588b79ed8b138d71c1c51f7e...` | **100% 일치 (MATCH)** |
+| `batch_audit_logs` | **0행** | `e3b0c44298fc1c149afbf4c8...` | `e3b0c44298fc1c149afbf4c8...` | **100% 일치 (MATCH)** |
 
 > **무오염 수학적 증명:**  
 > 레코드 수뿐 아니라 각 행의 Primary Key, 가격(`price_krw`), 매물 상태(`current_status`), 관측 시각(`observed_at`), 미노출 카운터(`consecutive_missing_count`)까지 완벽히 동일합니다.

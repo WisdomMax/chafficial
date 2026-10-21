@@ -48,23 +48,212 @@ class SearchScopeSpec:
         return f"{self.platform}:{mfg}:{model}:{sub}:{y_range}"
 
     def matches_specs(self, specs: dict[str, Any] | None) -> bool:
-        """매물 스냅샷 제원과 검색 범위가 일치하는지 구조적으로 검증."""
+        """매물 스냅샷 제원과 검색 범위가 일치하는지 정밀하고 구조적으로 검증.
+
+        1. 제원이 결측(None 또는 빈 dict)된 매물은 안전을 위해 미노출 판정에서 제외(False 반환)합니다.
+        2. 제조사, 모델, 서브모델에 대해 부분 문자열이 아닌 정규화된 정확 일치를 기본으로 비교합니다.
+        3. 연식 범위(min_year, max_year)가 지정된 경우 정확히 범위 내에 있는지 검증합니다.
+        """
         if not specs:
             return False
 
-        # 모델명 검증
+        # 1. 제조사 검증 (정규화된 정확 일치)
+        if self.manufacturer and self.manufacturer != "ALL":
+            spec_mfg = str(specs.get("manufacturer") or "").strip()
+            # 제원에 제조사가 기재되지 않은 경우 안전하게 미포함 처리
+            if not spec_mfg or spec_mfg != self.manufacturer.strip():
+                # 차량 지문(vehicle_fingerprint)에서 첫 번째 토큰 검사
+                fp = str(specs.get("vehicle_fingerprint") or "")
+                tokens = fp.split("_")
+                if len(tokens) > 0 and tokens[0] != self.manufacturer.strip():
+                    return False
+
+        # 2. 모델명 검증 (정규화된 정확 일치)
         if self.model_name and self.model_name != "ALL":
-            spec_model = str(specs.get("model") or "")
-            if self.model_name not in spec_model and spec_model not in self.model_name:
+            spec_model = str(specs.get("model") or "").strip()
+            target_model = self.model_name.strip()
+            if not spec_model or spec_model != target_model:
                 return False
 
-        # 서브모델 검증
+        # 3. 서브모델 검증 (지정된 경우 정확 일치)
         if self.sub_model and self.sub_model != "ALL":
-            spec_sub = str(specs.get("sub_model") or "")
-            if self.sub_model not in spec_sub:
+            spec_sub = str(specs.get("sub_model") or "").strip()
+            target_sub = self.sub_model.strip()
+            if not spec_sub or spec_sub != target_sub:
+                return False
+
+        # 4. 연식 범위 검증
+        if self.min_year or self.max_year:
+            year_val = specs.get("model_year") or specs.get("year")
+            # 지문에서 연식 토큰 추출 시도
+            if not year_val:
+                fp = str(specs.get("vehicle_fingerprint") or "")
+                tokens = fp.split("_")
+                # 형식: 현대_아반떼_CN7_PRE_FACELIFT_STANDARD_2022-07_2023_... (인덱스 6: 2023)
+                if len(tokens) >= 7 and tokens[6].isdigit():
+                    year_val = int(tokens[6])
+
+            if year_val:
+                try:
+                    int_year = int(year_val)
+                    if self.min_year and int_year < self.min_year:
+                        return False
+                    if self.max_year and int_year > self.max_year:
+                        return False
+                except (ValueError, TypeError):
+                    return False
+            else:
+                # 연식이 필수인데 제원에 연식이 없으면 안전을 위해 제외
                 return False
 
         return True
+
+
+import hashlib
+import json
+
+def deterministic_serialize(val: Any) -> str:
+    """결정론적 값 직렬화 (NULL, DateTime, JSON dict, bool, number 등)."""
+    if val is None:
+        return "NULL"
+    if isinstance(val, datetime):
+        return val.isoformat()
+    if isinstance(val, dict):
+        return json.dumps(val, sort_keys=True, ensure_ascii=False)
+    if isinstance(val, bool):
+        return "TRUE" if val else "FALSE"
+    return str(val)
+
+
+def compute_db_logical_hashes(session: Session) -> dict[str, Any]:
+    """운영 DB의 논리적 데이터 행 기반 SHA-256 해시 계산.
+
+    5개 주요 테이블의 모든 영속 컬럼을 누락 없이 포함하며,
+    Primary Key 기준 정렬 및 결정론적 직렬화를 통해 데이터의 절대적 불변성을 검증합니다.
+    """
+    from chaficial.models.vehicle_link import VehicleIdentityLink
+
+    results = {}
+
+    # 1. listings (전체 10개 영속 컬럼 전수 포함)
+    listings = session.execute(select(Listing).order_by(Listing.listing_id)).scalars().all()
+    l_rows = []
+    for l in listings:
+        l_row = (
+            deterministic_serialize(l.listing_id),
+            deterministic_serialize(l.source_platform),
+            deterministic_serialize(l.source_listing_id),
+            deterministic_serialize(l.vehicle_id),
+            deterministic_serialize(l.seller_reference),
+            deterministic_serialize(l.first_observed_at),
+            deterministic_serialize(l.raw_location),
+            deterministic_serialize(l.normalized_region_id),
+            deterministic_serialize(l.current_status),
+            deterministic_serialize(l.consecutive_missing_count),
+        )
+        l_rows.append("::".join(l_row))
+    l_payload = "\n".join(l_rows)
+    results["listings"] = {
+        "count": len(listings),
+        "hash": hashlib.sha256(l_payload.encode("utf-8")).hexdigest(),
+    }
+
+    # 2. listing_snapshots (전체 10개 영속 컬럼 전수 포함)
+    snapshots = session.execute(select(ListingSnapshot).order_by(ListingSnapshot.snapshot_id)).scalars().all()
+    s_rows = []
+    for s in snapshots:
+        s_row = (
+            deterministic_serialize(s.snapshot_id),
+            deterministic_serialize(s.listing_id),
+            deterministic_serialize(s.observed_at),
+            deterministic_serialize(s.ingested_at),
+            deterministic_serialize(s.price_krw),
+            deterministic_serialize(s.mileage_km),
+            deterministic_serialize(s.listing_status),
+            deterministic_serialize(s.normalized_region_id),
+            deterministic_serialize(s.raw_specs),
+            deterministic_serialize(s.source_record_hash),
+        )
+        s_rows.append("::".join(s_row))
+    s_payload = "\n".join(s_rows)
+    results["listing_snapshots"] = {
+        "count": len(snapshots),
+        "hash": hashlib.sha256(s_payload.encode("utf-8")).hexdigest(),
+    }
+
+    # 3. price_events (전체 19개 영속 컬럼 전수 포함)
+    events = session.execute(select(PriceEvent).order_by(PriceEvent.event_id)).scalars().all()
+    e_rows = []
+    for e in events:
+        e_row = (
+            deterministic_serialize(e.event_id),
+            deterministic_serialize(e.listing_id),
+            deterministic_serialize(e.source_platform),
+            deterministic_serialize(e.source_listing_id),
+            deterministic_serialize(e.event_type),
+            deterministic_serialize(e.event_timestamp),
+            deterministic_serialize(e.previous_price_krw),
+            deterministic_serialize(e.new_price_krw),
+            deterministic_serialize(e.price_delta_krw),
+            deterministic_serialize(e.price_delta_pct),
+            deterministic_serialize(e.initial_price_krw),
+            deterministic_serialize(e.cumulative_delta_krw),
+            deterministic_serialize(e.cumulative_delta_pct),
+            deterministic_serialize(e.mileage_at_event),
+            deterministic_serialize(e.days_since_first_observed),
+            deterministic_serialize(e.product_type),
+            deterministic_serialize(e.data_origin),
+            deterministic_serialize(e.is_anomaly),
+            deterministic_serialize(e.notes),
+        )
+        e_rows.append("::".join(e_row))
+    e_payload = "\n".join(e_rows)
+    results["price_events"] = {
+        "count": len(events),
+        "hash": hashlib.sha256(e_payload.encode("utf-8")).hexdigest(),
+    }
+
+    # 4. vehicle_identity_links (전체 7개 영속 컬럼 전수 포함)
+    links = session.execute(select(VehicleIdentityLink).order_by(VehicleIdentityLink.link_id)).scalars().all()
+    k_rows = []
+    for k in links:
+        k_row = (
+            deterministic_serialize(k.link_id),
+            deterministic_serialize(k.source_listing_id),
+            deterministic_serialize(k.target_listing_id),
+            deterministic_serialize(k.vehicle_fingerprint),
+            deterministic_serialize(k.confidence_grade),
+            deterministic_serialize(k.link_basis),
+            deterministic_serialize(k.created_at),
+        )
+        k_rows.append("::".join(k_row))
+    k_payload = "\n".join(k_rows)
+    results["vehicle_identity_links"] = {
+        "count": len(links),
+        "hash": hashlib.sha256(k_payload.encode("utf-8")).hexdigest(),
+    }
+
+    # 5. batch_audit_logs (전체 7개 영속 컬럼 전수 포함)
+    batches = session.execute(select(BatchAuditLog).order_by(BatchAuditLog.batch_id)).scalars().all()
+    b_rows = []
+    for b in batches:
+        b_row = (
+            deterministic_serialize(b.batch_id),
+            deterministic_serialize(b.source_platform),
+            deterministic_serialize(b.search_scope),
+            deterministic_serialize(b.processed_at),
+            deterministic_serialize(b.record_count),
+            deterministic_serialize(b.is_partial_scrape),
+            deterministic_serialize(b.notes),
+        )
+        b_rows.append("::".join(b_row))
+    b_payload = "\n".join(b_rows)
+    results["batch_audit_logs"] = {
+        "count": len(batches),
+        "hash": hashlib.sha256(b_payload.encode("utf-8")).hexdigest(),
+    }
+
+    return results
 
 
 class PriceEventTracker:
@@ -397,14 +586,18 @@ class PriceEventTracker:
         for l in active_listings:
             # 검색 범위(SearchScopeSpec) 구조적 매칭 검증
             if scope_spec.model_name and scope_spec.model_name != "ALL":
-                latest_snap = session.execute(
+                snaps = session.execute(
                     select(ListingSnapshot)
                     .where(ListingSnapshot.listing_id == l.listing_id)
                     .order_by(ListingSnapshot.observed_at.desc())
-                ).scalars().first()
-                if latest_snap and latest_snap.raw_specs:
-                    if not scope_spec.matches_specs(latest_snap.raw_specs):
-                        continue
+                ).scalars().all()
+                matched = False
+                for snap in snaps:
+                    if snap.raw_specs and scope_spec.matches_specs(snap.raw_specs):
+                        matched = True
+                        break
+                if not matched:
+                    continue
 
             if l.source_listing_id not in observed_source_listing_ids:
                 l.consecutive_missing_count += 1

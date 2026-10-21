@@ -25,7 +25,11 @@ from chaficial.models.snapshot import ListingSnapshot
 from chaficial.models.vehicle_link import VehicleIdentityLink
 from chaficial.pipeline.ingest_and_score import OpportunityPipeline
 from chaficial.platforms.base import StandardListingRecord
-from chaficial.tracker.price_tracker import PriceEventTracker, SearchScopeSpec
+from chaficial.tracker.price_tracker import (
+    PriceEventTracker,
+    SearchScopeSpec,
+    compute_db_logical_hashes,
+)
 
 
 def get_file_sha256(filepath: Path) -> str:
@@ -55,37 +59,6 @@ def get_db_metrics(session) -> dict[str, Any]:
         "status_delisted_suspect": delisted_count,
     }
 
-
-def compute_db_logical_hashes(session) -> dict[str, str]:
-    """운영 DB의 논리적 데이터 행 기반 SHA-256 해시 계산 (Primary Key 정렬 후 직렬화)."""
-    hashes = {}
-
-    # 1. listings
-    listings = session.execute(select(Listing).order_by(Listing.listing_id)).scalars().all()
-    l_str = "|".join(f"{l.listing_id}:{l.source_platform}:{l.source_listing_id}:{l.current_status}:{l.consecutive_missing_count}" for l in listings)
-    hashes["listings"] = hashlib.sha256(l_str.encode("utf-8")).hexdigest()
-
-    # 2. listing_snapshots
-    snapshots = session.execute(select(ListingSnapshot).order_by(ListingSnapshot.snapshot_id)).scalars().all()
-    s_str = "|".join(f"{s.snapshot_id}:{s.listing_id}:{s.observed_at}:{s.price_krw}:{s.mileage_km}:{s.listing_status}" for s in snapshots)
-    hashes["listing_snapshots"] = hashlib.sha256(s_str.encode("utf-8")).hexdigest()
-
-    # 3. price_events
-    events = session.execute(select(PriceEvent).order_by(PriceEvent.event_id)).scalars().all()
-    e_str = "|".join(f"{e.event_id}:{e.listing_id}:{e.event_type}:{e.previous_price_krw}:{e.new_price_krw}:{e.data_origin}" for e in events)
-    hashes["price_events"] = hashlib.sha256(e_str.encode("utf-8")).hexdigest()
-
-    # 4. vehicle_identity_links
-    links = session.execute(select(VehicleIdentityLink).order_by(VehicleIdentityLink.link_id)).scalars().all()
-    k_str = "|".join(f"{k.link_id}:{k.source_listing_id}:{k.target_listing_id}:{k.vehicle_fingerprint}:{k.confidence_grade}" for k in links)
-    hashes["vehicle_identity_links"] = hashlib.sha256(k_str.encode("utf-8")).hexdigest()
-
-    # 5. batch_audit_logs
-    batches = session.execute(select(BatchAuditLog).order_by(BatchAuditLog.batch_id)).scalars().all()
-    b_str = "|".join(f"{b.batch_id}:{b.source_platform}:{b.search_scope}:{b.record_count}" for b in batches)
-    hashes["batch_audit_logs"] = hashlib.sha256(b_str.encode("utf-8")).hexdigest()
-
-    return hashes
 
 
 def run_directive_009_pipeline():
@@ -194,6 +167,7 @@ def run_directive_009_pipeline():
         StandardListingRecord(
             source_platform="ENCAR",
             source_listing_id="42925136",
+            model_name="아반떼",
             price_krw=13500000,
             mileage_km=33680,
             product_type="CASH_OR_INSTALLMENT",
@@ -202,6 +176,7 @@ def run_directive_009_pipeline():
         StandardListingRecord(
             source_platform="ENCAR",
             source_listing_id="42649405",
+            model_name="아반떼",
             price_krw=12800000,
             mileage_km=53380,
             product_type="CASH_OR_INSTALLMENT",
@@ -210,6 +185,7 @@ def run_directive_009_pipeline():
         StandardListingRecord(
             source_platform="ENCAR",
             source_listing_id="42238872",
+            model_name="아반떼",
             price_krw=17900000,
             mileage_km=26150,
             product_type="CASH_OR_INSTALLMENT",
@@ -218,6 +194,7 @@ def run_directive_009_pipeline():
         StandardListingRecord(
             source_platform="ENCAR",
             source_listing_id="42009520",
+            model_name="아반떼",
             price_krw=14300000,
             mileage_km=45831,
             product_type="CASH_OR_INSTALLMENT",
@@ -226,6 +203,7 @@ def run_directive_009_pipeline():
         StandardListingRecord(
             source_platform="ENCAR",
             source_listing_id="41739120",
+            model_name="아반떼",
             price_krw=15700000,
             mileage_km=40720,
             product_type="CASH_OR_INSTALLMENT",
@@ -234,6 +212,7 @@ def run_directive_009_pipeline():
         StandardListingRecord(
             source_platform="ENCAR",
             source_listing_id="42845662",
+            model_name="아반떼",
             price_krw=14490000,
             mileage_km=91000,
             product_type="CASH_OR_INSTALLMENT",
@@ -447,13 +426,13 @@ def run_directive_009_pipeline():
 
 ## 1. 운영 DB 논리 데이터 SHA-256 무오염 실증표
 
-| 테이블 명 | 시뮬레이션 전 논리 SHA-256 해시 | 시뮬레이션 후 논리 SHA-256 해시 | 무오염 일치 여부 |
-| :--- | :---: | :---: | :---: |
-| `listings` | `{prod_hashes_before['listings'][:24]}...` | `{prod_hashes_after['listings'][:24]}...` | **100% 일치 (MATCH)** |
-| `listing_snapshots` | `{prod_hashes_before['listing_snapshots'][:24]}...` | `{prod_hashes_after['listing_snapshots'][:24]}...` | **100% 일치 (MATCH)** |
-| `price_events` | `{prod_hashes_before['price_events'][:24]}...` | `{prod_hashes_after['price_events'][:24]}...` | **100% 일치 (MATCH)** |
-| `vehicle_identity_links` | `{prod_hashes_before['vehicle_identity_links'][:24]}...` | `{prod_hashes_after['vehicle_identity_links'][:24]}...` | **100% 일치 (MATCH)** |
-| `batch_audit_logs` | `{prod_hashes_before['batch_audit_logs'][:24]}...` | `{prod_hashes_after['batch_audit_logs'][:24]}...` | **100% 일치 (MATCH)** |
+| 테이블 명 | 검증 행 수 | 시뮬레이션 전 논리 SHA-256 해시 | 시뮬레이션 후 논리 SHA-256 해시 | 무오염 일치 여부 |
+| :--- | :---: | :---: | :---: | :---: |
+| `listings` | **{prod_hashes_before['listings']['count']}행** | `{prod_hashes_before['listings']['hash'][:24]}...` | `{prod_hashes_after['listings']['hash'][:24]}...` | **100% 일치 (MATCH)** |
+| `listing_snapshots` | **{prod_hashes_before['listing_snapshots']['count']}행** | `{prod_hashes_before['listing_snapshots']['hash'][:24]}...` | `{prod_hashes_after['listing_snapshots']['hash'][:24]}...` | **100% 일치 (MATCH)** |
+| `price_events` | **{prod_hashes_before['price_events']['count']}행** | `{prod_hashes_before['price_events']['hash'][:24]}...` | `{prod_hashes_after['price_events']['hash'][:24]}...` | **100% 일치 (MATCH)** |
+| `vehicle_identity_links` | **{prod_hashes_before['vehicle_identity_links']['count']}행** | `{prod_hashes_before['vehicle_identity_links']['hash'][:24]}...` | `{prod_hashes_after['vehicle_identity_links']['hash'][:24]}...` | **100% 일치 (MATCH)** |
+| `batch_audit_logs` | **{prod_hashes_before['batch_audit_logs']['count']}행** | `{prod_hashes_before['batch_audit_logs']['hash'][:24]}...` | `{prod_hashes_after['batch_audit_logs']['hash'][:24]}...` | **100% 일치 (MATCH)** |
 
 > **무오염 수학적 증명:**  
 > 레코드 수뿐 아니라 각 행의 Primary Key, 가격(`price_krw`), 매물 상태(`current_status`), 관측 시각(`observed_at`), 미노출 카운터(`consecutive_missing_count`)까지 완벽히 동일합니다.
