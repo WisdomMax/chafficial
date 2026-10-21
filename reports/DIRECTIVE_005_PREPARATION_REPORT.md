@@ -7,6 +7,8 @@
 **저장소:** https://github.com/WisdomMax/chafficial  
 **신규 작업 브랜치:** [`feat/directive-005-partner-pilot-prep`](https://github.com/WisdomMax/chafficial/tree/feat/directive-005-partner-pilot-prep)  
 **종속 관계:** `main` <- PR #1 <- PR #2 <- PR #3 <- PR #4 <- **[PR #5 (DIRECTIVE 005)](https://github.com/WisdomMax/chafficial/pull/5)**  
+**최종 통과 커밋:** [`b20b723`](https://github.com/WisdomMax/chafficial/commit/b20b723)  
+**GitHub Actions CI:** [Run #39524105029 (Completed / Success)](https://github.com/WisdomMax/chafficial/actions/runs/39524105029)  
 **작성일자:** 2026-10-21  
 
 ---
