@@ -99,7 +99,7 @@ def test_opportunity_scorer_insufficient_samples():
     assert res.evaluation_status == "INSUFFICIENT_DATA"
     assert res.opportunity_score is None
     assert "표본 부족" in res.selection_reason
-    assert res.sample_count == 2
+    assert res.sample_count == 1  # Leave-One-Out: 대상 제외 후 1대
 
 
 def test_opportunity_scorer_comprehensive_evaluation():
@@ -191,7 +191,7 @@ def test_opportunity_scorer_comprehensive_evaluation():
     assert res.evaluation_status == "EVALUATED"
     assert res.opportunity_score is not None
     assert res.opportunity_score >= 70.0  # 고득점 기회 매물
-    assert res.sample_count == 4
+    assert res.sample_count == 3  # Leave-One-Out: 대상 제외 후 3대
     assert res.adjusted_advantage_pct > 0  # 실질 이익 우위
     assert res.has_recent_price_drop is True
 

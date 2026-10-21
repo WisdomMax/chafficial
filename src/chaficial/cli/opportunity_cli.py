@@ -94,12 +94,13 @@ def main():
         adv_pct = f"{item.adjusted_advantage_pct:+.1f}%" if item.adjusted_advantage_pct is not None else "N/A"
         fair_val = f"{item.adjusted_fair_value_krw:,}원" if item.adjusted_fair_value_krw else "N/A"
         median_val = f"{item.benchmark_median_price_krw:,}원" if item.benchmark_median_price_krw else "N/A"
+        norm_val = f"{item.normalized_baseline_median_krw:,}원" if item.normalized_baseline_median_krw else "N/A"
 
         print(f"[{idx:02d}위] {item.vehicle_summary}")
-        print(f"      • 기회점수: {score_str} | 신뢰도: {item.data_confidence} | 상태: {item.evaluation_status}")
-        print(f"      • 등록가격: {item.price_krw:,}원 (비교 중앙가: {median_val}, 표본 {item.sample_count}대)")
+        print(f"      • 기회점수: {score_str} | 신뢰도: {item.data_confidence} | 상태: {item.evaluation_status} ({item.estimation_nature})")
+        print(f"      • 등록가격: {item.price_krw:,}원 (표본 중앙가: {median_val}, 무사고기준가: {norm_val}, 독립표본 {item.sample_count}대)")
         print(f"      • 상태조정시세: {fair_val} (실질경쟁력: {adv_pct})")
-        print(f"      • 출처: [{item.source_platform}] ID: {item.source_listing_id}")
+        print(f"      • 출처: [{item.source_platform}] ID: {item.source_listing_id} (유형: {item.data_origin})")
         if item.source_url:
             print(f"      • URL: {item.source_url}")
         print(f"      • 선정근거: {item.selection_reason}")

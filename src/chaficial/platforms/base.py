@@ -31,9 +31,10 @@ class StandardListingRecord:
     accident_state: str  # NO_ACCIDENT, SIMPLE_REPAIR, MAJOR_ACCIDENT, UNKNOWN
     has_inspection_record: bool  # 성능점검기록부 교부 여부
 
-    # 시계열 메타데이터
+    # 시계열 및 데이터 신뢰성 메타데이터
     observed_at: datetime  # 실제 관측 시점
     listing_status: str = "ACTIVE"  # ACTIVE, PRICE_CHANGED, DELISTED, UNKNOWN
+    data_origin: str = "MANUALLY_OBSERVED"  # SYNTHETIC, MANUALLY_OBSERVED, AUTHORIZED_FEED
     raw_specs: dict[str, Any] | None = None
 
 
@@ -42,20 +43,29 @@ class PlatformUrlParser:
 
     @staticmethod
     def identify_platform(url: str) -> str:
-        """URL 문자열을 기반으로 원천 플랫폼 식별."""
-        lower_url = url.lower()
-        if "encar.com" in lower_url:
-            return "ENCAR"
-        elif "kbchachacha.com" in lower_url:
-            return "KB_CHACHACHA"
-        elif "kcar.com" in lower_url:
-            return "KCAR"
+        """URL의 hostname을 기반으로 원천 플랫폼을 안전하게 식별."""
+        if not url:
+            return "UNKNOWN_PLATFORM"
+        try:
+            parsed = urlparse(url)
+            host = (parsed.hostname or "").lower()
+            if host == "encar.com" or host.endswith(".encar.com"):
+                return "ENCAR"
+            elif host == "kbchachacha.com" or host.endswith(".kbchachacha.com"):
+                return "KB_CHACHACHA"
+            elif host == "kcar.com" or host.endswith(".kcar.com"):
+                return "KCAR"
+        except (ValueError, AttributeError):
+            return "UNKNOWN_PLATFORM"
         return "UNKNOWN_PLATFORM"
 
     @staticmethod
     def extract_source_id(url: str) -> tuple[str, str | None]:
         """URL에서 플랫폼명과 고유 매물 ID 추출."""
         platform = PlatformUrlParser.identify_platform(url)
+        if platform == "UNKNOWN_PLATFORM":
+            return platform, None
+
         parsed = urlparse(url)
         query = parse_qs(parsed.query)
 
