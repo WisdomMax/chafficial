@@ -63,12 +63,15 @@ class PriceEvent(Base):
     product_type: Mapped[str] = mapped_column(
         String(30), default="CASH_OR_INSTALLMENT", nullable=False
     )
+    data_origin: Mapped[str] = mapped_column(
+        String(30), default="REAL_OBSERVED", nullable=False, index=True
+    )  # REAL_OBSERVED, SIMULATED, TEST_FIXTURE
     is_anomaly: Mapped[bool] = mapped_column(default=False, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
         CheckConstraint(
-            "event_type IN ('NEW_LISTING', 'PRICE_DROP', 'PRICE_INCREASE', 'DELISTED', 'RE_LISTED_SUSPECT')",
+            "event_type IN ('NEW_LISTING', 'PRICE_DROP', 'PRICE_INCREASE', 'DELISTED', 'DELISTED_SUSPECT', 'RE_LISTED_SUSPECT')",
             name="chk_price_event_type",
         ),
     )
