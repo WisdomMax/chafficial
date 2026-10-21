@@ -46,6 +46,10 @@ class BatchExecutionResult:
     delisted_suspect_count: int
     is_success: bool
     is_partial_scrape: bool
+    web_fetch_started_at_utc: datetime | None = None
+    web_fetch_completed_at_utc: datetime | None = None
+    web_fetch_started_at_kst: str | None = None
+    web_fetch_completed_at_kst: str | None = None
     notes: str | None = None
 
 
@@ -73,6 +77,8 @@ class MarketObservationStreamPipeline:
         is_partial_scrape: bool = False,
         is_success: bool = True,
         data_origin: str = "REAL_OBSERVED",
+        web_fetch_started_at: datetime | None = None,
+        web_fetch_completed_at: datetime | None = None,
         notes: str | None = None,
     ) -> BatchExecutionResult:
         """단일 수집 배치를 원자적으로 실행하고 상세 통계를 반환합니다."""
@@ -174,7 +180,10 @@ class MarketObservationStreamPipeline:
             session.add(audit_log)
             session.commit()
 
-        end_utc = obs_utc + timedelta(seconds=2)
+        end_utc = datetime.now(UTC)
+
+        fetch_start_kst = self.to_kst_string(web_fetch_started_at) if web_fetch_started_at else None
+        fetch_end_kst = self.to_kst_string(web_fetch_completed_at) if web_fetch_completed_at else None
 
         return BatchExecutionResult(
             batch_id=batch_id,
@@ -193,5 +202,9 @@ class MarketObservationStreamPipeline:
             delisted_suspect_count=len(delisted_suspect_events),
             is_success=is_success,
             is_partial_scrape=is_partial_scrape,
+            web_fetch_started_at_utc=web_fetch_started_at,
+            web_fetch_completed_at_utc=web_fetch_completed_at,
+            web_fetch_started_at_kst=fetch_start_kst,
+            web_fetch_completed_at_kst=fetch_end_kst,
             notes=notes,
         )
