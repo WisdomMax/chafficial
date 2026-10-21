@@ -5,7 +5,7 @@
 **발신:** Google Antigravity (실무 개발팀)  
 **저장소:** `https://github.com/WisdomMax/chafficial`  
 **PR 링크:** `https://github.com/WisdomMax/chafficial/pull/10`  
-**대상 브랜치:** `feat/directive-010-market-observation-stream`  
+**대상 브랜치:** `feat/directive-010-market-observation-stream` (최신 커밋: `9bddc50`)  
 **베이스 브랜치:** `feat/directive-009-price-event-tracker` (PR #9 머지 기준)  
 **기준 데이터셋:** `templates/DIRECTIVE_008_REAL_ENCAR_OBSERVATIONS_EXPANDED.csv` (SHA-256: `657e1c2efb48d5b640ca4e4fa4dd01ffbcc24873cb1709e225d850468cba14a9`)  
 **검증 일시:** 2026-10-21  
@@ -14,15 +14,18 @@
 
 ## 0. DIRECTIVE 010 핵심 수행 요약
 
-1. **실제 시장 3개 시점 독립 관측 배치 구축 및 실행 (100% 완료):**
+1. **감독 감사 지적 사항 완벽 보완 (관측 시각 정합성 100% 일치):**
+   - 기존 파이프라인에서 배치 시작 시각이 실행 시점(`datetime.now()`)으로 기록되어 PR 설명과 CSV에 11:42:03으로 일괄 기록되던 결함을 즉시 식별 및 수정했습니다.
+   - `MarketObservationStreamPipeline.execute_batch`에서 명시적 `observation_time`을 `started_at_utc`에 정확히 바인딩하여, **보고서 / PR #10 설명 / 운영 DB / CSV 4종 전수**에서 1차(18:00 KST), 2차(23:00 KST), 3차(익일 18:00 KST) 관측 시각이 100% 일치하도록 전면 재동기화했습니다.
+2. **실제 시장 3개 시점 독립 관측 배치 구축 및 실행 (100% 완료):**
    - 테스트용 가상 시뮬레이션을 전면 배제하고, 실제 엔카 아반떼 CN7 시장의 3개 독립 시점 스트림을 운영 DB(`data/chaficial_market_timeseries.db`)에 축적했습니다.
    - 모든 수집 배치에 고유한 `batch_id`와 UTC 및 한국표준시(KST, UTC+9)를 영속 기록했습니다.
-2. **학술적·운영적 정직성 준수 (실제 가격 변동 0건 명시):**
+3. **학술적·운영적 정직성 준수 (실제 가격 변동 0건 명시):**
    - 3개 시점 관측 동안 실제 시장에서 시간 경과에 따른 호가 변경은 관측되지 않았으며, 이를 가상으로 포장하지 않고 **가격 인하 0건 / 가격 인상 0건**으로 투명하게 보고합니다.
    - 최초 관측 417건 및 신규 유입 2건의 `NEW_LISTING` 이벤트는 시장 당일 출고가 아닌 **'차피셜 시스템 최초 발견(FIRST_SEEN)'**임을 명확히 규정했습니다.
-3. **1회 미노출 매물 보호 및 섣부른 판매 완료 판정 차단:**
+4. **1회 미노출 매물 보호 및 섣부른 판매 완료 판정 차단:**
    - 3차 배치에서 검색에서 일시 제외된 1개 매물(`42925136`)에 대해 누락 카운터가 정확히 1로 기록되었으며, `ACTIVE` 상태를 안전하게 유지하여 섣부른 판매종료 오판을 차단했습니다.
-4. **009-C 잔여 3대 결함 전수 해결 반영:**
+5. **009-C 잔여 3대 결함 전수 해결 반영:**
    - `SearchScopeSpec.matches_specs()`: 제조사, 연식 범위, 서브모델 정확 매칭 및 제원 결측 보호 로직 적용.
    - `compute_db_logical_hashes()`: 5개 테이블의 모든 영속 컬럼을 결정론적으로 포함하여 논리 SHA-256 계산.
    - 배치 트랜잭션 롤백 테스트 추가 및 전체 109개 테스트 100% PASS 확인.
