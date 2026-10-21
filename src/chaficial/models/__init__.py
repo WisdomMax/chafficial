@@ -1,5 +1,6 @@
 """차피셜(CHA-FICIAL) 데이터 모델 패키지."""
 
+from chaficial.models.batch_log import BatchAuditLog
 from chaficial.models.candidate import SalesCandidate
 from chaficial.models.catalog import VehicleCatalog
 from chaficial.models.condition import VehicleCondition
@@ -18,6 +19,7 @@ from chaficial.models.vehicle import VehicleIdentity
 from chaficial.models.vehicle_link import VehicleIdentityLink
 
 __all__ = [
+    "BatchAuditLog",
     "DataSourcePermission",
     "Listing",
     "ListingSnapshot",

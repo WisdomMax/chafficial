@@ -17,6 +17,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from chaficial.models.batch_log import BatchAuditLog
 from chaficial.models.listing import Listing
 from chaficial.models.price_event import PriceEvent
 from chaficial.models.snapshot import ListingSnapshot
@@ -299,28 +300,64 @@ class PriceEventTracker:
         observed_source_listing_ids: set[str],
         session: Session,
         observation_time: datetime,
+        platform: str = "ENCAR",
+        search_scope: str = "ALL",
+        batch_id: str | None = None,
+        is_partial_scrape: bool = False,
         search_scope_success: bool = True,
+        data_origin: str = "REAL_OBSERVED",
+        notes: str | None = None,
     ) -> list[PriceEvent]:
-        """검색 범위 내에서 관측되지 않은 활성 매물의 누락 횟수를 갱신하고 3회 연속 누락 시 DELISTED_SUSPECT 처리.
+        """검색 범위(플랫폼 및 차종/검색조건) 내에서 관측되지 않은 활성 매물의 누락 횟수를 갱신하고
+        연속 3회 누락 시 DELISTED_SUSPECT 상태로 안전 전이합니다.
 
-        search_scope_success=False(수집 실패 또는 일부 페이지 누락)인 경우 누락 카운터를 증가시키지 않습니다.
+        1. 수집 실패(search_scope_success=False) 또는 부분 수집(is_partial_scrape=True) 시에는
+           절대 누락 카운터를 증가시키지 않습니다.
+        2. 고유 batch_id를 통해 동일 배치의 중복 호출/재시도 시 멱등성을 보장합니다.
+        3. 지정된 platform 및 search_scope에 속하는 매물만 대상으로 한정하여 교차 오판을 방지합니다.
         """
-        if not search_scope_success:
+        # 1. 수집 실패 또는 부분 수집 차단
+        if not search_scope_success or is_partial_scrape:
             return []
-
-        events: list[PriceEvent] = []
-        active_listings = session.execute(
-            select(Listing).where(Listing.current_status.in_(("ACTIVE", "PRICE_CHANGED")))
-        ).scalars().all()
 
         obs_time_utc = self._to_utc(observation_time)
 
+        # 2. 배치 중복 멱등성 검사: 이미 처리된 batch_id는 재실행되어도 카운터를 다시 올리지 않음
+        if batch_id:
+            existing_batch = session.execute(
+                select(BatchAuditLog).where(BatchAuditLog.batch_id == batch_id)
+            ).scalar_one_or_none()
+            if existing_batch is not None:
+                return []
+
+        # 3. 해당 플랫폼 및 검색 범위에 속한 활성 매물만 필터링 (교차 오판 방지)
+        query = select(Listing).where(
+            Listing.source_platform == platform,
+            Listing.current_status.in_(("ACTIVE", "PRICE_CHANGED")),
+        )
+        active_listings = session.execute(query).scalars().all()
+
+        events: list[PriceEvent] = []
         for l in active_listings:
+            # 검색 범위(search_scope) 매칭 검증:
+            if search_scope != "ALL":
+                latest_snap = session.execute(
+                    select(ListingSnapshot)
+                    .where(ListingSnapshot.listing_id == l.listing_id)
+                    .order_by(ListingSnapshot.observed_at.desc())
+                ).scalars().first()
+                if latest_snap and latest_snap.raw_specs:
+                    model_in_snap = latest_snap.raw_specs.get("model") or ""
+                    # 검색 범위가 모델명과 다르면 이번 검색 대상이 아니므로 누락 카운터 증가 제외!
+                    if search_scope not in model_in_snap and model_in_snap not in search_scope:
+                        continue
+
             if l.source_listing_id not in observed_source_listing_ids:
                 l.consecutive_missing_count += 1
                 if l.consecutive_missing_count >= self.consecutive_missing_threshold:
                     l.current_status = "DELISTED_SUSPECT"
-                    days_passed = max(0, (obs_time_utc.date() - self._to_utc(l.first_observed_at).date()).days)
+                    first_obs = self._to_utc(l.first_observed_at)
+                    days_passed = max(0, (obs_time_utc.date() - first_obs.date()).days)
                     ev = PriceEvent(
                         listing_id=l.listing_id,
                         source_platform=l.source_platform,
@@ -336,13 +373,26 @@ class PriceEventTracker:
                         cumulative_delta_pct=0.0,
                         mileage_at_event=0,
                         days_since_first_observed=days_passed,
-                        data_origin="REAL_OBSERVED",
-                        notes=f"연속 {l.consecutive_missing_count}회 미관측으로 판매 종료 의심(DELISTED_SUSPECT) 판정",
+                        data_origin=data_origin,
+                        notes=f"연속 {l.consecutive_missing_count}회 미관측으로 판매 종료 의심(DELISTED_SUSPECT) 판정 (범위: {search_scope})",
                     )
                     session.add(ev)
                     events.append(ev)
             else:
                 l.consecutive_missing_count = 0
+
+        # 4. 배치 처리 이력 영속 기록 (멱등성 보장용)
+        if batch_id:
+            audit_log = BatchAuditLog(
+                batch_id=batch_id,
+                source_platform=platform,
+                search_scope=search_scope,
+                processed_at=obs_time_utc,
+                record_count=len(observed_source_listing_ids),
+                is_partial_scrape=is_partial_scrape,
+                notes=notes,
+            )
+            session.add(audit_log)
 
         session.commit()
         return events
