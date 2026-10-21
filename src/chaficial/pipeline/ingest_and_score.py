@@ -52,12 +52,12 @@ class OpportunityPipeline:
 
                 year_raw = row.get("model_year", "").strip()
                 mileage_raw = row.get("mileage_km", "").strip()
-                if not year_raw or not mileage_raw:
+                if not mileage_raw:
                     raise ValueError(
-                        f"[Line {row_idx}] 필수 숫자 제원(연식/주행거리) 누락."
+                        f"[Line {row_idx}] 필수 숫자 제원(주행거리) 누락."
                     )
 
-                model_year = int(year_raw)
+                model_year = int(year_raw) if year_raw and year_raw.isdigit() else None
                 mileage_km = int(mileage_raw)
 
                 # 금융상품 및 가격 파싱
@@ -298,6 +298,10 @@ class OpportunityPipeline:
         fieldnames = [
             "rank",
             "opportunity_score",
+            "recommendation_category",
+            "overall_confidence",
+            "data_completeness_score",
+            "valuation_uncertainty_score",
             "evaluation_status",
             "data_confidence",
             "data_origin",
@@ -308,6 +312,7 @@ class OpportunityPipeline:
             "benchmark_median_price_krw",
             "normalized_baseline_median_krw",
             "sample_count",
+            "missing_attributes",
             "source_platform",
             "source_listing_id",
             "source_url",
@@ -323,6 +328,12 @@ class OpportunityPipeline:
                         "rank": idx,
                         "opportunity_score": item.opportunity_score
                         if item.opportunity_score is not None
+                        else "N/A",
+                        "recommendation_category": item.recommendation_category,
+                        "overall_confidence": item.overall_confidence,
+                        "data_completeness_score": f"{item.data_completeness_score * 100:.0f}%",
+                        "valuation_uncertainty_score": f"±{item.valuation_uncertainty_score}%"
+                        if item.valuation_uncertainty_score is not None
                         else "N/A",
                         "evaluation_status": item.evaluation_status,
                         "data_confidence": item.data_confidence,
@@ -342,6 +353,7 @@ class OpportunityPipeline:
                         if item.normalized_baseline_median_krw
                         else "N/A",
                         "sample_count": item.sample_count,
+                        "missing_attributes": "; ".join(item.missing_attributes) if item.missing_attributes else "NONE",
                         "source_platform": item.source_platform,
                         "source_listing_id": item.source_listing_id,
                         "source_url": item.source_url or "",
@@ -350,6 +362,65 @@ class OpportunityPipeline:
                 )
 
         return top_candidates
+
+    @staticmethod
+    def export_manual_review_candidates_to_csv(
+        results: list[OpportunityScoreResult],
+        output_path: str | Path,
+    ) -> list[OpportunityScoreResult]:
+        """DIRECTIVE 008: 신뢰도가 낮거나 불확실성이 커서 상세 확인이 필요한 매물 목록 저장."""
+        review_candidates = [
+            r for r in results if r.recommendation_category == "MANUAL_REVIEW_NEEDED"
+        ]
+
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        fieldnames = [
+            "listing_id",
+            "opportunity_score",
+            "overall_confidence",
+            "data_completeness_score",
+            "missing_attributes",
+            "valuation_uncertainty_score",
+            "price_krw",
+            "sample_count",
+            "vehicle_summary",
+            "review_reason",
+            "source_url",
+        ]
+
+        with open(path, mode="w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for item in review_candidates:
+                reasons = []
+                if item.overall_confidence in ("LOW", "UNRELIABLE"):
+                    reasons.append(f"신뢰도부족({item.overall_confidence})")
+                if item.data_completeness_score < 0.65:
+                    reasons.append(f"데이터불완전({item.data_completeness_score*100:.0f}%)")
+                if item.missing_attributes:
+                    reasons.append(f"누락속성({','.join(item.missing_attributes)})")
+                if not reasons:
+                    reasons.append("상세검증필요")
+
+                writer.writerow(
+                    {
+                        "listing_id": item.listing_id,
+                        "opportunity_score": item.opportunity_score if item.opportunity_score is not None else "N/A",
+                        "overall_confidence": item.overall_confidence,
+                        "data_completeness_score": f"{item.data_completeness_score * 100:.0f}%",
+                        "missing_attributes": "; ".join(item.missing_attributes) if item.missing_attributes else "NONE",
+                        "valuation_uncertainty_score": f"±{item.valuation_uncertainty_score}%" if item.valuation_uncertainty_score is not None else "N/A",
+                        "price_krw": f"{item.price_krw:,}원" if item.price_krw else "N/A",
+                        "sample_count": item.sample_count,
+                        "vehicle_summary": item.vehicle_summary,
+                        "review_reason": " | ".join(reasons),
+                        "source_url": item.source_url or "",
+                    }
+                )
+
+        return review_candidates
 
     @staticmethod
     def export_score_breakdown_csv(
@@ -364,6 +435,10 @@ class OpportunityPipeline:
             "listing_id",
             "evaluation_status",
             "opportunity_score",
+            "recommendation_category",
+            "overall_confidence",
+            "data_completeness_score",
+            "valuation_uncertainty_score",
             "base_score",
             "price_component",
             "mileage_component",
@@ -389,6 +464,10 @@ class OpportunityPipeline:
                         "listing_id": r.listing_id,
                         "evaluation_status": r.evaluation_status,
                         "opportunity_score": r.opportunity_score if r.opportunity_score is not None else "N/A",
+                        "recommendation_category": r.recommendation_category,
+                        "overall_confidence": r.overall_confidence,
+                        "data_completeness_score": f"{r.data_completeness_score * 100:.0f}%",
+                        "valuation_uncertainty_score": f"±{r.valuation_uncertainty_score}%" if r.valuation_uncertainty_score is not None else "N/A",
                         "base_score": r.base_score,
                         "price_component": f"{r.price_component:+.2f}",
                         "mileage_component": f"{r.mileage_component:+.2f}",

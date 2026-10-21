@@ -6,9 +6,10 @@
 3. 중간 계산값 투명성 강화 (가격경쟁력, 주행거리, 사고인증, 신뢰도가중치 등 중간 세부 수치 DTO 보존)
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from statistics import median
+from typing import Any
 
 from chaficial.platforms.base import StandardListingRecord
 
@@ -36,7 +37,7 @@ class OpportunityScoreResult:
 
     # 차량 정보 요약
     vehicle_summary: str
-    model_year: int
+    model_year: int | None
     mileage_km: int
     price_krw: int | None
     product_type: str
@@ -63,6 +64,13 @@ class OpportunityScoreResult:
     confidence_multiplier: float = 1.0
     opportunity_score: float | None = None  # 최종 산출 점수
 
+    # DIRECTIVE 008: 점수와 신뢰도 분리 및 다차원 평가 지표
+    data_completeness_score: float = 1.0  # 데이터 완전성 점수 (0.0 ~ 1.0)
+    missing_attributes: list[str] = field(default_factory=list)  # 누락된 속성 목록
+    valuation_uncertainty_score: float | None = None  # 시세 예측 불확실성 (%)
+    overall_confidence: str = "LOW"  # HIGH, MEDIUM, LOW, UNRELIABLE
+    recommendation_category: str = "RECOMMENDED"  # RECOMMENDED, MANUAL_REVIEW_NEEDED, INSUFFICIENT_DATA, FINANCIAL_PRODUCT
+
     evaluation_status: str = "EVALUATED"  # EVALUATED, INSUFFICIENT_DATA, FINANCIAL_PRODUCT, ANOMALOUS_DATA
     data_confidence: str = "LOW"  # HIGH, MEDIUM, LOW
     has_recent_price_drop: bool = False
@@ -70,23 +78,73 @@ class OpportunityScoreResult:
 
     # 근거 및 한계
     selection_reason: str = ""
-    evaluation_notes: list[str] = None
-    evaluated_at: datetime = None
+    evaluation_notes: list[str] = field(default_factory=list)
+    evaluated_at: datetime | None = None
 
 
 class OpportunityScorer:
-    """CHA-FICIAL OPPORTUNITY SCORER V0.2.1 정밀 코호트 엔진."""
+    """CHA-FICIAL OPPORTUNITY SCORER V0.2.2 정밀 코호트 및 신뢰도 분리 엔진."""
 
     DEFAULT_PARAMS = ScorerParameters()
 
     @classmethod
     def make_cohort_key(cls, record: StandardListingRecord) -> str:
         """비교 표본 그룹핑 키: 제조사_모델_세대_서브모델_파워트레인라인_연식_트림_연료."""
-        gen = record.model_generation or "BASE"
-        sub = record.sub_model or "STANDARD"
-        line = record.powertrain_line or "STANDARD"
-        trim = record.trim_name or "STANDARD"
-        return f"{record.manufacturer}_{record.model_name}_{gen}_{sub}_{line}_{record.model_year}_{trim}_{record.fuel_type}"
+        gen = record.model_generation or "UNKNOWN_GEN"
+        sub = record.sub_model or "UNKNOWN_SUB"
+        line = record.powertrain_line or "UNKNOWN_LINE"
+        year_str = str(record.model_year) if record.model_year is not None else "UNKNOWN_YEAR"
+        trim = record.trim_name or "UNKNOWN_TRIM"
+        fuel = record.fuel_type or "UNKNOWN_FUEL"
+        return f"{record.manufacturer}_{record.model_name}_{gen}_{sub}_{line}_{year_str}_{trim}_{fuel}"
+
+    @classmethod
+    def calculate_data_completeness(cls, record: StandardListingRecord) -> tuple[float, list[str]]:
+        """데이터 완전성 점수(0.0~1.0)와 누락된 속성 목록 계산."""
+        missing = []
+        score = 0.0
+
+        if record.model_generation:
+            score += 0.15
+        else:
+            missing.append("model_generation")
+
+        if record.sub_model and record.sub_model != "UNKNOWN":
+            score += 0.10
+        else:
+            missing.append("sub_model")
+
+        if record.powertrain_line and record.powertrain_line != "UNKNOWN":
+            score += 0.10
+        else:
+            missing.append("powertrain_line")
+
+        if record.trim_name and record.trim_name != "UNKNOWN":
+            score += 0.20
+        else:
+            missing.append("trim_name")
+
+        if record.model_year is not None:
+            score += 0.15
+        else:
+            missing.append("model_year")
+
+        if record.registration_year_month:
+            score += 0.10
+        else:
+            missing.append("registration_year_month")
+
+        if record.accident_state != "UNKNOWN":
+            score += 0.10
+        else:
+            missing.append("accident_state")
+
+        if record.has_inspection_record or record.accident_verification != "UNVERIFIED":
+            score += 0.10
+        else:
+            missing.append("accident_verification")
+
+        return round(score, 2), missing
 
     @classmethod
     def evaluate_listing(
@@ -105,6 +163,8 @@ class OpportunityScorer:
             f"[{target.sub_model}/{target.powertrain_line}] {target.trim_name or ''} "
             f"({target.model_year}년식 / {target.mileage_km:,}km)"
         ).replace("  ", " ")
+
+        completeness_score, missing_attrs = cls.calculate_data_completeness(target)
 
         # 1. 금융 상품(렌트/리스) 사전 격리 (시세 비교군 편입 원천 제외)
         if target.product_type != "CASH_OR_INSTALLMENT" or target.price_krw is None:
@@ -127,6 +187,11 @@ class OpportunityScorer:
                 adjusted_advantage_krw=None,
                 adjusted_advantage_pct=None,
                 opportunity_score=None,
+                data_completeness_score=completeness_score,
+                missing_attributes=missing_attrs,
+                valuation_uncertainty_score=None,
+                overall_confidence="UNRELIABLE",
+                recommendation_category="FINANCIAL_PRODUCT",
                 evaluation_status="FINANCIAL_PRODUCT",
                 data_confidence="LOW",
                 has_recent_price_drop=recent_price_drop,
@@ -177,6 +242,11 @@ class OpportunityScorer:
                 adjusted_advantage_krw=None,
                 adjusted_advantage_pct=None,
                 opportunity_score=None,
+                data_completeness_score=completeness_score,
+                missing_attributes=missing_attrs,
+                valuation_uncertainty_score=None,
+                overall_confidence="UNRELIABLE",
+                recommendation_category="INSUFFICIENT_DATA",
                 evaluation_status="INSUFFICIENT_DATA",
                 data_confidence="LOW",
                 has_recent_price_drop=recent_price_drop,
@@ -250,6 +320,11 @@ class OpportunityScorer:
                 adjusted_advantage_krw=adjusted_fair_value - target.price_krw,
                 adjusted_advantage_pct=round(((adjusted_fair_value - target.price_krw) / adjusted_fair_value) * 100, 2),
                 opportunity_score=None,
+                data_completeness_score=completeness_score,
+                missing_attributes=missing_attrs,
+                valuation_uncertainty_score=None,
+                overall_confidence="UNRELIABLE",
+                recommendation_category="ANOMALOUS_DATA",
                 evaluation_status="ANOMALOUS_DATA",
                 data_confidence="LOW",
                 has_recent_price_drop=recent_price_drop,
@@ -263,6 +338,13 @@ class OpportunityScorer:
         adjusted_advantage_pct = round(
             (adjusted_advantage_krw / adjusted_fair_value) * 100, 2
         )
+
+        # 시세 예측 불확실성 산출 (정규화 시세 분포의 산포도 %)
+        if len(normalized_prices) > 1 and norm_median_price > 0:
+            price_devs = [abs(p - norm_median_price) for p in normalized_prices]
+            val_uncertainty = round((median(price_devs) / norm_median_price) * 100, 1)
+        else:
+            val_uncertainty = 10.0
 
         # 6. 다차원 점수 산정 (모든 중간 계산값 보존)
         base_score = 50.0
@@ -311,18 +393,41 @@ class OpportunityScorer:
 
         final_score = round(max(0.0, min(100.0, raw_score * confidence_multiplier)), 1)
 
+        # DIRECTIVE 008: 종합 신뢰도(overall_confidence) 및 추천 범주(recommendation_category)
+        if sample_count >= 8 and completeness_score >= 0.85 and target.accident_state != "UNKNOWN":
+            overall_conf = "HIGH"
+        elif sample_count >= 5 and completeness_score >= 0.65:
+            overall_conf = "MEDIUM"
+        elif sample_count >= 3:
+            overall_conf = "LOW"
+        else:
+            overall_conf = "UNRELIABLE"
+
+        # 신뢰도가 낮거나(사고미확인/주요정보누락/표본부족) 불확실성이 크면 상세 확인 대상(MANUAL_REVIEW_NEEDED)
+        if (
+            overall_conf in ("LOW", "UNRELIABLE")
+            or completeness_score < 0.65
+            or target.accident_state == "UNKNOWN"
+            or target.accident_verification == "UNVERIFIED"
+        ):
+            rec_cat = "MANUAL_REVIEW_NEEDED"
+        else:
+            rec_cat = "RECOMMENDED"
+
         notes = [
             f"[Leave-One-Out] 대상 제외 독립 표본 {sample_count}대 대상 분석",
             f"표본 단순 중앙가: {raw_median_price:,}원 -> 무사고·기준주행 정규화 시세: {norm_median_price:,}원",
             f"주행거리({target.mileage_km:,}km vs 기준 {baseline_mileage:,}km) 보정: {target_mileage_adj:+,}원",
             f"사고 상태({target.accident_state}/{target.accident_verification}) 보정: {target_acc_penalty:+,}원",
             f"점수 계산식: ({base_score} + 가격경쟁력 {price_component:+.1f} + 주행거리 {mileage_component:+.1f} + 상태 {cond_component:+.1f} + 모멘텀 {momentum_component:+.1f}) x {confidence_multiplier} = {final_score}점",
+            f"완전성 점수: {completeness_score*100:.0f}% (누락: {', '.join(missing_attrs) if missing_attrs else '없음'}) | 시세불확실성: ±{val_uncertainty}%",
+            f"추천 분류: {rec_cat} (종합 신뢰도: {overall_conf})",
             "주의: Adjusted Advantage는 단순 시세 호가 경쟁력 지표이며 확정 순익이나 판매 수수료가 아닙니다.",
         ]
 
         reason = (
             f"정규화 상태조정 시세({adjusted_fair_value:,}원) 대비 {adjusted_advantage_pct:+.1f}% 가격 우위. "
-            f"기회점수: {final_score}/100 [EXPERIMENTAL_ESTIMATE]"
+            f"기회점수: {final_score}/100 [EXPERIMENTAL_ESTIMATE] (신뢰도: {overall_conf}, 분류: {rec_cat})"
         )
 
         return OpportunityScoreResult(
@@ -351,6 +456,11 @@ class OpportunityScorer:
             raw_score=raw_score,
             confidence_multiplier=confidence_multiplier,
             opportunity_score=final_score,
+            data_completeness_score=completeness_score,
+            missing_attributes=missing_attrs,
+            valuation_uncertainty_score=val_uncertainty,
+            overall_confidence=overall_conf,
+            recommendation_category=rec_cat,
             evaluation_status="EVALUATED",
             data_confidence=confidence,
             has_recent_price_drop=recent_price_drop,

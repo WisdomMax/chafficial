@@ -84,10 +84,17 @@ def main():
         evaluated_results, args.output, top_n=args.top
     )
 
-    # 4-1. DIRECTIVE 007-B: 세부 중간 계산값 breakdown CSV 출력
-    breakdown_path = "outputs/directive_007b_score_breakdown.csv"
+    # 4-1. DIRECTIVE 008: 세부 중간 계산값 breakdown CSV 및 상세 확인 목록 출력
+    breakdown_path = "outputs/directive_008_score_breakdown.csv"
     OpportunityPipeline.export_score_breakdown_csv(evaluated_results, breakdown_path)
     print(f"[+] 점수 산출 상세 중간 계산값 저장 완료: {breakdown_path}")
+
+    manual_review_path = "outputs/directive_008_manual_review_needed.csv"
+    review_items = OpportunityPipeline.export_manual_review_candidates_to_csv(evaluated_results, manual_review_path)
+    print(f"[+] 상세 확인(검증) 필요 매물 저장 완료: {manual_review_path} (총 {len(review_items)}건)")
+
+    # 하위 호환 007-B 파일도 동시 보존
+    OpportunityPipeline.export_score_breakdown_csv(evaluated_results, "outputs/directive_007b_score_breakdown.csv")
 
     # 5. 콘솔 리포트 요약
     print("\n" + "=" * 70)

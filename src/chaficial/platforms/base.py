@@ -24,7 +24,7 @@ class StandardListingRecord:
     trim_name: str | None = None  # 모던, 인스퍼레이션, 스마트 등
 
     # 연식 및 등록
-    model_year: int = 2021  # 모델연도 (형식연도, 예: 2022)
+    model_year: int | None = None  # 모델연도 (형식연도, 미확인 시 None)
     registration_year_month: str | None = None  # 최초등록연월 (예: "2021-09")
     mileage_km: int = 0  # 주행거리 (km)
     fuel_type: str = "가솔린"  # 가솔린, 하이브리드, LPG, 디젤, 전기, UNKNOWN
