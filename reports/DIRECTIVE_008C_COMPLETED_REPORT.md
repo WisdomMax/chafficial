@@ -16,7 +16,7 @@
 
 | 지시 사항 | 조치 결과 | 증빙 및 산출물 파일 |
 | :--- | :--- | :--- |
-| **1. 실차 지문 등급화** | 물리 제원 일치 그룹을 확정 병합하지 않고 `PROBABLE_SAME`(135개) 및 `DISTINCT`(147대)로 등급화 | [`outputs/directive_008c_duplicate_vehicle_audit.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_008c_duplicate_vehicle_audit.csv) |
+| **1. 실차 지문 등급화** | 물리 제원 일치 그룹을 확정 병합하지 않고 `PROBABLE_SAME`(135개) 및 `SINGLE_OBSERVED`(147대)로 등급화 | [`outputs/directive_008c_duplicate_vehicle_audit.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_008c_duplicate_vehicle_audit.csv) |
 | **2. 가격 결측 정밀 처리** | 매물 42956168의 가격을 0원이 아닌 `NULL`로 명시적 저장 및 평가 원천 배제 | [`templates/DIRECTIVE_008C_UNIQUE_VEHICLES.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/templates/DIRECTIVE_008C_UNIQUE_VEHICLES.csv) |
 | **3. 제외 표본 전수 공개** | 282대 중 제외된 58대(금융상품 4대, 표본 부족 54대)의 제외 사유 전수 공개 | [`outputs/directive_008c_excluded_vehicles_audit.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_008c_excluded_vehicles_audit.csv) |
 | **4. 추천 목록 2종 분리** | 탐색용 상위 후보(20대)와 실질 추천 가능 후보(20대) 분리 | [`outputs/directive_008c_top_actionable_recommendations.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_008c_top_actionable_recommendations.csv) |

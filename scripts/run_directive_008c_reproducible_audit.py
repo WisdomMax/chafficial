@@ -52,7 +52,7 @@ def run_directive_008c():
 
     print(f"[+] 추정 고유 실차(Estimated Unique Vehicles): 총 {unique_vehicle_count}대")
     print(f"    - 동일 실차 추정 그룹 (PROBABLE_SAME): {duplicate_vehicle_count}개 실차 ({duplicate_listing_count}건 광고)")
-    print(f"    - 단독 등록 고유 실차 (DISTINCT): {single_vehicle_count}대")
+    print(f"    - 단독 관측 매물 (SINGLE_OBSERVED): {single_vehicle_count}대")
 
     # 2. 대표 레코드(Canonical Record) 선정 및 가격 결측(0원 배제 -> None/NULL) 처리
     canonical_records: list[StandardListingRecord] = []
@@ -89,7 +89,7 @@ def run_directive_008c():
             canon_price_str = "NULL"
             price_status = "MISSING_PRICE_FINANCIAL_PRODUCT"
 
-        identity_grade = "PROBABLE_SAME" if len(group) > 1 else "DISTINCT"
+        identity_grade = "PROBABLE_SAME" if len(group) > 1 else "SINGLE_OBSERVED"
 
         unique_vehicles_rows.append({
             "vehicle_fingerprint": fp,
@@ -112,7 +112,7 @@ def run_directive_008c():
             "min_observed_price_krw": min_p,
             "max_observed_price_krw": max_p,
             "price_spread_krw": price_spread,
-            "identification_basis": "10개 물리적 제원(제조사_모델_세대_서브_라인_등록연월_연식_주행거리1km_연료_트림) 완전 일치",
+            "identification_basis": "10개 물리적 제원(제조사_모델_세대_서브_라인_등록연월_연식_주행거리1km_연료_트림) 완전 일치 기반 추정",
         })
 
     # templates/DIRECTIVE_008C_UNIQUE_VEHICLES.csv 저장
@@ -212,9 +212,9 @@ def run_directive_008c():
 | 신뢰도 등급 | 판정 기준 | 해당 실차 수 | 해당 광고 레코드 수 | 기술적 의미 및 처리 |
 | :--- | :--- | :---: | :---: | :--- |
 | **`CONFIRMED_SAME`** | 차량번호 또는 차대번호 일치 | 0대 | 0건 | 현재 모바일 웹 카드 수집 단계에서는 차량번호 미확보 (향후 상세페이지 확장 시 적용) |
-| **`PROBABLE_SAME`** | 10개 물리 제원(등록연월, 연식, 1km단위 주행거리 등) 완전 일치 | **{duplicate_vehicle_count}대** | **{duplicate_listing_count}건** | 복수 상사/딜러 동시 광고 관행에 따른 동일 실차 추정 (신뢰도 99%+) |
+| **`PROBABLE_SAME`** | 10개 물리 제원(등록연월, 연식, 1km단위 주행거리 등) 완전 일치 | **{duplicate_vehicle_count}대** | **{duplicate_listing_count}건** | 복수 상사/딜러 동시 광고 관행에 따른 동일 실차 추정 (속성 기반 추정) |
 | **`UNCERTAIN`** | 주행거리 또는 연식이 근접하나 일부 속성 상이 | 0대 | 0건 | 자동 병합하지 않고 독립 개체 유지 |
-| **`DISTINCT`** | 물리 제원이 상이하여 서로 다른 고유 차량으로 식별 | **{single_vehicle_count}대** | **{single_vehicle_count}건** | 단독 등록된 고유 차량 |
+| **`SINGLE_OBSERVED`** | 단독으로 관측된 매물 | **{single_vehicle_count}대** | **{single_vehicle_count}건** | 단독 관측된 고유 매물 |
 | **합계** | **추정 고유 실차 전체** | **{unique_vehicle_count}대** | **{total_listing_count}건** | 실차당 평균 {total_listing_count / unique_vehicle_count:.2f}건 광고 관측 |
 
 > **감사 결과:** 135개 중복 그룹 전수에 대해 식별 근거와 광고 목록을 [`outputs/directive_008c_duplicate_vehicle_audit.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_008c_duplicate_vehicle_audit.csv)에 투명하게 공개했습니다.
@@ -349,7 +349,7 @@ $$\\text{{APE}} = \\frac{{|\\text{{actual\\_asking\\_price}} - \\text{{predicted
 
 | 지시 사항 | 조치 결과 | 증빙 및 산출물 파일 |
 | :--- | :--- | :--- |
-| **1. 실차 지문 등급화** | 물리 제원 일치 그룹을 확정 병합하지 않고 `PROBABLE_SAME`(135개) 및 `DISTINCT`(147대)로 등급화 | [`outputs/directive_008c_duplicate_vehicle_audit.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_008c_duplicate_vehicle_audit.csv) |
+| **1. 실차 지문 등급화** | 물리 제원 일치 그룹을 확정 병합하지 않고 `PROBABLE_SAME`(135개) 및 `SINGLE_OBSERVED`(147대)로 등급화 | [`outputs/directive_008c_duplicate_vehicle_audit.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_008c_duplicate_vehicle_audit.csv) |
 | **2. 가격 결측 정밀 처리** | 매물 42956168의 가격을 0원이 아닌 `NULL`로 명시적 저장 및 평가 원천 배제 | [`templates/DIRECTIVE_008C_UNIQUE_VEHICLES.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/templates/DIRECTIVE_008C_UNIQUE_VEHICLES.csv) |
 | **3. 제외 표본 전수 공개** | 282대 중 제외된 {excl_count}대(금융상품 {len(excl_by_cat['FINANCIAL_PRODUCT'])}대, 표본 부족 {len(excl_by_cat['INSUFFICIENT_DATA'])}대)의 제외 사유 전수 공개 | [`outputs/directive_008c_excluded_vehicles_audit.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_008c_excluded_vehicles_audit.csv) |
 | **4. 추천 목록 2종 분리** | 탐색용 상위 후보(20대)와 실질 추천 가능 후보({len(top_actionable)}대) 분리 | [`outputs/directive_008c_top_actionable_recommendations.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_008c_top_actionable_recommendations.csv) |
