@@ -1,0 +1,21 @@
+source_platform,source_listing_id,source_url,seller_reference,manufacturer,model_name,model_generation,trim_name,model_year,mileage_km,fuel_type,transmission,price_krw,raw_location,accident_state,has_inspection_record,observed_at,listing_status
+ENCAR,38291021,https://car.encar.com/detail?carid=38291021,DEALER_01,현대,아반떼,CN7,모던,2021,21500,가솔린,자동,14500000,서울 동대문구 장안동,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291022,https://car.encar.com/detail?carid=38291022,DEALER_02,현대,아반떼,CN7,모던,2021,45000,가솔린,자동,15500000,경기 수원시 권선구,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+KB_CHACHACHA,24901823,https://www.kbchachacha.com/public/car/detail.kbc?carSeq=24901823,DEALER_03,현대,아반떼,CN7,모던,2021,68000,가솔린,자동,14800000,인천 서구 가좌동,SIMPLE_REPAIR,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291024,https://car.encar.com/detail?carid=38291024,DEALER_04,현대,아반떼,CN7,모던,2021,32000,가솔린,자동,16000000,서울 강서구 양천로,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+KB_CHACHACHA,24901825,https://www.kbchachacha.com/public/car/detail.kbc?carSeq=24901825,DEALER_05,현대,아반떼,CN7,모던,2021,89000,가솔린,자동,13200000,경기 부천시 송내대로,SIMPLE_REPAIR,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291026,https://car.encar.com/detail?carid=38291026,DEALER_06,현대,아반떼,CN7,모던,2021,115000,가솔린,자동,11800000,경기 수원시 권선구,MAJOR_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291027,https://car.encar.com/detail?carid=38291027,DEALER_07,현대,아반떼,CN7,인스퍼레이션,2021,28000,가솔린,자동,18200000,서울 서초구 양재동,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+KB_CHACHACHA,24901828,https://www.kbchachacha.com/public/car/detail.kbc?carSeq=24901828,DEALER_08,현대,아반떼,CN7,인스퍼레이션,2021,41000,가솔린,자동,17900000,경기 수원시 권선구,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+KCAR,EC60812929,https://www.kcar.com/bc/detail/carSearchDetail?i_sCarCd=EC60812929,KCAR_DIRECT,현대,아반떼,CN7,인스퍼레이션,2021,55000,가솔린,자동,17200000,서울 영등포구 선유로,SIMPLE_REPAIR,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291030,https://car.encar.com/detail?carid=38291030,DEALER_10,현대,아반떼,CN7,인스퍼레이션,2021,19000,가솔린,자동,16800000,서울 동대문구 장안동,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291031,https://car.encar.com/detail?carid=38291031,DEALER_11,현대,그랜저,GN7,캘리그래피,2023,18000,가솔린,자동,38500000,서울 강남구 율현동,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+KB_CHACHACHA,24901832,https://www.kbchachacha.com/public/car/detail.kbc?carSeq=24901832,DEALER_12,현대,그랜저,GN7,캘리그래피,2023,32000,가솔린,자동,39800000,경기 수원시 권선구,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291033,https://car.encar.com/detail?carid=38291033,DEALER_13,현대,그랜저,GN7,캘리그래피,2023,45000,가솔린,자동,37200000,인천 서구 염곡로,SIMPLE_REPAIR,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291034,https://car.encar.com/detail?carid=38291034,DEALER_14,현대,그랜저,GN7,캘리그래피,2023,12000,가솔린,자동,36000000,서울 동대문구 장안동,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291035,https://car.encar.com/detail?carid=38291035,DEALER_15,기아,스포티지,NQ5,시그니처,2022,25000,디젤,자동,26500000,경기 수원시 권선구,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+KB_CHACHACHA,24901836,https://www.kbchachacha.com/public/car/detail.kbc?carSeq=24901836,DEALER_16,기아,스포티지,NQ5,시그니처,2022,48000,디젤,자동,25200000,인천 남동구 고잔로,SIMPLE_REPAIR,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291037,https://car.encar.com/detail?carid=38291037,DEALER_17,기아,스포티지,NQ5,시그니처,2022,35000,디젤,자동,25800000,서울 강서구 양천로,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291038,https://car.encar.com/detail?carid=38291038,DEALER_18,기아,스포티지,NQ5,시그니처,2022,18000,디젤,자동,24200000,서울 동대문구 장안동,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+ENCAR,38291039,https://car.encar.com/detail?carid=38291039,DEALER_19,제네시스,G80,RG3,기본형,2022,31000,가솔린,자동,44000000,서울 서초구 양재동,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
+KB_CHACHACHA,24901840,https://www.kbchachacha.com/public/car/detail.kbc?carSeq=24901840,DEALER_20,제네시스,GV70,JK1,가솔린2.5터보,2022,29000,가솔린,자동,41500000,경기 수원시 권선구,NO_ACCIDENT,Y,2026-10-21T09:00:00Z,ACTIVE
