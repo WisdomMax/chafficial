@@ -1,0 +1,1258 @@
+{
+  "batch_id": "ENCAR_CN7_LIVE_20261021_120825",
+  "source_platform": "ENCAR",
+  "search_scope": "현대 아반떼 CN7",
+  "search_parameters": {
+    "type": "car",
+    "action": "(And.Hidden.N._.(C.CarType.Y._.(C.Manufacturer.현대._.ModelGroup.아반떼.)))",
+    "title": "현대 아반떼",
+    "sort": "MobileModifiedDate"
+  },
+  "collected_at_utc": "2026-10-21T03:08:25.002382+00:00",
+  "collected_at_kst": "2026-10-21 12:08:25 KST",
+  "completed_at_utc": "2026-10-21T03:08:40.677884+00:00",
+  "completed_at_kst": "2026-10-21 12:08:40 KST",
+  "total_cards_collected": 248,
+  "raw_cards": [
+    {
+      "carid": "42911462",
+      "href": "https://fem.encar.com/cars/detail/42911462?advClickPosition=mweb_mopre_g1_t5875&listAdvType=mpremium&type=detail&view_type=checked",
+      "raw_text": "#컨디션 최상,#화이트 시트,#디지털 계기판,#17인치휠 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 모던 21/10식(22년형)136,182km가솔린충남 1,299만원 회색 계열"
+    },
+    {
+      "carid": "42817032",
+      "href": "https://fem.encar.com/cars/detail/42817032?advClickPosition=mweb_mopre_g2_t5875&listAdvType=mpremium&type=detail&view_type=checked",
+      "raw_text": "무사고/1인신조/실주행거리/버튼시동/순정네비 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 MD M16 GDI 에비뉴 13/06식(14년형)68,417km가솔린인천 590만원 검정색 계열"
+    },
+    {
+      "carid": "42867495",
+      "href": "https://fem.encar.com/cars/detail/42867495?advClickPosition=mweb_mopre_g3_t5875&listAdvType=mpremium&type=detail&view_type=checked",
+      "raw_text": "완전무사고/스마트키/네비/통풍시트/하이패스/스마트쿠르즈 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 하이브리드 (CN7) 모던 23/09식(24년형)13,148km가솔린+전기경기 2,290만원 검정색 계열"
+    },
+    {
+      "carid": "42826706",
+      "href": "https://fem.encar.com/cars/detail/42826706?advClickPosition=mweb_mopre_g4_t5875&listAdvType=mpremium&type=detail&view_type=checked",
+      "raw_text": "전액할부가능,대차가능,순정네비게이션,후방카메라,이력없슴 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 스마트 15/10식(16년형)50,822km가솔린경기 890만원 검정색 계열"
+    },
+    {
+      "carid": "42862425",
+      "href": "https://fem.encar.com/cars/detail/42862425?advClickPosition=mweb_mopre_g5_t5875&listAdvType=mpremium&type=detail&view_type=checked",
+      "raw_text": "한우카+무사고+병적관리+안드로이드오토+버튼시동+후방카메라!! 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 스타일 17/07식(18년형)103,762km가솔린경남 850만원 검정색 계열"
+    },
+    {
+      "carid": "41525725",
+      "href": "https://fem.encar.com/cars/detail/41525725?advClickPosition=mweb_mopre_g6_t5875&listAdvType=mpremium&type=detail&view_type=checked",
+      "raw_text": "무사고/스마트키1/후카/짧은키로수// 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 스타일 19/02식89,747km가솔린경기 1,150만원 검정색 계열"
+    },
+    {
+      "carid": "42100331",
+      "href": "https://fem.encar.com/cars/detail/42100331?advClickPosition=mweb_mopre_g7_t5875&listAdvType=mpremium&type=detail&view_type=checked",
+      "raw_text": "엔카 실촬영 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/09식(18년형)73,883km가솔린경북 1,090만원 검정색 계열"
+    },
+    {
+      "carid": "42777560",
+      "href": "https://fem.encar.com/cars/detail/42777560?advClickPosition=mweb_mopre_g8_t5875&listAdvType=mpremium&type=detail&view_type=normal",
+      "raw_text": "엔카 실촬영 아반떼 (CN7) 1.6 모던 20/09식(21년형)121,178km가솔린충남 1,199만원 검정색 계열"
+    },
+    {
+      "carid": "42434033",
+      "href": "https://fem.encar.com/cars/detail/42434033?advClickPosition=mweb_mopre_g9_t5875&listAdvType=mpremium&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 모던 16/01식120,295km가솔린서울 계약중680만원 검정색 계열"
+    },
+    {
+      "carid": "42947850",
+      "href": "https://fem.encar.com/cars/detail/42947850?advClickPosition=mweb_mopre_g10_t5875&listAdvType=mpremium&type=detail&view_type=checked",
+      "raw_text": "#우수한 연비 #주행보조 #안전보조 #비흡연 #첫차 강추 엔카진단+ 무사고진단 내외부확인 아반떼 하이브리드 (CN7) 인스퍼레이션 22/09식(23년형)75,395km가솔린+전기충남 1,970만원 검정색 계열"
+    },
+    {
+      "carid": "42838715",
+      "href": "https://fem.encar.com/cars/detail/42838715?advClickPosition=mweb_mowoo_g1_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 AD 1.6 스마트 19/01식 88,339km 가솔린 대전 1,140만원"
+    },
+    {
+      "carid": "42946330",
+      "href": "https://fem.encar.com/cars/detail/42946330?advClickPosition=mweb_mowoo_g2_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스마트 15/11식(16년형) 70,828km 가솔린 대구 850만원"
+    },
+    {
+      "carid": "42872963",
+      "href": "https://fem.encar.com/cars/detail/42872963?advClickPosition=mweb_mowoo_g3_t5875&listAdvType=mowoo&type=detail&view_type=checked",
+      "raw_text": "엔카진단++ 더 뉴 아반떼 하이브리드 (CN7) 인스퍼레이션 25/04식 38,185km 가솔린+전기 경기 2,490만원"
+    },
+    {
+      "carid": "42834204",
+      "href": "https://fem.encar.com/cars/detail/42834204?advClickPosition=mweb_mowoo_g4_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스마트 16/11식(17년형) 110,522km 가솔린 경기 759만원"
+    },
+    {
+      "carid": "42563538",
+      "href": "https://fem.encar.com/cars/detail/42563538?advClickPosition=mweb_mowoo_g5_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 인스퍼레이션 20/06식(21년형) 128,808km 가솔린 서울 1,075만원"
+    },
+    {
+      "carid": "42931683",
+      "href": "https://fem.encar.com/cars/detail/42931683?advClickPosition=mweb_mowoo_g6_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 인스퍼레이션 23/01식 44,848km 가솔린 서울 1,850만원"
+    },
+    {
+      "carid": "42889457",
+      "href": "https://fem.encar.com/cars/detail/42889457?advClickPosition=mweb_mowoo_g7_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 (CN7) 1.6 모던 24/04식 55,582km 가솔린 인천 1,890만원"
+    },
+    {
+      "carid": "41734210",
+      "href": "https://fem.encar.com/cars/detail/41734210?advClickPosition=mweb_mowoo_g8_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 모던 21/12식(22년형) 92,485km 가솔린 경기 1,250만원"
+    },
+    {
+      "carid": "42969608",
+      "href": "https://fem.encar.com/cars/detail/42969608?advClickPosition=mweb_mowoo_g9_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 23/04식(24년형) 42,076km 가솔린 경남 1,690만원"
+    },
+    {
+      "carid": "42404602",
+      "href": "https://fem.encar.com/cars/detail/42404602?advClickPosition=mweb_mowoo_g10_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 1.6 GDi 스마트 기본형 14/01식 177,072km 가솔린 전남광주 270만원"
+    },
+    {
+      "carid": "42302630",
+      "href": "https://fem.encar.com/cars/detail/42302630?advClickPosition=mweb_mowoo_g11_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 LPi 스타일 20/05식(21년형) 21,176km LPG(일반인 구입) 경기 1,200만원"
+    },
+    {
+      "carid": "42819094",
+      "href": "https://fem.encar.com/cars/detail/42819094?advClickPosition=mweb_mowoo_g12_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 (CN7) 2.0 N 23/09식(24년형) 15,751km 가솔린 경기 2,150만원"
+    },
+    {
+      "carid": "42963512",
+      "href": "https://fem.encar.com/cars/detail/42963512?advClickPosition=mweb_mowoo_g13_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 AD 1.6 스마트 초이스 20/01식 59,832km 가솔린 인천 970만원"
+    },
+    {
+      "carid": "42607006",
+      "href": "https://fem.encar.com/cars/detail/42607006?advClickPosition=mweb_mowoo_g14_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 터보 N Line 인스퍼레이션 20/11식(21년형) 98,794km 가솔린 대구 1,399만원"
+    },
+    {
+      "carid": "42571775",
+      "href": "https://fem.encar.com/cars/detail/42571775?advClickPosition=mweb_mowoo_g15_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 1.6 GDi 모던 기본형 14/06식 142,417km 가솔린 대구 425만원"
+    },
+    {
+      "carid": "42614491",
+      "href": "https://fem.encar.com/cars/detail/42614491?advClickPosition=mweb_mowoo_g16_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 터보 스포츠 익스트림 셀렉션 17/04식(18년형) 131,537km 가솔린 대구 990만원"
+    },
+    {
+      "carid": "42728880",
+      "href": "https://fem.encar.com/cars/detail/42728880?advClickPosition=mweb_mowoo_g17_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 모던 21/03식 38,489km 가솔린 인천 1,250만원"
+    },
+    {
+      "carid": "42095363",
+      "href": "https://fem.encar.com/cars/detail/42095363?advClickPosition=mweb_mowoo_g18_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 모던 21/04식 69,783km 가솔린 경기 1,430만원"
+    },
+    {
+      "carid": "42687488",
+      "href": "https://fem.encar.com/cars/detail/42687488?advClickPosition=mweb_mowoo_g19_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 MD M16 GDI 탑 11/02식 123,857km 가솔린 대구 470만원"
+    },
+    {
+      "carid": "42934859",
+      "href": "https://fem.encar.com/cars/detail/42934859?advClickPosition=mweb_mowoo_g20_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 밸류 플러스 18/07식 91,726km 가솔린 부산 679만원"
+    },
+    {
+      "carid": "42447247",
+      "href": "https://fem.encar.com/cars/detail/42447247?advClickPosition=mweb_mowoo_g21_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스마트 17/07식(18년형) 63,229km 가솔린 경기 920만원"
+    },
+    {
+      "carid": "42922013",
+      "href": "https://fem.encar.com/cars/detail/42922013?advClickPosition=mweb_mowoo_g22_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 인스퍼레이션 22/03식(23년형) 102,885km 가솔린 경남 1,570만원"
+    },
+    {
+      "carid": "42396929",
+      "href": "https://fem.encar.com/cars/detail/42396929?advClickPosition=mweb_mowoo_g23_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스마트 16/03식 38,631km 가솔린 서울 830만원"
+    },
+    {
+      "carid": "42321283",
+      "href": "https://fem.encar.com/cars/detail/42321283?advClickPosition=mweb_mowoo_g24_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스타일 15/09식(16년형) 135,596km 가솔린 경기 620만원"
+    },
+    {
+      "carid": "42742313",
+      "href": "https://fem.encar.com/cars/detail/42742313?advClickPosition=mweb_mowoo_g25_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 MD M16 GDI 럭셔리 10/10식(11년형) 129,144km 가솔린 전남광주 299만원"
+    },
+    {
+      "carid": "42760043",
+      "href": "https://fem.encar.com/cars/detail/42760043?advClickPosition=mweb_mowoo_g26_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 1.6 GDi 스마트 기본형 15/08식(16년형) 56,785km 가솔린 서울 520만원"
+    },
+    {
+      "carid": "42956427",
+      "href": "https://fem.encar.com/cars/detail/42956427?advClickPosition=mweb_mowoo_g27_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스마트 16/08식(17년형) 108,242km 가솔린 인천 749만원"
+    },
+    {
+      "carid": "42777674",
+      "href": "https://fem.encar.com/cars/detail/42777674?advClickPosition=mweb_mowoo_g28_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 1.6 GDi 텐밀리언 리미티드 기본형 15/01식 100,019km 가솔린 전남광주 540만원"
+    },
+    {
+      "carid": "40703842",
+      "href": "https://fem.encar.com/cars/detail/40703842?advClickPosition=mweb_mowoo_g29_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 모던 21/06식 58,693km 가솔린 대전 1,380만원"
+    },
+    {
+      "carid": "42401721",
+      "href": "https://fem.encar.com/cars/detail/42401721?advClickPosition=mweb_mowoo_g30_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 AD 1.6 스마트 20/02식 88,119km 가솔린 서울 930만원"
+    },
+    {
+      "carid": "42185837",
+      "href": "https://fem.encar.com/cars/detail/42185837?advClickPosition=mweb_mowoo_g31_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 AD 1.6 스타일 19/01식 62,330km 가솔린 경남 950만원"
+    },
+    {
+      "carid": "42316208",
+      "href": "https://fem.encar.com/cars/detail/42316208?advClickPosition=mweb_mowoo_g32_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 모던 20/12식(21년형) 40,243km 가솔린 대구 1,650만원"
+    },
+    {
+      "carid": "42785581",
+      "href": "https://fem.encar.com/cars/detail/42785581?advClickPosition=mweb_mowoo_g33_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스타일 15/11식(16년형) 133,073km 가솔린 인천 550만원"
+    },
+    {
+      "carid": "42397829",
+      "href": "https://fem.encar.com/cars/detail/42397829?advClickPosition=mweb_mowoo_g34_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스타일 16/03식 158,837km 가솔린 대구 459만원"
+    },
+    {
+      "carid": "42947686",
+      "href": "https://fem.encar.com/cars/detail/42947686?advClickPosition=mweb_mowoo_g35_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 1.6 GDi 모던 기본형 15/02식 101,929km 가솔린 전남광주 399만원"
+    },
+    {
+      "carid": "42915143",
+      "href": "https://fem.encar.com/cars/detail/42915143?advClickPosition=mweb_mowoo_g36_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스마트 16/05식(17년형) 42,532km 가솔린 서울 790만원"
+    },
+    {
+      "carid": "42318595",
+      "href": "https://fem.encar.com/cars/detail/42318595?advClickPosition=mweb_mowoo_g37_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 모던 15/11식(16년형) 69,401km 가솔린 전남광주 750만원"
+    },
+    {
+      "carid": "42603528",
+      "href": "https://fem.encar.com/cars/detail/42603528?advClickPosition=mweb_mowoo_g38_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 모던 20/05식(21년형) 175,066km 가솔린 경기 995만원"
+    },
+    {
+      "carid": "42854892",
+      "href": "https://fem.encar.com/cars/detail/42854892?advClickPosition=mweb_mowoo_g39_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스마트 17/02식 116,035km 가솔린 경기 750만원"
+    },
+    {
+      "carid": "42618670",
+      "href": "https://fem.encar.com/cars/detail/42618670?advClickPosition=mweb_mowoo_g40_t5875&listAdvType=mowoo&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 모던 21/08식 18,078km 가솔린 경기 1,290만원"
+    },
+    {
+      "carid": "42623235",
+      "href": "https://fem.encar.com/cars/detail/42623235?advClickPosition=mweb_mhightlight_g1_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 아반떼 (CN7) 1.6 모던 21/08식18,078km가솔린경기 1,290만원 집앞배송 환불가능"
+    },
+    {
+      "carid": "42537798",
+      "href": "https://fem.encar.com/cars/detail/42537798?advClickPosition=mweb_mhightlight_g2_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 21/08식108,805km가솔린경기 1,590만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42922089",
+      "href": "https://fem.encar.com/cars/detail/42922089?advClickPosition=mweb_mhightlight_g3_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단 무사고진단 아반떼 AD 1.6 GDI 스마트 15/12식(16년형)81,302km가솔린서울 760만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42956196",
+      "href": "https://fem.encar.com/cars/detail/42956196?advClickPosition=mweb_mhightlight_g4_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 더 뉴 아반떼 하이브리드 (CN7) 모던 23/09식(24년형)10,174km가솔린+전기인천 2,300만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42956182",
+      "href": "https://fem.encar.com/cars/detail/42956182?advClickPosition=mweb_mhightlight_g5_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 하이브리드 (CN7) 인스퍼레이션 22/09식(23년형)75,395km가솔린+전기충남 1,970만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42873012",
+      "href": "https://fem.encar.com/cars/detail/42873012?advClickPosition=mweb_mhightlight_g6_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 24/01식49,198km가솔린경기 2,259만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42751401",
+      "href": "https://fem.encar.com/cars/detail/42751401?advClickPosition=mweb_mhightlight_g7_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 2.0 N 21/10식(22년형)108,548km가솔린대전 1,890만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42852959",
+      "href": "https://fem.encar.com/cars/detail/42852959?advClickPosition=mweb_mhightlight_g8_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 텐밀리언 리미티드 기본형 15/01식49,999km가솔린서울 830만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42719367",
+      "href": "https://fem.encar.com/cars/detail/42719367?advClickPosition=mweb_mhightlight_g9_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 터보 N Line 스포츠 21/05식114,126km가솔린경남 1,290만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42851063",
+      "href": "https://fem.encar.com/cars/detail/42851063?advClickPosition=mweb_mhightlight_g10_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/12식(18년형)62,040km가솔린서울 1,059만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42831311",
+      "href": "https://fem.encar.com/cars/detail/42831311?advClickPosition=mweb_mhightlight_g11_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 21/12식(22년형)90,462km가솔린충남 1,599만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "41981368",
+      "href": "https://fem.encar.com/cars/detail/41981368?advClickPosition=mweb_mhightlight_g12_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 MD M16 GDI 럭셔리 12/01식148,188km가솔린경기 380만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42128248",
+      "href": "https://fem.encar.com/cars/detail/42128248?advClickPosition=mweb_mhightlight_g13_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 스마트 기본형 15/01식58,508km가솔린경기 690만원 집앞배송 환불가능"
+    },
+    {
+      "carid": "42953087",
+      "href": "https://fem.encar.com/cars/detail/42953087?advClickPosition=mweb_mhightlight_g14_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 텐밀리언 리미티드 기본형 15/07식(16년형)116,615km가솔린경기 630만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42791251",
+      "href": "https://fem.encar.com/cars/detail/42791251?advClickPosition=mweb_mhightlight_g15_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 N Line 25/02식34,862km가솔린울산 2,580만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42713414",
+      "href": "https://fem.encar.com/cars/detail/42713414?advClickPosition=mweb_mhightlight_g16_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 25/03식9,382km가솔린울산 2,630만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42737178",
+      "href": "https://fem.encar.com/cars/detail/42737178?advClickPosition=mweb_mhightlight_g17_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 1.6 GDi 모던 기본형 15/05식(16년형)169,924km가솔린대구 530만원"
+    },
+    {
+      "carid": "42662594",
+      "href": "https://fem.encar.com/cars/detail/42662594?advClickPosition=mweb_mhightlight_g18_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 (CN7) 1.6 모던 24/07식(25년형)5,751km가솔린대구 2,299만원"
+    },
+    {
+      "carid": "42565599",
+      "href": "https://fem.encar.com/cars/detail/42565599?advClickPosition=mweb_mhightlight_g19_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 (CN7) 1.6 모던 24/03식10,785km가솔린대구 2,299만원"
+    },
+    {
+      "carid": "42662604",
+      "href": "https://fem.encar.com/cars/detail/42662604?advClickPosition=mweb_mhightlight_g20_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 AD 1.6 GDI 모던 15/10식(16년형)65,397km가솔린대구 1,090만원"
+    },
+    {
+      "carid": "42947543",
+      "href": "https://fem.encar.com/cars/detail/42947543?advClickPosition=mweb_mhightlight_g21_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 AD 1.6 스마트 초이스 19/12식(20년형)97,266km가솔린대구 1,150만원"
+    },
+    {
+      "carid": "42712337",
+      "href": "https://fem.encar.com/cars/detail/42712337?advClickPosition=mweb_mhightlight_g22_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 18/03식27,671km가솔린대전 1,150만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42974181",
+      "href": "https://fem.encar.com/cars/detail/42974181?advClickPosition=mweb_mhightlight_g24_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 모던 20/07식(21년형)48,252km가솔린경기 1,620만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42956156",
+      "href": "https://fem.encar.com/cars/detail/42956156?advClickPosition=mweb_mhightlight_g25_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 스마트 21/07식101,519km가솔린경기 990만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42940889",
+      "href": "https://fem.encar.com/cars/detail/42940889?advClickPosition=mweb_mhightlight_g26_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 더 뉴 아반떼 (CN7) 1.6 모던 25/09식(26년형)32,342km가솔린경기 2,130만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42916959",
+      "href": "https://fem.encar.com/cars/detail/42916959?advClickPosition=mweb_mhightlight_g27_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 22/12식(23년형)40,932km가솔린경기 1,950만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42890703",
+      "href": "https://fem.encar.com/cars/detail/42890703?advClickPosition=mweb_mhightlight_g28_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 2.0 N 22/07식75,006km가솔린경남 1,880만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42483695",
+      "href": "https://fem.encar.com/cars/detail/42483695?advClickPosition=mweb_mhightlight_g29_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/07식(18년형)52,828km가솔린서울 1,040만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42118469",
+      "href": "https://fem.encar.com/cars/detail/42118469?advClickPosition=mweb_mhightlight_g30_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 스마트 19/05식(20년형)46,568km가솔린서울 1,160만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42688093",
+      "href": "https://fem.encar.com/cars/detail/42688093?advClickPosition=mweb_mhightlight_g31_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 스마트 기본형 15/08식(16년형)154,534km가솔린경기 540만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42641854",
+      "href": "https://fem.encar.com/cars/detail/42641854?advClickPosition=mweb_mhightlight_g32_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/06식(18년형)27,856km가솔린인천 1,190만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42818034",
+      "href": "https://fem.encar.com/cars/detail/42818034?advClickPosition=mweb_mhightlight_g33_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 LPi (렌터카) 스타일 20/06식(21년형)148,589kmLPG(일반인 구입)서울 1,100만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42531100",
+      "href": "https://fem.encar.com/cars/detail/42531100?advClickPosition=mweb_mhightlight_g34_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 21/08식108,805km가솔린경기 1,590만원"
+    },
+    {
+      "carid": "42501803",
+      "href": "https://fem.encar.com/cars/detail/42501803?advClickPosition=mweb_mhightlight_g35_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 인스퍼레이션 23/04식43,824km가솔린경기 1,790만원"
+    },
+    {
+      "carid": "41894157",
+      "href": "https://fem.encar.com/cars/detail/41894157?advClickPosition=mweb_mhightlight_g36_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 모던 15/11식(16년형)108,978km가솔린대구 790만원"
+    },
+    {
+      "carid": "42745242",
+      "href": "https://fem.encar.com/cars/detail/42745242?advClickPosition=mweb_mhightlight_g37_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 2.0 N 21/10식(22년형)108,548km가솔린대전 1,890만원"
+    },
+    {
+      "carid": "42938839",
+      "href": "https://fem.encar.com/cars/detail/42938839?advClickPosition=mweb_mhightlight_g38_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 (CN7) 1.6 모던 22/05식(23년형)54,449km가솔린경기 1,780만원"
+    },
+    {
+      "carid": "42900707",
+      "href": "https://fem.encar.com/cars/detail/42900707?advClickPosition=mweb_mhightlight_g39_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 AD 1.6 GDI 스마트 15/12식(16년형)81,302km가솔린서울 760만원"
+    },
+    {
+      "carid": "42916861",
+      "href": "https://fem.encar.com/cars/detail/42916861?advClickPosition=mweb_mhightlight_g40_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 1.6 GDi 스마트 기본형 15/01식66,571km가솔린경기 650만원"
+    },
+    {
+      "carid": "42954545",
+      "href": "https://fem.encar.com/cars/detail/42954545?advClickPosition=mweb_mhightlight_g42_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단++ 무사고진단 내외부확인 성능기준통과 더 뉴 아반떼 하이브리드 (CN7) 모던 23/09식(24년형)10,174km가솔린+전기인천 2,300만원"
+    },
+    {
+      "carid": "42871739",
+      "href": "https://fem.encar.com/cars/detail/42871739?advClickPosition=mweb_mhightlight_g43_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 24/01식49,198km가솔린경기 2,259만원"
+    },
+    {
+      "carid": "42873367",
+      "href": "https://fem.encar.com/cars/detail/42873367?advClickPosition=mweb_mhightlight_g44_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 인스퍼레이션 22/12식(23년형)70,748km가솔린서울 1,490만원"
+    },
+    {
+      "carid": "42842261",
+      "href": "https://fem.encar.com/cars/detail/42842261?advClickPosition=mweb_mhightlight_g45_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 텐밀리언 리미티드 기본형 15/01식49,999km가솔린서울 830만원"
+    },
+    {
+      "carid": "42745960",
+      "href": "https://fem.encar.com/cars/detail/42745960?advClickPosition=mweb_mhightlight_g46_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 모던 22/10식(23년형)74,596km가솔린대전 1,449만원"
+    },
+    {
+      "carid": "42746148",
+      "href": "https://fem.encar.com/cars/detail/42746148?advClickPosition=mweb_mhightlight_g47_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 터보 스포츠 17/02식134,950km가솔린경기 849만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42338527",
+      "href": "https://fem.encar.com/cars/detail/42338527?advClickPosition=mweb_mhightlight_g48_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 AD 1.6 GDI 밸류 플러스 17/06식(18년형)62,487km가솔린대구 1,030만원"
+    },
+    {
+      "carid": "42716862",
+      "href": "https://fem.encar.com/cars/detail/42716862?advClickPosition=mweb_mhightlight_g49_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 터보 N Line 스포츠 21/05식114,126km가솔린경남 1,290만원"
+    },
+    {
+      "carid": "42841402",
+      "href": "https://fem.encar.com/cars/detail/42841402?advClickPosition=mweb_mhightlight_g50_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/12식(18년형)62,040km가솔린서울 1,059만원"
+    },
+    {
+      "carid": "42850494",
+      "href": "https://fem.encar.com/cars/detail/42850494?advClickPosition=mweb_mhightlight_g51_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 MD M16 GDI 럭셔리 11/08식(12년형)76,815km가솔린서울 449만원"
+    },
+    {
+      "carid": "42823943",
+      "href": "https://fem.encar.com/cars/detail/42823943?advClickPosition=mweb_mhightlight_g52_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 21/12식(22년형)90,462km가솔린충남 1,599만원"
+    },
+    {
+      "carid": "41967944",
+      "href": "https://fem.encar.com/cars/detail/41967944?advClickPosition=mweb_mhightlight_g53_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 MD M16 GDI 럭셔리 12/01식148,188km가솔린경기 380만원"
+    },
+    {
+      "carid": "42011353",
+      "href": "https://fem.encar.com/cars/detail/42011353?advClickPosition=mweb_mhightlight_g54_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 스마트 기본형 15/01식58,508km가솔린경기 690만원"
+    },
+    {
+      "carid": "42827973",
+      "href": "https://fem.encar.com/cars/detail/42827973?advClickPosition=mweb_mhightlight_g55_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 23/07식(24년형)53,569km가솔린전북 2,290만원"
+    },
+    {
+      "carid": "42933229",
+      "href": "https://fem.encar.com/cars/detail/42933229?advClickPosition=mweb_mhightlight_g56_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 텐밀리언 리미티드 기본형 15/07식(16년형)116,615km가솔린경기 630만원"
+    },
+    {
+      "carid": "42785303",
+      "href": "https://fem.encar.com/cars/detail/42785303?advClickPosition=mweb_mhightlight_g57_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 N Line 25/02식34,862km가솔린울산 2,580만원"
+    },
+    {
+      "carid": "42708841",
+      "href": "https://fem.encar.com/cars/detail/42708841?advClickPosition=mweb_mhightlight_g58_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 25/03식9,382km가솔린울산 2,630만원"
+    },
+    {
+      "carid": "42700447",
+      "href": "https://fem.encar.com/cars/detail/42700447?advClickPosition=mweb_mhightlight_g59_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 18/03식27,671km가솔린대전 1,150만원"
+    },
+    {
+      "carid": "42689652",
+      "href": "https://fem.encar.com/cars/detail/42689652?advClickPosition=mweb_mhightlight_g60_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 터보 스포츠 18/10식90,590km가솔린대구 819만원"
+    },
+    {
+      "carid": "42557015",
+      "href": "https://fem.encar.com/cars/detail/42557015?advClickPosition=mweb_mhightlight_g61_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 1.6 VGT 모던 기본형 15/07식(16년형)112,400km디젤대구 599만원"
+    },
+    {
+      "carid": "42726454",
+      "href": "https://fem.encar.com/cars/detail/42726454?advClickPosition=mweb_mhightlight_g62_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 아반떼 (CN7) 1.6 모던 22/05식(23년형)105,091km가솔린대구 계약중1,999만원 집앞배송 환불가능"
+    },
+    {
+      "carid": "42843866",
+      "href": "https://fem.encar.com/cars/detail/42843866?advClickPosition=mweb_mhightlight_g63_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 20/12식(21년형)95,539km가솔린전북 1,640만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42836517",
+      "href": "https://fem.encar.com/cars/detail/42836517?advClickPosition=mweb_mhightlight_g64_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 모던 21/11식(22년형)56,447km가솔린서울 1,569만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42791368",
+      "href": "https://fem.encar.com/cars/detail/42791368?advClickPosition=mweb_mhightlight_g65_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 모던 24/07식(25년형)16,516km가솔린서울 2,150만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42848790",
+      "href": "https://fem.encar.com/cars/detail/42848790?advClickPosition=mweb_mhightlight_g66_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 AD 1.6 GDI 밸류 플러스 18/08식78,250km가솔린부산 1,180만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42912640",
+      "href": "https://fem.encar.com/cars/detail/42912640?advClickPosition=mweb_mhightlight_g67_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 하이브리드 (CN7) 모던 23/09식(24년형)15,354km가솔린+전기경기 2,480만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42933074",
+      "href": "https://fem.encar.com/cars/detail/42933074?advClickPosition=mweb_mhightlight_g68_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 AD 1.6 GDI 밸류 플러스 18/02식66,976km가솔린인천 890만원 집앞배송 환불가능"
+    },
+    {
+      "carid": "42970469",
+      "href": "https://fem.encar.com/cars/detail/42970469?advClickPosition=mweb_mhightlight_g69_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 스마트 기본형 15/01식112,670km가솔린경기 590만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42972920",
+      "href": "https://fem.encar.com/cars/detail/42972920?advClickPosition=mweb_mhightlight_g70_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 모던 20/07식(21년형)48,252km가솔린경기 1,620만원"
+    },
+    {
+      "carid": "42933002",
+      "href": "https://fem.encar.com/cars/detail/42933002?advClickPosition=mweb_mhightlight_g71_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단++ 무사고진단 내외부확인 성능기준통과 더 뉴 아반떼 (CN7) 1.6 모던 25/09식(26년형)32,342km가솔린경기 2,130만원"
+    },
+    {
+      "carid": "42949359",
+      "href": "https://fem.encar.com/cars/detail/42949359?advClickPosition=mweb_mhightlight_g72_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 스마트 21/07식101,519km가솔린경기 990만원"
+    },
+    {
+      "carid": "42956863",
+      "href": "https://fem.encar.com/cars/detail/42956863?advClickPosition=mweb_mhightlight_g73_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 인스퍼레이션 21/10식(22년형)43,318km가솔린부산 1,900만원"
+    },
+    {
+      "carid": "42911818",
+      "href": "https://fem.encar.com/cars/detail/42911818?advClickPosition=mweb_mhightlight_g74_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 22/12식(23년형)40,932km가솔린경기 1,950만원"
+    },
+    {
+      "carid": "42903320",
+      "href": "https://fem.encar.com/cars/detail/42903320?advClickPosition=mweb_mhightlight_g75_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 인스퍼레이션 21/01식62,145km가솔린충북 1,650만원"
+    },
+    {
+      "carid": "42902149",
+      "href": "https://fem.encar.com/cars/detail/42902149?advClickPosition=mweb_mhightlight_g76_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 하이브리드 (CN7) 모던 22/04식(23년형)113,643km가솔린+전기대전 1,450만원"
+    },
+    {
+      "carid": "42889682",
+      "href": "https://fem.encar.com/cars/detail/42889682?advClickPosition=mweb_mhightlight_g77_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 2.0 N 22/07식75,006km가솔린경남 1,880만원"
+    },
+    {
+      "carid": "42866158",
+      "href": "https://fem.encar.com/cars/detail/42866158?advClickPosition=mweb_mhightlight_g78_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스타일 16/08식(17년형)133,843km가솔린경기 720만원"
+    },
+    {
+      "carid": "42294581",
+      "href": "https://fem.encar.com/cars/detail/42294581?advClickPosition=mweb_mhightlight_g79_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 (CN7) 1.6 모던 25/03식29,085km가솔린경기 1,520만원"
+    },
+    {
+      "carid": "42117749",
+      "href": "https://fem.encar.com/cars/detail/42117749?advClickPosition=mweb_mhightlight_g80_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 스마트 19/05식(20년형)46,568km가솔린서울 1,160만원"
+    },
+    {
+      "carid": "42238125",
+      "href": "https://fem.encar.com/cars/detail/42238125?advClickPosition=mweb_mhightlight_g81_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 AD 1.6 스마트 18/12식(19년형)202,996km가솔린대구 790만원"
+    },
+    {
+      "carid": "42481697",
+      "href": "https://fem.encar.com/cars/detail/42481697?advClickPosition=mweb_mhightlight_g82_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/07식(18년형)52,828km가솔린서울 1,040만원"
+    },
+    {
+      "carid": "41975617",
+      "href": "https://fem.encar.com/cars/detail/41975617?advClickPosition=mweb_mhightlight_g83_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 MD M16 GDI 에비뉴 13/07식(14년형)111,508km가솔린대전 480만원"
+    },
+    {
+      "carid": "42682861",
+      "href": "https://fem.encar.com/cars/detail/42682861?advClickPosition=mweb_mhightlight_g84_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 스마트 기본형 15/08식(16년형)154,534km가솔린경기 540만원"
+    },
+    {
+      "carid": "42639309",
+      "href": "https://fem.encar.com/cars/detail/42639309?advClickPosition=mweb_mhightlight_g85_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/06식(18년형)27,856km가솔린인천 1,190만원"
+    },
+    {
+      "carid": "42851449",
+      "href": "https://fem.encar.com/cars/detail/42851449?advClickPosition=mweb_mhightlight_g86_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 AD 1.6 스마트 19/09식(20년형)96,470km가솔린전북 1,050만원"
+    },
+    {
+      "carid": "42807553",
+      "href": "https://fem.encar.com/cars/detail/42807553?advClickPosition=mweb_mhightlight_g87_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 LPi (렌터카) 스타일 20/06식(21년형)148,589kmLPG(일반인 구입)서울 1,100만원"
+    },
+    {
+      "carid": "42745616",
+      "href": "https://fem.encar.com/cars/detail/42745616?advClickPosition=mweb_mhightlight_g88_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 터보 스포츠 17/02식134,950km가솔린경기 849만원"
+    },
+    {
+      "carid": "42848351",
+      "href": "https://fem.encar.com/cars/detail/42848351?advClickPosition=mweb_mhightlight_g89_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 AD 1.6 GDI 밸류 플러스 18/05식108,992km가솔린전북 950만원"
+    },
+    {
+      "carid": "42841690",
+      "href": "https://fem.encar.com/cars/detail/42841690?advClickPosition=mweb_mhightlight_g90_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 AD 1.6 GDI 밸류 플러스 18/05식68,585km가솔린전북 1,090만원"
+    },
+    {
+      "carid": "42227375",
+      "href": "https://fem.encar.com/cars/detail/42227375?advClickPosition=mweb_mhightlight_g91_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 e-VGT 스마트 스페셜 18/04식106,753km디젤전북 750만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42621335",
+      "href": "https://fem.encar.com/cars/detail/42621335?advClickPosition=mweb_mhightlight_g92_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 AD 1.6 스타일 18/11식(19년형)115,577km가솔린경기 800만원"
+    },
+    {
+      "carid": "42872962",
+      "href": "https://fem.encar.com/cars/detail/42872962?advClickPosition=mweb_mhightlight_g93_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 1.6 GDi 모던 기본형 14/09식(15년형)95,539km가솔린서울 620만원"
+    },
+    {
+      "carid": "41867307",
+      "href": "https://fem.encar.com/cars/detail/41867307?advClickPosition=mweb_mhightlight_g94_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 (CN7) 1.6 스마트 22/05식(23년형)111,503km가솔린대전 1,090만원"
+    },
+    {
+      "carid": "42962163",
+      "href": "https://fem.encar.com/cars/detail/42962163?advClickPosition=mweb_mhightlight_g95_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 25/01식17,901km가솔린경기 2,470만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42856507",
+      "href": "https://fem.encar.com/cars/detail/42856507?advClickPosition=mweb_mhightlight_g96_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 LPi 스마트(렌터카용) 19/07식(20년형)79,890kmLPG(일반인 구입)경기 1,120만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42876229",
+      "href": "https://fem.encar.com/cars/detail/42876229?advClickPosition=mweb_mhightlight_g97_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 LPi 스마트 23/09식(24년형)36,737kmLPG(일반인 구입)경기 1,790만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42783001",
+      "href": "https://fem.encar.com/cars/detail/42783001?advClickPosition=mweb_mhightlight_g98_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 더 뉴 아반떼 하이브리드 (CN7) 모던 24/06식17,221km가솔린+전기경기 2,250만원 집앞배송 환불가능"
+    },
+    {
+      "carid": "42890662",
+      "href": "https://fem.encar.com/cars/detail/42890662?advClickPosition=mweb_mhightlight_g99_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 더 뉴 아반떼 1.6 GDi 텐밀리언 리미티드 기본형 15/03식77,354km가솔린인천 690만원 집앞배송 환불가능"
+    },
+    {
+      "carid": "42778996",
+      "href": "https://fem.encar.com/cars/detail/42778996?advClickPosition=mweb_mhightlight_g100_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 밸류 플러스 17/03식(18년형)112,000km가솔린대전 890만원"
+    },
+    {
+      "carid": "41971263",
+      "href": "https://fem.encar.com/cars/detail/41971263?advClickPosition=mweb_mhightlight_g101_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 쿠페 2.0 GDi 프리미엄 기본형 13/05식(14년형)138,806km가솔린대전 490만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42290666",
+      "href": "https://fem.encar.com/cars/detail/42290666?advClickPosition=mweb_mhightlight_g102_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 스마트 15/12식(16년형)136,781km가솔린대전 730만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42774722",
+      "href": "https://fem.encar.com/cars/detail/42774722?advClickPosition=mweb_mhightlight_g103_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 인스퍼레이션 20/12식(21년형)71,940km가솔린경기 1,839만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42881465",
+      "href": "https://fem.encar.com/cars/detail/42881465?advClickPosition=mweb_mhightlight_g104_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 인스퍼레이션 22/09식(23년형)12,549km가솔린경기 2,290만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42882624",
+      "href": "https://fem.encar.com/cars/detail/42882624?advClickPosition=mweb_mhightlight_g105_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 하이브리드 (CN7) 모던 23/09식(24년형)16,941km가솔린+전기경기 2,470만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42732520",
+      "href": "https://fem.encar.com/cars/detail/42732520?advClickPosition=mweb_mhightlight_g106_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/07식(18년형)165,762km가솔린대전 730만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42730704",
+      "href": "https://fem.encar.com/cars/detail/42730704?advClickPosition=mweb_mhightlight_g107_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 아반떼 하이브리드 (CN7) 인스퍼레이션 21/01식147,910km가솔린+전기경기 계약중1,000만원 집앞배송 환불가능"
+    },
+    {
+      "carid": "42658022",
+      "href": "https://fem.encar.com/cars/detail/42658022?advClickPosition=mweb_mhightlight_g108_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 모던 21/06식3,884km가솔린경기 1,840만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42956122",
+      "href": "https://fem.encar.com/cars/detail/42956122?advClickPosition=mweb_mhightlight_g109_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 스마트 초이스 19/10식(20년형)141,616km가솔린충남 940만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42940850",
+      "href": "https://fem.encar.com/cars/detail/42940850?advClickPosition=mweb_mhightlight_g110_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 모던 기본형 15/03식95,772km가솔린대전 650만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42908771",
+      "href": "https://fem.encar.com/cars/detail/42908771?advClickPosition=mweb_mhightlight_g111_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 스마트 19/01식115,008km가솔린대전 1,120만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "41611205",
+      "href": "https://fem.encar.com/cars/detail/41611205?advClickPosition=mweb_mhightlight_g112_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스마트 16/08식(17년형)170,592km가솔린전남광주 계약중540만원"
+    },
+    {
+      "carid": "42641007",
+      "href": "https://fem.encar.com/cars/detail/42641007?advClickPosition=mweb_mhightlight_g113_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 MD M16 GDI 럭셔리 10/10식(11년형)139,821km가솔린전남광주 400만원"
+    },
+    {
+      "carid": "42779442",
+      "href": "https://fem.encar.com/cars/detail/42779442?advClickPosition=mweb_mhightlight_g114_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 1.6 VGT 모던 기본형 14/05식179,739km디젤경기 360만원"
+    },
+    {
+      "carid": "42824360",
+      "href": "https://fem.encar.com/cars/detail/42824360?advClickPosition=mweb_mhightlight_g115_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 AD 1.6 디젤 스마트 19/02식75,771km디젤경기 990만원"
+    },
+    {
+      "carid": "42823911",
+      "href": "https://fem.encar.com/cars/detail/42823911?advClickPosition=mweb_mhightlight_g116_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 스타일 16/06식(17년형)178,277km가솔린경기 550만원"
+    },
+    {
+      "carid": "42797735",
+      "href": "https://fem.encar.com/cars/detail/42797735?advClickPosition=mweb_mhightlight_g117_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 1.6 GDi 프리미엄 기본형 14/09식(15년형)113,003km가솔린경기 560만원"
+    },
+    {
+      "carid": "42832980",
+      "href": "https://fem.encar.com/cars/detail/42832980?advClickPosition=mweb_mhightlight_g118_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 모던 21/11식(22년형)56,447km가솔린서울 1,569만원"
+    },
+    {
+      "carid": "42845668",
+      "href": "https://fem.encar.com/cars/detail/42845668?advClickPosition=mweb_mhightlight_g119_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 MD M16 GDI 프리미엄 12/10식(13년형)95,612km가솔린부산 419만원"
+    },
+    {
+      "carid": "42844291",
+      "href": "https://fem.encar.com/cars/detail/42844291?advClickPosition=mweb_mhightlight_g120_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 AD 1.6 GDI 밸류 플러스 18/08식78,250km가솔린부산 1,180만원"
+    },
+    {
+      "carid": "42843300",
+      "href": "https://fem.encar.com/cars/detail/42843300?advClickPosition=mweb_mhightlight_g121_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 20/12식(21년형)95,539km가솔린전북 1,640만원"
+    },
+    {
+      "carid": "42915773",
+      "href": "https://fem.encar.com/cars/detail/42915773?advClickPosition=mweb_mhightlight_g122_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 AD 1.6 GDI 밸류 플러스 18/02식66,976km가솔린인천 890만원"
+    },
+    {
+      "carid": "42910267",
+      "href": "https://fem.encar.com/cars/detail/42910267?advClickPosition=mweb_mhightlight_g123_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 하이브리드 (CN7) 모던 23/09식(24년형)15,354km가솔린+전기경기 2,480만원"
+    },
+    {
+      "carid": "42935111",
+      "href": "https://fem.encar.com/cars/detail/42935111?advClickPosition=mweb_mhightlight_g124_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 하이브리드 (CN7) 인스퍼레이션 25/01식39,271km가솔린+전기대전 2,750만원"
+    },
+    {
+      "carid": "42898220",
+      "href": "https://fem.encar.com/cars/detail/42898220?advClickPosition=mweb_mhightlight_g125_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 하이브리드 (CN7) 모던 22/10식(23년형)106,538km가솔린+전기서울 1,470만원"
+    },
+    {
+      "carid": "42725106",
+      "href": "https://fem.encar.com/cars/detail/42725106?advClickPosition=mweb_mhightlight_g126_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 (CN7) 1.6 모던 22/05식(23년형)105,091km가솔린대구 계약중1,999만원"
+    },
+    {
+      "carid": "42786828",
+      "href": "https://fem.encar.com/cars/detail/42786828?advClickPosition=mweb_mhightlight_g127_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 모던 24/07식(25년형)16,516km가솔린서울 2,150만원"
+    },
+    {
+      "carid": "42861570",
+      "href": "https://fem.encar.com/cars/detail/42861570?advClickPosition=mweb_mhightlight_g128_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 하이브리드 (CN7) 모던 25/08식14,530km가솔린+전기경기 2,320만원"
+    },
+    {
+      "carid": "42969623",
+      "href": "https://fem.encar.com/cars/detail/42969623?advClickPosition=mweb_mhightlight_g129_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 스마트 기본형 15/01식112,670km가솔린경기 590만원"
+    },
+    {
+      "carid": "42966587",
+      "href": "https://fem.encar.com/cars/detail/42966587?advClickPosition=mweb_mhightlight_g130_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 (CN7) 1.6 스마트 23/02식50,832km가솔린경기 1,420만원"
+    },
+    {
+      "carid": "42298385",
+      "href": "https://fem.encar.com/cars/detail/42298385?advClickPosition=mweb_mhightlight_g131_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 인스퍼레이션 21/03식67,796km가솔린부산 1,819만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42225398",
+      "href": "https://fem.encar.com/cars/detail/42225398?advClickPosition=mweb_mhightlight_g132_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 e-VGT 스마트 스페셜 18/04식106,753km디젤전북 750만원"
+    },
+    {
+      "carid": "42920938",
+      "href": "https://fem.encar.com/cars/detail/42920938?advClickPosition=mweb_mhightlight_g133_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 (CN7) 1.6 모던 21/02식90,174km가솔린경남 1,550만원"
+    },
+    {
+      "carid": "42960657",
+      "href": "https://fem.encar.com/cars/detail/42960657?advClickPosition=mweb_mhightlight_g134_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 25/01식17,901km가솔린경기 2,470만원"
+    },
+    {
+      "carid": "42873577",
+      "href": "https://fem.encar.com/cars/detail/42873577?advClickPosition=mweb_mhightlight_g135_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 1.6 LPi 스마트 23/09식(24년형)36,737kmLPG(일반인 구입)경기 1,790만원"
+    },
+    {
+      "carid": "42855016",
+      "href": "https://fem.encar.com/cars/detail/42855016?advClickPosition=mweb_mhightlight_g136_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 LPi 스마트(렌터카용) 19/07식(20년형)79,890kmLPG(일반인 구입)경기 1,120만원"
+    },
+    {
+      "carid": "42783000",
+      "href": "https://fem.encar.com/cars/detail/42783000?advClickPosition=mweb_mhightlight_g137_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 하이브리드 (CN7) 모던 24/06식17,221km가솔린+전기경기 2,250만원"
+    },
+    {
+      "carid": "42039809",
+      "href": "https://fem.encar.com/cars/detail/42039809?advClickPosition=mweb_mhightlight_g138_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 1.6 GDi 스마트 기본형 13/11식(14년형)147,421km가솔린대전 480만원"
+    },
+    {
+      "carid": "42879748",
+      "href": "https://fem.encar.com/cars/detail/42879748?advClickPosition=mweb_mhightlight_g139_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 1.6 GDi 텐밀리언 리미티드 기본형 15/03식77,354km가솔린인천 690만원"
+    },
+    {
+      "carid": "41670132",
+      "href": "https://fem.encar.com/cars/detail/41670132?advClickPosition=mweb_mhightlight_g140_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 MD M16 GDI 럭셔리 12/07식160,152km가솔린대전 290만원"
+    },
+    {
+      "carid": "41959047",
+      "href": "https://fem.encar.com/cars/detail/41959047?advClickPosition=mweb_mhightlight_g141_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 쿠페 2.0 GDi 프리미엄 기본형 13/05식(14년형)138,806km가솔린대전 490만원"
+    },
+    {
+      "carid": "41934159",
+      "href": "https://fem.encar.com/cars/detail/41934159?advClickPosition=mweb_mhightlight_g142_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 하이브리드 (CN7) 모던 22/01식47,901km가솔린+전기서울 계약중1,650만원"
+    },
+    {
+      "carid": "41893757",
+      "href": "https://fem.encar.com/cars/detail/41893757?advClickPosition=mweb_mhightlight_g143_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 모던 15/09식(16년형)68,409km가솔린서울 730만원"
+    },
+    {
+      "carid": "42160374",
+      "href": "https://fem.encar.com/cars/detail/42160374?advClickPosition=mweb_mhightlight_g144_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 밸류 플러스 17/05식108,182km가솔린경기 670만원"
+    },
+    {
+      "carid": "42276385",
+      "href": "https://fem.encar.com/cars/detail/42276385?advClickPosition=mweb_mhightlight_g145_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 스마트 15/12식(16년형)136,781km가솔린대전 730만원"
+    },
+    {
+      "carid": "42298497",
+      "href": "https://fem.encar.com/cars/detail/42298497?advClickPosition=mweb_mhightlight_g146_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 23/08식(24년형)26,120km가솔린서울 2,510만원"
+    },
+    {
+      "carid": "42811604",
+      "href": "https://fem.encar.com/cars/detail/42811604?advClickPosition=mweb_mhightlight_g147_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 (CN7) 1.6 모던 23/07식(24년형)84,331km가솔린대전 1,590만원"
+    },
+    {
+      "carid": "42768864",
+      "href": "https://fem.encar.com/cars/detail/42768864?advClickPosition=mweb_mhightlight_g148_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 인스퍼레이션 20/12식(21년형)71,940km가솔린경기 1,839만원"
+    },
+    {
+      "carid": "42811637",
+      "href": "https://fem.encar.com/cars/detail/42811637?advClickPosition=mweb_mhightlight_g149_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 (CN7) 1.6 모던 23/04식(24년형)16,099km가솔린대전 1,790만원"
+    },
+    {
+      "carid": "42845895",
+      "href": "https://fem.encar.com/cars/detail/42845895?advClickPosition=mweb_mhightlight_g150_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 (CN7) 1.6 스마트 22/07식(23년형)47,054km가솔린서울 1,460만원"
+    },
+    {
+      "carid": "42840879",
+      "href": "https://fem.encar.com/cars/detail/42840879?advClickPosition=mweb_mhightlight_g151_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 (CN7) 1.6 인스퍼레이션 22/09식(23년형)14,965km가솔린대구 2,300만원"
+    },
+    {
+      "carid": "42851466",
+      "href": "https://fem.encar.com/cars/detail/42851466?advClickPosition=mweb_mhightlight_g152_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 23/11식(24년형)62,908km가솔린경남 2,100만원"
+    },
+    {
+      "carid": "42887719",
+      "href": "https://fem.encar.com/cars/detail/42887719?advClickPosition=mweb_mhightlight_g153_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 스마트 19/01식115,008km가솔린대전 1,120만원"
+    },
+    {
+      "carid": "42876172",
+      "href": "https://fem.encar.com/cars/detail/42876172?advClickPosition=mweb_mhightlight_g154_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 1.6 VGT 스타일 14/01식130,682km디젤경기 340만원"
+    },
+    {
+      "carid": "42874522",
+      "href": "https://fem.encar.com/cars/detail/42874522?advClickPosition=mweb_mhightlight_g155_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 인스퍼레이션 22/09식(23년형)12,549km가솔린경기 2,290만원"
+    },
+    {
+      "carid": "42657038",
+      "href": "https://fem.encar.com/cars/detail/42657038?advClickPosition=mweb_mhightlight_g156_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 모던 21/06식3,884km가솔린경기 1,840만원"
+    },
+    {
+      "carid": "42622747",
+      "href": "https://fem.encar.com/cars/detail/42622747?advClickPosition=mweb_mhightlight_g157_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 터보 스포츠 익스트림 셀렉션 17/09식(18년형)75,610km가솔린경기 800만원"
+    },
+    {
+      "carid": "42726653",
+      "href": "https://fem.encar.com/cars/detail/42726653?advClickPosition=mweb_mhightlight_g158_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 하이브리드 (CN7) 인스퍼레이션 21/01식147,910km가솔린+전기경기 계약중1,000만원"
+    },
+    {
+      "carid": "42720494",
+      "href": "https://fem.encar.com/cars/detail/42720494?advClickPosition=mweb_mhightlight_g159_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/07식(18년형)165,762km가솔린대전 730만원"
+    },
+    {
+      "carid": "42684297",
+      "href": "https://fem.encar.com/cars/detail/42684297?advClickPosition=mweb_mhightlight_g160_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 e-VGT 프리미엄 16/01식125,743km디젤서울 670만원"
+    },
+    {
+      "carid": "42931475",
+      "href": "https://fem.encar.com/cars/detail/42931475?advClickPosition=mweb_mhightlight_g161_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "더 뉴 아반떼 (CN7) 1.6 모던 23/06식(24년형)43,270km가솔린대구 1,890만원"
+    },
+    {
+      "carid": "42916086",
+      "href": "https://fem.encar.com/cars/detail/42916086?advClickPosition=mweb_mhightlight_g162_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 모던 기본형 15/03식95,772km가솔린대전 650만원"
+    },
+    {
+      "carid": "42878005",
+      "href": "https://fem.encar.com/cars/detail/42878005?advClickPosition=mweb_mhightlight_g163_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 하이브리드 (CN7) 모던 23/09식(24년형)16,941km가솔린+전기경기 2,470만원"
+    },
+    {
+      "carid": "42943284",
+      "href": "https://fem.encar.com/cars/detail/42943284?advClickPosition=mweb_mhightlight_g164_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 스마트 초이스 19/10식(20년형)141,616km가솔린충남 940만원"
+    },
+    {
+      "carid": "42851881",
+      "href": "https://fem.encar.com/cars/detail/42851881?advClickPosition=mweb_mhightlight_g165_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 하이브리드 (CN7) 스마트 23/04식67,633km가솔린+전기경기 1,720만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42011100",
+      "href": "https://fem.encar.com/cars/detail/42011100?advClickPosition=mweb_mhightlight_g166_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 스마트 19/01식40,860km가솔린전남광주 1,250만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42759889",
+      "href": "https://fem.encar.com/cars/detail/42759889?advClickPosition=mweb_mhightlight_g167_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 20/04식(21년형)47,770km가솔린경기 1,870만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42606561",
+      "href": "https://fem.encar.com/cars/detail/42606561?advClickPosition=mweb_mhightlight_g168_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/04식(18년형)101,373km가솔린부산 890만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42759891",
+      "href": "https://fem.encar.com/cars/detail/42759891?advClickPosition=mweb_mhightlight_g169_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 2.0 N 23/12식(24년형)38,584km가솔린부산 2,700만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "41716532",
+      "href": "https://fem.encar.com/cars/detail/41716532?advClickPosition=mweb_mhightlight_g170_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 AD 1.6 GDI 스마트 16/01식114,020km가솔린경기 799만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "41815594",
+      "href": "https://fem.encar.com/cars/detail/41815594?advClickPosition=mweb_mhightlight_g171_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 스마트 20/09식(21년형)97,378km가솔린경기 1,270만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42895802",
+      "href": "https://fem.encar.com/cars/detail/42895802?advClickPosition=mweb_mhightlight_g172_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 21/03식148,012km가솔린경기 1,390만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42901498",
+      "href": "https://fem.encar.com/cars/detail/42901498?advClickPosition=mweb_mhightlight_g173_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 더 뉴 아반떼 1.6 GDi 모던 기본형 14/08식(15년형)16,368km가솔린서울 890만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42865399",
+      "href": "https://fem.encar.com/cars/detail/42865399?advClickPosition=mweb_mhightlight_g174_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 LPi (렌터카) 스마트 22/07식(23년형)66,071kmLPG(일반인 구입)인천 1,200만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42594552",
+      "href": "https://fem.encar.com/cars/detail/42594552?advClickPosition=mweb_mhightlight_g175_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 AD 1.6 스마트 20/03식79,016km가솔린대구 1,250만원"
+    },
+    {
+      "carid": "41958321",
+      "href": "https://fem.encar.com/cars/detail/41958321?advClickPosition=mweb_mhightlight_g176_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 더 뉴 아반떼 AD 1.6 스마트 초이스 19/10식(20년형)71,930km가솔린전북 1,150만원"
+    },
+    {
+      "carid": "42294311",
+      "href": "https://fem.encar.com/cars/detail/42294311?advClickPosition=mweb_mhightlight_g177_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 인스퍼레이션 21/03식67,796km가솔린부산 1,819만원"
+    },
+    {
+      "carid": "42303810",
+      "href": "https://fem.encar.com/cars/detail/42303810?advClickPosition=mweb_mhightlight_g178_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 스마트 23/03식25,191km가솔린대전 1,760만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42303790",
+      "href": "https://fem.encar.com/cars/detail/42303790?advClickPosition=mweb_mhightlight_g179_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 스마트 23/03식29,148km가솔린대전 1,680만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42645240",
+      "href": "https://fem.encar.com/cars/detail/42645240?advClickPosition=mweb_mhightlight_g180_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 스마트 16/05식(17년형)32,181km가솔린대전 920만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42657408",
+      "href": "https://fem.encar.com/cars/detail/42657408?advClickPosition=mweb_mhightlight_g181_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단 무사고진단 더 뉴 아반떼 (CN7) 1.6 인스퍼레이션 23/08식(24년형)29,233km가솔린대전 2,280만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42952840",
+      "href": "https://fem.encar.com/cars/detail/42952840?advClickPosition=mweb_mhightlight_g182_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 (CN7) 1.6 모던 21/03식19,607km가솔린경기 1,830만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42590676",
+      "href": "https://fem.encar.com/cars/detail/42590676?advClickPosition=mweb_mhightlight_g183_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 모던 22/06식(23년형)56,450km가솔린인천 계약중1,999만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42686135",
+      "href": "https://fem.encar.com/cars/detail/42686135?advClickPosition=mweb_mhightlight_g184_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 2.0 N 25/09식(26년형)4,059km가솔린서울 계약중3,999만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42662416",
+      "href": "https://fem.encar.com/cars/detail/42662416?advClickPosition=mweb_mhightlight_g185_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 1.6 GDi 모던 기본형 13/08식(14년형)139,559km가솔린부산 540만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42395503",
+      "href": "https://fem.encar.com/cars/detail/42395503?advClickPosition=mweb_mhightlight_g186_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/03식153,903km가솔린경기 670만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42783533",
+      "href": "https://fem.encar.com/cars/detail/42783533?advClickPosition=mweb_mhightlight_g187_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 모던 21/02식60,600km가솔린대구 1,390만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42844785",
+      "href": "https://fem.encar.com/cars/detail/42844785?advClickPosition=mweb_mhightlight_g188_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 아반떼 AD 1.6 GDI 밸류 플러스 17/04식116,294km가솔린서울 680만원 집앞배송 환불가능"
+    },
+    {
+      "carid": "42861010",
+      "href": "https://fem.encar.com/cars/detail/42861010?advClickPosition=mweb_mhightlight_g189_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단++ 무사고진단 내외부확인 성능기준통과 아반떼 AD 1.6 GDI 스마트 18/06식74,494km가솔린경기 890만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42855956",
+      "href": "https://fem.encar.com/cars/detail/42855956?advClickPosition=mweb_mhightlight_g190_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 하이브리드 (CN7) 인스퍼레이션 21/04식128,640km가솔린+전기경기 1,690만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42876020",
+      "href": "https://fem.encar.com/cars/detail/42876020?advClickPosition=mweb_mhightlight_g191_t5875&listAdvType=mhighlight&type=detail&view_type=hs_ad",
+      "raw_text": "엔카믿고 '엔카믿고'는 엔카가 '상담, 계약, 환불'을 제공합니다 엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/04식(18년형)72,790km가솔린경기 917만원 집앞배송 환불가능 엔카종합보증"
+    },
+    {
+      "carid": "42256231",
+      "href": "https://fem.encar.com/cars/detail/42256231?advClickPosition=mweb_mhightlight_g192_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 AD 1.6 e-VGT 스마트 스페셜 15/11식(16년형)150,510km디젤경기 560만원"
+    },
+    {
+      "carid": "42760773",
+      "href": "https://fem.encar.com/cars/detail/42760773?advClickPosition=mweb_mhightlight_g193_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단 무사고진단 아반떼 MD M16 GDI 에비뉴 13/02식193,567km가솔린경기 380만원"
+    },
+    {
+      "carid": "42842395",
+      "href": "https://fem.encar.com/cars/detail/42842395?advClickPosition=mweb_mhightlight_g194_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 하이브리드 (CN7) 스마트 23/04식67,633km가솔린+전기경기 1,720만원 엔카종합보증"
+    },
+    {
+      "carid": "42008834",
+      "href": "https://fem.encar.com/cars/detail/42008834?advClickPosition=mweb_mhightlight_g195_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 AD 1.6 스마트 19/01식40,860km가솔린전남광주 1,250만원"
+    },
+    {
+      "carid": "42755705",
+      "href": "https://fem.encar.com/cars/detail/42755705?advClickPosition=mweb_mhightlight_g196_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 (CN7) 1.6 인스퍼레이션 20/04식(21년형)47,770km가솔린경기 1,870만원"
+    },
+    {
+      "carid": "42605404",
+      "href": "https://fem.encar.com/cars/detail/42605404?advClickPosition=mweb_mhightlight_g197_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 아반떼 AD 1.6 GDI 밸류 플러스 17/04식(18년형)101,373km가솔린부산 890만원"
+    },
+    {
+      "carid": "42751675",
+      "href": "https://fem.encar.com/cars/detail/42751675?advClickPosition=mweb_mhightlight_g198_t5875&listAdvType=mhighlight&type=detail&view_type=checked",
+      "raw_text": "엔카진단+ 무사고진단 내외부확인 더 뉴 아반떼 (CN7) 2.0 N 23/12식(24년형)38,584km가솔린부산 2,700만원"
+    },
+    {
+      "carid": "42590261",
+      "href": "https://fem.encar.com/cars/detail/42590261?advClickPosition=mweb_mhightlight_g199_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 AD 1.6 GDI 모던 스페셜 16/03식107,616km가솔린전북 690만원"
+    },
+    {
+      "carid": "41640287",
+      "href": "https://fem.encar.com/cars/detail/41640287?advClickPosition=mweb_mhightlight_g200_t5875&listAdvType=mhighlight&type=detail&view_type=normal",
+      "raw_text": "아반떼 MD M16 GDI 탑 11/08식(12년형)34,812km가솔린경기 600만원"
+    }
+  ]
+}
