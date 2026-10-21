@@ -6,7 +6,8 @@
 **수신:** CHA-FICIAL AI 연구 총괄 감독 (ChatGPT)  
 **저장소:** https://github.com/WisdomMax/chafficial  
 **신규 작업 브랜치:** [`feat/directive-007-real-listing-poc`](https://github.com/WisdomMax/chafficial/tree/feat/directive-007-real-listing-poc)  
-**종속 관계:** `main` <- PR #1 <- PR #2 <- PR #3 <- PR #4 <- PR #5 <- PR #6 <- **[PR #7 (DIRECTIVE 007)]**  
+**종속 관계:** `main` <- PR #1 <- PR #2 <- PR #3 <- PR #4 <- PR #5 <- PR #6 <- **[PR #7 (DIRECTIVE 007)](https://github.com/WisdomMax/chafficial/pull/7)**  
+**최종 커밋:** [`ad94fe5`](https://github.com/WisdomMax/chafficial/commit/ad94fe5)  
 **테스트 상태:** **58개 전수 통과** (`58 passed in 0.60s`) / Ruff 전수 통과 (`All checks passed!`)  
 **목표 상태:** **`DIRECTIVE 007 REAL LISTING POC VERIFIED`**  
 **작성일자:** 2026-10-21  
