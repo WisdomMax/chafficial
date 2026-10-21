@@ -62,6 +62,7 @@ class EncarCardParser:
         mileage_km = int(km_match.group(1).replace(",", ""))
 
         # 6. 금융상품(렌트/리스) 식별 및 가격 분리
+        # DIRECTIVE 008-A: 옵션 추가금액(스마트센스 1(115만원), 컴포트 1(120만원) 등) 오탐 원천 차단
         product_type = "CASH_OR_INSTALLMENT"
         price_krw = None
         monthly_payment_krw = None
@@ -78,9 +79,25 @@ class EncarCardParser:
             if m_lease:
                 monthly_payment_krw = int(m_lease.group(1).replace(",", "")) * 10_000
         else:
-            price_match = re.search(r"([\d,]+)만원", raw_text)
-            if price_match:
-                price_krw = int(price_match.group(1).replace(",", "")) * 10_000
+            # 1) 옵션 괄호 안의 모든 금액 제거: 예: "(115만원)", "(120만원)"
+            clean_text = re.sub(r"\([^)]*?[\d,]+만원[^)]*?\)", "", raw_text)
+            # 2) 월납입금 문구 제거
+            clean_text = re.sub(r"(?:렌트|리스)\s*월\s*[\d,]+만원", "", clean_text)
+            # 3) 차량 본체 가격 후보 추출
+            price_matches = re.findall(r"([\d,]+)만원", clean_text)
+            if price_matches:
+                # 엔카 카드는 차량 가격이 맨 마지막에 위치함 (예: 경기 수원 1,780만원)
+                # 후보들 중 정상 중고차 가격대(300만원 ~ 8,000만원)에 부합하는 마지막 금액 선택
+                valid_candidates = []
+                for pm in price_matches:
+                    val = int(pm.replace(",", "")) * 10_000
+                    if 3_000_000 <= val <= 80_000_000:
+                        valid_candidates.append(val)
+                if valid_candidates:
+                    price_krw = valid_candidates[-1]
+                else:
+                    # 후보가 범위 밖이면 마지막 매칭값 적용
+                    price_krw = int(price_matches[-1].replace(",", "")) * 10_000
 
         # 7. 연료 및 변속기
         fuel_type = "UNKNOWN"
@@ -124,6 +141,14 @@ class EncarCardParser:
 
         url = f"https://car.encar.com/detail?carid={carid}"
 
+        # 실차 고유 지문 생성 (동일 차량 중복 등록 및 Leave-One-Out 데이터 누출 차단용)
+        fp = f"현대_아반떼_CN7_{sub_model}_{powertrain_line}_{reg_ym}_{model_year_str or 'NOYEAR'}_{mileage_km}_{price_krw or 'NOPRICE'}_{trim_name or 'NOTRIM'}"
+
+        price_status = "VERIFIED"
+        if product_type == "CASH_OR_INSTALLMENT":
+            if price_krw is None or price_krw < 3_000_000:
+                price_status = "PRICE_UNVERIFIED"
+
         return {
             "source_platform": "ENCAR",
             "source_listing_id": carid,
@@ -150,5 +175,7 @@ class EncarCardParser:
             "observed_at": obs_time,
             "listing_status": "ACTIVE",
             "data_origin": "MANUALLY_OBSERVED",
+            "vehicle_fingerprint": fp,
+            "price_status": price_status,
             "raw_card_text": raw_text,
         }

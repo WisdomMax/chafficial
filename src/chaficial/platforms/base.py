@@ -42,6 +42,7 @@ class StandardListingRecord:
     has_inspection_record: bool = False  # 성능점검/진단 기록부 교부 여부
 
     # 시계열 및 데이터 신뢰성 메타데이터
+    vehicle_fingerprint: str | None = None  # 실차 고유 지문 (동일 차량 중복 등록 탐지용)
     observed_at: datetime | None = None  # 실제 관측 시점
     listing_status: str = "ACTIVE"  # ACTIVE, PRICE_CHANGED, DELISTED, UNKNOWN
     data_origin: str = "MANUALLY_OBSERVED"  # SYNTHETIC, MANUALLY_OBSERVED, AUTHORIZED_FEED

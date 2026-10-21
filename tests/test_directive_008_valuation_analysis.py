@@ -187,3 +187,133 @@ def test_directive_008_expanded_dataset_file_integrity():
     assert len(records) >= 300  # 최소 목표치 300건 달성 검증
     assert all(r.data_origin == "MANUALLY_OBSERVED" for r in records)
     assert all(r.manufacturer == "현대" and r.model_name == "아반떼" for r in records)
+
+
+def test_directive_008a_option_price_parsing_exclusion():
+    """옵션 추가설명(예: 115만원, 120만원)이 차량 본체 가격으로 오탐되지 않는지 검증 (매물 42938839 반례)."""
+    raw_text = (
+        "스마트센스 1(115만원), 컴포트 1(120만원) 추가옵션 엔카진단 무사고진단 "
+        "아반떼 (CN7) 1.6 모던 22/05식(23년형)54,449km가솔린경기 1,780만원 검정색 계열"
+    )
+    parsed = EncarCardParser.parse_card({"carid": "42938839", "raw_text": raw_text})
+    assert parsed is not None
+    # 115만원이나 120만원이 아닌 1,780만원(17800000)으로 정확히 파싱되어야 함!
+    assert parsed["price_krw"] == "17800000"
+    assert parsed["price_status"] == "VERIFIED"
+
+
+def test_directive_008a_duplicate_vehicle_loo_leakage_prevention():
+    """동일 실차 지문을 가진 복제 광고 매물이 Leave-One-Out 비교군에서 완전히 제외되는지 검증."""
+    now = datetime.now(UTC)
+    cfg = ScorerParameters(min_benchmark_samples=3)
+
+    fp_twin = "현대_아반떼_CN7_PRE_FACELIFT_STANDARD_2022-09_2023_33660_14000000_모던"
+
+    records = [
+        # 실차 쌍둥이 A (엔카믿고 광고 매물)
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="42925136",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            registration_year_month="2022-09",
+            mileage_km=33660,
+            price_krw=14000000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint=fp_twin,
+            observed_at=now,
+        ),
+        # 실차 쌍둥이 B (일반 리스팅 매물 - A와 동일 실차)
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="42924382",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            registration_year_month="2022-09",
+            mileage_km=33660,
+            price_krw=14000000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint=fp_twin,
+            observed_at=now,
+        ),
+        # 다른 독립 실차 C, D, E (3대)
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="INDEP_01",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            registration_year_month="2022-09",
+            mileage_km=40000,
+            price_krw=16500000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint="FP_INDEP_01",
+            observed_at=now,
+        ),
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="INDEP_02",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            registration_year_month="2022-09",
+            mileage_km=42000,
+            price_krw=16700000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint="FP_INDEP_02",
+            observed_at=now,
+        ),
+        StandardListingRecord(
+            source_platform="ENCAR",
+            source_listing_id="INDEP_03",
+            manufacturer="현대",
+            model_name="아반떼",
+            model_generation="CN7",
+            sub_model="PRE_FACELIFT",
+            powertrain_line="STANDARD",
+            trim_name="모던",
+            model_year=2023,
+            registration_year_month="2022-09",
+            mileage_km=38000,
+            price_krw=16900000,
+            accident_state="NO_ACCIDENT",
+            accident_verification="OFFICIAL_VERIFIED",
+            has_inspection_record=True,
+            vehicle_fingerprint="FP_INDEP_03",
+            observed_at=now,
+        ),
+    ]
+
+    # 쌍둥이 A를 평가할 때, 비교군에 쌍둥이 B가 포함되면 안 됨!
+    # 유효 독립 표본은 오직 INDEP_01, INDEP_02, INDEP_03의 3대뿐이어야 함.
+    res_a = OpportunityScorer.evaluate_listing(records[0], records, params=cfg)
+    assert res_a.evaluation_status == "EVALUATED"
+    assert res_a.sample_count == 3  # 쌍둥이 B가 완벽히 배제되었음을 입증!
+    # 중앙값은 1,650만, 1,670만, 1,690만의 중앙값인 1,670만원이어야 함 (1,400만원이 오염되지 않음!)
+    assert res_a.benchmark_median_price_krw == 16700000

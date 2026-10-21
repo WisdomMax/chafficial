@@ -200,23 +200,35 @@ class OpportunityScorer:
                 evaluated_at=now_dt,
             )
 
-        # 2. Leave-One-Out: 대상 차량, 타 코호트 매물, 및 금융상품을 비교 표본에서 완전히 배제
+        # 2. Leave-One-Out: 대상 차량, 동일 실차 중복 매물(지문 일치), 타 코호트 매물, 및 금융상품을 비교 표본에서 완전히 배제
+        target_fp = target.vehicle_fingerprint
         independent_cohort: list[StandardListingRecord] = []
         for r in cohort_records:
             # 다른 코호트 매물 원천 배제 (동일 연식/트림/서브모델/파워트레인라인 등 일치 필수)
             if cls.make_cohort_key(r) != cohort_key:
                 continue
+
+            # 자기 자신 배제
             is_same = (
                 r.source_platform == target.source_platform
                 and r.source_listing_id == target.source_listing_id
             )
+            # 동일 실차 중복 등록 매물 배제 (Leave-One-Out 데이터 누출 원천 차단!)
+            is_dup_vehicle = (
+                target_fp is not None
+                and r.vehicle_fingerprint is not None
+                and r.vehicle_fingerprint == target_fp
+            )
+            if is_same or is_dup_vehicle:
+                continue
+
             # 금융상품 제외 및 유효 가격 매물만 비교군 편입
             is_valid_cash_car = (
                 r.product_type == "CASH_OR_INSTALLMENT"
                 and r.price_krw is not None
                 and r.price_krw > 0
             )
-            if not is_same and is_valid_cash_car:
+            if is_valid_cash_car:
                 independent_cohort.append(r)
 
         sample_count = len(independent_cohort)
@@ -393,15 +405,19 @@ class OpportunityScorer:
 
         final_score = round(max(0.0, min(100.0, raw_score * confidence_multiplier)), 1)
 
-        # DIRECTIVE 008: 종합 신뢰도(overall_confidence) 및 추천 범주(recommendation_category)
-        if sample_count >= 8 and completeness_score >= 0.85 and target.accident_state != "UNKNOWN":
+        # DIRECTIVE 008-A: 종합 신뢰도(overall_confidence) 및 추천 범주(recommendation_category)
+        if sample_count >= 8 and completeness_score >= 0.85 and target.accident_state != "UNKNOWN" and target.model_year is not None:
             overall_conf = "HIGH"
-        elif sample_count >= 5 and completeness_score >= 0.65:
+        elif sample_count >= 5 and completeness_score >= 0.65 and target.model_year is not None:
             overall_conf = "MEDIUM"
         elif sample_count >= 3:
             overall_conf = "LOW"
         else:
             overall_conf = "UNRELIABLE"
+
+        # 모델연도 누락 차량은 연식 미확인이므로 신뢰도 최대 LOW로 강제 제한
+        if target.model_year is None and overall_conf in ("HIGH", "MEDIUM"):
+            overall_conf = "LOW"
 
         # 신뢰도가 낮거나(사고미확인/주요정보누락/표본부족) 불확실성이 크면 상세 확인 대상(MANUAL_REVIEW_NEEDED)
         if (
@@ -409,6 +425,7 @@ class OpportunityScorer:
             or completeness_score < 0.65
             or target.accident_state == "UNKNOWN"
             or target.accident_verification == "UNVERIFIED"
+            or target.model_year is None
         ):
             rec_cat = "MANUAL_REVIEW_NEEDED"
         else:
@@ -420,7 +437,7 @@ class OpportunityScorer:
             f"주행거리({target.mileage_km:,}km vs 기준 {baseline_mileage:,}km) 보정: {target_mileage_adj:+,}원",
             f"사고 상태({target.accident_state}/{target.accident_verification}) 보정: {target_acc_penalty:+,}원",
             f"점수 계산식: ({base_score} + 가격경쟁력 {price_component:+.1f} + 주행거리 {mileage_component:+.1f} + 상태 {cond_component:+.1f} + 모멘텀 {momentum_component:+.1f}) x {confidence_multiplier} = {final_score}점",
-            f"완전성 점수: {completeness_score*100:.0f}% (누락: {', '.join(missing_attrs) if missing_attrs else '없음'}) | 시세불확실성: ±{val_uncertainty}%",
+            f"완전성 점수: {completeness_score*100:.0f}% (누락: {', '.join(missing_attrs) if missing_attrs else '없음'}) | 시세산포율(CV): {val_uncertainty}%",
             f"추천 분류: {rec_cat} (종합 신뢰도: {overall_conf})",
             "주의: Adjusted Advantage는 단순 시세 호가 경쟁력 지표이며 확정 순익이나 판매 수수료가 아닙니다.",
         ]

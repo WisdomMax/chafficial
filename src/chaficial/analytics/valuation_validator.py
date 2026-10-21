@@ -1,15 +1,15 @@
-"""차피셜 시세 정확도 및 오차(Valuation Accuracy) 통계 검증 엔진 (DIRECTIVE 008).
+"""차피셜 시세 정확도 및 오차(Valuation Accuracy) 통계 검증 엔진 (DIRECTIVE 008-A).
 
-핵심 지표:
-1. Leave-One-Out 기반 각 매물의 공정 시세(Fair Value) 예측 오차 산출
-2. MAE, MdAE, MAPE, sMAPE 통계 측정
-3. 코호트별 표본 수와 오차 상관관계 분석
-4. 주행거리 감가 계수(km_rate) 민감도 분석 (30만/40만/50만원)
-5. 사고/옵션 정보 누락(완전성)에 따른 오차 영향도 분석
-6. 상위 추천 순위의 파라미터 변화 안정성(Rank Stability) 분석
+개선 사항:
+1. Leave-One-Out 평가 시 동일 실차 지문 매물 완전 배제 (데이터 누출 원천 차단)
+2. 분위수(P50, P75, P90, P95) 정밀 산출
+3. 모델연도 확정 코호트 vs 미확인(UNKNOWN_YEAR) 코호트 분리 집계
+4. 원시 평가 레코드 CSV (독립 표본 ID 목록 포함) 저장 지원
 """
 
+import csv
 from dataclasses import dataclass, field
+from pathlib import Path
 from statistics import mean, median
 from typing import Any
 
@@ -26,12 +26,38 @@ class ValuationErrorSummary:
     mdae_krw: float  # Median Absolute Error (중앙값 절대 오차)
     mape_pct: float  # Mean Absolute Percentage Error (평균 백분율 오차 %)
     smape_pct: float  # Symmetric Mean Absolute Percentage Error (대칭 백분율 오차 %)
+
+    # 분위수 (Quantiles)
+    p50_krw: float = 0.0
+    p75_krw: float = 0.0
+    p90_krw: float = 0.0
+    p95_krw: float = 0.0
+    p50_mape: float = 0.0
+    p75_mape: float = 0.0
+    p90_mape: float = 0.0
+    p95_mape: float = 0.0
+
+    # 연식 확정 vs 미확인 코호트 분리 통계
+    confirmed_year_stats: dict[str, Any] = field(default_factory=dict)
+    unknown_year_stats: dict[str, Any] = field(default_factory=dict)
+
     cohort_breakdown: dict[str, dict[str, Any]] = field(default_factory=dict)
     individual_errors: list[dict[str, Any]] = field(default_factory=list)
 
 
+def _calc_percentile(sorted_list: list[float], percentile: float) -> float:
+    """정렬된 리스트에서 분위수(0.0~1.0) 계산."""
+    if not sorted_list:
+        return 0.0
+    k = (len(sorted_list) - 1) * percentile
+    f = int(k)
+    c = min(f + 1, len(sorted_list) - 1)
+    d = k - f
+    return sorted_list[f] + d * (sorted_list[c] - sorted_list[f])
+
+
 class ValuationValidator:
-    """시세 평가 모델 정확도 검증 및 민감도 분석기."""
+    """시세 평가 모델 정확도 검증 및 민감도 분석기 (DIRECTIVE 008-A)."""
 
     @classmethod
     def evaluate_valuation_accuracy(
@@ -50,22 +76,22 @@ class ValuationValidator:
             and r.price_krw > 0
         ]
 
-        errors_abs = []
-        errors_pct = []
-        errors_smape = []
-        individual_records = []
+        errors_abs: list[float] = []
+        errors_pct: list[float] = []
+        errors_smape: list[float] = []
+        individual_records: list[dict[str, Any]] = []
         cohort_groups: dict[str, list[dict[str, Any]]] = {}
 
         for rec in valid_records:
-            # Leave-One-Out 단일 매물 평가
+            # Leave-One-Out 단일 매물 평가 (지문 일치 중복 매물도 비교군에서 제외됨)
             res = OpportunityScorer.evaluate_listing(
                 target=rec, cohort_records=valid_records, params=cfg
             )
 
-            # 독립 비교 표본이 충분하여 유효하게 상태조정시세가 산출된 매물만 대상
+            # 유효하게 상태조정시세가 산출된 매물만 대상
             if res.evaluation_status == "EVALUATED" and res.adjusted_fair_value_krw:
-                actual_price = rec.price_krw
-                predicted_price = res.adjusted_fair_value_krw
+                actual_price = float(rec.price_krw)
+                predicted_price = float(res.adjusted_fair_value_krw)
 
                 abs_err = abs(actual_price - predicted_price)
                 pct_err = (abs_err / predicted_price) * 100.0
@@ -75,17 +101,34 @@ class ValuationValidator:
                 errors_pct.append(pct_err)
                 errors_smape.append(smape_val)
 
+                # 비교군에 실제로 사용된 독립 표본 ID 추출
+                independent_ids = []
+                for other in valid_records:
+                    if OpportunityScorer.make_cohort_key(other) != res.benchmark_cohort_key:
+                        continue
+                    if other.source_listing_id == rec.source_listing_id:
+                        continue
+                    if rec.vehicle_fingerprint and other.vehicle_fingerprint == rec.vehicle_fingerprint:
+                        continue
+                    independent_ids.append(other.source_listing_id)
+
+                year_cat = "CONFIRMED_YEAR" if rec.model_year is not None else "UNKNOWN_YEAR"
+                accident_cat = "VERIFIED_OR_CLAIMED" if rec.accident_state != "UNKNOWN" else "UNKNOWN"
+
                 item_info = {
                     "listing_id": rec.source_listing_id,
                     "cohort_key": res.benchmark_cohort_key,
+                    "model_year_category": year_cat,
+                    "accident_category": accident_cat,
                     "sample_count": res.sample_count,
-                    "actual_price_krw": actual_price,
-                    "predicted_price_krw": predicted_price,
-                    "abs_error_krw": abs_err,
+                    "actual_price_krw": int(actual_price),
+                    "predicted_price_krw": int(predicted_price),
+                    "abs_error_krw": int(abs_err),
                     "pct_error": round(pct_err, 2),
                     "smape_error": round(smape_val, 2),
                     "data_completeness": res.data_completeness_score,
                     "accident_state": rec.accident_state,
+                    "independent_sample_ids": "; ".join(independent_ids),
                 }
                 individual_records.append(item_info)
 
@@ -103,6 +146,9 @@ class ValuationValidator:
                 smape_pct=0.0,
             )
 
+        sorted_abs = sorted(errors_abs)
+        sorted_pct = sorted(errors_pct)
+
         # 코호트별 세부 오차 집계
         cohort_stats = {}
         for ckey, items in cohort_groups.items():
@@ -115,15 +161,72 @@ class ValuationValidator:
                 "mape_pct": round(mean(c_pct), 2),
             }
 
+        # 연식 확정 vs 미확인 집단 통계 분리
+        conf_items = [x for x in individual_records if x["model_year_category"] == "CONFIRMED_YEAR"]
+        unkn_items = [x for x in individual_records if x["model_year_category"] == "UNKNOWN_YEAR"]
+
+        def _sub_stats(items: list[dict[str, Any]]) -> dict[str, Any]:
+            if not items:
+                return {"count": 0, "mae_krw": 0, "mdae_krw": 0, "mape_pct": 0.0}
+            c_abs = [x["abs_error_krw"] for x in items]
+            c_pct = [x["pct_error"] for x in items]
+            return {
+                "count": len(items),
+                "mae_krw": round(mean(c_abs), 0),
+                "mdae_krw": round(median(c_abs), 0),
+                "mape_pct": round(mean(c_pct), 2),
+            }
+
         return ValuationErrorSummary(
             total_evaluated_count=len(errors_abs),
             mae_krw=round(mean(errors_abs), 0),
             mdae_krw=round(median(errors_abs), 0),
             mape_pct=round(mean(errors_pct), 2),
             smape_pct=round(mean(errors_smape), 2),
+            p50_krw=round(_calc_percentile(sorted_abs, 0.50), 0),
+            p75_krw=round(_calc_percentile(sorted_abs, 0.75), 0),
+            p90_krw=round(_calc_percentile(sorted_abs, 0.90), 0),
+            p95_krw=round(_calc_percentile(sorted_abs, 0.95), 0),
+            p50_mape=round(_calc_percentile(sorted_pct, 0.50), 2),
+            p75_mape=round(_calc_percentile(sorted_pct, 0.75), 2),
+            p90_mape=round(_calc_percentile(sorted_pct, 0.90), 2),
+            p95_mape=round(_calc_percentile(sorted_pct, 0.95), 2),
+            confirmed_year_stats=_sub_stats(conf_items),
+            unknown_year_stats=_sub_stats(unkn_items),
             cohort_breakdown=cohort_stats,
             individual_errors=individual_records,
         )
+
+    @classmethod
+    def export_raw_valuation_records_csv(
+        cls,
+        summary: ValuationErrorSummary,
+        output_path: str | Path,
+    ) -> None:
+        """DIRECTIVE 008-A: 모든 평가 매물의 실제 호가, 예측가, 오차, 사용된 비교 표본 ID 목록 CSV 저장."""
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        fieldnames = [
+            "listing_id",
+            "cohort_key",
+            "model_year_category",
+            "accident_category",
+            "sample_count",
+            "actual_price_krw",
+            "predicted_price_krw",
+            "abs_error_krw",
+            "pct_error",
+            "smape_error",
+            "data_completeness",
+            "accident_state",
+            "independent_sample_ids",
+        ]
+
+        with open(path, mode="w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(summary.individual_errors)
 
     @classmethod
     def sensitivity_analysis_km_rate(
@@ -161,7 +264,7 @@ class ValuationValidator:
 
         def _calc_stats(items: list[dict[str, Any]]) -> dict[str, Any]:
             if not items:
-                return {"count": 0, "mae_krw": 0, "mape_pct": 0.0}
+                return {"count": 0, "mae_krw": 0, "mdae_krw": 0, "mape_pct": 0.0}
             c_abs = [x["abs_error_krw"] for x in items]
             c_pct = [x["pct_error"] for x in items]
             return {
@@ -192,11 +295,7 @@ class ValuationValidator:
         p_low = ScorerParameters(km_rate_per_10k=300_000)
         p_high = ScorerParameters(km_rate_per_10k=500_000)
 
-        # 각 파라미터별 전체 평가 및 Top-N ID 추출
-        from chaficial.pipeline.ingest_and_score import OpportunityPipeline
-
         def _get_top_ids(params: ScorerParameters) -> list[str]:
-            # evaluate_all에 params를 전달하여 평가
             cohort_map = {}
             for r in records:
                 k = OpportunityScorer.make_cohort_key(r)
@@ -220,7 +319,6 @@ class ValuationValidator:
         top_low = _get_top_ids(p_low)
         top_high = _get_top_ids(p_high)
 
-        # Jaccard 유사도 계산 (상위 집합의 보존율)
         set_base = set(top_base)
         set_low = set(top_low)
         set_high = set(top_high)

@@ -103,6 +103,10 @@ class OpportunityPipeline:
                 raw_loc = row.get("raw_location", "UNKNOWN").strip() or "UNKNOWN"
                 data_origin = row.get("data_origin", "MANUALLY_OBSERVED").strip() or "MANUALLY_OBSERVED"
                 raw_text = row.get("raw_card_text", "").strip() or None
+                trim = row.get("trim_name", "").strip() or None
+                fp = row.get("vehicle_fingerprint", "").strip()
+                if not fp:
+                    fp = f"{mfg}_{model}_{sub_model}_{powertrain_line}_{reg_ym}_{model_year}_{mileage_km}_{price_krw}_{trim}"
 
                 record = StandardListingRecord(
                     source_platform=platform,
@@ -114,7 +118,7 @@ class OpportunityPipeline:
                     model_generation=row.get("model_generation", "CN7").strip() or "CN7",
                     sub_model=sub_model,
                     powertrain_line=powertrain_line,
-                    trim_name=row.get("trim_name", "").strip() or None,
+                    trim_name=trim,
                     model_year=model_year,
                     registration_year_month=reg_ym,
                     mileage_km=mileage_km,
@@ -130,6 +134,7 @@ class OpportunityPipeline:
                     observed_at=observed_at,
                     listing_status=row.get("listing_status", "ACTIVE").strip() or "ACTIVE",
                     data_origin=data_origin,
+                    vehicle_fingerprint=fp,
                     raw_card_text=raw_text,
                 )
                 records.append(record)
