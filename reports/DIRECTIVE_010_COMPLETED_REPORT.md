@@ -1,64 +1,58 @@
 # CHA-FICIAL AI PROJECT
-## DIRECTIVE 010-D 완결 보고서: 운영 DB 영구 보존 및 삭제 결함 완전 제거 실증
+## DIRECTIVE 010-E 완결 보고서: 실제 반복 시장 관측 자동화 및 시계열 누적 실증
 
 **수신:** 차피셜 AI 연구 총괄 감독 (ChatGPT)  
 **발신:** Google Antigravity (실무 개발팀)  
 **저장소:** `https://github.com/WisdomMax/chafficial`  
 **PR 링크:** `https://github.com/WisdomMax/chafficial/pull/10`  
 **대상 브랜치:** `feat/directive-010-market-observation-stream`  
-**검증 일시:** 2026-10-21 12:05:00 KST  
+**검증 일시:** 2026-10-21 12:08:25 KST  
 
 ---
 
-## 0. DIRECTIVE 010-D 긴급 결함 수정 조치 결과
+## 0. DIRECTIVE 010-E 핵심 수행 요약
 
-1. **운영 DB 삭제 로직(`db_path.unlink()`) 영구 완전 제거:**
-   - `scripts/run_directive_010_market_stream.py` 211행의 `if db_path.exists(): db_path.unlink()`를 완전히 제거했습니다.
-   - 운영 DB(`data/chaficial_market_timeseries.db`)가 존재하더라도 기존 데이터를 절대 삭제하지 않고 그대로 연결하여 누적 적재하도록 수정했습니다.
-2. **연속 실행 시 멱등성 및 관측 이력 100% 보존 실증:**
-   - 동일 배치를 2회 연속 실행했을 때, 파이프라인의 멱등성 스킵 정책(`ALREADY_PROCESSED_IDEMPOTENT_SKIP`)이 작동하여 DB 행 수가 1비트도 변하지 않고 **126행 그대로 보존**됨을 확인했습니다.
-   - 연속 2회 실행 전후 운영 DB 행 수:
-     - `listings`: **126행 -> 126행 (완전 불변 보존)**
-     - `listing_snapshots`: **126행 -> 126행 (완전 불변 보존)**
-     - `price_events`: **126행 -> 126행 (완전 불변 보존)**
-     - `batch_audit_logs`: **1행 -> 1행 (완전 불변 보존)**
-3. **부분 수집 보호 정책 실증 (`is_partial_scrape=True`):**
-   - 부분 수집 시 미노출 카운터가 증가하지 않고 동결 보존되어 `DELISTED_SUSPECT` 오판이 0건으로 차단됨을 회귀 테스트로 검증했습니다.
-4. **010-D 전용 회귀 테스트 세트 완비:**
-   - [`tests/test_directive_010d_operational_db_preservation.py`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/tests/test_directive_010d_operational_db_preservation.py) (4개 테스트 신설 및 전수 통과).
-   - 전체 테스트: **113개 전수 통과 (100% PASS, 1.17s)**.
-
----
-
-## 1. 운영 DB 영구 보존 및 순수 실매물 장부 명세 (`REAL_OBSERVED`)
-
-| 감사 항목 | 실측 증거 및 기록 |
-| :--- | :--- |
-| **관측 배치 ID** | `ENCAR_CN7_LIVE_20261021_01` |
-| **데이터 출처 (`data_origin`)** | **`REAL_OBSERVED`** (실제 엔카 모바일 웹 실시간 조회) |
-| **운영 DB 보존 정책** | **`PERMANENT_PRESERVE` (unlink/초기화 코드 전면 영구 제거)** |
-| **수집 범위 구분** | **`PARTIAL_SAMPLE` (is_partial_scrape: True)** |
-| **웹 수집 시작 시각** | **2026-10-21 11:55:00 KST** |
-| **웹 수집 종료 시각** | **2026-10-21 11:55:15 KST** |
-| **DB 적재 완료 시각** | **2026-10-21 12:00:20 KST** |
-| **원천 수집 파일** | [`data/raw_observations/encar_cn7_live_20261021_01.json`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/raw_observations/encar_cn7_live_20261021_01.json) |
-| **원천 파일 SHA-256** | `c03deaec79e15eabda104b28b799ef52f8849bb702d2c40f857c0cd22945d32a` |
-| **수집 카드 수 / 파싱 실매물 수** | **250개 카드 수집 / 아반떼 CN7 126대 파싱 (비CN7 124개 제외)** |
-| **순수 운영 DB 관리 매물 수** | **126대 (과거 재생 데이터 419건 완전 격리 완료)** |
-| **실제 가격 변동** | **0건 (인하 0건, 인상 0건)** |
-| **미노출 의심 (`DELISTED_SUSPECT`)** | **0건 (부분 수집 보호 정책으로 전면 차단)** |
-| **수집 성공 여부** | **SUCCESS** |
-
-> **순수 운영 DB (`data/chaficial_market_timeseries.db`) 5개 테이블 논리 SHA-256 해시:**
-> - `listings` (126행): `b9d3f740c7f6ea5e172212202275a611056b8bd0fb8ce40dda06bb78e578de4b`
-> - `listing_snapshots` (126행): `e29f87b2e47070bf6cc82e50954e373f94014e2a8ff5e4e11e5218c665c42b58`
-> - `price_events` (126행): `2f902065d5f8a708cf47131eb70f201c1be43b8be36b6ddaab5e4201be78009f`
-> - `batch_audit_logs` (1행): `2eefa4e5d8744dabe3ec41fe13f5d9e73b2fb4ed096b4a96b417eba869be24fc`
-> - `vehicle_identity_links` (0행): `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+1. **실제 반복 관측 자동화 모드 분리 (`--mode live` vs `--mode replay`):**
+   - 기존의 파일명 및 배치 ID 고정 구조를 완전히 탈피하여, 스크립트 실행마다 실제 웹을 실시간 조회하고 타임스탬프 기반 고유 `batch_id`와 원본 JSON 파일을 동적 생성하도록 구현했습니다.
+2. **운영 DB 영구 보존 및 실제 시계열 누적 실증 (서로 다른 2개 시점 LIVE 관측):**
+   - 1차 LIVE 수집: `ENCAR_CN7_LIVE_20261021_01` (11:55:00 KST, 126대 관측)
+   - 2차 LIVE 수집: `ENCAR_CN7_LIVE_20261021_120825` (2026-10-21 12:08:25 KST, 120대 실시간 관측)
+   - 운영 DB를 일절 삭제하지 않고 1차 관측 126대를 100% 보존한 상태에서 2차 실시간 관측이 누적되었습니다.
+   - 누적 운영 DB 현황:
+     - 총 고유 실매물: **238대** (기존 이력 100% 보존)
+     - 총 관측 스냅샷: **246건**
+     - 총 배치 감사 로그: **2건**
+3. **실제 시장 가격 변동 정직성 준수:**
+   - 1차와 2차 사이의 단기 시간 동안 실제 시장에서 관측된 가격 변동은 **0건 (인하 0건, 인상 0건)**으로 투명하게 보고합니다.
+4. **부분 수집 보호 정책 완비 (`is_partial_scrape=True`):**
+   - 1페이지 표본 관측에 대해 미노출 카운터 동결 보호를 적용하여 섣부른 `DELISTED_SUSPECT` 오판을 0건으로 완전 차단했습니다.
+5. **백업 보호 정책:**
+   - 실행 시 기존 백업을 덮어쓰지 않고 `data/backups/market_timeseries_backup_{timestamp}.db`로 타임스탬프 고유 백업을 생성합니다.
 
 ---
 
-## 2. DIRECTIVE 010-D 회귀 테스트 결과 (4개 신설, 전체 113개 통과)
+## 1. 실제 시장 2회 독립 LIVE 관측 감사 요약표
+
+| 배치 ID | 관측 구분 | 웹 수집 시작 (KST) | 웹 수집 종료 (KST) | DB 적재 완료 (KST) | 수집 카드 / 실매물 | 최초발견 (`FIRST_SEEN`) | 재관측 | 가격변동 | 미노출의심 | 원본 파일 및 SHA-256 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| `ENCAR_CN7_LIVE_20261021_01` | LIVE 1차 | 11:55:00 KST | 11:55:15 KST | 12:00:20 KST | 250개 / 126대 | 126대 | 0대 | 0건 | 0건 | `encar_cn7_live_20261021_01.json`<br>`c03deaec79e1...` |
+| `ENCAR_CN7_LIVE_20261021_120825` | LIVE 2차 | 2026-10-21 12:08:25 KST | 2026-10-21 12:08:40 KST | 2026-10-21 12:08:40 KST | 248개 / 120대 | 112대 | 8대 | 0건 | 0건 | `encar_cn7_live_20261021_120825.json`<br>`3c3ef646d61302a8...` |
+
+---
+
+## 2. 순수 운영 DB (`data/chaficial_market_timeseries.db`) 5개 테이블 논리 SHA-256 해시
+
+| 테이블 명 | 관리 레코드 수 | 논리 데이터 전체 행 SHA-256 해시 | 무결성 검증 |
+| :--- | :---: | :---: | :---: |
+| `listings` | **238행** | `5183ee9e4666a12c3b721ef9499dd5330fb72014e6bdbd03fc6b952611413d0a` | **영속 컬럼 직렬화 검증 완료 (126대 기존 이력 보존)** |
+| `listing_snapshots` | **246행** | `8bf7b94983d7c7d07f7c1b9817cf2a2e28e4150776f4f4996a24f4268dae2bca` | **시계열 스냅샷 정상 누적 완료** |
+| `price_events` | **238행** | `6ddbabb6f41c33f20b23f480899789f11db185283a0639e2413f741f3dad7707` | **실제 이벤트 무결성 보존** |
+| `batch_audit_logs` | **2행** | `3a79b24e0b522e4b247273875ba428e6267ce2a4fe83f638d4a58a07bcf67831` | **2개 독립 LIVE 배치 영속 기록** |
+| `vehicle_identity_links` | **0행** | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` | **결정론적 빈 테이블 해시** |
+
+---
+
+## 3. 회귀 테스트 및 전체 테스트 통과 증거
 
 ```
 tests/test_directive_010d_operational_db_preservation.py::test_operational_db_not_deleted_and_preserves_records PASSED
@@ -71,28 +65,25 @@ tests/test_directive_010d_operational_db_preservation.py::test_source_code_has_n
 
 ---
 
-## 3. 핵심 산출물 파일 명세
+## 4. 핵심 산출물 파일 명세
 
-1. **실제 시장 관측 원본 JSON:**  
-   [`data/raw_observations/encar_cn7_live_20261021_01.json`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/raw_observations/encar_cn7_live_20261021_01.json)
-2. **시간 정합성 반영 실제 시장 관측 감사 CSV:**  
+1. **실제 시장 관측 원본 파일들:**  
+   - 1차: [`data/raw_observations/encar_cn7_live_20261021_01.json`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/raw_observations/encar_cn7_live_20261021_01.json)
+   - 2차: [`data/raw_observations/encar_cn7_live_20261021_120825.json`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/raw_observations/encar_cn7_live_20261021_120825.json)
+2. **누적 배치 감사 요약 CSV:**  
    [`outputs/directive_010_real_market_audit_summary.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_010_real_market_audit_summary.csv)
-3. **실제 수집 매물 126대 목록 CSV:**  
+3. **운영 DB 누적 실매물 목록 CSV:**  
    [`outputs/directive_010_real_observed_listings.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_010_real_observed_listings.csv)
-4. **수정 전 운영 DB 백업본:**  
-   [`data/chaficial_market_timeseries_pre_010c_backup.db`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/chaficial_market_timeseries_pre_010c_backup.db)
-5. **순수 실제 관측 운영 DB (126행 영구 보존):**  
+4. **순수 실제 관측 운영 시계열 DB:**  
    [`data/chaficial_market_timeseries.db`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/chaficial_market_timeseries.db)
-6. **운영 DB 영구 보존 회귀 테스트 코드:**  
-   [`tests/test_directive_010d_operational_db_preservation.py`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/tests/test_directive_010d_operational_db_preservation.py)
 
 ---
 
-## 4. 결론 및 PR #10 최종 승인 요청
+## 5. 결론 및 PR #10 최종 승인 및 DIRECTIVE 010 종료 요청
 
-총괄 감독님의 지침에 따라:
-- `db_path.unlink()`를 소스 코드에서 완전히 제거하여 운영 DB 삭제 위험을 영구 차단했습니다.
-- 동일 배치 재실행 시 멱등성 검증을 거쳐 126행이 100% 불변 보존됨을 실증했습니다.
-- 4개 회귀 테스트를 신설하여 전체 113개 테스트 전수 통과를 달성했습니다.
+총괄 감독님의 DIRECTIVE 010-E 지침에 따라:
+- `--mode live` / `--mode replay` 분리 자동화 구축.
+- 서로 다른 2개 시점의 실제 LIVE 엔카 시장 관측을 성공적으로 완료하고 원본 증거(JSON 및 SHA-256)를 영속화.
+- 기존 126대 관측 이력을 100% 보존하면서 신규 관측이 누적되는 시계열 데이터 엔진 구축 실증.
 
-본 작업이 GitHub PR #10 (`https://github.com/WisdomMax/chafficial/pull/10`)에 전수 반영되었으며, DIRECTIVE 010 최종 승인을 요청드립니다.
+본 최종 결과가 GitHub PR #10 (`https://github.com/WisdomMax/chafficial/pull/10`)에 전수 반영되었으며, DIRECTIVE 010의 최종 승인 및 종료를 요청드립니다.
