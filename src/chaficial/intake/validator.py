@@ -154,7 +154,9 @@ FORBIDDEN_PII_KEYWORDS = [
     "차량번호", "차대번호", "소유자", "주민", "연락처", "전화", "실명"
 ]
 
-OFFICIAL_REAL_WORLD_TOKEN = "CHAFICIAL_DIRECTOR_2026_OFFICIAL_VERIFIED"
+# 공개 소스코드 내 고정 승인 토큰 제거 및 실데이터 승격 게이트 BLOCKED 정책 강제
+# (현장 감사관의 비공개 인증 절차 없이 일반 호출자가 임의 객체로 실데이터를 승격시키는 것을 원천 차단)
+REAL_DATA_INTAKE_GATE_BLOCKED = True
 
 
 class PartnerListingIntakeValidator:
@@ -284,21 +286,14 @@ class PartnerListingIntakeValidator:
 
             row_dict = {h: row[header_indices[h]] for h in actual_headers}
 
-            # 데이터 분류 판정 (단순 Boolean 의존 금지, 공식 토큰 및 현장 검증 확인)
+            # 데이터 분류 판정 (단순 Boolean 의존 금지, 실데이터 승격 기능은 Phase 1에서 BLOCKED 유지)
             if is_synthetic:
                 data_class = "SYNTHETIC"
                 report.synthetic_data_count += 1
             elif self.approval_proof is not None:
-                # 공식 검증 토큰과 실사 검증 플래그가 모두 충족된 경우에만 실제 데이터 인정
-                if (
-                    self.approval_proof.is_real_world_verified
-                    and self.approval_proof.verification_token == OFFICIAL_REAL_WORLD_TOKEN
-                ):
-                    data_class = "VERIFIED_REAL"
-                    report.verified_real_data_count += 1
-                else:
-                    data_class = "SIMULATED_AUTHORIZED"
-                    report.simulated_authorized_count += 1
+                # 임의 생성 승인 객체는 시뮬레이션 상태로 격리 (현실 세계 실데이터 승격 원천 차단)
+                data_class = "SIMULATED_AUTHORIZED"
+                report.simulated_authorized_count += 1
             else:
                 data_class = "UNVERIFIED_EXTERNAL"
                 report.unverified_external_count += 1
@@ -618,16 +613,19 @@ class PartnerListingIntakeValidator:
         target_region_id: str | None = None,
         raw_location: str | None = None,
         system_ingested_at: datetime | None = None,
+        contract_ingested_at: datetime | None = None,
     ) -> tuple[VehicleCatalog, VehicleIdentity, Listing, list[ListingSnapshot]]:
         """
         검증 통과 레코드를 실제 SQLAlchemy ORM 객체로 인스턴스화합니다.
         
-        [시계열 무결성 핵심 규칙 - 미래 정보 누출 원천 차단]:
-        - 최초 관측 스냅샷(INIT)은 사후 계약 여부와 무관하게 무조건 'ACTIVE'로 기록합니다.
-        - 계약이 나중에 체결된 경우(contract_closed_date 존재), 해당 계약 시점에 맞춰 
-          두 번째 스냅샷(CLOSED)을 생성하여 과거 관측 이력의 불변성을 완벽히 보존합니다.
-        - 배기량, 좌석수는 미확인 시 NULL(None)을 유지합니다.
-        - 소재지는 확인된 근거가 없으면 LOCATION_UNCONFIRMED / None을 유지합니다.
+        [시계열 및 가격 정합성 핵심 규칙]:
+        1. ListingSnapshot.price_krw는 시장에 게시된 '등록가(호가)'의 시계열을 의미합니다.
+           실계약가는 거래 결과 데이터이므로 스냅샷 price_krw에 대입하지 않고 raw_specs로 분리 보존합니다.
+        2. 최초 관측 스냅샷(INIT)은 사후 계약 여부와 무관하게 무조건 'ACTIVE' 및 최초 등록가로 기록합니다.
+        3. 계약이 나중에 체결된 경우(contract_closed_date 존재), 해당 계약 시점에 맞춰 
+           두 번째 스냅샷(CLOSED)을 생성하여 과거 관측 이력의 불변성을 완벽히 보존합니다.
+        4. 배기량, 좌석수는 미확인 시 NULL(None)을 유지합니다.
+        5. 소재지는 확인된 근거가 없으면 LOCATION_UNCONFIRMED / None을 유지합니다.
         """
         if not record.is_valid:
             raise ValueError("검증 실패 레코드는 ORM 객체로 변환할 수 없습니다.")
@@ -635,7 +633,8 @@ class PartnerListingIntakeValidator:
         data = record.normalized_data
         listing_id = data["internal_listing_id"]
         anon_code = data["anonymous_vehicle_code"] or f"ANON_{listing_id}"
-        ingest_time = system_ingested_at or datetime.now(UTC)
+        init_ingest_time = system_ingested_at or datetime.now(UTC)
+        closed_ingest_time = contract_ingested_at or init_ingest_time
 
         # 1. VehicleCatalog:
         catalog = VehicleCatalog(
@@ -668,7 +667,7 @@ class PartnerListingIntakeValidator:
 
         # 매물의 현재 상태 (사후 계약 완료 시 DELISTED, 미계약 시 ACTIVE)
         current_status = "DELISTED" if data["contract_closed_date"] else "ACTIVE"
-        first_obs_at = data["first_observed_date"] or ingest_time
+        first_obs_at = data["first_observed_date"] or init_ingest_time
 
         listing = Listing(
             listing_id=listing_id,
@@ -686,12 +685,13 @@ class PartnerListingIntakeValidator:
         snapshots: list[ListingSnapshot] = []
 
         # 스냅샷 1: 최초 관측 시점 (사후 계약이 있더라도 최초 등록 시점엔 반드시 'ACTIVE'였음!)
+        init_price = data["target_listing_price_krw"] or 0
         init_snapshot = ListingSnapshot(
             snapshot_id=f"SNAP_{listing_id}_INIT",
             listing=listing,
             observed_at=first_obs_at,
-            ingested_at=ingest_time,
-            price_krw=data["target_listing_price_krw"] or 0,
+            ingested_at=init_ingest_time,
+            price_krw=init_price,  # 시장 등록가 호가 유지
             mileage_km=data["mileage_km"] or 0,
             listing_status="ACTIVE",  # 미래 정보 누출 차단: 최초 관측 당시 상태 강제
             normalized_region_id=resolved_region_id,
@@ -707,16 +707,20 @@ class PartnerListingIntakeValidator:
         # 스냅샷 2: 실제 계약 완료 시점 (과거 관측 기록을 덮어쓰지 않고 새로운 스냅샷 추가)
         if data["contract_closed_date"]:
             closed_at = data["contract_closed_date"]
+            actual_contract_price = data.get("actual_contract_price_krw")
             closed_snapshot = ListingSnapshot(
                 snapshot_id=f"SNAP_{listing_id}_CLOSED",
                 listing=listing,
                 observed_at=closed_at,
-                ingested_at=ingest_time,
-                price_krw=data.get("actual_contract_price_krw") or data["target_listing_price_krw"] or 0,
+                ingested_at=closed_ingest_time,
+                price_krw=init_price,  # 호가 왜곡 방지: price_krw는 등록 호가를 유지하고 실계약가는 raw_specs에 분리
                 mileage_km=data["mileage_km"] or 0,
                 listing_status="DELISTED",  # 계약 체결 시점의 상태
                 normalized_region_id=resolved_region_id,
-                raw_specs={"event": "CONTRACT_CLOSED"},
+                raw_specs={
+                    "event": "CONTRACT_CLOSED",
+                    "actual_contract_price_krw": actual_contract_price,
+                },
             )
             snapshots.append(closed_snapshot)
 
