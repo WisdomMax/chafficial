@@ -162,3 +162,22 @@ def test_directive_008c_excluded_vehicles_audit_and_sum():
     assert eval_count == 224
     assert excl_count == 58
     assert eval_count + excl_count == 282
+
+
+def test_directive_008c_identity_confidence_grading():
+    """DIRECTIVE 008-C: 단독 관측 매물은 SINGLE_OBSERVED, 복수 일치 매물은 PROBABLE_SAME으로 등급화 검증."""
+    csv_file = Path("templates/DIRECTIVE_008C_UNIQUE_VEHICLES.csv")
+    if not csv_file.exists():
+        pytest.skip("DIRECTIVE_008C_UNIQUE_VEHICLES.csv not generated yet")
+
+    import csv
+    with open(csv_file, mode="r", encoding="utf-8-sig") as f:
+        reader = list(csv.DictReader(f))
+
+    assert len(reader) == 282
+    probable_same = [r for r in reader if r["identity_confidence_grade"] == "PROBABLE_SAME"]
+    single_observed = [r for r in reader if r["identity_confidence_grade"] == "SINGLE_OBSERVED"]
+
+    assert len(probable_same) == 135
+    assert len(single_observed) == 147
+    assert len(probable_same) + len(single_observed) == 282
