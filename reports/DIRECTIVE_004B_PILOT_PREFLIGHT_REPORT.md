@@ -7,6 +7,8 @@
 **저장소:** https://github.com/WisdomMax/chafficial  
 **신규 작업 브랜치:** [`feat/directive-004b-pilot-preflight`](https://github.com/WisdomMax/chafficial/tree/feat/directive-004b-pilot-preflight)  
 **종속 관계:** `main` <- PR #1 <- PR #2 <- PR #3 <- **[PR #4 (004-B)](https://github.com/WisdomMax/chafficial/pull/4)**  
+**최종 통과 커밋:** [`27fdfac`](https://github.com/WisdomMax/chafficial/commit/27fdfac)  
+**GitHub Actions CI:** [Run #39523543841 (Completed / Success)](https://github.com/WisdomMax/chafficial/actions/runs/39523543841)  
 **작성일자:** 2026-10-21  
 
 ---
