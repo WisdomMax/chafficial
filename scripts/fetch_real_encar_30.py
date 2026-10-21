@@ -94,11 +94,11 @@ await run();
             "FACELIFT" if "더 뉴 아반떼" in raw_text else "PRE_FACELIFT"
         )
 
-        # 3. 파워트레인 라인 구분 (N, N Line, 일반형)
-        if "2.0 N" in raw_text or " N " in raw_text:
-            powertrain_line = "N"
-        elif "N Line" in raw_text:
+        # 3. 파워트레인 라인 구분 (N Line 우선 검사 후 N 검사하여 오분류 차단)
+        if "N Line" in raw_text or "N라인" in raw_text or "N-Line" in raw_text:
             powertrain_line = "N_LINE"
+        elif "2.0 N" in raw_text or " N " in raw_text or "아반떼 N" in raw_text:
+            powertrain_line = "N"
         else:
             powertrain_line = "STANDARD"
 
@@ -113,6 +113,7 @@ await run();
 
         # 5. 연식 파싱: 최초등록연월 및 모델연도 분리
         # 예: 21/09식(22년형) -> reg: 2021-09, model_year: 2022
+        # 모델연도 미표기 시 등록연도로 임의 대체 금지 (추정 주입 차단 -> None 보존)
         reg_match = re.search(r"(\d{2})/(\d{2})식", raw_text)
         if not reg_match:
             continue
@@ -124,7 +125,7 @@ await run();
         if model_year_match:
             model_year = 2000 + int(model_year_match.group(1))
         else:
-            model_year = 2000 + reg_yy
+            model_year = None  # 추정 주입 금지: 미확인 시 None
 
         # 6. 주행거리 파싱
         km_match = re.search(r"([\d,]+)km", raw_text)
@@ -133,30 +134,26 @@ await run();
         mileage_km = int(km_match.group(1).replace(",", ""))
 
         # 7. 금융상품(렌트/리스) 식별 및 가격 오염 원천 차단
+        # 단순 설명(렌트이력무, 렌트카아님 등) 오탐 방지: 월납입금 또는 명시적 승계/금융 상품만 분리
         product_type = "CASH_OR_INSTALLMENT"
         price_krw = None
         monthly_payment_krw = None
 
-        if "렌트월" in raw_text or "렌트" in raw_text:
+        m_rent = re.search(r"렌트\s*월\s*([\d,]+)만원", raw_text)
+        m_lease = re.search(r"리스\s*월\s*([\d,]+)만원", raw_text)
+
+        if m_rent or "렌트승계" in raw_text or "장기렌트" in raw_text:
             product_type = "RENT"
-            m_rent = re.search(r"렌트월([\d,]+)만원", raw_text)
             if m_rent:
-                monthly_payment_krw = (
-                    int(m_rent.group(1).replace(",", "")) * 10_000
-                )
-        elif "리스월" in raw_text or "리스" in raw_text:
+                monthly_payment_krw = int(m_rent.group(1).replace(",", "")) * 10_000
+        elif m_lease or "리스승계" in raw_text or "운용리스" in raw_text or "금융리스" in raw_text:
             product_type = "LEASE"
-            m_lease = re.search(r"리스월([\d,]+)만원", raw_text)
             if m_lease:
-                monthly_payment_krw = (
-                    int(m_lease.group(1).replace(",", "")) * 10_000
-                )
+                monthly_payment_krw = int(m_lease.group(1).replace(",", "")) * 10_000
         else:
             price_match = re.search(r"([\d,]+)만원", raw_text)
             if price_match:
-                price_krw = (
-                    int(price_match.group(1).replace(",", "")) * 10_000
-                )
+                price_krw = int(price_match.group(1).replace(",", "")) * 10_000
 
         # 8. 연료 및 변속기 (기본값 제거, 원본 확인)
         fuel_type = "UNKNOWN"
@@ -227,7 +224,7 @@ await run();
             "sub_model": sub_model,
             "powertrain_line": powertrain_line,
             "trim_name": trim_name or "",
-            "model_year": model_year,
+            "model_year": str(model_year) if model_year is not None else "",
             "registration_year_month": reg_ym,
             "mileage_km": mileage_km,
             "fuel_type": fuel_type,

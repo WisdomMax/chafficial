@@ -19,7 +19,11 @@ from chaficial.models.listing import Listing
 from chaficial.models.snapshot import ListingSnapshot
 from chaficial.platforms.base import PlatformUrlParser, StandardListingRecord
 from chaficial.regions.manager import RegionManager
-from chaficial.scorer.opportunity import OpportunityScoreResult, OpportunityScorer
+from chaficial.scorer.opportunity import (
+    OpportunityScoreResult,
+    OpportunityScorer,
+    ScorerParameters,
+)
 
 
 def _to_utc(dt: datetime) -> datetime:
@@ -52,12 +56,12 @@ class OpportunityPipeline:
 
                 year_raw = row.get("model_year", "").strip()
                 mileage_raw = row.get("mileage_km", "").strip()
-                if not year_raw or not mileage_raw:
+                if not mileage_raw:
                     raise ValueError(
-                        f"[Line {row_idx}] 필수 숫자 제원(연식/주행거리) 누락."
+                        f"[Line {row_idx}] 필수 숫자 제원(주행거리) 누락."
                     )
 
-                model_year = int(year_raw)
+                model_year = int(year_raw) if year_raw and year_raw.isdigit() else None
                 mileage_km = int(mileage_raw)
 
                 # 금융상품 및 가격 파싱
@@ -103,6 +107,12 @@ class OpportunityPipeline:
                 raw_loc = row.get("raw_location", "UNKNOWN").strip() or "UNKNOWN"
                 data_origin = row.get("data_origin", "MANUALLY_OBSERVED").strip() or "MANUALLY_OBSERVED"
                 raw_text = row.get("raw_card_text", "").strip() or None
+                trim = row.get("trim_name", "").strip() or None
+                gen = row.get("model_generation", "CN7").strip() or "CN7"
+                fp = row.get("vehicle_fingerprint", "").strip()
+                if not fp:
+                    # DIRECTIVE 008-B: 가격을 지문에서 제외한 순수 물리 제원 실차 지문
+                    fp = f"{mfg}_{model}_{gen}_{sub_model}_{powertrain_line}_{reg_ym}_{model_year or 'NOYEAR'}_{mileage_km}_{fuel_type}_{trim or 'NOTRIM'}"
 
                 record = StandardListingRecord(
                     source_platform=platform,
@@ -114,7 +124,7 @@ class OpportunityPipeline:
                     model_generation=row.get("model_generation", "CN7").strip() or "CN7",
                     sub_model=sub_model,
                     powertrain_line=powertrain_line,
-                    trim_name=row.get("trim_name", "").strip() or None,
+                    trim_name=trim,
                     model_year=model_year,
                     registration_year_month=reg_ym,
                     mileage_km=mileage_km,
@@ -130,6 +140,7 @@ class OpportunityPipeline:
                     observed_at=observed_at,
                     listing_status=row.get("listing_status", "ACTIVE").strip() or "ACTIVE",
                     data_origin=data_origin,
+                    vehicle_fingerprint=fp,
                     raw_card_text=raw_text,
                 )
                 records.append(record)
@@ -249,6 +260,7 @@ class OpportunityPipeline:
     def evaluate_all(
         records: list[StandardListingRecord],
         price_drop_flags: dict[str, bool] | None = None,
+        params: ScorerParameters | None = None,
     ) -> list[OpportunityScoreResult]:
         """전체 매물 레코드에 대해 Leave-One-Out 독립 코호트 기회 평가 수행."""
         drop_flags = price_drop_flags or {}
@@ -265,7 +277,7 @@ class OpportunityPipeline:
             has_drop = drop_flags.get(rec_key, False)
 
             res = OpportunityScorer.evaluate_listing(
-                target=rec, cohort_records=cohort, recent_price_drop=has_drop
+                target=rec, cohort_records=cohort, params=params, recent_price_drop=has_drop
             )
             results.append(res)
 
@@ -285,12 +297,31 @@ class OpportunityPipeline:
         results: list[OpportunityScoreResult],
         output_path: str | Path,
         top_n: int = 10,
+        deduplicate_by_fingerprint: bool = True,
     ) -> list[OpportunityScoreResult]:
-        """유효하게 평가된 상위 N개 기회 매물만 선별하여 CSV 파일로 저장."""
+        """유효하게 평가된 상위 N개 기회 매물만 선별하여 CSV 파일로 저장.
+
+        DIRECTIVE 008-B:
+        deduplicate_by_fingerprint=True 시 동일 실차(vehicle_fingerprint) 중복 매물은
+        점수 순으로 1건(Canonical Record)만 선별하여 Top N 목록에 쌍둥이 매물 중복 노출을 원천 차단.
+        """
         evaluated_candidates = [
             r for r in results if r.evaluation_status == "EVALUATED"
         ]
-        top_candidates = evaluated_candidates[:top_n]
+
+        if deduplicate_by_fingerprint:
+            seen_fingerprints: set[str] = set()
+            unique_candidates: list[OpportunityScoreResult] = []
+            for item in evaluated_candidates:
+                fp = item.vehicle_fingerprint
+                if fp:
+                    if fp in seen_fingerprints:
+                        continue
+                    seen_fingerprints.add(fp)
+                unique_candidates.append(item)
+            top_candidates = unique_candidates[:top_n]
+        else:
+            top_candidates = evaluated_candidates[:top_n]
 
         path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -298,16 +329,22 @@ class OpportunityPipeline:
         fieldnames = [
             "rank",
             "opportunity_score",
+            "recommendation_category",
+            "overall_confidence",
+            "data_completeness_score",
+            "valuation_uncertainty_score",
             "evaluation_status",
             "data_confidence",
             "data_origin",
             "vehicle_summary",
+            "vehicle_fingerprint",
             "price_krw",
             "adjusted_fair_value_krw",
             "adjusted_advantage_pct",
             "benchmark_median_price_krw",
             "normalized_baseline_median_krw",
             "sample_count",
+            "missing_attributes",
             "source_platform",
             "source_listing_id",
             "source_url",
@@ -324,10 +361,17 @@ class OpportunityPipeline:
                         "opportunity_score": item.opportunity_score
                         if item.opportunity_score is not None
                         else "N/A",
+                        "recommendation_category": item.recommendation_category,
+                        "overall_confidence": item.overall_confidence,
+                        "data_completeness_score": f"{item.data_completeness_score * 100:.0f}%",
+                        "valuation_uncertainty_score": f"±{item.valuation_uncertainty_score}%"
+                        if item.valuation_uncertainty_score is not None
+                        else "N/A",
                         "evaluation_status": item.evaluation_status,
                         "data_confidence": item.data_confidence,
                         "data_origin": item.data_origin,
                         "vehicle_summary": item.vehicle_summary,
+                        "vehicle_fingerprint": item.vehicle_fingerprint or "N/A",
                         "price_krw": f"{item.price_krw:,}원" if item.price_krw else "N/A",
                         "adjusted_fair_value_krw": f"{item.adjusted_fair_value_krw:,}원"
                         if item.adjusted_fair_value_krw
@@ -342,6 +386,7 @@ class OpportunityPipeline:
                         if item.normalized_baseline_median_krw
                         else "N/A",
                         "sample_count": item.sample_count,
+                        "missing_attributes": "; ".join(item.missing_attributes) if item.missing_attributes else "NONE",
                         "source_platform": item.source_platform,
                         "source_listing_id": item.source_listing_id,
                         "source_url": item.source_url or "",
@@ -350,6 +395,149 @@ class OpportunityPipeline:
                 )
 
         return top_candidates
+
+    @staticmethod
+    def export_actionable_recommendations_csv(
+        results: list[OpportunityScoreResult],
+        output_path: str | Path,
+        max_n: int = 20,
+    ) -> list[OpportunityScoreResult]:
+        """DIRECTIVE 008-C: 실질 검토 및 추천 가능한 고신뢰도 기회 매물만 선별.
+
+        선별 기준:
+        1. evaluation_status == 'EVALUATED'
+        2. recommendation_category == 'RECOMMENDED' (MANUAL_REVIEW_NEEDED 배제)
+        3. overall_confidence in ('HIGH', 'MEDIUM') (LOW, UNRELIABLE 배제)
+        4. price_krw is not None and price_krw > 0 (가격 결측/금융상품 원천 배제)
+        5. 실차 지문 기준 중복 제거 (고유 실차당 최고점 1건만 선별)
+        6. 조건을 만족하는 실제 수량만 출력 (부족분을 채우기 위해 기준을 완화하지 않음)
+        """
+        valid_actionable = [
+            r for r in results
+            if r.evaluation_status == "EVALUATED"
+            and r.recommendation_category == "RECOMMENDED"
+            and r.overall_confidence in ("HIGH", "MEDIUM")
+            and r.price_krw is not None
+            and r.price_krw > 0
+        ]
+
+        seen_fingerprints: set[str] = set()
+        unique_actionable: list[OpportunityScoreResult] = []
+        for item in valid_actionable:
+            fp = item.vehicle_fingerprint
+            if fp:
+                if fp in seen_fingerprints:
+                    continue
+                seen_fingerprints.add(fp)
+            unique_actionable.append(item)
+
+        final_candidates = unique_actionable[:max_n]
+
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        fieldnames = [
+            "rank",
+            "opportunity_score",
+            "overall_confidence",
+            "data_completeness_score",
+            "valuation_uncertainty_score",
+            "vehicle_summary",
+            "vehicle_fingerprint",
+            "price_krw",
+            "adjusted_fair_value_krw",
+            "adjusted_advantage_pct",
+            "sample_count",
+            "source_platform",
+            "source_listing_id",
+            "source_url",
+            "selection_reason",
+        ]
+
+        with open(path, mode="w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for idx, item in enumerate(final_candidates, start=1):
+                writer.writerow(
+                    {
+                        "rank": idx,
+                        "opportunity_score": item.opportunity_score,
+                        "overall_confidence": item.overall_confidence,
+                        "data_completeness_score": f"{item.data_completeness_score * 100:.0f}%",
+                        "valuation_uncertainty_score": f"±{item.valuation_uncertainty_score}%",
+                        "vehicle_summary": item.vehicle_summary,
+                        "vehicle_fingerprint": item.vehicle_fingerprint or "N/A",
+                        "price_krw": f"{item.price_krw:,}원",
+                        "adjusted_fair_value_krw": f"{item.adjusted_fair_value_krw:,}원" if item.adjusted_fair_value_krw else "N/A",
+                        "adjusted_advantage_pct": f"{item.adjusted_advantage_pct:+0.2f}%" if item.adjusted_advantage_pct is not None else "N/A",
+                        "sample_count": item.sample_count,
+                        "source_platform": item.source_platform,
+                        "source_listing_id": item.source_listing_id,
+                        "source_url": item.source_url or "",
+                        "selection_reason": item.selection_reason,
+                    }
+                )
+
+        return final_candidates
+
+    @staticmethod
+    def export_manual_review_candidates_to_csv(
+        results: list[OpportunityScoreResult],
+        output_path: str | Path,
+    ) -> list[OpportunityScoreResult]:
+        """DIRECTIVE 008: 신뢰도가 낮거나 불확실성이 커서 상세 확인이 필요한 매물 목록 저장."""
+        review_candidates = [
+            r for r in results if r.recommendation_category == "MANUAL_REVIEW_NEEDED"
+        ]
+
+        path = Path(output_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        fieldnames = [
+            "listing_id",
+            "opportunity_score",
+            "overall_confidence",
+            "data_completeness_score",
+            "missing_attributes",
+            "valuation_uncertainty_score",
+            "price_krw",
+            "sample_count",
+            "vehicle_summary",
+            "review_reason",
+            "source_url",
+        ]
+
+        with open(path, mode="w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for item in review_candidates:
+                reasons = []
+                if item.overall_confidence in ("LOW", "UNRELIABLE"):
+                    reasons.append(f"신뢰도부족({item.overall_confidence})")
+                if item.data_completeness_score < 0.65:
+                    reasons.append(f"데이터불완전({item.data_completeness_score*100:.0f}%)")
+                if item.missing_attributes:
+                    reasons.append(f"누락속성({','.join(item.missing_attributes)})")
+                if not reasons:
+                    reasons.append("상세검증필요")
+
+                writer.writerow(
+                    {
+                        "listing_id": item.listing_id,
+                        "opportunity_score": item.opportunity_score if item.opportunity_score is not None else "N/A",
+                        "overall_confidence": item.overall_confidence,
+                        "data_completeness_score": f"{item.data_completeness_score * 100:.0f}%",
+                        "missing_attributes": "; ".join(item.missing_attributes) if item.missing_attributes else "NONE",
+                        "valuation_uncertainty_score": f"±{item.valuation_uncertainty_score}%" if item.valuation_uncertainty_score is not None else "N/A",
+                        "price_krw": f"{item.price_krw:,}원" if item.price_krw else "N/A",
+                        "sample_count": item.sample_count,
+                        "vehicle_summary": item.vehicle_summary,
+                        "review_reason": " | ".join(reasons),
+                        "source_url": item.source_url or "",
+                    }
+                )
+
+        return review_candidates
 
     @staticmethod
     def export_score_breakdown_csv(
@@ -364,6 +552,10 @@ class OpportunityPipeline:
             "listing_id",
             "evaluation_status",
             "opportunity_score",
+            "recommendation_category",
+            "overall_confidence",
+            "data_completeness_score",
+            "valuation_uncertainty_score",
             "base_score",
             "price_component",
             "mileage_component",
@@ -389,6 +581,10 @@ class OpportunityPipeline:
                         "listing_id": r.listing_id,
                         "evaluation_status": r.evaluation_status,
                         "opportunity_score": r.opportunity_score if r.opportunity_score is not None else "N/A",
+                        "recommendation_category": r.recommendation_category,
+                        "overall_confidence": r.overall_confidence,
+                        "data_completeness_score": f"{r.data_completeness_score * 100:.0f}%",
+                        "valuation_uncertainty_score": f"±{r.valuation_uncertainty_score}%" if r.valuation_uncertainty_score is not None else "N/A",
                         "base_score": r.base_score,
                         "price_component": f"{r.price_component:+.2f}",
                         "mileage_component": f"{r.mileage_component:+.2f}",

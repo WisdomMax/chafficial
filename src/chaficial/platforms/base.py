@@ -24,7 +24,7 @@ class StandardListingRecord:
     trim_name: str | None = None  # 모던, 인스퍼레이션, 스마트 등
 
     # 연식 및 등록
-    model_year: int = 2021  # 모델연도 (형식연도, 예: 2022)
+    model_year: int | None = None  # 모델연도 (형식연도, 미확인 시 None)
     registration_year_month: str | None = None  # 최초등록연월 (예: "2021-09")
     mileage_km: int = 0  # 주행거리 (km)
     fuel_type: str = "가솔린"  # 가솔린, 하이브리드, LPG, 디젤, 전기, UNKNOWN
@@ -42,6 +42,7 @@ class StandardListingRecord:
     has_inspection_record: bool = False  # 성능점검/진단 기록부 교부 여부
 
     # 시계열 및 데이터 신뢰성 메타데이터
+    vehicle_fingerprint: str | None = None  # 실차 고유 지문 (동일 차량 중복 등록 탐지용)
     observed_at: datetime | None = None  # 실제 관측 시점
     listing_status: str = "ACTIVE"  # ACTIVE, PRICE_CHANGED, DELISTED, UNKNOWN
     data_origin: str = "MANUALLY_OBSERVED"  # SYNTHETIC, MANUALLY_OBSERVED, AUTHORIZED_FEED
