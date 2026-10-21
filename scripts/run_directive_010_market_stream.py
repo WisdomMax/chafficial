@@ -102,100 +102,81 @@ def generate_collision_safe_batch_id(prefix: str = "ENCAR_CN7_LIVE") -> tuple[st
     return batch_id, ts_str
 
 
-def generate_directive_010_report(
-    web_start_utc: datetime,
+def generate_batch_observation_report(
     batch_id: str,
-    raw_file_name: str,
+    web_start_utc: datetime,
+    web_end_utc: datetime,
+    raw_file: Path,
+    raw_sha: str,
+    total_cards: int,
+    parsed_count: int,
+    batch_result: BatchExecutionResult,
     post_listings: int,
     post_snapshots: int,
+    post_events: int,
     post_batches: int,
+    post_links: int,
     live_db_hashes: dict[str, dict],
+    all_batches: list[BatchAuditLog],
     pipeline: MarketObservationStreamPipeline,
 ) -> str:
-    """DIRECTIVE 010-J 정합성에 부합하는 학술적·운영적 정직성 준수 완결 보고서 마크다운 생성."""
-    time_str = pipeline.to_kst_string(web_start_utc)
+    """DIRECTIVE 010-K 정합성에 부합하는 개별 관측 실행 동적 보고서 생성 (하드코딩 배제)."""
+    start_kst = pipeline.to_kst_string(web_start_utc)
+    end_kst = pipeline.to_kst_string(web_end_utc)
+    completed_kst = pipeline.to_kst_string(batch_result.completed_at_utc)
+
+    # 1. 누적 배치 감사 로그 테이블 동적 생성
+    batch_rows = []
+    for b in all_batches:
+        b_time_kst = pipeline.to_kst_string(b.processed_at) if b.processed_at else "-"
+        b_partial = "부분표본" if b.is_partial_scrape else "전체수집"
+        batch_rows.append(
+            f"| `{b.batch_id}` | {b_time_kst} | {b.record_count}건 | {b_partial} | {b.notes or '-'} |"
+        )
+    batch_table_md = "\n".join(batch_rows) if batch_rows else "| - | - | - | - | - |"
+
     return f"""# CHA-FICIAL AI PROJECT
-## DIRECTIVE 010-J 완결 보고서: 운영 관측 무결성 및 감사 검증 완결 (PR #10 최종 승인 요청)
+## 시장 관측 실행 동적 보고서 (배치: {batch_id})
 
-**수신:** 차피셜 AI 연구 총괄 감독 (ChatGPT)  
-**발신:** Google Antigravity (실무 개발팀)  
-**저장소:** `https://github.com/WisdomMax/chafficial`  
-**PR 링크:** `https://github.com/WisdomMax/chafficial/pull/10`  
-**대상 브랜치:** `feat/directive-010-market-observation-stream`  
-**검증 일시:** {time_str}  
-
----
-
-## 0. DIRECTIVE 010-J 핵심 감사 지적 보완 조치 요약
-
-총괄 감독님의 `DIRECTIVE 010-J` 감사 지침에 따라 다음 항목을 정합성 있게 보완했습니다.
-
-1. **실제 DB 부분 쓰기(flush) 후 롤백 및 논리 해시 보존 실증 (`test_db_partial_write_rollback_preserves_hashes`):**
-   - 1차 배치(126대)를 먼저 커밋 완료한 상태에서, 2차 배치 처리 중 50개 행이 실제로 DB 세션에 쓰여지고 flush()된 직후 예외(`RuntimeError`)를 발생시켰습니다.
-   - 예외 발생 후 독립 세션에서 5개 테이블의 논리 해시를 검사하여 1차 배치가 100% 보존되고 부분 쓰기 데이터 및 감사 로그가 롤백됨을 실증했습니다.
-2. **과거 데이터 보존 및 실제 DB Mutation(변조/복구) 테스트 실증 (`test_past_data_preservation_and_real_mutation_test`):**
-   - 1차 배치의 126대 매물 불변 필드와 126건 스냅샷의 전체 속성을 고정 기준 데이터(Baseline)로 동결 저장했습니다.
-   - 2차 배치 정상 적재 후에도 1차 스냅샷과 매물 불변 속성이 Baseline과 100% 동일하게 보존됨을 확인했습니다.
-   - 실제 SQLite DB 테이블 레코드 값 변조(UPDATE) 시 검증 실패 및 원래 값 복원 시 검증 통과를 실증했습니다.
-3. **백업 파일 배타적 예약 및 실제 2개 독립 OS 프로세스 간 실행 락 경합 실증 (`test_backup_exclusive_reservation_and_multiprocess_lock_contention`):**
-   - `os.open(backup_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)`를 적용하여 OS 수준의 원자적 파일 예약으로 백업 충돌 및 경쟁 조건을 차단했습니다.
-   - `multiprocessing.Process`를 통해 1개의 독립 자식 프로세스가 파일 락(`fcntl.flock`)을 쥐고 있는 상태에서, 부모 프로세스가 동일 잠금 파일로 LIVE 관측 진입을 시도할 때 즉시 `OperationalLockError`가 발생하며 안전하게 차단됨을 실증했습니다.
-4. **REPLAY 경로 강제 격리 및 우회 차단:**
-   - `target_db_path.resolve() == OFFICIAL_OPERATIONAL_DB_PATH` 검증 로직으로 심볼릭 링크를 포함한 운영 DB 침범을 원천 차단했습니다.
-5. **독립 원본 JSON 두 파일로부터 238대 고유 매물 수학적 재계산 증명:**
-   - 1차 원본(126대) ∪ 2차 원본(120대) = 238대 고유 실매물 (교집합 8대, 1차 유일 118대, 2차 유일 112대).
+- **배치 식별자:** `{batch_id}`
+- **수집 시작 (KST):** {start_kst}
+- **수집 종료 (KST):** {end_kst}
+- **DB 적재 완료 (KST):** {completed_kst}
+- **원천 파일:** `{raw_file.name}`
+- **원천 파일 SHA-256:** `{raw_sha}`
 
 ---
 
-## 1. 실제 시장 2회 독립 LIVE 관측 장부 명세 (`REAL_OBSERVED`)
+### 1. 해당 배치 관측 실적 (동적 산출)
 
-| 배치 ID | 관측 구분 | 웹 수집 시작 (KST) | 웹 수집 종료 (KST) | DB 적재 완료 (KST) | 수집 카드 / CN7 실매물 | 최초발견 (`FIRST_SEEN`) | 재관측 | 가격변동 | 미노출의심 | 원본 파일 및 전체 SHA-256 |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| `ENCAR_CN7_LIVE_20261021_01` | LIVE 1차 | 11:55:00 KST | 11:55:15 KST | 12:00:20 KST | 250개 / 126대 | 126대 | 0대 | 0건 | 0건 | `encar_cn7_live_20261021_01.json`<br>`c03deaec79e15eabda104b28b799ef52f8849bb702d2c40f857c0cd22945d32a` |
-| `ENCAR_CN7_LIVE_20261021_120825` | LIVE 2차 | 12:08:25 KST | 12:08:40 KST | 12:08:40 KST | 248개 / 120대 | 112대 | 8대 | 0건 | 0건 | `encar_cn7_live_20261021_120825.json`<br>`3c3ef646d61302a8bf380c5e7b243beaa1c33f11d102e3aa9e73b40d6eef3550` |
-
-> **학술적·운영적 정직성 준수 확인:**
-> - `FIRST_SEEN`은 시스템 최초 발견 시점이며, 시장 최초 출고/등록일이 아닙니다.
-> - 1차와 2차 사이 단기 시간 동안 실제 시장 가격 변동은 **0건**으로 확인되어 투명하게 유지했습니다.
-> - 동일 실차 추정 링크(`vehicle_identity_links`)는 0건으로 정직하게 구분했습니다.
-
----
-
-## 2. 순수 운영 DB (`data/chaficial_market_timeseries.db`) 5개 테이블 논리 SHA-256 해시
-
-| 테이블 명 | 관리 레코드 수 | 논리 데이터 전체 행 SHA-256 해시 | 무결성 검증 |
-| :--- | :---: | :---: | :---: |
-| `listings` | **{post_listings}행** | `{live_db_hashes['listings']['hash']}` | **126대 기존 이력 100% 보존 확인** |
-| `listing_snapshots` | **{post_snapshots}행** | `{live_db_hashes['listing_snapshots']['hash']}` | **시계열 스냅샷 정상 누적 확인** |
-| `price_events` | **{post_listings}행** | `{live_db_hashes['price_events']['hash']}` | **실제 이벤트 무결성 보존 확인** |
-| `batch_audit_logs` | **{post_batches}행** | `{live_db_hashes['batch_audit_logs']['hash']}` | **2개 독립 LIVE 배치 영속 기록** |
-| `vehicle_identity_links` | **0행** | `{live_db_hashes['vehicle_identity_links']['hash']}` | **결정론적 빈 테이블 해시** |
+| 지표 | 실측값 | 설명 |
+| :--- | :--- | :--- |
+| **수집 원천 카드 수** | **{total_cards}개** | 모바일 웹 스크롤 수집 카드 수 |
+| **정밀 파싱 실매물 수** | **{parsed_count}대** | 아반떼 CN7 유효 규격 파싱 매물 |
+| **최초 발견 (`FIRST_SEEN`)** | **{batch_result.first_seen_count}대** | 시스템 최초 관측 매물 (시장 등록일 아님) |
+| **재관측 (`RE_OBSERVED`)** | **{batch_result.re_observed_count}대** | 기존 관측 이력 보유 매물 재확인 |
+| **실제 가격 변동** | **{batch_result.price_drop_count + batch_result.price_increase_count}건** | 인하: {batch_result.price_drop_count}건, 인상: {batch_result.price_increase_count}건 |
+| **미노출 의심 (`DELISTED_SUSPECT`)** | **{batch_result.delisted_suspect_count}건** | 결측 임계치 도달 의심 매물 |
 
 ---
 
-## 3. 핵심 산출물 파일 명세
+### 2. 적재 직후 데이터베이스 현황 및 논리 해시
 
-1. **실제 시장 관측 원본 파일들:**  
-   - 1차: [`data/raw_observations/encar_cn7_live_20261021_01.json`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/raw_observations/encar_cn7_live_20261021_01.json)
-   - 2차: [`data/raw_observations/{raw_file_name}`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/raw_observations/{raw_file_name})
-2. **누적 배치 감사 요약 CSV:**  
-   [`outputs/directive_010_real_market_audit_summary.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_010_real_market_audit_summary.csv)
-3. **운영 DB 누적 실매물 목록 CSV:**  
-   [`outputs/directive_010_real_observed_listings.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_010_real_observed_listings.csv)
-4. **순수 실제 관측 운영 시계열 DB:**  
-   [`data/chaficial_market_timeseries.db`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/chaficial_market_timeseries.db)
+| 테이블 명 | 관리 레코드 수 | 논리 SHA-256 해시 |
+| :--- | :---: | :---: |
+| `listings` | **{post_listings}행** | `{live_db_hashes.get('listings', {}).get('hash', '-')}` |
+| `listing_snapshots` | **{post_snapshots}행** | `{live_db_hashes.get('listing_snapshots', {}).get('hash', '-')}` |
+| `price_events` | **{post_events}행** | `{live_db_hashes.get('price_events', {}).get('hash', '-')}` |
+| `batch_audit_logs` | **{post_batches}행** | `{live_db_hashes.get('batch_audit_logs', {}).get('hash', '-')}` |
+| `vehicle_identity_links` | **{post_links}행** | `{live_db_hashes.get('vehicle_identity_links', {}).get('hash', '-')}` |
 
 ---
 
-## 4. 결론 및 PR #10 최종 정식 승인 및 DIRECTIVE 010 공식 종료 요청
+### 3. 데이터베이스 누적 관측 배치 감사 이력 (DB 동적 조회)
 
-총괄 감독님의 DIRECTIVE 010-J 지침에 따라:
-- 자동 보고서 템플릿의 제목 및 감사 검증 항목 정합성 전면 수정 완료.
-- 검증되지 않은 과장 표현을 일체 제거하고 실제 검증 내용으로 정제.
-- 실제 DB 부분 쓰기 롤백, Mutation 감지, 멀티프로세스 잠금 경합 등 3대 핵심 감사 검증 완비.
-- 238대 실매물, 246건 스냅샷, 가격 변동 0건 이력 영구 보존.
-
-PR #10 (`https://github.com/WisdomMax/chafficial/pull/10`)에 본 모든 내용이 최종 반영되었으므로, PR #10의 최종 정식 승인 및 DIRECTIVE 010의 공식 종료를 요청드립니다.
+| 배치 ID | 처리 시각 (KST) | 수집 건수 | 수집 구분 | 감사 비고 |
+| :--- | :---: | :---: | :---: | :--- |
+{batch_table_md}
 """
 
 
@@ -501,6 +482,7 @@ def run_pipeline(
         post_snapshots = session.execute(select(func.count(ListingSnapshot.snapshot_id))).scalar()
         post_events = session.execute(select(func.count(PriceEvent.event_id))).scalar()
         post_batches = session.execute(select(func.count(BatchAuditLog.batch_id))).scalar()
+        post_links = session.execute(select(func.count(VehicleIdentityLink.link_id))).scalar()
 
         print(f"[+] 적재 후 DB({target_db_path.name}) 상태: 매물 {post_listings}대 (신규 +{post_listings - pre_listings}), 스냅샷 {post_snapshots}건 (추가 +{post_snapshots - pre_snapshots}), 이벤트 {post_events}건, 배치 {post_batches}건.")
         print(f"[+] 배치 실행 실적: 수집 {res.total_records_ingested}대, FIRST_SEEN(최초발견) {res.first_seen_count}대, 재관측 {res.re_observed_count}대, 가격변동 {res.price_drop_count}건, 미노출의심 {res.delisted_suspect_count}건.")
@@ -508,8 +490,8 @@ def run_pipeline(
         # 5. DB 영속 컬럼 논리 SHA-256 해시 계산
         live_db_hashes = compute_db_logical_hashes(session)
 
-    # 6. LIVE 모드 실행 시 운영 CSV 및 연구 완결 보고서 갱신 (REPLAY 모드 시 운영 산출물 보존)
-    if mode == "live":
+    # 6. 공식 운영 LIVE 모드 실행 시 운영 CSV 및 개별 관측 실행 보고서 생성 (DIRECTIVE 010-K 지침)
+    if mode == "live" and target_db_path.resolve() == OFFICIAL_OPERATIONAL_DB_PATH:
         # 전체 배치 감사 요약 CSV 갱신
         all_batches = session.execute(
             select(BatchAuditLog).order_by(BatchAuditLog.processed_at.asc())
@@ -551,30 +533,46 @@ def run_pipeline(
                 ])
         print(f"[+] 운영 DB 실매물 목록 CSV 저장: {listings_csv} (총 {len(all_listings)}대)")
 
-        report_path = Path("reports/DIRECTIVE_010_COMPLETED_REPORT.md")
-        report_content = generate_directive_010_report(
-            web_start_utc=web_start_utc,
+        # DIRECTIVE 010-K: 최종 승인 감사 보고서(DIRECTIVE_010_COMPLETED_REPORT.md)는 절대 덮어쓰지 않고 보존
+        # 각 실행별 관측 보고서는 reports/observations/에 배치 고유 파일명으로 배타적 저장
+        obs_dir = Path("reports/observations")
+        obs_dir.mkdir(parents=True, exist_ok=True)
+        obs_report_file = obs_dir / f"observation_batch_{batch_id}.md"
+
+        obs_report_content = generate_batch_observation_report(
             batch_id=batch_id,
-            raw_file_name=raw_file.name,
+            web_start_utc=web_start_utc,
+            web_end_utc=web_end_utc,
+            raw_file=raw_file,
+            raw_sha=raw_sha,
+            total_cards=len(raw_cards),
+            parsed_count=len(live_records),
+            batch_result=res,
             post_listings=post_listings,
             post_snapshots=post_snapshots,
+            post_events=post_events,
             post_batches=post_batches,
+            post_links=post_links,
             live_db_hashes=live_db_hashes,
+            all_batches=all_batches,
             pipeline=pipeline,
         )
 
-        with open(report_path, "w", encoding="utf-8") as f:
-            f.write(report_content)
-        print(f"[+] 연구 완결 보고서 저장 완료: {report_path}")
+        try:
+            with open(obs_report_file, "x", encoding="utf-8") as f:
+                f.write(obs_report_content)
+            print(f"[+] [DIRECTIVE 010-K] 배치 관측 실행 보고서 배타적 저장 완료: {obs_report_file}")
+        except FileExistsError:
+            print(f"[!] [DIRECTIVE 010-K] 배치 관측 보고서가 이미 존재합니다 (보존 유지): {obs_report_file}")
 
     session.close()
     print("=" * 80)
-    print(f"[+] DIRECTIVE 010-J 실행 성공! (모드: {mode.upper()})")
+    print(f"[+] DIRECTIVE 010-K 실행 성공! (모드: {mode.upper()})")
     print("=" * 80)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="CHA-FICIAL DIRECTIVE 010-J Pipeline")
+    parser = argparse.ArgumentParser(description="CHA-FICIAL DIRECTIVE 010-K Pipeline")
     parser.add_argument("--mode", choices=["live", "replay"], default="live", help="수집 모드 (live 또는 replay)")
     parser.add_argument("--input", type=str, default=None, help="replay 모드 시 입력 JSON 파일 경로")
     args = parser.parse_args()

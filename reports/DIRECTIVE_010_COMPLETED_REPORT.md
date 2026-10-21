@@ -1,34 +1,29 @@
 # CHA-FICIAL AI PROJECT
-## DIRECTIVE 010-J 완결 보고서: 운영 관측 무결성 및 감사 검증 완결 (PR #10 최종 공식 승인 요청)
+## DIRECTIVE 010-K 완결 보고서: 운영 관측 무결성 및 자동 감사 보고서 동적 생성 완결 (PR #10 최종 공식 승인 요청)
 
 **수신:** 차피셜 AI 연구 총괄 감독 (ChatGPT)  
 **발신:** Google Antigravity (실무 개발팀)  
 **저장소:** `https://github.com/WisdomMax/chafficial`  
 **PR 링크:** `https://github.com/WisdomMax/chafficial/pull/10`  
 **대상 브랜치:** `feat/directive-010-market-observation-stream`  
-**검증 일시:** 2026-10-21 12:35:00 KST  
+**검증 일시:** 2026-10-21 12:40:00 KST  
 
 ---
 
-## 0. DIRECTIVE 010-J 핵심 감사 지적 보완 조치 요약
+## 0. DIRECTIVE 010-K 핵심 감사 지적 보완 조치 요약
 
-총괄 감독님의 `DIRECTIVE 010-J` 감사 지침에 따라 다음 항목을 최종 정합성 있게 보완했습니다.
+총괄 감독님의 `DIRECTIVE 010-K` 감사 지침에 따라 다음 항목을 최종 정합성 있게 보완했습니다.
 
-1. **자동 생성 보고서 템플릿의 정합성 전면 보완:**
-   - `scripts/run_directive_010_market_stream.py` 내의 자동 보고서 생성 로직을 `generate_directive_010_report()` 모듈로 분리하고, 010-G 과거 템플릿과 과장 표현을 일체 제거했습니다.
-   - 자동 생성된 보고서에 금지된 과장 표현이 없음을 회귀 테스트(`test_generated_report_consistency_and_no_hyperbole`)로 영구 보장했습니다.
-2. **실제 DB 부분 쓰기(flush) 후 롤백 및 논리 해시 보존 실증 (`test_db_partial_write_rollback_preserves_hashes`):**
-   - 1차 배치(126대)를 먼저 커밋 완료한 상태에서, 2차 배치 처리 중 50개 행이 실제로 DB 세션에 쓰여지고 flush()된 직후 예외(`RuntimeError`)를 발생시켰습니다.
-   - 예외 발생 후 독립 세션에서 5개 테이블의 논리 해시를 검사하여 1차 배치가 100% 보존되고 부분 쓰기 데이터 및 감사 로그가 롤백됨을 실증했습니다.
-3. **과거 데이터 보존 및 실제 DB Mutation(변조/복구) 테스트 실증 (`test_past_data_preservation_and_real_mutation_test`):**
-   - 1차 배치의 126대 매물 불변 필드와 126건 스냅샷의 전체 속성을 고정 기준 데이터(Baseline)로 동결 저장했습니다.
-   - 2차 배치 정상 적재 후에도 1차 스냅샷과 매물 불변 속성이 Baseline과 100% 동일하게 보존됨을 확인했습니다.
-   - 실제 SQLite DB 테이블 레코드 값 변조(UPDATE) 시 검증 실패 및 원래 값 복원 시 검증 통과를 실증했습니다.
-4. **백업 파일 배타적 예약 및 실제 2개 독립 OS 프로세스 간 실행 락 경합 실증 (`test_backup_exclusive_reservation_and_multiprocess_lock_contention`):**
-   - `os.open(backup_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)`를 적용하여 OS 수준의 원자적 파일 예약으로 백업 충돌 및 경쟁 조건을 차단했습니다.
-   - `multiprocessing.Process`를 통해 1개의 독립 자식 프로세스가 파일 락(`fcntl.flock`)을 쥐고 있는 상태에서, 부모 프로세스가 동일 잠금 파일로 LIVE 관측 진입을 시도할 때 즉시 `OperationalLockError`가 발생하며 안전하게 차단됨을 실증했습니다.
-5. **독립 원본 JSON 두 파일로부터 238대 고유 매물 수학적 재계산 증명:**
-   - 1차 원본(126대) ∪ 2차 원본(120대) = 238대 고유 실매물 (교집합 8대, 1차 유일 118대, 2차 유일 112대).
+1. **최종 감사 보고서 영구 보존 및 LIVE 실행 시 자동 덮어쓰기 차단:**
+   - `reports/DIRECTIVE_010_COMPLETED_REPORT.md`는 PR #10 승인용 공식 완결 문서로 유지되며, LIVE 관측 실행 시 절대 덮어쓰지 않도록 분리했습니다.
+   - LIVE 실행 시의 개별 관측 보고서는 `reports/observations/observation_batch_{batch_id}.md`로 배치 ID 기반의 고유 파일명으로 배타적(`x` 모드) 저장되도록 구현했습니다 (`test_official_completion_report_never_overwritten_by_live_pipeline`, `test_different_batches_saved_to_different_observation_files`).
+2. **동적 관측 보고서 생성 엔진 구축 (하드코딩 배제):**
+   - 수집 시작·종료 시각, 적재 시각, 배치 ID, 원본 파일명·SHA-256, 카드 수, 파싱 수, FIRST_SEEN, 재관측, 가격 변동 건수를 실행 결과로부터 100% 동적으로 렌더링하도록 구현했습니다.
+   - 3차 가상 배치(300개 카드, 150대 파싱, FIRST_SEEN 20, 재관측 130, 가격변동 3건)로 동적 생성 검증 테스트(`test_third_batch_dynamics_never_fixed_to_past_batches`)를 수행하여 과거 수치가 고정되지 않음을 실증했습니다.
+3. **DB 테이블별 실제 독립 행 수 및 해시 일치 검증:**
+   - `price_events` 행 수가 `listings`로 대체되지 않고 실제 `post_events`(238행)와 `post_links`(0행)를 독립적으로 반영하도록 수정하고 검증했습니다 (`test_table_row_counts_and_hashes_match_actual_db`).
+4. **학술적·엔지니어링적 한계 명시 (총괄 감독 지침 준수):**
+   - 본 보고서의 전체 139개 테스트 통과는 실무 개발팀의 로컬/CI 실행 로그 기준이며, 운영 SQLite 파일의 238대 실매물, 246건 스냅샷, 가격 변동 0건 및 논리 해시는 제출된 수치와 테스트 코드의 기대값이 일치하지만 총괄 감독 측의 외부 독립 재계산은 아직 실시되지 않은 상태임을 투명하게 명시합니다.
 
 ---
 
@@ -43,6 +38,9 @@
 > - `FIRST_SEEN`은 시스템 최초 발견 시점이며, 시장 최초 출고/등록일이 아닙니다.
 > - 1차와 2차 사이 단기 시간 동안 실제 시장 가격 변동은 **0건**으로 확인되어 투명하게 유지했습니다.
 > - 동일 실차 추정 링크(`vehicle_identity_links`)는 0건으로 정직하게 구분했습니다.
+> - 두 원본 파일의 독립 파싱 집합 연산:
+>   - 1차 CN7 (126대) ∪ 2차 CN7 (120대) = **고유 실매물 238대** (교집합 8대, 1차 유일 118대, 2차 유일 112대)
+>   - 수학적으로 `118 + 112 + 8 = 238대`가 정확히 성립하며 운영 DB의 매물 ID 집합과 1:1 일치합니다.
 
 ---
 
@@ -58,7 +56,7 @@
 
 ---
 
-## 3. 전체 테스트 스위트 135개 100% 통과 원시 로그
+## 3. 전체 테스트 스위트 139개 100% 통과 원시 로그
 
 ```bash
 $ uv run pytest
@@ -67,31 +65,32 @@ platform darwin -- Python 3.12.12, pytest-9.1.1, pluggy-1.7.0
 rootdir: /Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI
 configfile: pyproject.toml
 testpaths: tests
-collecting ... collected 135 items
+collecting ... collected 139 items
 
-tests/test_directive_002_all.py ......................                   [ 16%]
+tests/test_directive_002_all.py ......................                   [ 15%]
 tests/test_directive_002a_corrections.py ......                          [ 20%]
 tests/test_directive_002b_corrections.py ....                            [ 23%]
 tests/test_directive_002c_corrections.py ...                             [ 25%]
-tests/test_directive_002c_final_review.py ..                             [ 27%]
-tests/test_directive_006_opportunity_scorer.py .....                     [ 31%]
-tests/test_directive_007_opportunity_scorer.py .........                 [ 37%]
-tests/test_directive_008_valuation_analysis.py ...........               [ 45%]
-tests/test_directive_008c_integrity.py ....                              [ 48%]
-tests/test_directive_009_price_tracker.py ......                         [ 53%]
-tests/test_directive_009a_advanced_tracking.py .........                 [ 59%]
-tests/test_directive_009b_operational_integrity.py ......                [ 64%]
-tests/test_directive_009c_batch_hardening.py ......                      [ 68%]
-tests/test_directive_010_market_stream.py ......                         [ 73%]
-tests/test_directive_010d_operational_db_preservation.py ....            [ 76%]
-tests/test_directive_010f_operational_robustness.py ....                 [ 79%]
-tests/test_directive_010g_provenance_and_integrity.py .....              [ 82%]
-tests/test_directive_010h_isolation_and_robustness.py .........          [ 89%]
-tests/test_directive_010i_audit_hardening.py ...                         [ 91%]
-tests/test_directive_010j_report_consistency.py .                        [ 92%]
+tests/test_directive_002c_final_review.py ..                             [ 26%]
+tests/test_directive_006_opportunity_scorer.py .....                     [ 30%]
+tests/test_directive_007_opportunity_scorer.py .........                 [ 36%]
+tests/test_directive_008_valuation_analysis.py ...........               [ 44%]
+tests/test_directive_008c_integrity.py ....                              [ 47%]
+tests/test_directive_009_price_tracker.py ......                         [ 51%]
+tests/test_directive_009a_advanced_tracking.py .........                 [ 58%]
+tests/test_directive_009b_operational_integrity.py ......                [ 62%]
+tests/test_directive_009c_batch_hardening.py ......                      [ 66%]
+tests/test_directive_010_market_stream.py ......                         [ 71%]
+tests/test_directive_010d_operational_db_preservation.py ....            [ 74%]
+tests/test_directive_010f_operational_robustness.py ....                 [ 76%]
+tests/test_directive_010g_provenance_and_integrity.py .....              [ 80%]
+tests/test_directive_010h_isolation_and_robustness.py .........          [ 87%]
+tests/test_directive_010i_audit_hardening.py ...                         [ 89%]
+tests/test_directive_010j_report_consistency.py .                        [ 89%]
+tests/test_directive_010k_report_preservation_and_dynamics.py ....       [ 92%]
 tests/test_partner_intake.py ..........                                  [100%]
 
-============================= 135 passed in 2.89s ==============================
+============================= 139 passed in 3.23s ==============================
 ```
 
 ---
@@ -107,16 +106,18 @@ tests/test_partner_intake.py ..........                                  [100%]
    [`outputs/directive_010_real_observed_listings.csv`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/outputs/directive_010_real_observed_listings.csv)
 4. **순수 실제 관측 운영 시계열 DB:**  
    [`data/chaficial_market_timeseries.db`](file:///Volumes/NVME/7.AI_vibe_coding/20261021_Used_Car_AI/data/chaficial_market_timeseries.db)
+5. **개별 실행 관측 동적 보고서 저장소:**  
+   `reports/observations/`
 
 ---
 
-## 5. 결론 및 PR #10 최종 정식 승인 및 DIRECTIVE 010 공식 종료 요청
+## 5. 결론 및 PR #10 최종 공식 승인 및 DIRECTIVE 010 공식 종료 요청
 
-총괄 감독님의 DIRECTIVE 010-J 지침에 따라:
-- 자동 보고서 템플릿의 제목 및 감사 검증 항목 정합성 전면 수정 완료.
-- 검증되지 않은 과장 표현을 일체 제거하고 실제 검증 내용으로 정제.
-- 실제 DB 부분 쓰기 롤백, Mutation 감지, 멀티프로세스 잠금 경합 등 3대 핵심 감사 검증 완비.
-- 238대 실매물, 246건 스냅샷, 가격 변동 0건 이력 영구 보존.
-- 전체 135개 테스트 100% 통과 확보.
+총괄 감독님의 DIRECTIVE 010-K 지침에 따라:
+- 최종 완결 보고서 덮어쓰기 방지 및 개별 관측 보고서(`reports/observations/`) 독립 분리 완료.
+- 수치와 시간의 하드코딩을 배제하고 동적 렌더링 엔진으로 개편 완료.
+- 3차 가상 배치를 통한 동적 렌더링 실증 및 테이블별 독립 행 수 정합성 검증 완료.
+- 기존 운영 DB의 238대 실매물, 246건 스냅샷, 가격 변동 0건 이력 영구 보존.
+- 전체 139개 테스트 100% 통과 확보.
 
-PR #10 (`https://github.com/WisdomMax/chafficial/pull/10`)에 본 모든 내용이 최종 반영되었으므로, PR #10의 최종 정식 승인 및 DIRECTIVE 010의 공식 종료를 요청드립니다.
+PR #10 (`https://github.com/WisdomMax/chafficial/pull/10`)에 본 모든 내용이 최종 반영되었으므로, PR #10의 최종 공식 승인 및 DIRECTIVE 010의 공식 종료를 요청드립니다.
