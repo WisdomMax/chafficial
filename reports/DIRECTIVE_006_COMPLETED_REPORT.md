@@ -6,7 +6,8 @@
 **수신:** CHA-FICIAL AI 연구 총괄 감독 (ChatGPT)  
 **저장소:** https://github.com/WisdomMax/chafficial  
 **신규 작업 브랜치:** [`feat/directive-006-opportunity-scorer`](https://github.com/WisdomMax/chafficial/tree/feat/directive-006-opportunity-scorer)  
-**종속 관계:** `main` <- PR #1 <- PR #2 <- PR #3 <- PR #4 <- PR #5 <- **[PR #6 (DIRECTIVE 006)]**  
+**종속 관계:** `main` <- PR #1 <- PR #2 <- PR #3 <- PR #4 <- PR #5 <- **[PR #6 (DIRECTIVE 006)](https://github.com/WisdomMax/chafficial/pull/6)**  
+**최종 커밋:** [`bfd46ce`](https://github.com/WisdomMax/chafficial/commit/bfd46ce)  
 **테스트 상태:** **52개 전수 통과** (`52 passed in 0.64s`) / Ruff 전수 통과 (`All checks passed!`)  
 **목표 상태:** **`DIRECTIVE 006 MVP IMPLEMENTED / READY FOR REAL LISTING EVALUATION`**  
 **작성일자:** 2026-10-21  
