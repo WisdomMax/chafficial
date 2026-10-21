@@ -1,0 +1,9 @@
+{
+  "sample_type": "SYNTHETIC_TEST_FIXTURE",
+  "is_real_vehicle_data": false,
+  "real_data_count": 0,
+  "synthetic_data_count": 3,
+  "description": "가상 테스트 전용 합성 데이터 샘플로서 실제 차량번호, VIN, 실존 인물 정보가 포함되어 있지 않으며 파이프라인 검증용으로만 사용됨.",
+  "created_at": "2026-10-21",
+  "target_template": "templates/PARTNER_LISTING_INTAKE_TEMPLATE.csv"
+}
