@@ -1,118 +1,97 @@
-# DIRECTIVE 013: 주기적 LIVE 시장 관측 운영체계 구축 완료 보고서
+# DIRECTIVE 013-A: 주기적 LIVE 시장 관측 운영 안전성 강화 완료 보고서
 
 ## 1. 개요 및 배경
-- **임무**: 단발성 관측 실험을 넘어, 실시간 중고차 시장의 가격 변동과 매물 라이프사이클을 장기간 안정적으로 축적하는 자율 운영 관측 엔진 구축.
-- **선행 작업 완료**:
-  - `DIRECTIVE 012` 최종 공식 승인 획득 및 PR #11 공식 병합 완료.
-  - **병합 커밋 SHA**: `e342aa71750ab2c2b4d802aad3cdb9ddd51ccff2` (베이스: `feat/directive-009-price-event-tracker`)
+- **임무**: DIRECTIVE 013-A 지침에 따른 수집 성공과 보고서 실패의 엄격한 분리, 일시적/영구적 장애 구분 재시도 정책, 루프 안전 종료(Fail-Safe Break), 설정값 유효성 검증, 원자적 일별 보고서 저장 완성.
+- **선행 작업**: PR #11 공식 병합 완료 (`e342aa71750ab2c2b4d802aad3cdb9ddd51ccff2`)
 - **작업 브랜치**: `feat/directive-013-scheduled-observation-system`
+- **대상 PR**: PR #13 (https://github.com/WisdomMax/chafficial/pull/new/feat/directive-013-scheduled-observation-system)
 
 ---
 
-## 2. 주요 구현 컴포넌트
+## 2. DIRECTIVE 013-A 핵심 강화 구현 내역
 
-### 2.1 주기적 시장 관측 자율 감시자 (`src/chaficial/tracker/scheduler.py`)
-- **`MarketObservationScheduler`**:
-  - **단일 인스턴스 실행 잠금**: `fcntl.flock` 기반의 배타적 파일 락(`data/.scheduler.lock`)을 적용하여 중복 기동 및 프로세스 경합을 100% 원천 차단.
-  - **안전 가드 (Safety Guard)**: 총괄 감독의 별도 명시 승인 전까지 무단 LIVE 수집을 원천 방지하는 `enable_live_execution=False` (기본값) 적용. 미승인 상태에서는 안전하게 `STANDBY_SKIPPED` 상태로 전환되어 무단 웹 수집 차단.
-  - **지수 백오프(Exponential Backoff) 재시도 정책**: 네트워크 타임아웃, 일시적 HTTP 에러 시 초기 5초 대기 후 배수로 증가하며 최대 `max_retries`회(기본 3회)까지만 안전 재시도.
-  - **장애 격리 및 보고서 자동 발행**: 최대 재시도 초과 시 무한 루프를 돌지 않고 즉시 `FAILED` 상태로 안전 종결하며, `reports/failures/failure_batch_{timestamp}.md` 장애 보고서를 배타적으로 생성.
-  - **저부하 슬립 (CPU 70% 미만 보장)**: 대기 주기를 5초 단위 슬립 청크로 분할하여 CPU 점유율을 5% 미만으로 유지.
+### 2.1 [지침 1] 수집 성공과 보고서 실패의 엄격한 분리
+- `MarketObservationScheduler.execute_single_observation()`에서 **[수집 단계]**와 **[보고서 생성 단계]**를 독립적인 단계로 완전히 분리:
+  - LIVE 수집 및 DB 커밋이 성공하면 `collection_status = "SUCCESS"`로 확정.
+  - 이후 일별 보고서 렌더링/디스크 쓰기에서 장애가 발생하더라도 `report_status = "REPORT_FAILED"`로 격리 기록하며, **LIVE 수집을 절대 재시도하지 않음** (동일 수집 중복 실행 원천 차단).
+  - 단위 테스트(`test_collection_success_with_report_failure_does_not_retry_live`)를 통해 보고서 장애 주입 시에도 라이브 러너 호출 횟수가 **정확히 1회**임을 입증.
 
-### 2.2 일별 시장 관측 요약 리포터 (`src/chaficial/tracker/daily_reporter.py`)
-- **`DailyMarketReporter`**:
-  - UTC로 저장된 시계열 데이터를 대한민국 표준시(KST, UTC+9) 일자 기준으로 정확하게 변환하여 동적 집계.
-  - 당일 실행 배치 수, 신규 발견 매물 수(`FIRST_SEEN`/`NEW_LISTING`), 가격 변동(`PRICE_DROP`/`PRICE_INCREASE`) 건수 및 금액, 누적 DB 레코드 현황, 개별 가격 인하 매물 목록을 구조화된 마크다운 보고서(`reports/daily_summaries/daily_market_summary_YYYYMMDD.md`)로 자동 발행.
+### 2.2 [지침 2] 일시적(Transient) vs 영구적(Permanent) 장애 구분 재시도 정책
+- 재시도 대상 예외: `ConnectionError`, `TimeoutError`, `OSError` 등 일시적 네트워크 장애로 한정.
+- 영구적 예외: `ValueError`, `TypeError`, DB 스키마/무결성 오류 등은 재시도 없이 1회 만에 즉시 중단(Fail-Fast).
+- 단위 테스트(`test_permanent_error_fails_fast_without_retries`)를 통해 영구적 예외 주입 시 재시도 없이 1회 만에 FAILED 종료됨을 입증.
 
-### 2.3 스케줄러 CLI 실행 스크립트 (`scripts/scheduled_market_watcher.py`)
-- 커맨드라인 인터페이스를 통한 유연한 관측 주기 설정 및 제어:
-  - `--mode live|replay`: 수집 모드 선택
-  - `--interval-seconds SEC`: 관측 주기 설정 (기본: 86400초 / 24시간)
-  - `--enable-live-scheduler`: 총괄 감독 승인 시 LIVE 수집 활성화
-  - `--once`: 1회만 관측/점검 후 즉시 안전 종료
-  - `--db-path PATH`: 타깃 데이터베이스 경로 지정
+### 2.3 [지침 3] 치명적 수집 실패 시 스케줄러 루프 안전 종료 (Fail-Safe Break)
+- `run_loop()`에서 개별 사이클의 `collection_status == "FAILED"` 발생 시 다음 주기로 넘어가지 않고 루프를 즉시 중단(break) 및 fcntl 락 안전 해제.
+- 장애 보고서는 마이크로초와 UUID 난수 접미사를 결합하여 배타적(`x` 모드)으로 생성 (`failure_batch_YYYYMMDD_HHMMSS_ffffff_xxxxxx.md`), 동일 초에 연속 장애가 발생해도 기존 보고서 덮어쓰기 원천 차단.
+
+### 2.4 [지침 4] 설정값 유효성 검증 (Config Validation)
+- `SchedulerConfig.validate()`:
+  - `interval_seconds > 0`, `max_retries >= 1`, `initial_backoff_sec >= 0`, `backoff_factor >= 1.0` 검증.
+  - DIRECTIVE 010-H 원칙 준수: `--mode replay` 모드에서 운영 DB(`data/chaficial_market_timeseries.db`) 지정 시 `SchedulerConfigError` 발생 및 실행 차단.
+
+### 2.5 [지침 5] 일별 요약 보고서 원자적 생성 및 KST 변환 보장
+- `DailyMarketReporter`: 임시 파일(`.tmp_...`) 작성 후 `os.replace`를 통한 원자적 교체(Atomic Write)로 파일 손상 방지.
+- UTC -> KST(UTC+9) 날짜 변환 함수(`to_kst_date_str`)를 통해 KST 자정 전후(23:59:59 vs 00:00:00) 경계치 정확 매칭 검증.
+- 파싱 수집 매물 수, 재관측 매물 수, 가격 인하 5건(총 310만원 인하)을 일별 보고서에 정직하게 반영.
 
 ---
 
-## 3. 검증 결과 및 테스트 통과 내역
+## 3. 전체 테스트 스위트 결과 (166/166 통과, 100% PASS)
 
-### 3.1 단위 및 통합 테스트 스위트 (`tests/test_directive_013_scheduler.py`)
-1. **안전 가드 검증 (`test_scheduler_safety_guard_standby_mode`)**:
-   - `enable_live_execution=False` 상태에서 LIVE 수집 시도시 실제 러너가 호출되지 않고 `STANDBY_SKIPPED` 상태로 안전 보호됨을 검증.
-2. **중복 실행 락 차단 검증 (`test_scheduler_lock_contention_blocks_duplicate_instance`)**:
-   - 동일 락 파일에 대해 2개 인스턴스 기동 시 2번째 인스턴스가 즉시 `SchedulerLockError`를 발생시키며 안전 종료됨을 검증.
-3. **실패 주입 및 지수 백오프 복구 검증 (`test_failure_injection_and_exponential_backoff_recovery`)**:
-   - 2회 연속 네트워크 타임아웃 주입 후 지수 백오프 대기를 거쳐 3회차에 `SUCCESS`로 정상 복구됨을 검증.
-4. **최대 재시도 초과 장애 격리 검증 (`test_max_retries_exceeded_creates_failure_report`)**:
-   - 지속적인 스키마 에러 시 3회 시도 후 무한 루프 없이 `FAILED` 종결 및 `reports/failures/`에 장애 보고서가 정상 생성됨을 검증.
-5. **일별 마크다운 요약 리포트 검증 (`test_daily_market_reporter_generates_markdown`)**:
-   - 운영 DB를 읽어 2026-10-24 기준 요약 보고서에 348대 매물, 5건 가격 인하, 3,100,000원 총 인하액이 정확히 반영됨을 검증.
-
-### 3.2 전체 테스트 결과 (161/161 통과)
 ```text
 tests/test_directive_002_all.py ......................                   [ 13%]
-tests/test_directive_002a_corrections.py ......                          [ 17%]
+tests/test_directive_002a_corrections.py ......                          [ 16%]
 tests/test_directive_002b_corrections.py ....                            [ 19%]
 tests/test_directive_002c_corrections.py ...                             [ 21%]
 tests/test_directive_002c_final_review.py ..                             [ 22%]
-tests/test_directive_006_opportunity_scorer.py .....                     [ 26%]
-tests/test_directive_007_opportunity_scorer.py .........                 [ 31%]
-tests/test_directive_008_valuation_analysis.py ...........               [ 38%]
-tests/test_directive_008c_integrity.py ....                              [ 40%]
-tests/test_directive_009_price_tracker.py ......                         [ 44%]
-tests/test_directive_009a_advanced_tracking.py .........                 [ 50%]
-tests/test_directive_009b_operational_integrity.py ......                [ 54%]
-tests/test_directive_009c_batch_hardening.py ......                      [ 57%]
-tests/test_directive_010_market_stream.py ......                         [ 61%]
-tests/test_directive_010d_operational_db_preservation.py ....            [ 63%]
-tests/test_directive_010f_operational_robustness.py ....                 [ 66%]
-tests/test_directive_010g_provenance_and_integrity.py .....              [ 71%]
-tests/test_directive_010h_isolation_and_robustness.py .........          [ 75%]
-tests/test_directive_010i_audit_hardening.py ...                         [ 77%]
-tests/test_directive_010j_report_consistency.py .                        [ 77%]
-tests/test_directive_010k_report_preservation_and_dynamics.py ....       [ 80%]
-tests/test_directive_011_recovery_and_operations.py .............        [ 88%]
-tests/test_directive_012b_verification.py ....                           [ 90%]
-tests/test_directive_013_scheduler.py .....                              [ 93%]
+tests/test_directive_006_opportunity_scorer.py .....                     [ 25%]
+tests/test_directive_007_opportunity_scorer.py .........                 [ 30%]
+tests/test_directive_008_valuation_analysis.py ...........               [ 37%]
+tests/test_directive_008c_integrity.py ....                              [ 39%]
+tests/test_directive_009_price_tracker.py ......                         [ 43%]
+tests/test_directive_009a_advanced_tracking.py .........                 [ 48%]
+tests/test_directive_009b_operational_integrity.py ......                [ 52%]
+tests/test_directive_009c_batch_hardening.py ......                      [ 56%]
+tests/test_directive_010_market_stream.py ......                         [ 59%]
+tests/test_directive_010d_operational_db_preservation.py ....            [ 62%]
+tests/test_directive_010f_operational_robustness.py ....                 [ 64%]
+tests/test_directive_010g_provenance_and_integrity.py .....              [ 67%]
+tests/test_directive_010h_isolation_and_robustness.py .........          [ 72%]
+tests/test_directive_010i_audit_hardening.py ...                         [ 74%]
+tests/test_directive_010j_report_consistency.py .                        [ 75%]
+tests/test_directive_010k_report_preservation_and_dynamics.py ....       [ 77%]
+tests/test_directive_011_recovery_and_operations.py .............        [ 85%]
+tests/test_directive_012b_verification.py ....                           [ 87%]
+tests/test_directive_013_scheduler.py ..........                         [ 93%]
 tests/test_partner_intake.py ..........                                  [100%]
-============================= 161 passed in 4.74s ==============================
+============================= 166 passed in 4.65s ==============================
 ```
+- `test_directive_013_scheduler.py` 10개 신규 테스트 항목 100% 통과:
+  1. `test_scheduler_safety_guard_standby_mode`: 안전 가드 STANDBY 동작 검증
+  2. `test_scheduler_lock_contention_blocks_duplicate_instance`: 단일 인스턴스 락 경합 차단 검증
+  3. `test_transient_network_error_recovers_via_backoff`: 일시적 네트워크 오류 지수 백오프 복구 검증
+  4. `test_permanent_error_fails_fast_without_retries`: 영구적 오류 즉시 중단 검증
+  5. `test_collection_success_with_report_failure_does_not_retry_live`: 수집 성공 후 보고서 실패 시 라이브 재실행 방지(1회 호출) 검증
+  6. `test_loop_breaks_on_fatal_failure`: 치명적 장애 시 루프 안전 종료(Fail-Safe Break) 검증
+  7. `test_config_validation_rules`: 인터벌 및 REPLAY 모드 운영 DB 차단 검증
+  8. `test_failure_report_unique_naming_no_overwrite`: 장애 보고서 덮어쓰기 방지 검증
+  9. `test_kst_date_conversion_boundary`: KST 자정 전후 경계값 변환 검증
+  10. `test_daily_market_reporter_atomic_creation`: 일별 요약 보고서 원자적 생성 및 메트릭 검증
 
 ---
 
-## 4. 운영 DB 무결성 보존 증거
-- 본 스케줄러 시스템 구축 및 테스트 단계에서는 격리된 `dummy.db` 및 mock runner를 사용하여 테스트를 수행하였으므로, 운영 DB(`data/chaficial_market_timeseries.db`)의 기존 348대 실매물, 382건 스냅샷, 353건 이벤트는 1 byte도 변경되지 않고 온전히 보존되었습니다:
-  - `listings`: 348대 (불변)
-  - `listing_snapshots`: 382건 (불변)
-  - `price_events`: 353건 (불변)
-  - `batch_audit_logs`: 3회 (불변)
+## 4. 운영 DB 무결성 및 레코드 영구 보존 검증
+- 모든 테스트는 격리된 `dummy.db`와 mock runner를 통해 실행되었으며, 운영 DB의 레코드는 1 byte도 변경되지 않고 온전히 보존되었습니다:
+  - `listings`: **348대** (불변 유지)
+  - `listing_snapshots`: **382건** (불변 유지)
+  - `price_events`: **353건** (불변 유지)
+  - `batch_audit_logs`: **3회** (불변 유지)
   - `PRAGMA integrity_check`: `ok` (100% 무결성 통과)
 
 ---
 
-## 5. 스케줄러 활성화 및 중지 방법 (운영 가이드)
-
-### 5.1 안전 모드 점검 (현재 상태: STANDBY)
-```bash
-# 기본 실행 시 안전 모드로 LIVE 수집이 차단되고 DRY_RUN으로 실행됨
-uv run python scripts/scheduled_market_watcher.py --once
-```
-
-### 5.2 총괄 감독 승인 후 실제 LIVE 자동 스케줄러 활성화
-총괄 감독의 공식 승인이 떨어진 이후 아래 명령어로 데몬/백그라운드 기동이 가능합니다:
-```bash
-# 24시간 주기(86400초) LIVE 자동 관측 기동
-uv run python scripts/scheduled_market_watcher.py --mode live --enable-live-scheduler --interval-seconds 86400
-
-# 또는 환경변수 지정
-CHAFFICIAL_ENABLE_LIVE_SCHEDULER=true uv run python scripts/scheduled_market_watcher.py
-```
-
-### 5.3 스케줄러 안전 중지 방법
-- `SIGINT` (Ctrl+C) 또는 `SIGTERM` 신호 수신 시 현재 진행 중인 사이클을 완료한 뒤 락 파일(`data/.scheduler.lock`)을 안전하게 해제하고 정상 종료됩니다.
-
----
-
-## 6. 결론 및 총괄 감독 검토 요청
-- `DIRECTIVE 013`에서 지시하신 **주기적 LIVE 시장 관측 운영체계(중복 방지 fcntl 락, 지수 백오프 안전 재시도, 장애 격리 리포트, 일별 KST 요약 리포트, 안전 가드)** 가 완벽히 구축되었습니다.
-- 총괄 감독(ChatGPT)님의 검토 및 신규 PR #13 생성 및 향후 4차 LIVE 관측 스케줄 활성화 승인을 요청합니다.
+## 5. 결론 및 신규 PR #13 제출
+1. 총괄 감독(ChatGPT)님의 지시대로 수집 성공과 보고서 실패를 엄격히 분리하고, 일시적/영구적 장애 구분 재시도 및 루프 안전 종료 메커니즘을 완비하였습니다.
+2. 현재 안전 가드(`enable_live_execution=False`)가 기본 적용되어 무단 LIVE 수집은 원천 차단 상태입니다.
+3. 신규 브랜치 `feat/directive-013-scheduled-observation-system`을 커밋/푸시하여 **PR #13**을 제출하며, 총괄 감독님의 최종 공식 승인을 요청합니다.

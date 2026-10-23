@@ -1,11 +1,13 @@
-"""CHA-FICIAL 일별 시장 관측 요약 보고서 생성 모듈 (DIRECTIVE 013).
+"""CHA-FICIAL 일별 시장 관측 요약 보고서 생성 모듈 (DIRECTIVE 013-A).
 
-일별로 누적된 관측 배치, 가격 변동(PRICE_DROP/PRICE_INCREASE), 신규 발견, 재관측 실적을
-데이터베이스에서 동적으로 집계하여 구조화된 마크다운 보고서로 발행합니다.
+- UTC 시각의 KST(UTC+9) 날짜 정확한 변환
+- 임시 파일 저장 후 원자적 교체(Atomic replace)로 보고서 무결성 보장
+- 파싱률, 재관측률, 가격 인하/인상 건수 및 누적 현황 구조화 집계
 """
 
 from datetime import UTC, datetime, timedelta
 import json
+import os
 from pathlib import Path
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
@@ -26,7 +28,7 @@ def to_kst_date_str(dt: datetime | None) -> str | None:
 
 
 class DailyMarketReporter:
-    """일별 시장 관측 요약 보고서 생성기 (KST 기준)."""
+    """일별 시장 관측 요약 보고서 생성기 (KST 기준, 원자적 저장 보장)."""
 
     def __init__(self, db_path: Path, output_dir: Path | None = None):
         self.db_path = db_path
@@ -35,7 +37,7 @@ class DailyMarketReporter:
         self.engine = create_engine(f"sqlite:///{self.db_path}")
 
     def generate_daily_summary(self, target_date_str: str | None = None) -> Path:
-        """지정된 날짜(YYYY-MM-DD KST 기준, 기본 오늘 KST)의 일별 시장 요약 보고서를 생성합니다."""
+        """지정된 날짜(YYYY-MM-DD KST 기준, 기본 오늘 KST)의 일별 시장 요약 보고서를 원자적으로 생성합니다."""
         now_utc = datetime.now(UTC)
         if not target_date_str:
             target_date_str = to_kst_date_str(now_utc)
@@ -74,16 +76,25 @@ class DailyMarketReporter:
             total_price_drop_krw = sum(abs(e.price_delta_krw) for e in price_drop_events)
             total_price_inc_krw = sum(e.price_delta_krw for e in price_increase_events)
 
+            # 배치 메타데이터 기반 파싱 수 및 재관측 수 집계
+            daily_parsed_count = sum(b.record_count for b in daily_batches)
+            daily_reobserved_count = 0
+            for b in daily_batches:
+                meta = b.get_audit_metadata()
+                if meta:
+                    daily_reobserved_count += meta.get("re_observed_count", 0)
+
             # 4. 보고서 마크다운 생성
             date_clean = target_date_str.replace("-", "")
             report_file = self.output_dir / f"daily_market_summary_{date_clean}.md"
+            temp_file = self.output_dir / f".tmp_{date_clean}_{os.getpid()}.md"
 
             content = [
                 f"# CHA-FICIAL 일별 시장 관측 요약 보고서 ({target_date_str})",
                 "",
                 f"- **보고서 생성 일시**: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}",
                 f"- **대상 DB**: `{self.db_path}`",
-                f"- **기준 일자**: `{target_date_str}`",
+                f"- **기준 일자 (KST)**: `{target_date_str}`",
                 "",
                 "---",
                 "",
@@ -92,7 +103,9 @@ class DailyMarketReporter:
                 "| 지표 | 실측 수치 | 비고 |",
                 "| :--- | :---: | :--- |",
                 f"| **실행된 관측 배치 수** | **{len(daily_batches)}회** | 당일 수집 시도 배치 |",
+                f"| **정밀 파싱 수집 매물 수** | **{daily_parsed_count}대** | 아반떼 CN7 정밀 파싱 완료 |",
                 f"| **당일 신규 발견 매물 (`FIRST_SEEN`)** | **{first_seen_count}대** | 시스템 최초 관측 실매물 |",
+                f"| **당일 재관측 매물 (`RE_OBSERVED`)** | **{daily_reobserved_count}대** | 기존 관측 이력 보유 매물 |",
                 f"| **당일 가격 인하 (`PRICE_DROP`)** | **{len(price_drop_events)}건** | 실제 가격 하향 조정 포착 |",
                 f"| **총 가격 인하 누적액** | **{total_price_drop_krw:,}원** | 당일 인하 총액 |",
                 f"| **당일 가격 인상 (`PRICE_INCREASE`)** | **{len(price_increase_events)}건** | 실제 가격 상향 조정 포착 |",
@@ -149,8 +162,11 @@ class DailyMarketReporter:
             content.append("\n---\n*CHA-FICIAL AI Time-Series Market Watcher Engine*\n")
 
             full_text = "\n".join(content)
-            with open(report_file, "w", encoding="utf-8") as f:
-                f.write(full_text)
 
-            print(f"[+] 일별 시장 요약 보고서 생성 완료: {report_file}")
+            # 원자적 파일 교체 (Atomic write via temp file)
+            with open(temp_file, "w", encoding="utf-8") as f:
+                f.write(full_text)
+            temp_file.replace(report_file)
+
+            print(f"[+] 일별 시장 요약 보고서 원자적 생성 완료: {report_file}")
             return report_file

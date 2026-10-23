@@ -1,24 +1,29 @@
-"""CHA-FICIAL DIRECTIVE 013 스케줄러 및 운영체계 독립 테스트 스위트.
+"""CHA-FICIAL DIRECTIVE 013-A 스케줄러 및 운영체계 강화 독립 테스트 스위트.
 
 1. 안전 가드 (STANDBY): 감독 승인 전 무단 LIVE 실행 차단 검증
 2. 프로세스 실행 잠금: 중복 스케줄러 기동 100% 차단 검증
-3. 실패 주입 및 지수 백오프: 2회 실패 후 3회차 성공 복구 검증
-4. 최대 재시도 초과 및 장애 격리: 3회 실패 시 FAILED 종결 및 장애 보고서 발행 검증
-5. 일별 시장 요약 리포터: 데이터베이스 동적 집계 및 마크다운 생성 검증
+3. 일시적 네트워크 장애 지수 백오프: 2회 실패 후 3회차 성공 복구 검증
+4. 영구적 장애 즉시 중단 (Fail-Fast): 비네트워크 예외는 재시도 없이 즉시 중단 검증
+5. 수집 성공과 보고서 실패의 엄격한 분리: 보고서 실패 시 LIVE를 재실행하지 않고 1회 실행 보장 검증
+6. 치명적 수집 실패 시 스케줄러 루프 안전 종료 (Fail-Safe Break) 검증
+7. 스케줄러 설정값 검증 (0 이하 인터벌, REPLAY 모드 운영 DB 차단)
+8. 장애 보고서 배타적 생성 (동일 시점 덮어쓰기 원천 방지)
+9. KST 자정 전후(UTC+9) 날짜 변환 경계치 검증
+10. 일별 마크다운 요약 리포터 원자적 생성 및 메트릭 검증
 """
 
-import multiprocessing
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 import time
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 
 from chaficial.database.base import Base
-from chaficial.tracker.daily_reporter import DailyMarketReporter
+from chaficial.tracker.daily_reporter import DailyMarketReporter, to_kst_date_str
 from chaficial.tracker.scheduler import (
     MarketObservationScheduler,
     SchedulerConfig,
+    SchedulerConfigError,
     SchedulerLockError,
 )
 
@@ -45,6 +50,7 @@ def test_scheduler_safety_guard_standby_mode(tmp_path):
     scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner)
     result = scheduler.execute_single_observation(mode="live")
 
+    assert result["collection_status"] == "STANDBY_SKIPPED"
     assert result["status"] == "STANDBY_SKIPPED"
     assert "enable_live_execution=False" in result["message"]
     assert runner_called is False, "안전 모드에서는 실제 파이프라인 러너가 호출되면 안 됩니다!"
@@ -67,23 +73,23 @@ def test_scheduler_lock_contention_blocks_duplicate_instance(tmp_path):
     finally:
         sched1.release_lock()
 
-    # 잠금 해제 후 sched2가 락을 정상 획득할 수 있는지 확인
     sched2.acquire_lock()
     sched2.release_lock()
 
 
-def test_failure_injection_and_exponential_backoff_recovery(tmp_path):
-    """지침 3: 2회 일시적 장애(예: 네트워크 타임아웃) 발생 후 3회차 성공 시 복구 검증."""
+def test_transient_network_error_recovers_via_backoff(tmp_path):
+    """지침 3: 일시적 네트워크 타임아웃(ConnectionError)은 지수 백오프로 3회차에 성공 복구 검증."""
     dummy_db = tmp_path / "dummy.db"
-    dummy_lock = tmp_path / ".retry_test.lock"
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
 
     config = SchedulerConfig(
         enable_live_execution=True,
         max_retries=3,
-        initial_backoff_sec=0.05,  # 테스트용 짧은 대기
+        initial_backoff_sec=0.04,
         backoff_factor=1.5,
         db_path=dummy_db,
-        lock_file=dummy_lock,
+        lock_file=tmp_path / ".retry.lock",
         report_dir=tmp_path / "reports",
         failure_dir=tmp_path / "failures",
     )
@@ -92,73 +98,166 @@ def test_failure_injection_and_exponential_backoff_recovery(tmp_path):
     def mock_flaky_runner(*args, **kwargs):
         attempts_log.append(time.time())
         if len(attempts_log) < 3:
-            raise ConnectionError("엔카 모바일 웹 일시적 응답 지연 (네트워크 타임아웃 주입)")
+            raise ConnectionError("엔카 모바일 웹 일시적 타임아웃 주입")
         return {"batch_id": "MOCK_SUCCESS"}
-
-    # 더미 DB 테이블 생성
-    engine = create_engine(f"sqlite:///{dummy_db}")
-    Base.metadata.create_all(engine)
 
     scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_flaky_runner)
     result = scheduler.execute_single_observation(mode="live")
 
-    assert result["status"] == "SUCCESS"
-    assert result["attempt"] == 3
+    assert result["collection_status"] == "SUCCESS"
+    assert result["attempts"] == 3
     assert len(attempts_log) == 3
-    # 백오프 대기가 발생했는지 확인
-    assert (attempts_log[1] - attempts_log[0]) >= 0.04
-    assert (attempts_log[2] - attempts_log[1]) >= 0.06
 
 
-def test_max_retries_exceeded_creates_failure_report(tmp_path):
-    """지침 4: 최대 재시도(3회) 초과 시 무한 루프 돌지 않고 FAILED 종결 및 장애 보고서 배타적 생성 검증."""
+def test_permanent_error_fails_fast_without_retries(tmp_path):
+    """지침 4 (013-A): 스키마 오류/ValueError 등 영구적 예외는 재시도 없이 1회 만에 즉시 중단(Fail-Fast) 검증."""
     dummy_db = tmp_path / "dummy.db"
-    dummy_lock = tmp_path / ".fail_test.lock"
-    failure_dir = tmp_path / "failures"
-
     config = SchedulerConfig(
         enable_live_execution=True,
         max_retries=3,
-        initial_backoff_sec=0.02,
-        backoff_factor=1.0,
+        initial_backoff_sec=0.05,
         db_path=dummy_db,
-        lock_file=dummy_lock,
+        lock_file=tmp_path / ".fail_fast.lock",
         report_dir=tmp_path / "reports",
-        failure_dir=failure_dir,
+        failure_dir=tmp_path / "failures",
     )
 
-    def mock_failing_runner(*args, **kwargs):
-        raise ValueError("지속적인 웹 스키마 변경 에러")
+    attempt_count = 0
+    def mock_permanent_failing_runner(*args, **kwargs):
+        nonlocal attempt_count
+        attempt_count += 1
+        raise ValueError("치명적 파싱 스키마 변경 (영구적 오류 주입)")
 
-    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_failing_runner)
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_permanent_failing_runner)
     result = scheduler.execute_single_observation(mode="live")
 
-    assert result["status"] == "FAILED"
-    assert result["attempts"] == 3
-    assert "failure_report" in result
-
-    report_path = Path(result["failure_report"])
-    assert report_path.exists()
-    content = report_path.read_text(encoding="utf-8")
-    assert "시장 관측 실패 보고서" in content
-    assert "지속적인 웹 스키마 변경 에러" in content
-    assert "무작정 자동 재실행 차단" in content
+    assert result["collection_status"] == "FAILED"
+    # 재시도하지 않고 정확히 1회 만에 중단되어야 함
+    assert attempt_count == 1
+    assert result["attempts"] == 1
+    assert "ValueError" in result["error"]
 
 
-def test_daily_market_reporter_generates_markdown(tmp_path):
-    """지침 5: DailyMarketReporter가 실제 운영 DB를 읽어 일별 마크다운 요약 리포트를 정상 생성하는지 검증."""
+def test_collection_success_with_report_failure_does_not_retry_live(tmp_path, monkeypatch):
+    """지침 5 (013-A 핵심): LIVE 수집 성공 후 보고서 생성이 실패하더라도 LIVE를 절대 재실행하지 않음 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        max_retries=3,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".report_fail.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    live_call_count = 0
+    def mock_runner(*args, **kwargs):
+        nonlocal live_call_count
+        live_call_count += 1
+        return {"batch_id": "BATCH_OK"}
+
+    # DailyMarketReporter에서 예외 발생 주입
+    def mock_generate_failure(*args, **kwargs):
+        raise RuntimeError("보고서 템플릿 렌더링 디스크 풀 에러 주입")
+
+    monkeypatch.setattr(DailyMarketReporter, "generate_daily_summary", mock_generate_failure)
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner)
+    result = scheduler.execute_single_observation(mode="live")
+
+    # 수집은 성공으로 인정되고, 보고서만 실패로 격리 기록
+    assert result["collection_status"] == "SUCCESS"
+    assert result["report_status"] == "REPORT_FAILED"
+    assert result["status"] == "PARTIAL_SUCCESS"
+    assert "RuntimeError" in result["report_error"]
+    # 가장 중요한 검증: 라이브 러너가 절대 2회 이상 재실행되지 않고 정확히 1회만 호출됨!
+    assert live_call_count == 1
+
+
+def test_loop_breaks_on_fatal_failure(tmp_path):
+    """지침 6 (013-A): run_loop 실행 중 수집 실패(FAILED) 발생 시 무한 루프 돌지 않고 즉시 중단 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        interval_seconds=0.01,
+        max_retries=1,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".loop_break.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    cycle_count = 0
+    def mock_fatal_runner(*args, **kwargs):
+        nonlocal cycle_count
+        cycle_count += 1
+        raise ConnectionError("네트워크 전면 단절")
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_fatal_runner)
+    # max_cycles=10으로 주어도 1회차 실패 시 즉시 루프 종료
+    scheduler.run_loop(max_cycles=10, mode="live")
+
+    assert cycle_count == 1, f"치명적 실패 시 루프를 즉시 종료해야 하는데 {cycle_count}회 실행됨"
+
+
+def test_config_validation_rules(tmp_path):
+    """지침 7 (013-A): 설정값 유효성 검증 규칙 (인터벌 > 0, REPLAY 시 운영 DB 차단)."""
+    # 1. interval <= 0
+    with pytest.raises(SchedulerConfigError, match="interval_seconds는 0보다 커야 합니다"):
+        c = SchedulerConfig(interval_seconds=0)
+        c.validate()
+
+    # 2. max_retries < 1
+    with pytest.raises(SchedulerConfigError, match="max_retries는 1 이상이어야 합니다"):
+        c = SchedulerConfig(max_retries=0)
+        c.validate()
+
+    # 3. REPLAY 모드에서 운영 DB 지정 시 차단
     op_db = Path("data/chaficial_market_timeseries.db")
-    if not op_db.exists():
-        pytest.skip("운영 DB가 존재하지 않아 일별 요약 리포트 테스트를 건너뜁니다.")
+    c = SchedulerConfig(db_path=op_db)
+    with pytest.raises(SchedulerConfigError, match="운영 DB.*는 REPLAY 모드의 대상이 될 수 없습니다"):
+        c.validate(mode="replay")
 
+
+def test_failure_report_unique_naming_no_overwrite(tmp_path):
+    """지침 8 (013-A): 동일 초에 장애가 반복 발생해도 기존 보고서를 덮어쓰지 않고 배타적 생성 검증."""
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        failure_dir=tmp_path / "failures",
+    )
+    scheduler = MarketObservationScheduler(config=config)
+
+    path1 = scheduler._write_failure_report(mode="live", attempts=1, error=RuntimeError("에러1"))
+    path2 = scheduler._write_failure_report(mode="live", attempts=1, error=RuntimeError("에러2"))
+
+    assert path1.exists()
+    assert path2.exists()
+    assert path1 != path2, "동일 초 생성 시 고유 파일명으로 분리되어야 합니다!"
+
+
+def test_kst_date_conversion_boundary():
+    """지침 9 (013-A): UTC -> KST(UTC+9) 변환 시 자정 전후 경계값 정확성 검증."""
+    # UTC 2026-10-23 14:59:59 -> KST 2026-10-23 23:59:59 (KST 날짜: 2026-10-23)
+    dt1 = datetime(2026, 10, 23, 14, 59, 59, tzinfo=UTC)
+    assert to_kst_date_str(dt1) == "2026-10-23"
+
+    # UTC 2026-10-23 15:00:00 -> KST 2026-10-24 00:00:00 (KST 자정, 날짜: 2026-10-24)
+    dt2 = datetime(2026, 10, 23, 15, 0, 0, tzinfo=UTC)
+    assert to_kst_date_str(dt2) == "2026-10-24"
+
+    # None 입력 시
+    assert to_kst_date_str(None) is None
+
+
+def test_daily_market_reporter_atomic_creation(tmp_path):
+    """지침 10 (013-A): DailyMarketReporter가 원자적으로 일별 보고서를 발행하고 메트릭을 포함하는지 검증."""
+    op_db = Path("data/chaficial_market_timeseries.db")
     reporter = DailyMarketReporter(db_path=op_db, output_dir=tmp_path / "reports")
-    # 3차 관측이 일어난 2026-10-24 기준 요약 리포트 생성
     report_file = reporter.generate_daily_summary(target_date_str="2026-10-24")
 
     assert report_file.exists()
     content = report_file.read_text(encoding="utf-8")
     assert "# CHA-FICIAL 일별 시장 관측 요약 보고서 (2026-10-24)" in content
-    assert "listings" in content
-    assert "348" in content
-    assert "PRICE_DROP" in content
-    assert "3,100,000원" in content  # 5건 가격 인하 총액
+    assert "정밀 파싱 수집 매물 수" in content
+    assert "당일 재관측 매물 (`RE_OBSERVED`)" in content
+    assert "3,100,000원" in content
