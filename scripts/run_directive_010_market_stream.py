@@ -214,10 +214,16 @@ def backup_operational_db_safe(db_path: Path) -> Path | None:
     return backup_file
 
 
-def fetch_live_encar_cn7(timeout_sec: int = 45) -> tuple[list[dict], Path, str, str, datetime, datetime]:
+def fetch_live_encar_cn7(timeout_sec: int = 45, batch_id_override: str | None = None) -> tuple[list[dict], Path, str, str, datetime, datetime]:
     """실제 엔카 모바일 웹에서 아반떼 CN7 카드를 실시간 수집하고 검증 실패 시 즉시 에러 발생."""
     start_utc = datetime.now(UTC)
-    batch_id, ts_str = generate_collision_safe_batch_id("ENCAR_CN7_LIVE")
+    if batch_id_override:
+        batch_id = batch_id_override
+        # 파일명 충돌 방지용 접미사 추출
+        suffix = batch_id.replace("ENCAR_CN7_LIVE_", "")
+        ts_str = suffix
+    else:
+        batch_id, ts_str = generate_collision_safe_batch_id("ENCAR_CN7_LIVE")
 
     print(f"[*] [LIVE 수집 개시] 엔카 모바일 웹 실시간 조회 (배치: {batch_id}, 시작: {start_utc.astimezone(KST).strftime('%Y-%m-%d %H:%M:%S KST')})...")
 
@@ -330,6 +336,8 @@ def run_pipeline(
     lock_file_path: Path | None = None,
     test_hook_fail_after_records: int | None = None,
     test_hook_fail_before_commit: bool = False,
+    batch_id: str | None = None,
+    **kwargs,
 ):
     """DIRECTIVE 010-I 실행 메인 파이프라인 (REPLAY/LIVE 완전 격리, 실행 잠금, 부분 쓰기 롤백 보장)."""
     print("=" * 80)
@@ -370,7 +378,7 @@ def run_pipeline(
 
         # 2. 데이터 수집 또는 재생 로드
         if mode == "live":
-            raw_cards, raw_file, raw_sha, batch_id, web_start_utc, web_end_utc = fetch_live_encar_cn7()
+            raw_cards, raw_file, raw_sha, batch_id, web_start_utc, web_end_utc = fetch_live_encar_cn7(batch_id_override=batch_id)
         else:
             assert input_file and Path(input_file).exists(), f"입력 파일이 존재하지 않습니다: {input_file}"
             raw_file = Path(input_file)

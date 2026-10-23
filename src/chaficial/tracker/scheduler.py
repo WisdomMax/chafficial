@@ -161,16 +161,19 @@ class MarketObservationScheduler:
             self.lock_fp = None
 
     def check_batch_committed(self, batch_id: str) -> str:
-        """지정된 batch_id가 대상 DB에 확실하게 커밋되었는지 검사합니다 (013-C Fail-Closed).
+        """지정된 batch_id가 대상 DB에 확실하게 커밋되었는지 검사합니다 (013-D Fail-Closed).
 
         반환값:
           - 'COMMITTED': 대상 배치가 DB에 확실하게 존재함.
           - 'NOT_COMMITTED': DB 조회가 정상 수행되었고 해당 배치가 없음.
         예외:
-          - CommitStatusUnknownError: DB 조회 실패, 잠금 등으로 확인 불가 시 발생.
+          - CommitStatusUnknownError: DB 파일 부재 또는 조회 실패로 확인 불가 시 발생.
         """
         if not self.config.db_path.exists():
-            return "NOT_COMMITTED"
+            # 013-D: 대상 DB 파일이 없으면 미커밋으로 단정하지 않고 Fail-Closed
+            raise CommitStatusUnknownError(
+                f"대상 DB 파일이 존재하지 않아 커밋 여부 확인 불가: {self.config.db_path}"
+            )
 
         try:
             engine = create_engine(f"sqlite:///{self.config.db_path}")
@@ -180,7 +183,7 @@ class MarketObservationScheduler:
                 ).scalars().first()
                 return "COMMITTED" if log is not None else "NOT_COMMITTED"
         except Exception as query_err:
-            # 013-C: 빈 결과를 반환하지 않고 반드시 예외 발생 (Fail-Closed)
+            # 013-D: 빈 결과를 반환하지 않고 반드시 예외 발생 (Fail-Closed)
             raise CommitStatusUnknownError(
                 f"배치 {batch_id} 커밋 여부 확인 실패 (DB 조회 에러: {query_err})"
             ) from query_err
@@ -215,7 +218,19 @@ class MarketObservationScheduler:
 
         # 2. 실행별 고유 batch_id 사전 발급 (배치 귀속성 보장)
         current_batch_id = self.generate_batch_id(mode=mode)
-        print(f"[*] [스케줄러] 013-C 고유 배치 ID 사전 발급 완료: {current_batch_id}")
+        print(f"[*] [스케줄러] 013-D 고유 배치 ID 사전 발급 완료: {current_batch_id}")
+
+        # 3. 러너의 batch_id 인자 지원 여부 사전 정적 검사 (inspect.signature)
+        import inspect
+        sig = inspect.signature(runner)
+        has_batch_id_param = "batch_id" in sig.parameters or any(
+            p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
+        )
+
+        if mode == "live" and not has_batch_id_param:
+            raise SchedulerConfigError(
+                f"[배치 귀속성 계약 위반] LIVE 러너({runner})는 batch_id 인자를 필수로 지원해야 합니다."
+            )
 
         attempt = 0
         current_backoff = self.config.initial_backoff_sec
@@ -230,11 +245,10 @@ class MarketObservationScheduler:
             attempt += 1
             try:
                 print(f"[*] [스케줄러] 관측 시도 {attempt}/{self.config.max_retries} 개시 (배치: {current_batch_id})...")
-                # 러너에 고유 batch_id 전달
-                try:
+                # 013-D: 사전 정적 판별에 따라 단 1회만 정확히 호출 (TypeError 재호출 금지)
+                if has_batch_id_param:
                     collection_result = runner(mode=mode, db_path_override=self.config.db_path, batch_id=current_batch_id)
-                except TypeError:
-                    # 기존 러너 호환성: batch_id 파라미터가 없는 경우
+                else:
                     collection_result = runner(mode=mode, db_path_override=self.config.db_path)
 
                 execution_outcome = "SUCCESS"
@@ -404,9 +418,9 @@ class MarketObservationScheduler:
                 print(f"\n[+] === 스케줄러 사이클 #{cycle_count} 실행 ===")
                 res = self.execute_single_observation(mode=mode)
 
-                # 013-C: FAILED 또는 COMMIT_STATUS_UNKNOWN 발생 시 즉시 루프 안전 중단
+                # 013-D: FAILED, COMMIT_STATUS_UNKNOWN, COMMITTED_WITH_POST_ERROR 발생 시 즉시 루프 안전 중단
                 col_status = res.get("collection_status")
-                if col_status in ("FAILED", "COMMIT_STATUS_UNKNOWN"):
+                if col_status in ("FAILED", "COMMIT_STATUS_UNKNOWN", "COMMITTED_WITH_POST_ERROR"):
                     print(f"[!] [치명적 장애 ({col_status})] 안전을 위해 스케줄러 루프를 즉시 종료합니다 (Fail-Safe Break).")
                     break
 

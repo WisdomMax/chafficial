@@ -112,6 +112,10 @@ def test_transient_network_error_recovers_via_backoff(tmp_path):
 def test_permanent_error_fails_fast_without_retries(tmp_path):
     """지침 4 (013-A): 스키마 오류/ValueError 등 영구적 예외는 재시도 없이 1회 만에 즉시 중단(Fail-Fast) 검증."""
     dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
     config = SchedulerConfig(
         enable_live_execution=True,
         max_retries=3,
@@ -313,6 +317,10 @@ def test_commit_boundary_post_error_does_not_re_collect(tmp_path):
 def test_disk_and_permission_errors_fail_fast_without_retry(tmp_path):
     """지침 13 (013-B): PermissionError 등 디스크/권한 에러 발생 시 즉시 중단(Fail-Fast) 검증."""
     dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
     config = SchedulerConfig(
         enable_live_execution=True,
         max_retries=3,
@@ -456,3 +464,110 @@ def test_daily_market_reporter_atomic_creation(tmp_path):
     assert "정밀 파싱 수집 매물 수" in content
     assert "당일 재관측 매물 (`RE_OBSERVED`)" in content
     assert "3,100,000원" in content
+
+
+def test_runner_internal_type_error_called_exactly_once(tmp_path):
+    """지침 17 (013-D 최우선): 러너 내부 TypeError 발생 시 호환성 오인 재호출 없이 정확히 1회만 호출 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()  # DB 파일 생성
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        max_retries=3,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".type_err.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    call_count = 0
+    def mock_runner_with_internal_type_error(mode: str, db_path_override=None, batch_id=None):
+        nonlocal call_count
+        call_count += 1
+        # 러너 내부 로직에서 발생한 TypeError
+        return int(None)  # TypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner_with_internal_type_error)
+    result = scheduler.execute_single_observation(mode="live")
+
+    # 영구적 예외이므로 재시도나 호환성 재호출 없이 정확히 1회만 호출되고 즉시 FAILED
+    assert call_count == 1, f"러너 내부 TypeError 발생 시 재호출되면 안 되는데 {call_count}회 호출됨!"
+    assert result["collection_status"] == "FAILED"
+    assert result["error_type"] == "TypeError"
+
+
+def test_live_runner_without_batch_id_rejected(tmp_path):
+    """지침 18 (013-D): LIVE 러너가 batch_id 인자를 지원하지 않으면 즉시 실행 거부 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".no_batch_id.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    def mock_legacy_runner(mode: str, db_path_override=None):
+        # batch_id 파라미터가 없는 구식 러너
+        return {}
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_legacy_runner)
+    with pytest.raises(SchedulerConfigError, match="LIVE 러너.*batch_id 인자를 필수로 지원해야 합니다"):
+        scheduler.execute_single_observation(mode="live")
+
+
+def test_db_file_missing_treated_as_commit_status_unknown(tmp_path):
+    """지침 19 (013-D): DB 파일 부재 시 미커밋으로 단정하지 않고 CommitStatusUnknownError 발생 검증."""
+    non_existent_db = tmp_path / "not_found.db"
+    config = SchedulerConfig(db_path=non_existent_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+    with pytest.raises(CommitStatusUnknownError, match="대상 DB 파일이 존재하지 않아 커밋 여부 확인 불가"):
+        scheduler.check_batch_committed("SOME_BATCH_ID")
+
+
+def test_loop_breaks_on_committed_with_post_error(tmp_path):
+    """지침 20 (013-D): COMMITTED_WITH_POST_ERROR 발생 시 run_loop가 다음 주기로 가지 않고 즉시 중단 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        interval_seconds=0.01,
+        max_retries=1,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".post_err_loop.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    cycle_count = 0
+    def mock_runner_commits_then_crashes(mode: str, db_path_override=None, batch_id=None):
+        nonlocal cycle_count
+        cycle_count += 1
+        with Session(engine) as session:
+            b = BatchAuditLog(
+                batch_id=batch_id,
+                source_platform="ENCAR",
+                search_scope="아반떼 CN7",
+                record_count=10,
+            )
+            session.add(b)
+            session.commit()
+        raise ConnectionError("커밋 후 소켓 에러")
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner_commits_then_crashes)
+    scheduler.run_loop(max_cycles=5, mode="live")
+
+    # COMMITTED_WITH_POST_ERROR 발생 시 수동 확인 필요하므로 1회차에 즉시 루프 중단!
+    assert cycle_count == 1, "COMMITTED_WITH_POST_ERROR 발생 시 루프가 즉시 중단되어야 함"
