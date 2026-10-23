@@ -95,27 +95,73 @@ class LiveExecutionNotAuthorizedError(Exception):
     """LIVE 관측 실행이 총괄 감독/운영자에 의해 명시적으로 승인되지 않았을 때 발생하는 예외 (Fail-Closed)."""
 
 
-OFFICIAL_LIVE_APPROVAL_TOKEN = "DIRECTIVE_013_LIVE_SUPERVISOR_AUTHORIZED"
+# 013-F: 기존 1~3차 레거시 배치 식별자 (과거 커밋 보존용 호환성 허용 목록)
+LEGACY_BATCH_IDS = {
+    "ENCAR_CN7_LIVE_20261021_01",
+    "ENCAR_CN7_LIVE_20261021_120825",
+    "ENCAR_CN7_LIVE_20261024_030446_518b4987e3b2",
+}
+
+DEFAULT_AUTH_FILE_PATH = Path("data/.live_authorization.json")
+
+
+def verify_live_authorization(auth_file: Path | None) -> tuple[bool, str]:
+    """로컬 비추적 승인 파일(.live_authorization.json)의 유효성을 엄격히 검증합니다 (013-F).
+
+    반환값: (is_valid: bool, reason: str)
+    [원칙]
+    - 소스 코드에 공개된 고정 토큰이나 기본 정답은 일체 존재하지 않습니다.
+    - 승인 파일 부재, 만료, 필드 누락 시 무조건 거부 (Fail-Closed).
+    """
+    if not auth_file or not auth_file.exists():
+        return False, f"운영 승인 파일 부재: {auth_file}"
+
+    try:
+        with open(auth_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if not isinstance(data, dict):
+            return False, "운영 승인 파일 형식 오류 (JSON 객체여야 함)"
+
+        if not data.get("is_approved"):
+            return False, "운영 승인 플래그(is_approved)가 True가 아닙니다"
+
+        # 승인 주체(supervisor) 검증
+        approved_by = data.get("approved_by")
+        if not approved_by:
+            return False, "운영 승인 주체(approved_by) 누락"
+
+        # 만료일자(UTC) 검증
+        expires_at_str = data.get("expires_at")
+        if not expires_at_str:
+            return False, "운영 승인 만료일자(expires_at) 누락"
+
+        expires_at = datetime.fromisoformat(expires_at_str)
+        if datetime.now(UTC) > expires_at:
+            return False, f"운영 승인 유효기간 만료됨 (만료일자: {expires_at.isoformat()})"
+
+        return True, f"유효한 운영 승인 확인 (승인자: {approved_by}, 만료: {expires_at.isoformat()})"
+    except Exception as read_err:
+        return False, f"운영 승인 파일 읽기/검증 실패: {read_err}"
 
 
 @dataclasses.dataclass
 class SchedulerConfig:
-    """스케줄러 설정 데이터클래스 (013-E: 운영 승인 체계 분리)."""
+    """스케줄러 설정 데이터클래스 (013-F: 로컬 분리 운영 승인 체계)."""
 
     interval_seconds: float = 86400.0  # 기본: 24시간
     max_retries: int = 3               # 최대 재시도 횟수
     initial_backoff_sec: float = 5.0   # 1차 재시도 대기 시간 (초)
     backoff_factor: float = 2.0        # 지수 증가 배수
     enable_live_execution: bool = False  # 개발/실행 플래그: LIVE 시도 의도 여부
-    live_ops_approved: bool = False      # 운영 승인 플래그: 총괄 감독의 명시적 운영 승인 여부
-    live_ops_approval_token: str = ""    # 운영 승인 토큰: 감독이 발급한 승인 확인 문자열
+    auth_file_path: Path = DEFAULT_AUTH_FILE_PATH  # 로컬 운영 승인 파일 경로 (Git 비추적)
     db_path: Path = Path("data/chaficial_market_timeseries.db")
     lock_file: Path = Path("data/.scheduler.lock")
     report_dir: Path = Path("reports/daily_summaries")
     failure_dir: Path = Path("reports/failures")
 
     def validate(self, mode: str = "live"):
-        """설정값 유효성 검증 (013-E: LIVE 운영 승인 강제)."""
+        """설정값 유효성 검증 (013-F: LIVE 운영 승인 파일 강제)."""
         if self.interval_seconds <= 0:
             raise SchedulerConfigError(f"interval_seconds는 0보다 커야 합니다: {self.interval_seconds}")
         if self.max_retries < 1:
@@ -130,13 +176,12 @@ class SchedulerConfig:
                 f"[REPLAY 격리 위반] 운영 DB({OFFICIAL_OPERATIONAL_DB_PATH})는 REPLAY 모드의 대상이 될 수 없습니다."
             )
 
-        # 013-E [지침 1]: LIVE 실행 플래그가 켜진 경우, 반드시 운영 감독의 승인과 토큰이 일치해야 함 (Fail-Closed)
+        # 013-F [지침 1]: LIVE 실행 플래그가 켜진 경우, 소스코드 외부에 분리된 로컬 승인 파일 검증 필수
         if mode == "live" and self.enable_live_execution:
-            expected_token = os.environ.get("CHAFFICIAL_LIVE_OPS_APPROVAL_TOKEN", OFFICIAL_LIVE_APPROVAL_TOKEN)
-            if not self.live_ops_approved or self.live_ops_approval_token != expected_token:
+            is_valid, reason = verify_live_authorization(self.auth_file_path)
+            if not is_valid:
                 raise LiveExecutionNotAuthorizedError(
-                    "LIVE 관측 실행 거부: enable_live_execution이 활성화되었으나, "
-                    "총괄 감독의 명시적 운영 승인(live_ops_approved=True 및 유효한 live_ops_approval_token)이 결여되었습니다 (Fail-Closed)."
+                    f"LIVE 관측 실행 거부: 총괄 감독의 유효한 로컬 운영 승인이 확인되지 않았습니다 ({reason}). (Fail-Closed)"
                 )
 
 
@@ -184,20 +229,24 @@ class MarketObservationScheduler:
         batch_id: str,
         expected_platform: str = "ENCAR",
         expected_scope_prefix: str = "ENCAR:",
+        is_legacy: bool | None = None,
     ) -> str:
-        """지정된 batch_id의 DB 커밋 여부 및 감사 계약(기원, 레코드 수, 원천 파일 무결성)을 종합 검증합니다 (013-E 강화).
+        """지정된 batch_id의 DB 커밋 여부 및 엄격한 감사 계약을 종합 검증합니다 (013-F).
 
-        반환값:
-          - 'COMMITTED': 대상 배치가 DB에 확실하게 존재하며, 모든 감사 무결성 계약을 완벽히 충족함.
-          - 'NOT_COMMITTED': DB 조회가 정상 수행되었고 해당 배치가 존재하지 않음.
-        예외:
-          - CommitStatusUnknownError: DB 부재/조회 실패, 중복 ID, 메타데이터 불일치, 원천 파일 소실/해시 불일치 시 발생 (Fail-Closed).
+        [신규 LIVE 배치 계약 (is_legacy=False)]
+          - notes(JSON) 필수: raw_file_path, raw_file_sha256, first_seen_count, re_observed_count 전수 필수.
+          - 원천 파일 실존 및 SHA-256 1:1 대조 필수 (하나라도 누락/불일치 시 즉시 CommitStatusUnknownError).
+          - first_seen_count + re_observed_count == record_count 완벽 일치 필수.
+        [레거시 배치 호환 (is_legacy=True 또는 LEGACY_BATCH_IDS 포함)]
+          - 기존 1~3차 관측 데이터의 보존 및 호환성 유지.
         """
         if not self.config.db_path.exists():
-            # 013-D/E: 대상 DB 파일이 없으면 미커밋으로 단정하지 않고 Fail-Closed
             raise CommitStatusUnknownError(
                 f"대상 DB 파일이 존재하지 않아 커밋 여부 확인 불가: {self.config.db_path}"
             )
+
+        # 레거시 판별: 명시적 지정 또는 1~3차 레거시 목록 포함 여부
+        is_legacy_batch = is_legacy if is_legacy is not None else (batch_id in LEGACY_BATCH_IDS)
 
         try:
             engine = create_engine(f"sqlite:///{self.config.db_path}")
@@ -209,7 +258,6 @@ class MarketObservationScheduler:
                 if not logs:
                     return "NOT_COMMITTED"
 
-                # 013-E [지침 3-A]: 동일 배치 ID 중복 등록 검사 (DB 무결성 위반 차단)
                 if len(logs) > 1:
                     raise CommitStatusUnknownError(
                         f"배치 ID 중복 감지: 배치 식별자 {batch_id} 레코드가 {len(logs)}건 발견되었습니다."
@@ -217,13 +265,12 @@ class MarketObservationScheduler:
 
                 log = logs[0]
 
-                # 013-E [지침 3-B]: 수집 기록 수 유효성 검증
+                # 기본 필드 무결성 검증
                 if log.record_count is None or log.record_count < 0:
                     raise CommitStatusUnknownError(
                         f"배치 감사 로그 무결성 위반: record_count가 유효하지 않습니다 ({log.record_count})"
                     )
 
-                # 013-E [지침 3-C]: 데이터 기원(Platform) 및 검색 범위 일관성 검증
                 if log.source_platform != expected_platform:
                     raise CommitStatusUnknownError(
                         f"배치 데이터 기원 불일치: 기대 플랫폼={expected_platform}, 실제 플랫폼={log.source_platform}"
@@ -237,52 +284,63 @@ class MarketObservationScheduler:
                         f"배치 검색 범위 불일치: scope={log.search_scope}"
                     )
 
-                # 013-E [지침 3-D]: 원천 파일 및 메타데이터 일관성 검증
-                if log.notes:
+                # ------------------------------------------------------------------
+                # 신규 스케줄러 LIVE 배치: 엄격한 필수 감사 메타데이터 계약 강제 (013-F)
+                # ------------------------------------------------------------------
+                if not is_legacy_batch:
+                    if not log.notes:
+                        raise CommitStatusUnknownError(
+                            f"신규 배치 감사 계약 위반: 배치 {batch_id}의 필수 감사 메타데이터(notes)가 누락되었습니다."
+                        )
+
                     try:
                         notes_data = json.loads(log.notes)
-                        if isinstance(notes_data, dict):
-                            # 원천 파일 경로 검증
-                            raw_path_str = notes_data.get("raw_file_path")
-                            if raw_path_str:
-                                raw_file = Path(raw_path_str)
-                                if not raw_file.exists():
-                                    raise CommitStatusUnknownError(
-                                        f"배치 원천 파일 소실 감지: {raw_file} 파일이 디스크에 존재하지 않습니다."
-                                    )
+                    except Exception as json_err:
+                        raise CommitStatusUnknownError(
+                            f"신규 배치 감사 계약 위반: notes가 유효한 JSON 형식이 아닙니다 ({json_err})"
+                        )
 
-                                # 원천 파일 SHA-256 대조 검증
-                                expected_sha = notes_data.get("raw_file_sha256")
-                                if expected_sha:
-                                    hasher = hashlib.sha256()
-                                    with open(raw_file, "rb") as rf:
-                                        while chunk := rf.read(65536):
-                                            hasher.update(chunk)
-                                    actual_sha = hasher.hexdigest()
-                                    if actual_sha != expected_sha:
-                                        raise CommitStatusUnknownError(
-                                            f"배치 원천 파일 SHA-256 변조 감지: 기대={expected_sha}, 실제={actual_sha}"
-                                        )
+                    if not isinstance(notes_data, dict):
+                        raise CommitStatusUnknownError("신규 배치 감사 계약 위반: notes는 JSON 객체여야 합니다.")
 
-                            # 세부 적재 수량 일치 검증
-                            first_seen = notes_data.get("first_seen_count")
-                            re_observed = notes_data.get("re_observed_count")
-                            if first_seen is not None and re_observed is not None:
-                                expected_total = first_seen + re_observed
-                                if expected_total != log.record_count:
-                                    raise CommitStatusUnknownError(
-                                        f"배치 적재 수량 불일치: record_count={log.record_count}, "
-                                        f"first_seen({first_seen}) + re_observed({re_observed}) = {expected_total}"
-                                    )
-                    except json.JSONDecodeError:
-                        # 레거시 일반 텍스트 notes 허용 (기존 배치의 하위 호환성 유지)
-                        pass
+                    # 필수 4대 메타데이터 키 검증
+                    required_keys = ["raw_file_path", "raw_file_sha256", "first_seen_count", "re_observed_count"]
+                    for k in required_keys:
+                        if k not in notes_data or notes_data[k] is None:
+                            raise CommitStatusUnknownError(
+                                f"신규 배치 필수 감사 메타데이터 누락: 키 '{k}'가 존재하지 않습니다."
+                            )
+
+                    # 원천 파일 실존 검증
+                    raw_path = Path(notes_data["raw_file_path"])
+                    if not raw_path.exists():
+                        raise CommitStatusUnknownError(
+                            f"배치 원천 파일 소실 감지: {raw_path} 파일이 디스크에 존재하지 않습니다."
+                        )
+
+                    # 원천 파일 SHA-256 1:1 대조 검증
+                    hasher = hashlib.sha256()
+                    with open(raw_path, "rb") as rf:
+                        while chunk := rf.read(65536):
+                            hasher.update(chunk)
+                    actual_sha = hasher.hexdigest()
+                    if actual_sha != notes_data["raw_file_sha256"]:
+                        raise CommitStatusUnknownError(
+                            f"배치 원천 파일 SHA-256 변조 감지: 기대={notes_data['raw_file_sha256']}, 실제={actual_sha}"
+                        )
+
+                    # 수집 수량 일치 검증: record_count == first_seen + re_observed
+                    expected_count = notes_data["first_seen_count"] + notes_data["re_observed_count"]
+                    if expected_count != log.record_count:
+                        raise CommitStatusUnknownError(
+                            f"배치 적재 수량 불일치: record_count={log.record_count}, "
+                            f"first_seen({notes_data['first_seen_count']}) + re_observed({notes_data['re_observed_count']}) = {expected_count}"
+                        )
 
                 return "COMMITTED"
         except CommitStatusUnknownError:
             raise
         except Exception as query_err:
-            # 013-D/E: 조회 실패 시 빈 결과를 반환하지 않고 반드시 예외 발생 (Fail-Closed)
             raise CommitStatusUnknownError(
                 f"배치 {batch_id} 커밋 여부 확인 실패 (DB 조회 에러: {query_err})"
             ) from query_err

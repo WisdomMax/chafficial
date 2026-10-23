@@ -18,24 +18,44 @@ import time
 import pytest
 from sqlalchemy import create_engine
 
+import json
 from chaficial.database.base import Base
 from chaficial.tracker.daily_reporter import DailyMarketReporter, to_kst_date_str
 from chaficial.tracker.scheduler import (
-    OFFICIAL_LIVE_APPROVAL_TOKEN,
+    DEFAULT_AUTH_FILE_PATH,
+    LEGACY_BATCH_IDS,
     LiveExecutionNotAuthorizedError,
     MarketObservationScheduler,
     SchedulerConfig,
     SchedulerConfigError,
     SchedulerLockError,
+    verify_live_authorization,
 )
 
 
+def create_test_auth_file(target_path: Path, is_approved: bool = True, expired: bool = False) -> Path:
+    """테스트 더블 전용 로컬 승인 파일 생성 헬퍼 (013-F)."""
+    expires = datetime.now(UTC) + (timedelta(days=-1) if expired else timedelta(days=1))
+    payload = {
+        "is_approved": is_approved,
+        "approved_by": "TEST_SUPERVISOR_CHATGPT",
+        "expires_at": expires.isoformat(),
+    }
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.write_text(json.dumps(payload), encoding="utf-8")
+    return target_path
+
+
 def make_live_config(**kwargs):
-    """테스트 더블 전용 LIVE 승인 설정 헬퍼 (013-E 운영 승인 체계 준수)."""
+    """테스트 더블 전용 LIVE 승인 설정 헬퍼 (013-F 로컬 분리 운영 승인 체계 준수)."""
+    if "auth_file_path" not in kwargs:
+        base_dir = kwargs["db_path"].parent if "db_path" in kwargs and kwargs["db_path"] else Path("/tmp")
+        auth_file = base_dir / ".test_live_auth.json"
+        create_test_auth_file(auth_file, is_approved=True, expired=False)
+        kwargs["auth_file_path"] = auth_file
+
     defaults = {
         "enable_live_execution": True,
-        "live_ops_approved": True,
-        "live_ops_approval_token": OFFICIAL_LIVE_APPROVAL_TOKEN,
     }
     defaults.update(kwargs)
     return SchedulerConfig(**defaults)
@@ -294,6 +314,17 @@ def test_commit_boundary_post_error_does_not_re_collect(tmp_path):
         failure_dir=tmp_path / "failures",
     )
 
+    import hashlib
+    raw_f = tmp_path / "mock_live_raw.json"
+    raw_f.write_text("{}", encoding="utf-8")
+    raw_sha = hashlib.sha256(b"{}").hexdigest()
+    valid_notes = json.dumps({
+        "raw_file_path": str(raw_f),
+        "raw_file_sha256": raw_sha,
+        "first_seen_count": 100,
+        "re_observed_count": 0,
+    })
+
     runner_call_count = 0
     def mock_runner_commits_then_crashes(*args, **kwargs):
         nonlocal runner_call_count
@@ -306,6 +337,7 @@ def test_commit_boundary_post_error_does_not_re_collect(tmp_path):
                 source_platform="ENCAR",
                 search_scope="아반떼 CN7",
                 record_count=100,
+                notes=valid_notes,
             )
             session.add(b)
             session.commit()
@@ -574,40 +606,73 @@ def test_loop_breaks_on_committed_with_post_error(tmp_path):
 
 
 # ==============================================================================
-# DIRECTIVE 013-E: 운영 안전성 강화 (승인 체계, PARTIAL_SUCCESS 중단, 감사 계약)
+# DIRECTIVE 013-F: FINAL LIVE AUTHORIZATION & STRICT COMMIT AUDIT
 # ==============================================================================
 
 
-def test_live_execution_rejected_without_supervisor_approval(tmp_path):
-    """지침 1 (013-E): enable_live_execution=True여도 운영자 승인이 없으면 LiveExecutionNotAuthorizedError 거부."""
+def test_live_execution_rejected_when_auth_file_missing(tmp_path):
+    """지침 1 (013-F): enable_live_execution=True여도 승인 파일이 없으면 LiveExecutionNotAuthorizedError 거부."""
     dummy_db = tmp_path / "dummy.db"
     dummy_db.touch()
 
-    # 개발용 플래그만 켜고, 운영자 승인은 누락된 상태
+    # 승인 파일이 존재하지 않는 경로로 설정
+    missing_auth = tmp_path / "non_existent_auth.json"
     config = SchedulerConfig(
         enable_live_execution=True,
-        live_ops_approved=False,
+        auth_file_path=missing_auth,
         db_path=dummy_db,
     )
 
-    with pytest.raises(LiveExecutionNotAuthorizedError, match="총괄 감독의 명시적 운영 승인.*결여"):
+    with pytest.raises(LiveExecutionNotAuthorizedError, match="총괄 감독의 유효한 로컬 운영 승인이 확인되지 않았습니다"):
         MarketObservationScheduler(config=config)
 
 
-def test_live_execution_rejected_with_invalid_token(tmp_path):
-    """지침 1 (013-E): 승인 플래그가 켜졌어도 토큰이 위조/불일치하면 LiveExecutionNotAuthorizedError 거부."""
+def test_live_execution_rejected_when_auth_expired(tmp_path):
+    """지침 1 (013-F): 승인 파일이 존재하더라도 만료일자가 지났으면 LiveExecutionNotAuthorizedError 거부."""
     dummy_db = tmp_path / "dummy.db"
     dummy_db.touch()
 
+    expired_auth = tmp_path / "expired_auth.json"
+    create_test_auth_file(expired_auth, is_approved=True, expired=True)
+
     config = SchedulerConfig(
         enable_live_execution=True,
-        live_ops_approved=True,
-        live_ops_approval_token="WRONG_FORGED_TOKEN",
+        auth_file_path=expired_auth,
         db_path=dummy_db,
     )
 
-    with pytest.raises(LiveExecutionNotAuthorizedError, match="총괄 감독의 명시적 운영 승인.*결여"):
+    with pytest.raises(LiveExecutionNotAuthorizedError, match="운영 승인 유효기간 만료됨"):
         MarketObservationScheduler(config=config)
+
+
+def test_live_execution_rejected_when_not_approved(tmp_path):
+    """지침 1 (013-F): 승인 파일 내 is_approved=False이면 LiveExecutionNotAuthorizedError 거부."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+
+    unapproved_auth = tmp_path / "unapproved_auth.json"
+    create_test_auth_file(unapproved_auth, is_approved=False, expired=False)
+
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        auth_file_path=unapproved_auth,
+        db_path=dummy_db,
+    )
+
+    with pytest.raises(LiveExecutionNotAuthorizedError, match="is_approved.*True가 아닙니다"):
+        MarketObservationScheduler(config=config)
+
+
+def test_default_config_has_no_live_auth():
+    """지침 1 (013-F): 기본 설정 상태에서는 운영 승인 파일이 존재하지 않아 LIVE 실행이 불가함을 입증."""
+    config = SchedulerConfig()
+    # 기본값은 LIVE 비활성
+    assert config.enable_live_execution is False
+
+    # 만약 임의로 enable_live_execution만 켜더라도 승인 파일 부재로 즉시 거부됨
+    config.enable_live_execution = True
+    with pytest.raises(LiveExecutionNotAuthorizedError, match="운영 승인 파일 부재"):
+        config.validate(mode="live")
 
 
 def test_partial_success_breaks_run_loop(tmp_path):
@@ -778,7 +843,12 @@ def test_check_batch_committed_fails_on_missing_raw_file(tmp_path):
     target_batch_id = "ENCAR_CN7_LIVE_MISSING_RAW"
     missing_raw = tmp_path / "does_not_exist_raw.json"
 
-    notes = json.dumps({"raw_file_path": str(missing_raw), "first_seen_count": 10, "re_observed_count": 0})
+    notes = json.dumps({
+        "raw_file_path": str(missing_raw),
+        "raw_file_sha256": "dummy_sha_string",
+        "first_seen_count": 10,
+        "re_observed_count": 0,
+    })
     with Session(engine) as session:
         b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
         session.add(b)
@@ -839,7 +909,14 @@ def test_check_batch_committed_fails_on_quantity_mismatch(tmp_path):
     from chaficial.tracker.scheduler import CommitStatusUnknownError
 
     target_batch_id = "ENCAR_CN7_LIVE_QTY_MISMATCH"
+    dummy_raw = tmp_path / "qty_raw.json"
+    dummy_raw.write_text("{}", encoding="utf-8")
+    import hashlib
+    d_sha = hashlib.sha256(b"{}").hexdigest()
+
     notes = json.dumps({
+        "raw_file_path": str(dummy_raw),
+        "raw_file_sha256": d_sha,
         "first_seen_count": 5,
         "re_observed_count": 3,  # 합계 8인데 record_count는 10
     })
@@ -888,4 +965,96 @@ def test_check_batch_committed_success_with_valid_audit(tmp_path):
 
     status = scheduler.check_batch_committed(target_batch_id)
     assert status == "COMMITTED", f"정상적인 배치 커밋이어야 하는데 {status} 반환됨"
+
+
+def test_check_batch_committed_new_batch_fails_without_notes(tmp_path):
+    """지침 2 (013-F): 신규 스케줄러 배치는 notes가 없으면 COMMIT_STATUS_UNKNOWN 거부."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    new_batch_id = "ENCAR_CN7_LIVE_20261024_NEW_NO_NOTES"
+    with Session(engine) as session:
+        # notes=None 으로 저장
+        b = BatchAuditLog(batch_id=new_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=None)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="신규 배치.*필수 감사 메타데이터.*누락"):
+        scheduler.check_batch_committed(new_batch_id, is_legacy=False)
+
+
+def test_check_batch_committed_new_batch_fails_when_sha_missing(tmp_path):
+    """지침 2 (013-F): 신규 배치는 원천 파일 경로가 있어도 SHA-256이 누락되면 COMMIT_STATUS_UNKNOWN 거부."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    new_batch_id = "ENCAR_CN7_LIVE_20261024_NEW_NO_SHA"
+    real_raw = tmp_path / "raw.json"
+    real_raw.write_text("{}", encoding="utf-8")
+
+    # raw_file_sha256 필드 누락
+    notes = json.dumps({
+        "raw_file_path": str(real_raw),
+        "first_seen_count": 10,
+        "re_observed_count": 0,
+    })
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=new_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="필수 감사 메타데이터 누락: 키 'raw_file_sha256'"):
+        scheduler.check_batch_committed(new_batch_id, is_legacy=False)
+
+
+def test_check_batch_committed_legacy_batch_compatible(tmp_path):
+    """지침 2 (013-F): 기존 1~3차 레거시 배치는 일반 텍스트 notes여도 하위 호환 통과 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+
+    # 1차 레거시 배치 ID 사용
+    legacy_batch_id = "ENCAR_CN7_LIVE_20261021_01"
+    legacy_notes = "PARTIAL_OR_FAILED_BATCH: 엔카 아반떼 CN7 1페이지 실시간 표본 관측 (카드 250개 중 126대)"
+
+    with Session(engine) as session:
+        b = BatchAuditLog(
+            batch_id=legacy_batch_id,
+            source_platform="ENCAR",
+            search_scope="ENCAR:현대:아반떼:ALL:MIN~MAX",
+            record_count=126,
+            notes=legacy_notes,
+        )
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    # LEGACY_BATCH_IDS에 포함되어 있으므로 레거시 호환 검증 통과
+    status = scheduler.check_batch_committed(legacy_batch_id)
+    assert status == "COMMITTED", f"레거시 배치는 호환 검증되어야 하는데 {status} 반환됨"
+
 
