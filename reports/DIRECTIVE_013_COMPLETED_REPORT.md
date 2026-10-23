@@ -4,6 +4,7 @@
 - **임무**: DIRECTIVE 013-E 지침에 따른 LIVE 실행 승인 체계 분리, PARTIAL_SUCCESS 루프 안전 중단 및 단독 복구 경로 마련, 배치 커밋 감사 계약(데이터 기원, 원천 파일 SHA-256, 수량 무결성) 강화.
 - **선행 작업**: PR #11 공식 병합 완료 (`e342aa71750ab2c2b4d802aad3cdb9ddd51ccff2`)
 - **작업 브랜치**: `feat/directive-013-scheduled-observation-system`
+- **최신 커밋 HEAD SHA**: `5c7ae16643a890d9187dea750103545987bddea8`
 - **기준(Base) 브랜치**: `feat/directive-009-price-event-tracker` (현재 병합 전략과 100% 일치)
 - **공식 PR URL**: https://github.com/WisdomMax/chafficial/pull/12
 - **PR 비교 URL**: https://github.com/WisdomMax/chafficial/compare/feat/directive-009-price-event-tracker...feat/directive-013-scheduled-observation-system?expand=1
