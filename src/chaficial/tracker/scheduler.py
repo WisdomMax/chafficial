@@ -17,7 +17,7 @@
 """
 
 import dataclasses
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 import errno
 import fcntl
 import hashlib
@@ -26,6 +26,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 import sqlite3
 import time
 import traceback
@@ -103,18 +104,30 @@ LEGACY_BATCH_IDS = {
 }
 
 DEFAULT_AUTH_FILE_PATH = Path("data/.live_authorization.json")
+MAX_AUTH_VALIDITY_DAYS = 7.0  # 과도하게 긴 승인 방지용 최대 유효기간 (7일)
 
 
 def verify_live_authorization(auth_file: Path | None) -> tuple[bool, str]:
-    """로컬 비추적 승인 파일(.live_authorization.json)의 유효성을 엄격히 검증합니다 (013-F).
+    """운영자 로컬 활성화 승인 파일의 무결성과 유효기간을 엄격히 검증합니다 (013-G).
 
-    반환값: (is_valid: bool, reason: str)
     [원칙]
+    - 이 검증은 단일 운영자 환경에서 실수에 의한 LIVE 실행을 방지하기 위한 로컬 안전 가드입니다.
     - 소스 코드에 공개된 고정 토큰이나 기본 정답은 일체 존재하지 않습니다.
-    - 승인 파일 부재, 만료, 필드 누락 시 무조건 거부 (Fail-Closed).
+    - 파일 부재, 심볼릭 링크, 만료, 필드 누락, 과도한 기간(7일 초과) 시 무조건 거부 (Fail-Closed).
+    - 본 파일의 존재는 최종 승인 행위를 대신하지 않으며 운영자의 직접 생성이 요구됩니다.
     """
-    if not auth_file or not auth_file.exists():
+    if not auth_file:
+        return False, "운영 승인 파일 경로가 지정되지 않았습니다"
+
+    # 심볼릭 링크 및 비정상 파일 차단
+    if auth_file.is_symlink():
+        return False, f"보안 위반: 심볼릭 링크 파일은 승인 파일로 사용할 수 없습니다 ({auth_file})"
+
+    if not auth_file.exists():
         return False, f"운영 승인 파일 부재: {auth_file}"
+
+    if not auth_file.is_file():
+        return False, f"운영 승인 파일이 일반 파일이 아닙니다: {auth_file}"
 
     try:
         with open(auth_file, "r", encoding="utf-8") as f:
@@ -123,24 +136,34 @@ def verify_live_authorization(auth_file: Path | None) -> tuple[bool, str]:
         if not isinstance(data, dict):
             return False, "운영 승인 파일 형식 오류 (JSON 객체여야 함)"
 
-        if not data.get("is_approved"):
-            return False, "운영 승인 플래그(is_approved)가 True가 아닙니다"
+        # is_approved는 정확히 JSON boolean True여야 함
+        is_app = data.get("is_approved")
+        if is_app is not True or not isinstance(is_app, bool):
+            return False, "운영 승인 플래그(is_approved)가 boolean true가 아닙니다"
 
-        # 승인 주체(supervisor) 검증
+        # 승인 주체(operator) 검증
         approved_by = data.get("approved_by")
-        if not approved_by:
-            return False, "운영 승인 주체(approved_by) 누락"
+        if not isinstance(approved_by, str) or not approved_by.strip():
+            return False, "운영 승인 주체(approved_by) 누락 또는 유효하지 않은 문자열"
 
-        # 만료일자(UTC) 검증
+        # 만료일자(UTC 시간대 필수) 검증
         expires_at_str = data.get("expires_at")
-        if not expires_at_str:
+        if not isinstance(expires_at_str, str) or not expires_at_str.strip():
             return False, "운영 승인 만료일자(expires_at) 누락"
 
         expires_at = datetime.fromisoformat(expires_at_str)
-        if datetime.now(UTC) > expires_at:
+        if expires_at.tzinfo is None:
+            return False, "운영 승인 만료일자에 시간대(Timezone/UTC) 정보가 누락되었습니다"
+
+        now_utc = datetime.now(UTC)
+        if now_utc > expires_at:
             return False, f"운영 승인 유효기간 만료됨 (만료일자: {expires_at.isoformat()})"
 
-        return True, f"유효한 운영 승인 확인 (승인자: {approved_by}, 만료: {expires_at.isoformat()})"
+        # 과도하게 긴 승인 기간(7일 초과) 거부
+        if (expires_at - now_utc) > timedelta(days=MAX_AUTH_VALIDITY_DAYS):
+            return False, f"과도하게 긴 승인 기간 거부 (최대 {MAX_AUTH_VALIDITY_DAYS}일 허용, 요청: {(expires_at - now_utc).days}일)"
+
+        return True, f"유효한 로컬 운영 승인 확인 (운영자: {approved_by}, 만료: {expires_at.isoformat()})"
     except Exception as read_err:
         return False, f"운영 승인 파일 읽기/검증 실패: {read_err}"
 
@@ -245,8 +268,15 @@ class MarketObservationScheduler:
                 f"대상 DB 파일이 존재하지 않아 커밋 여부 확인 불가: {self.config.db_path}"
             )
 
-        # 레거시 판별: 명시적 지정 또는 1~3차 레거시 목록 포함 여부
-        is_legacy_batch = is_legacy if is_legacy is not None else (batch_id in LEGACY_BATCH_IDS)
+        # 013-G: 레거시 판정 우회 원천 차단
+        # 오직 LEGACY_BATCH_IDS(1~3차 배치 3개)에 등록된 배치만 레거시 검증이 허용됨.
+        # 신규 배치가 is_legacy=True를 전달하여 우회를 시도할 경우 즉시 거부!
+        if is_legacy is True and batch_id not in LEGACY_BATCH_IDS:
+            raise CommitStatusUnknownError(
+                f"보안 위반: 신규 배치({batch_id})는 레거시 검증(is_legacy=True)으로 우회할 수 없습니다 (013-G)."
+            )
+
+        is_legacy_batch = (batch_id in LEGACY_BATCH_IDS)
 
         try:
             engine = create_engine(f"sqlite:///{self.config.db_path}")
@@ -265,8 +295,8 @@ class MarketObservationScheduler:
 
                 log = logs[0]
 
-                # 기본 필드 무결성 검증
-                if log.record_count is None or log.record_count < 0:
+                # 기본 필드 무결성 검증 (정수형 엄격 검증, bool 제외)
+                if log.record_count is None or isinstance(log.record_count, bool) or log.record_count < 0:
                     raise CommitStatusUnknownError(
                         f"배치 감사 로그 무결성 위반: record_count가 유효하지 않습니다 ({log.record_count})"
                     )
@@ -285,7 +315,7 @@ class MarketObservationScheduler:
                     )
 
                 # ------------------------------------------------------------------
-                # 신규 스케줄러 LIVE 배치: 엄격한 필수 감사 메타데이터 계약 강제 (013-F)
+                # 신규 스케줄러 LIVE 배치: 엄격한 필수 감사 메타데이터 계약 강제 (013-G)
                 # ------------------------------------------------------------------
                 if not is_legacy_batch:
                     if not log.notes:
@@ -303,7 +333,7 @@ class MarketObservationScheduler:
                     if not isinstance(notes_data, dict):
                         raise CommitStatusUnknownError("신규 배치 감사 계약 위반: notes는 JSON 객체여야 합니다.")
 
-                    # 필수 4대 메타데이터 키 검증
+                    # 필수 4대 메타데이터 키 존재 검증
                     required_keys = ["raw_file_path", "raw_file_sha256", "first_seen_count", "re_observed_count"]
                     for k in required_keys:
                         if k not in notes_data or notes_data[k] is None:
@@ -311,8 +341,31 @@ class MarketObservationScheduler:
                                 f"신규 배치 필수 감사 메타데이터 누락: 키 '{k}'가 존재하지 않습니다."
                             )
 
+                    # 013-G: 메타데이터 타입 엄격 검증 (first_seen, re_observed 정수형, bool 제외)
+                    first_seen = notes_data["first_seen_count"]
+                    re_observed = notes_data["re_observed_count"]
+                    raw_path_val = notes_data["raw_file_path"]
+                    raw_sha_val = notes_data["raw_file_sha256"]
+
+                    if not isinstance(first_seen, int) or isinstance(first_seen, bool) or first_seen < 0:
+                        raise CommitStatusUnknownError(
+                            f"first_seen_count는 0 이상의 정수여야 합니다 (실제: {type(first_seen).__name__}={first_seen})"
+                        )
+                    if not isinstance(re_observed, int) or isinstance(re_observed, bool) or re_observed < 0:
+                        raise CommitStatusUnknownError(
+                            f"re_observed_count는 0 이상의 정수여야 합니다 (실제: {type(re_observed).__name__}={re_observed})"
+                        )
+
+                    # 문자열 및 SHA-256 64자리 16진수 검증
+                    if not isinstance(raw_path_val, str) or not raw_path_val.strip():
+                        raise CommitStatusUnknownError("raw_file_path는 비어있지 않은 문자열이어야 합니다")
+                    if not isinstance(raw_sha_val, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", raw_sha_val):
+                        raise CommitStatusUnknownError(
+                            f"raw_file_sha256은 64자리 16진수 해시 문자열이어야 합니다 (실제: {raw_sha_val})"
+                        )
+
                     # 원천 파일 실존 검증
-                    raw_path = Path(notes_data["raw_file_path"])
+                    raw_path = Path(raw_path_val)
                     if not raw_path.exists():
                         raise CommitStatusUnknownError(
                             f"배치 원천 파일 소실 감지: {raw_path} 파일이 디스크에 존재하지 않습니다."
@@ -324,17 +377,17 @@ class MarketObservationScheduler:
                         while chunk := rf.read(65536):
                             hasher.update(chunk)
                     actual_sha = hasher.hexdigest()
-                    if actual_sha != notes_data["raw_file_sha256"]:
+                    if actual_sha != raw_sha_val.lower():
                         raise CommitStatusUnknownError(
-                            f"배치 원천 파일 SHA-256 변조 감지: 기대={notes_data['raw_file_sha256']}, 실제={actual_sha}"
+                            f"배치 원천 파일 SHA-256 변조 감지: 기대={raw_sha_val}, 실제={actual_sha}"
                         )
 
                     # 수집 수량 일치 검증: record_count == first_seen + re_observed
-                    expected_count = notes_data["first_seen_count"] + notes_data["re_observed_count"]
+                    expected_count = first_seen + re_observed
                     if expected_count != log.record_count:
                         raise CommitStatusUnknownError(
                             f"배치 적재 수량 불일치: record_count={log.record_count}, "
-                            f"first_seen({notes_data['first_seen_count']}) + re_observed({notes_data['re_observed_count']}) = {expected_count}"
+                            f"first_seen({first_seen}) + re_observed({re_observed}) = {expected_count}"
                         )
 
                 return "COMMITTED"
