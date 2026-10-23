@@ -1,0 +1,44 @@
+# CHA-FICIAL AI PROJECT
+## 시장 관측 실행 동적 보고서 (배치: ENCAR_CN7_LIVE_20261024_030446_518b4987e3b2)
+
+- **배치 식별자:** `ENCAR_CN7_LIVE_20261024_030446_518b4987e3b2`
+- **수집 시작 (KST):** 2026-10-24 03:04:46 KST
+- **수집 종료 (KST):** 2026-10-24 03:05:02 KST
+- **DB 적재 완료 (KST):** 2026-10-24 03:05:02 KST
+- **원천 파일:** `encar_cn7_live_20261024_030446_518b4987e3b2.json`
+- **원천 파일 SHA-256:** `da72c6583a276a9dcbda8a93049bfd8a1f26f1fa33a147ec022bde20461a3fe1`
+
+---
+
+### 1. 해당 배치 관측 실적 (동적 산출)
+
+| 지표 | 실측값 | 설명 |
+| :--- | :--- | :--- |
+| **수집 원천 카드 수** | **248개** | 모바일 웹 스크롤 수집 카드 수 |
+| **정밀 파싱 실매물 수** | **136대** | 아반떼 CN7 유효 규격 파싱 매물 |
+| **최초 발견 (`FIRST_SEEN`)** | **110대** | 시스템 최초 관측 매물 (시장 등록일 아님) |
+| **재관측 (`RE_OBSERVED`)** | **26대** | 기존 관측 이력 보유 매물 재확인 |
+| **실제 가격 변동** | **5건** | 인하: 5건, 인상: 0건 |
+| **미노출 의심 (`DELISTED_SUSPECT`)** | **0건** | 결측 임계치 도달 의심 매물 |
+
+---
+
+### 2. 적재 직후 데이터베이스 현황 및 논리 해시
+
+| 테이블 명 | 관리 레코드 수 | 논리 SHA-256 해시 |
+| :--- | :---: | :---: |
+| `listings` | **348행** | `e83a6fcf46e96a12c28aa32b675a48d71ad0212b079b70ff33423a7d8e23cf11` |
+| `listing_snapshots` | **382행** | `988a14e32318ff2bf314ee92b17fffb6069cc5b767e0a035c9332e1bd07cdf33` |
+| `price_events` | **353행** | `4ed4893f05c877e3c22455dbb8d71bd627af8ead9c8b301e132063f219dabc26` |
+| `batch_audit_logs` | **3행** | `0188b48f94691c2289481cd904de191e47badc1e0514ddec630f0971f5ae0882` |
+| `vehicle_identity_links` | **0행** | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+
+---
+
+### 3. 데이터베이스 누적 관측 배치 감사 이력 (DB 동적 조회)
+
+| 배치 ID | 처리 시각 (KST) | 수집 건수 | 수집 구분 | 감사 비고 |
+| :--- | :---: | :---: | :---: | :--- |
+| `ENCAR_CN7_LIVE_20261021_01` | 2026-10-21 11:55:00 KST | 126건 | 부분표본 | PARTIAL_OR_FAILED_BATCH: 엔카 아반떼 CN7 1페이지 실시간 표본 관측 (카드 250개 중 126대, 미노출 카운터 동결 보호) |
+| `ENCAR_CN7_LIVE_20261021_120825` | 2026-10-21 12:08:25 KST | 120건 | 부분표본 | PARTIAL_OR_FAILED_BATCH: 엔카 아반떼 CN7 실시간 관측 (카드 248개 중 120대 수집, 부분수집 보호) |
+| `ENCAR_CN7_LIVE_20261024_030446_518b4987e3b2` | 2026-10-24 03:04:46 KST | 136건 | 부분표본 | {"event_ids": ["2cdb9cf8-ee39-4573-b4ba-6905f61caab7", "05e47357-c59f-4bf9-a384-e736ed263daa", "657793a1-8d04-4d23-94ec-563a8dcd90af", "9b5f6875-368e-4cb5-9d77-404eed4a11a4", "6fd9ee2d-f981-4708-b33d-126ef8744fa1", "a294ecfd-1ca5-4454-b5e7-4058d74a2305", "8a64f7dd-d35e-455f-a839-aa2255daf279", "98bf601c-cdab-4ead-9fc3-3811c3326014", "d37a112a-b64c-479f-81f7-1a885698486b", "c136300a-4cec-4284-9aa2-66851c2c3c62", "efd4091b-0b8e-49bd-8ea3-cacb6f11d016", "fd6ceedc-c6f2-4075-a5e2-34341ef84598", "be0b21e2-b872-470f-906c-9dfba06cd26b", "845f68cf-bbc7-4299-900e-cdc725b83a1c", "2b8aebd3-abbc-464d-8cb7-9bc627c2e708", "78cf86e8-44c7-4f06-b82e-8e587fabf31a", "8a4189b8-d2b7-4b60-973f-d278365a1aee", "c29fb3a2-ca39-42b7-94fb-42b63cc0713a", "b37743cf-b144-472e-85a8-74376d0ee0c4", "a23e2e09-1f76-4943-b804-ec90d49e2f11", "16fb45a6-577d-451a-9298-fa562c579089", "25fba822-34b9-48e7-899f-cc7ee5e286cf", "a92e1d4d-56a0-4015-9d98-36186aa3273f", "0e94a216-b13a-4041-9ab4-374f812ef31b", "bd67447f-3af6-4789-aa53-a2245ffd9e7d", "dfac9d0a-19c4-4941-a717-9fd3be7f2d15", "b7eeac47-d449-4619-8da6-6f4615a3cd96", "f93a4b8d-b23b-4e72-92c1-5532fba873dc", "34247ce0-fc5b-4d80-90cf-daf191c825b8", "e8e9af6d-2111-4568-a300-781c8ba38f24", "c2601010-eea0-4c58-a757-6e32a2fdf244", "5f7576ee-db93-46c6-91b8-4e0c8d23fe63", "990c7724-9d49-48bc-bb36-4648c055afbc", "0ca0565a-2a41-4af2-84de-e62a6d75170c", "e71dbd75-0134-42b0-9ce4-69a256bd814b", "4e5ace3c-14af-448e-8dd0-2995261c8169", "9b34c111-cc65-4bb1-bf80-9dad722e455c", "3c12ab29-776f-477b-833d-2ceef60399a0", "63b75184-2d81-46e0-8a45-866b281a17cd", "d6ae2e9b-861b-4083-ba45-77c0b0ba6a11", "8d070e62-75a6-4af6-8ba7-2b36fa997337", "fcb9c319-9b6b-41f1-812a-d2e1578fe821", "bbd2b327-354b-4d2b-87d7-9d39e6264813", "b94bae42-4373-478a-a681-17f3b9929277", "a7ba6750-b956-4242-9e77-ccc99ba12b6a", "6d65fd41-f302-4d62-a2ee-ea853b74278e", "bcd79129-9478-4fd3-acc8-706988fc223b", "6ca3cde4-d0e9-4742-95a2-07bd5884815c", "e5cac88c-cde2-4835-8f78-63561f243390", "4efdaa30-afb6-4d74-922e-cb80fcafe4e6", "14f35bbe-bf40-478c-b8f0-607f7a66452b", "73f1a757-f9de-435a-a534-31859bbe0db5", "b89748af-9f6a-4b52-b3e8-99c3e0b33cf6", "c6a3b4b3-5b1e-46d9-8d25-a6f423716f34", "4437ebf0-9671-4b25-a3e0-38261838876a", "56b6c760-2e7d-4f2c-8fe8-ff50f4b08b78", "9b5c3b13-7fb9-430d-ab08-e7f8420251ac", "97afab78-5744-4d6d-a682-4998273878e0", "082b460d-4edc-4a1e-a8a1-9773bbde1cbb", "3f3df6a7-7ce8-484e-a238-23cc6c404618", "f78c1458-2964-4f22-b66e-539ab33851a4", "480b4e5b-e533-453a-8893-e97e5a81bfc8", "5e068c20-40a7-4fb7-abaa-ded1de16fc29", "d84d3da6-0e9b-4a41-b7a1-42c7cdedf9db", "d172bc2d-b0c4-453a-b2d0-1dbf899826ea", "116695c1-0b46-43b9-94b5-20016bbb8e8f", "4bb77758-c966-4f6b-af57-afd427aac422", "fa4dd26c-2afb-4dbe-9f7a-63a9975624f9", "366f8735-21f3-4b5e-8423-36baa14d39ce", "9f51ee69-11c5-4795-83df-2cce45ff5a35", "2e294aa1-456f-4d2e-a14f-000b0758d572", "23ba5f9d-70ea-4e31-a76e-c0ae4ffaf695", "23fe3611-708a-4d85-9d72-bd834fa6eaa2", "b879f170-3045-44b2-9f55-72a70bc103e5", "b613121b-82bc-46b1-93e1-9001103aeaa2", "9eab1e9c-888b-486c-a616-6fe7bf9317e9", "3634a13c-3050-44d2-9675-d8e047083916", "c9f057ca-22d8-455a-8788-4ece550901d6", "215972d9-3874-4e4c-ac50-fad6f1428acc", "4b4a1c5e-5677-42be-ae56-313be8bff43e", "eba6b31f-1b90-426c-8fa7-f48a1be3f413", "68772648-35ea-453f-9c5e-d2af2a6443ed", "0dbbf800-dba7-4212-8ff1-918b2601fdb2", "30669552-74e9-4f7b-a952-6feec439e6e9", "77d0cb88-4fa7-4d1b-8b9b-4e79cbee87c3", "e08c5ec6-198b-45e7-b48b-e28f6b477c5c", "843d6811-a131-4daf-8454-8c6dcbd5e017", "1d4b3ffa-38c3-4804-b4c1-bf01b75d10da", "dfb59eae-2701-4b26-94ee-61e708e61dd8", "b0b0ae01-13fd-4e71-a3f3-90199ee7bbd8", "cf8a0ab4-7115-4a55-9cd1-520e43cd94d9", "ca60c6f5-dadc-42c9-9db6-3cbe93cbb6d1", "ed0f4743-ba8f-4ee0-b6a1-b8489b83f0b9", "e6e73f9e-6205-4043-a707-14f76454ba2c", "55e1658c-1f1f-4f05-8446-a95d6b58a2fd", "6c90374b-8faf-47ff-8d80-155adf77480a", "29b246f9-0c11-47f6-8f59-49308d0a5ede", "2d7a8c93-bd95-466e-8d33-e74a28d0c24d", "85eec3ed-bf98-427e-bc04-1737b4268f8e", "8e331924-60ce-479d-bea2-b356f9d9cd27", "55f2db74-a342-4097-8f6d-513c470c9f48", "48e826b9-1ec4-48fd-b01b-3dd920355d52", "e302be4e-aa24-4d2b-afad-5a05e1a08955", "9d2acacf-768c-417a-881d-91c7c174fc51", "a059757d-5ffe-4f5b-9800-57e11c7a3616", "1a9369cc-024c-492c-8c45-0883da9d27cf", "e28cd8c2-3bf7-431e-afb6-4085f10ef0c0", "f26da049-3b00-46da-b5aa-137508fb0e17", "dedd7220-3ea7-4ef3-8499-5933fcec6227", "bb3ef274-5715-4be1-81a8-f881c023b990", "7623cdbb-0072-497f-bb6f-809e9e1eb4eb", "736f6fc8-67c1-4b4d-b99a-8ed57dbe4772", "b0a57b7f-2086-48d3-b17d-e36ce2427cb0", "2e4a3554-a90f-4b20-b659-7f60260c5ddf", "e51ebb00-6722-46c8-a3e3-cf96efa8b271"], "first_seen_count": 110, "price_drop_count": 5, "price_increase_count": 0, "raw_file_path": "data/raw_observations/encar_cn7_live_20261024_030446_518b4987e3b2.json", "raw_file_sha256": "da72c6583a276a9dcbda8a93049bfd8a1f26f1fa33a147ec022bde20461a3fe1", "re_observed_count": 26, "total_price_drop_krw": 3100000, "user_notes": "엔카 아반떼 CN7 관측 (LIVE 모드, 카드 248개 중 136대 적재, 부분수집 보호)", "web_fetch_completed_at": "2026-10-23T18:05:02.425186+00:00", "web_fetch_started_at": "2026-10-23T18:04:46.697256+00:00"} |
