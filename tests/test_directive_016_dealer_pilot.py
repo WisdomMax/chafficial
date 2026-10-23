@@ -15,7 +15,7 @@ def test_dealer_feedback_recording_isolated_storage(tmp_path):
     record = DealerFeedbackRecord(
         listing_id="list-001",
         source_listing_id="42969608",
-        source_url="https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42969608",
+        source_url="https://fem.encar.com/cars/detail/42969608",
         vehicle_summary="현대 아반떼 CN7 (2024년식, 42,076km)",
         observed_price_krw=16900000,
         ai_opportunity_score=75.0,

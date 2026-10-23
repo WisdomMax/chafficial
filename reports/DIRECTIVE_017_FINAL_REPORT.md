@@ -31,14 +31,14 @@
 
 | 순위 | 매물 식별자 (CarID) | 연식/주행거리 | AI 관측가 | 코호트 중앙가 | 가격 우위율 | 가상 순수익 | 지역 분류 (`raw_location`) | 지역 적합성 등급 | 엔카 실차 확인 URL |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **1** | 42969608 | 2024년식 / 42,076km | 1,690만 | 2,235만 | 24.38% | +415만 | UNKNOWN | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42969608) |
-| **2** | 41366410 | 2024년식 / 53,382km | 1,499만 | 1,855만 | 19.19% | +226만 | 대구 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=41366410) |
-| **3** | 42706751 | 2024년식 / 35,192km | 1,874만 | 2,235만 | 16.15% | +231만 | UNKNOWN | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42706751) |
-| **4** | 42814110 | 2024년식 / 10,057km | 2,120만 | 2,390만 | 11.30% | +140만 | UNKNOWN | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42814110) |
-| **5** | 42811604 | 2024년식 / 84,331km | 1,590만 | 1,855만 | 14.29% | +135만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42811604) |
-| **6** | 42671808 | 2024년식 / 81,603km | 1,590만 | 1,855만 | 14.29% | +135만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42671808) |
-| **7** | 42911910 | 2024년식 / 46,530km | 2,149만 | 2,390만 | 10.08% | +111만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42911910) |
-| **8** | 42863742 | 2024년식 / 31,066km | 2,190만 | 2,390만 | 8.37% | +70만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42863742) |
+| **1** | 42969608 | 2024년식 / 42,076km | 1,690만 | 2,235만 | 24.38% | +415만 | UNKNOWN | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://fem.encar.com/cars/detail/42969608) |
+| **2** | 41366410 | 2024년식 / 53,382km | 1,499만 | 1,855만 | 19.19% | +226만 | 대구 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://fem.encar.com/cars/detail/41366410) |
+| **3** | 42706751 | 2024년식 / 35,192km | 1,874만 | 2,235만 | 16.15% | +231만 | UNKNOWN | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://fem.encar.com/cars/detail/42706751) |
+| **4** | 42814110 | 2024년식 / 10,057km | 2,120만 | 2,390만 | 11.30% | +140만 | UNKNOWN | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://fem.encar.com/cars/detail/42814110) |
+| **5** | 42811604 | 2024년식 / 84,331km | 1,590만 | 1,855만 | 14.29% | +135만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://fem.encar.com/cars/detail/42811604) |
+| **6** | 42671808 | 2024년식 / 81,603km | 1,590만 | 1,855만 | 14.29% | +135만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://fem.encar.com/cars/detail/42671808) |
+| **7** | 42911910 | 2024년식 / 46,530km | 2,149만 | 2,390만 | 10.08% | +111만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://fem.encar.com/cars/detail/42911910) |
+| **8** | 42863742 | 2024년식 / 31,066km | 2,190만 | 2,390만 | 8.37% | +70만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://fem.encar.com/cars/detail/42863742) |
 
 - **지역 분류 집계**:
   - `LOCAL_VERIFIED` (서울/장안평 매물): **0건**

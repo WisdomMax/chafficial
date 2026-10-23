@@ -120,7 +120,7 @@ class DealerPilotManager:
             if c.market_opportunity_grade != "PRIORITY_REVIEW":
                 continue
             b = c.base_scenario
-            url = f"https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid={c.source_listing_id}"
+            url = f"https://fem.encar.com/cars/detail/{c.source_listing_id}"
             sheet.append({
                 "listing_id": c.listing_id,
                 "source_listing_id": c.source_listing_id,
