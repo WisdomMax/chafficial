@@ -21,11 +21,24 @@ from sqlalchemy import create_engine
 from chaficial.database.base import Base
 from chaficial.tracker.daily_reporter import DailyMarketReporter, to_kst_date_str
 from chaficial.tracker.scheduler import (
+    OFFICIAL_LIVE_APPROVAL_TOKEN,
+    LiveExecutionNotAuthorizedError,
     MarketObservationScheduler,
     SchedulerConfig,
     SchedulerConfigError,
     SchedulerLockError,
 )
+
+
+def make_live_config(**kwargs):
+    """테스트 더블 전용 LIVE 승인 설정 헬퍼 (013-E 운영 승인 체계 준수)."""
+    defaults = {
+        "enable_live_execution": True,
+        "live_ops_approved": True,
+        "live_ops_approval_token": OFFICIAL_LIVE_APPROVAL_TOKEN,
+    }
+    defaults.update(kwargs)
+    return SchedulerConfig(**defaults)
 
 
 def test_scheduler_safety_guard_standby_mode(tmp_path):
@@ -83,8 +96,7 @@ def test_transient_network_error_recovers_via_backoff(tmp_path):
     engine = create_engine(f"sqlite:///{dummy_db}")
     Base.metadata.create_all(engine)
 
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         max_retries=3,
         initial_backoff_sec=0.04,
         backoff_factor=1.5,
@@ -116,8 +128,7 @@ def test_permanent_error_fails_fast_without_retries(tmp_path):
     engine = create_engine(f"sqlite:///{dummy_db}")
     Base.metadata.create_all(engine)
 
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         max_retries=3,
         initial_backoff_sec=0.05,
         db_path=dummy_db,
@@ -145,8 +156,7 @@ def test_permanent_error_fails_fast_without_retries(tmp_path):
 def test_collection_success_with_report_failure_does_not_retry_live(tmp_path, monkeypatch):
     """지침 5 (013-A 핵심): LIVE 수집 성공 후 보고서 생성이 실패하더라도 LIVE를 절대 재실행하지 않음 검증."""
     dummy_db = tmp_path / "dummy.db"
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         max_retries=3,
         db_path=dummy_db,
         lock_file=tmp_path / ".report_fail.lock",
@@ -181,8 +191,7 @@ def test_collection_success_with_report_failure_does_not_retry_live(tmp_path, mo
 def test_loop_breaks_on_fatal_failure(tmp_path):
     """지침 6 (013-A): run_loop 실행 중 수집 실패(FAILED) 발생 시 무한 루프 돌지 않고 즉시 중단 검증."""
     dummy_db = tmp_path / "dummy.db"
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         interval_seconds=0.01,
         max_retries=1,
         db_path=dummy_db,
@@ -225,8 +234,7 @@ def test_config_validation_rules(tmp_path):
 
 def test_failure_report_unique_naming_no_overwrite(tmp_path):
     """지침 8 (013-A): 동일 초에 장애가 반복 발생해도 기존 보고서를 덮어쓰지 않고 배타적 생성 검증."""
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         failure_dir=tmp_path / "failures",
     )
     scheduler = MarketObservationScheduler(config=config)
@@ -278,8 +286,7 @@ def test_commit_boundary_post_error_does_not_re_collect(tmp_path):
     from chaficial.models import BatchAuditLog
     from sqlalchemy.orm import Session
 
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         max_retries=3,
         db_path=dummy_db,
         lock_file=tmp_path / ".commit_boundary.lock",
@@ -321,8 +328,7 @@ def test_disk_and_permission_errors_fail_fast_without_retry(tmp_path):
     engine = create_engine(f"sqlite:///{dummy_db}")
     Base.metadata.create_all(engine)
 
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         max_retries=3,
         db_path=dummy_db,
         lock_file=tmp_path / ".perm_err.lock",
@@ -347,8 +353,7 @@ def test_disk_and_permission_errors_fail_fast_without_retry(tmp_path):
 def test_check_batch_committed_fail_closed_on_db_query_error(tmp_path, monkeypatch):
     """지침 14 (013-C 핵심): DB 커밋 상태 조회 실패 시 Fail-Closed로 재시도 0회 즉시 차단 검증."""
     dummy_db = tmp_path / "dummy.db"
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         max_retries=3,
         db_path=dummy_db,
         lock_file=tmp_path / ".fail_closed.lock",
@@ -388,8 +393,7 @@ def test_batch_ownership_ignores_other_process_batches(tmp_path):
     from chaficial.models import BatchAuditLog
     from sqlalchemy.orm import Session
 
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         max_retries=1,
         db_path=dummy_db,
         lock_file=tmp_path / ".ownership.lock",
@@ -423,8 +427,7 @@ def test_batch_ownership_ignores_other_process_batches(tmp_path):
 def test_loop_breaks_on_commit_status_unknown(tmp_path, monkeypatch):
     """지침 16 (013-C): COMMIT_STATUS_UNKNOWN 발생 시 run_loop가 즉시 안전 중단(Break)됨을 검증."""
     dummy_db = tmp_path / "dummy.db"
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         interval_seconds=0.01,
         max_retries=1,
         db_path=dummy_db,
@@ -473,8 +476,7 @@ def test_runner_internal_type_error_called_exactly_once(tmp_path):
     engine = create_engine(f"sqlite:///{dummy_db}")
     Base.metadata.create_all(engine)
 
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         max_retries=3,
         db_path=dummy_db,
         lock_file=tmp_path / ".type_err.lock",
@@ -503,8 +505,7 @@ def test_live_runner_without_batch_id_rejected(tmp_path):
     dummy_db = tmp_path / "dummy.db"
     dummy_db.touch()
 
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         db_path=dummy_db,
         lock_file=tmp_path / ".no_batch_id.lock",
         report_dir=tmp_path / "reports",
@@ -541,8 +542,7 @@ def test_loop_breaks_on_committed_with_post_error(tmp_path):
     from chaficial.models import BatchAuditLog
     from sqlalchemy.orm import Session
 
-    config = SchedulerConfig(
-        enable_live_execution=True,
+    config = make_live_config(
         interval_seconds=0.01,
         max_retries=1,
         db_path=dummy_db,
@@ -571,3 +571,321 @@ def test_loop_breaks_on_committed_with_post_error(tmp_path):
 
     # COMMITTED_WITH_POST_ERROR 발생 시 수동 확인 필요하므로 1회차에 즉시 루프 중단!
     assert cycle_count == 1, "COMMITTED_WITH_POST_ERROR 발생 시 루프가 즉시 중단되어야 함"
+
+
+# ==============================================================================
+# DIRECTIVE 013-E: 운영 안전성 강화 (승인 체계, PARTIAL_SUCCESS 중단, 감사 계약)
+# ==============================================================================
+
+
+def test_live_execution_rejected_without_supervisor_approval(tmp_path):
+    """지침 1 (013-E): enable_live_execution=True여도 운영자 승인이 없으면 LiveExecutionNotAuthorizedError 거부."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+
+    # 개발용 플래그만 켜고, 운영자 승인은 누락된 상태
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        live_ops_approved=False,
+        db_path=dummy_db,
+    )
+
+    with pytest.raises(LiveExecutionNotAuthorizedError, match="총괄 감독의 명시적 운영 승인.*결여"):
+        MarketObservationScheduler(config=config)
+
+
+def test_live_execution_rejected_with_invalid_token(tmp_path):
+    """지침 1 (013-E): 승인 플래그가 켜졌어도 토큰이 위조/불일치하면 LiveExecutionNotAuthorizedError 거부."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        live_ops_approved=True,
+        live_ops_approval_token="WRONG_FORGED_TOKEN",
+        db_path=dummy_db,
+    )
+
+    with pytest.raises(LiveExecutionNotAuthorizedError, match="총괄 감독의 명시적 운영 승인.*결여"):
+        MarketObservationScheduler(config=config)
+
+
+def test_partial_success_breaks_run_loop(tmp_path):
+    """지침 2 (013-E): PARTIAL_SUCCESS(보고서 실패) 발생 시 다음 주기로 가지 않고 루프 즉시 종료 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    # 읽기 전용으로 보고서 디렉토리를 엉뚱한 경로로 지정하여 보고서 생성 강제 실패 유도
+    failing_report_dir = tmp_path / "read_only_reports"
+    failing_report_dir.mkdir(parents=True, exist_ok=True)
+    # 읽기 전용 디렉토리 권한 설정
+    failing_report_dir.chmod(0o444)
+
+    config = make_live_config(
+        interval_seconds=0.01,
+        max_retries=1,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".partial_success_loop.lock",
+        report_dir=failing_report_dir,
+        failure_dir=tmp_path / "failures",
+    )
+
+    cycle_count = 0
+    def mock_runner_success(mode: str, db_path_override=None, batch_id=None):
+        nonlocal cycle_count
+        cycle_count += 1
+        return {"batch_id": batch_id, "record_count": 10}
+
+    try:
+        scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner_success)
+        scheduler.run_loop(max_cycles=5, mode="live")
+        # 보고서 실패로 PARTIAL_SUCCESS가 발생하므로 1회 만에 루프 종료되어야 함
+        assert cycle_count == 1, f"PARTIAL_SUCCESS 시 루프가 즉시 중단되어야 하는데 {cycle_count}회 반복됨"
+    finally:
+        failing_report_dir.chmod(0o755)
+
+
+def test_recover_daily_report_standalone(tmp_path):
+    """지침 2 (013-E): 수집 재실행 없이 일별 요약 보고서만 단독으로 안전 복구 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    report_dir = tmp_path / "recovered_reports"
+    config = make_live_config(
+        db_path=dummy_db,
+        report_dir=report_dir,
+        failure_dir=tmp_path / "failures",
+    )
+
+    runner_called = False
+    def mock_runner(*args, **kwargs):
+        nonlocal runner_called
+        runner_called = True
+        return {}
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner)
+    recovered_path = scheduler.recover_daily_report()
+
+    # 수집 러너는 절대 호출되지 않고, 보고서 파일만 생성되어야 함
+    assert not runner_called, "보고서 단독 복구 시 파이프라인 러너가 호출되면 안 됩니다!"
+    assert recovered_path.exists()
+    assert recovered_path.is_file()
+
+
+def test_check_batch_committed_fails_on_duplicate_batch_id(tmp_path, monkeypatch):
+    """지침 3 (013-E): 동일 batch_id가 2건 이상 조회되면 DB 무결성 위반으로 Fail-Closed 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+
+    from chaficial.models import BatchAuditLog
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    target_batch_id = "ENCAR_CN7_LIVE_DUP_001"
+    b1 = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10)
+    b2 = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10)
+
+    class MockScalars:
+        def all(self):
+            return [b1, b2]
+
+    class MockResult:
+        def scalars(self):
+            return MockScalars()
+
+    class MockSession:
+        def __init__(self, *args, **kwargs):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def execute(self, *args, **kwargs):
+            return MockResult()
+
+    monkeypatch.setattr("chaficial.tracker.scheduler.Session", MockSession)
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="배치 ID 중복 감지"):
+        scheduler.check_batch_committed(target_batch_id)
+
+
+def test_check_batch_committed_fails_on_invalid_record_count(tmp_path):
+    """지침 3 (013-E): record_count가 음수이거나 None이면 Fail-Closed 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    target_batch_id = "ENCAR_CN7_LIVE_INVALID_COUNT"
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=-1)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="record_count가 유효하지 않습니다"):
+        scheduler.check_batch_committed(target_batch_id)
+
+
+def test_check_batch_committed_fails_on_platform_mismatch(tmp_path):
+    """지침 3 (013-E): source_platform이 ENCAR가 아니면 데이터 기원 불일치로 Fail-Closed 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    target_batch_id = "ENCAR_CN7_LIVE_PLATFORM_MISMATCH"
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="BOBAEDREAM", search_scope="ENCAR:현대:아반떼", record_count=50)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="배치 데이터 기원 불일치"):
+        scheduler.check_batch_committed(target_batch_id)
+
+
+def test_check_batch_committed_fails_on_missing_raw_file(tmp_path):
+    """지침 3 (013-E): notes에 기재된 원천 파일 경로가 실제로 존재하지 않으면 Fail-Closed 검증."""
+    import json
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    target_batch_id = "ENCAR_CN7_LIVE_MISSING_RAW"
+    missing_raw = tmp_path / "does_not_exist_raw.json"
+
+    notes = json.dumps({"raw_file_path": str(missing_raw), "first_seen_count": 10, "re_observed_count": 0})
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="배치 원천 파일 소실 감지"):
+        scheduler.check_batch_committed(target_batch_id)
+
+
+def test_check_batch_committed_fails_on_raw_file_sha_mismatch(tmp_path):
+    """지침 3 (013-E): notes의 원천 파일 SHA-256이 실제 파일 해시와 불일치(변조) 시 Fail-Closed 검증."""
+    import json
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    target_batch_id = "ENCAR_CN7_LIVE_HASH_TAMPERED"
+    real_raw = tmp_path / "tampered_raw.json"
+    real_raw.write_text("SOME_ACTUAL_CONTENT", encoding="utf-8")
+
+    # 가짜 조작 해시 주입
+    notes = json.dumps({
+        "raw_file_path": str(real_raw),
+        "raw_file_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "first_seen_count": 10,
+        "re_observed_count": 0,
+    })
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="배치 원천 파일 SHA-256 변조 감지"):
+        scheduler.check_batch_committed(target_batch_id)
+
+
+def test_check_batch_committed_fails_on_quantity_mismatch(tmp_path):
+    """지침 3 (013-E): first_seen + re_observed 수량이 record_count와 불일치 시 Fail-Closed 검증."""
+    import json
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    target_batch_id = "ENCAR_CN7_LIVE_QTY_MISMATCH"
+    notes = json.dumps({
+        "first_seen_count": 5,
+        "re_observed_count": 3,  # 합계 8인데 record_count는 10
+    })
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="배치 적재 수량 불일치"):
+        scheduler.check_batch_committed(target_batch_id)
+
+
+def test_check_batch_committed_success_with_valid_audit(tmp_path):
+    """지침 3 (013-E): 정상 원천 파일, 해시, 수량이 모두 완벽한 경우 정상 COMMITTED 검증."""
+    import hashlib
+    import json
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+
+    target_batch_id = "ENCAR_CN7_LIVE_VALID_AUDIT"
+    real_raw = tmp_path / "valid_raw.json"
+    real_raw.write_bytes(b'{"valid": true}')
+    sha = hashlib.sha256(b'{"valid": true}').hexdigest()
+
+    notes = json.dumps({
+        "raw_file_path": str(real_raw),
+        "raw_file_sha256": sha,
+        "first_seen_count": 8,
+        "re_observed_count": 2,
+    })
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    status = scheduler.check_batch_committed(target_batch_id)
+    assert status == "COMMITTED", f"정상적인 배치 커밋이어야 하는데 {status} 반환됨"
+

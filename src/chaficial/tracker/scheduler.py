@@ -17,9 +17,10 @@
 """
 
 import dataclasses
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 import errno
 import fcntl
+import hashlib
 import http.client
 import json
 import logging
@@ -87,25 +88,34 @@ class SchedulerConfigError(Exception):
 
 
 class CommitStatusUnknownError(Exception):
-    """커밋 상태 조회 실패로 커밋 여부를 확정할 수 없을 때 발생하는 예외."""
+    """커밋 상태 조회 실패 또는 배치 감사 계약 불일치로 커밋 여부를 확정할 수 없을 때 발생하는 예외."""
+
+
+class LiveExecutionNotAuthorizedError(Exception):
+    """LIVE 관측 실행이 총괄 감독/운영자에 의해 명시적으로 승인되지 않았을 때 발생하는 예외 (Fail-Closed)."""
+
+
+OFFICIAL_LIVE_APPROVAL_TOKEN = "DIRECTIVE_013_LIVE_SUPERVISOR_AUTHORIZED"
 
 
 @dataclasses.dataclass
 class SchedulerConfig:
-    """스케줄러 설정 데이터클래스."""
+    """스케줄러 설정 데이터클래스 (013-E: 운영 승인 체계 분리)."""
 
     interval_seconds: float = 86400.0  # 기본: 24시간
     max_retries: int = 3               # 최대 재시도 횟수
     initial_backoff_sec: float = 5.0   # 1차 재시도 대기 시간 (초)
     backoff_factor: float = 2.0        # 지수 증가 배수
-    enable_live_execution: bool = False  # 안전 가드: 감독 별도 승인 전까지 False 필수
+    enable_live_execution: bool = False  # 개발/실행 플래그: LIVE 시도 의도 여부
+    live_ops_approved: bool = False      # 운영 승인 플래그: 총괄 감독의 명시적 운영 승인 여부
+    live_ops_approval_token: str = ""    # 운영 승인 토큰: 감독이 발급한 승인 확인 문자열
     db_path: Path = Path("data/chaficial_market_timeseries.db")
     lock_file: Path = Path("data/.scheduler.lock")
     report_dir: Path = Path("reports/daily_summaries")
     failure_dir: Path = Path("reports/failures")
 
     def validate(self, mode: str = "live"):
-        """설정값 유효성 검증."""
+        """설정값 유효성 검증 (013-E: LIVE 운영 승인 강제)."""
         if self.interval_seconds <= 0:
             raise SchedulerConfigError(f"interval_seconds는 0보다 커야 합니다: {self.interval_seconds}")
         if self.max_retries < 1:
@@ -119,6 +129,15 @@ class SchedulerConfig:
             raise SchedulerConfigError(
                 f"[REPLAY 격리 위반] 운영 DB({OFFICIAL_OPERATIONAL_DB_PATH})는 REPLAY 모드의 대상이 될 수 없습니다."
             )
+
+        # 013-E [지침 1]: LIVE 실행 플래그가 켜진 경우, 반드시 운영 감독의 승인과 토큰이 일치해야 함 (Fail-Closed)
+        if mode == "live" and self.enable_live_execution:
+            expected_token = os.environ.get("CHAFFICIAL_LIVE_OPS_APPROVAL_TOKEN", OFFICIAL_LIVE_APPROVAL_TOKEN)
+            if not self.live_ops_approved or self.live_ops_approval_token != expected_token:
+                raise LiveExecutionNotAuthorizedError(
+                    "LIVE 관측 실행 거부: enable_live_execution이 활성화되었으나, "
+                    "총괄 감독의 명시적 운영 승인(live_ops_approved=True 및 유효한 live_ops_approval_token)이 결여되었습니다 (Fail-Closed)."
+                )
 
 
 class MarketObservationScheduler:
@@ -160,17 +179,22 @@ class MarketObservationScheduler:
             self.lock_fp.close()
             self.lock_fp = None
 
-    def check_batch_committed(self, batch_id: str) -> str:
-        """지정된 batch_id가 대상 DB에 확실하게 커밋되었는지 검사합니다 (013-D Fail-Closed).
+    def check_batch_committed(
+        self,
+        batch_id: str,
+        expected_platform: str = "ENCAR",
+        expected_scope_prefix: str = "ENCAR:",
+    ) -> str:
+        """지정된 batch_id의 DB 커밋 여부 및 감사 계약(기원, 레코드 수, 원천 파일 무결성)을 종합 검증합니다 (013-E 강화).
 
         반환값:
-          - 'COMMITTED': 대상 배치가 DB에 확실하게 존재함.
-          - 'NOT_COMMITTED': DB 조회가 정상 수행되었고 해당 배치가 없음.
+          - 'COMMITTED': 대상 배치가 DB에 확실하게 존재하며, 모든 감사 무결성 계약을 완벽히 충족함.
+          - 'NOT_COMMITTED': DB 조회가 정상 수행되었고 해당 배치가 존재하지 않음.
         예외:
-          - CommitStatusUnknownError: DB 파일 부재 또는 조회 실패로 확인 불가 시 발생.
+          - CommitStatusUnknownError: DB 부재/조회 실패, 중복 ID, 메타데이터 불일치, 원천 파일 소실/해시 불일치 시 발생 (Fail-Closed).
         """
         if not self.config.db_path.exists():
-            # 013-D: 대상 DB 파일이 없으면 미커밋으로 단정하지 않고 Fail-Closed
+            # 013-D/E: 대상 DB 파일이 없으면 미커밋으로 단정하지 않고 Fail-Closed
             raise CommitStatusUnknownError(
                 f"대상 DB 파일이 존재하지 않아 커밋 여부 확인 불가: {self.config.db_path}"
             )
@@ -178,12 +202,87 @@ class MarketObservationScheduler:
         try:
             engine = create_engine(f"sqlite:///{self.config.db_path}")
             with Session(engine) as session:
-                log = session.execute(
+                logs = session.execute(
                     select(BatchAuditLog).where(BatchAuditLog.batch_id == batch_id)
-                ).scalars().first()
-                return "COMMITTED" if log is not None else "NOT_COMMITTED"
+                ).scalars().all()
+
+                if not logs:
+                    return "NOT_COMMITTED"
+
+                # 013-E [지침 3-A]: 동일 배치 ID 중복 등록 검사 (DB 무결성 위반 차단)
+                if len(logs) > 1:
+                    raise CommitStatusUnknownError(
+                        f"배치 ID 중복 감지: 배치 식별자 {batch_id} 레코드가 {len(logs)}건 발견되었습니다."
+                    )
+
+                log = logs[0]
+
+                # 013-E [지침 3-B]: 수집 기록 수 유효성 검증
+                if log.record_count is None or log.record_count < 0:
+                    raise CommitStatusUnknownError(
+                        f"배치 감사 로그 무결성 위반: record_count가 유효하지 않습니다 ({log.record_count})"
+                    )
+
+                # 013-E [지침 3-C]: 데이터 기원(Platform) 및 검색 범위 일관성 검증
+                if log.source_platform != expected_platform:
+                    raise CommitStatusUnknownError(
+                        f"배치 데이터 기원 불일치: 기대 플랫폼={expected_platform}, 실제 플랫폼={log.source_platform}"
+                    )
+
+                if not log.search_scope or not (
+                    log.search_scope.startswith(expected_scope_prefix)
+                    or "아반떼" in log.search_scope
+                ):
+                    raise CommitStatusUnknownError(
+                        f"배치 검색 범위 불일치: scope={log.search_scope}"
+                    )
+
+                # 013-E [지침 3-D]: 원천 파일 및 메타데이터 일관성 검증
+                if log.notes:
+                    try:
+                        notes_data = json.loads(log.notes)
+                        if isinstance(notes_data, dict):
+                            # 원천 파일 경로 검증
+                            raw_path_str = notes_data.get("raw_file_path")
+                            if raw_path_str:
+                                raw_file = Path(raw_path_str)
+                                if not raw_file.exists():
+                                    raise CommitStatusUnknownError(
+                                        f"배치 원천 파일 소실 감지: {raw_file} 파일이 디스크에 존재하지 않습니다."
+                                    )
+
+                                # 원천 파일 SHA-256 대조 검증
+                                expected_sha = notes_data.get("raw_file_sha256")
+                                if expected_sha:
+                                    hasher = hashlib.sha256()
+                                    with open(raw_file, "rb") as rf:
+                                        while chunk := rf.read(65536):
+                                            hasher.update(chunk)
+                                    actual_sha = hasher.hexdigest()
+                                    if actual_sha != expected_sha:
+                                        raise CommitStatusUnknownError(
+                                            f"배치 원천 파일 SHA-256 변조 감지: 기대={expected_sha}, 실제={actual_sha}"
+                                        )
+
+                            # 세부 적재 수량 일치 검증
+                            first_seen = notes_data.get("first_seen_count")
+                            re_observed = notes_data.get("re_observed_count")
+                            if first_seen is not None and re_observed is not None:
+                                expected_total = first_seen + re_observed
+                                if expected_total != log.record_count:
+                                    raise CommitStatusUnknownError(
+                                        f"배치 적재 수량 불일치: record_count={log.record_count}, "
+                                        f"first_seen({first_seen}) + re_observed({re_observed}) = {expected_total}"
+                                    )
+                    except json.JSONDecodeError:
+                        # 레거시 일반 텍스트 notes 허용 (기존 배치의 하위 호환성 유지)
+                        pass
+
+                return "COMMITTED"
+        except CommitStatusUnknownError:
+            raise
         except Exception as query_err:
-            # 013-D: 빈 결과를 반환하지 않고 반드시 예외 발생 (Fail-Closed)
+            # 013-D/E: 조회 실패 시 빈 결과를 반환하지 않고 반드시 예외 발생 (Fail-Closed)
             raise CommitStatusUnknownError(
                 f"배치 {batch_id} 커밋 여부 확인 실패 (DB 조회 에러: {query_err})"
             ) from query_err
@@ -365,6 +464,12 @@ class MarketObservationScheduler:
             "completed_at": datetime.now(UTC).isoformat(),
         }
 
+    def recover_daily_report(self, target_date_str: str | None = None) -> Path:
+        """수집 결과는 그대로 보존하고 실패한 일별 보고서만 단독으로 안전하게 재생성/복구합니다 (013-E)."""
+        print(f"[*] [스케줄러 복구] {target_date_str or '당일'} 일별 요약 보고서 단독 복구 시작 (수집 재실행 없음)...")
+        reporter = DailyMarketReporter(db_path=self.config.db_path, output_dir=self.config.report_dir)
+        return reporter.generate_daily_summary(target_date_str=target_date_str)
+
     def _write_failure_report(
         self, mode: str, attempts: int, error: Exception | None, batch_id: str | None = None, notes: str | None = None
     ) -> Path:
@@ -418,10 +523,17 @@ class MarketObservationScheduler:
                 print(f"\n[+] === 스케줄러 사이클 #{cycle_count} 실행 ===")
                 res = self.execute_single_observation(mode=mode)
 
-                # 013-D: FAILED, COMMIT_STATUS_UNKNOWN, COMMITTED_WITH_POST_ERROR 발생 시 즉시 루프 안전 중단
+                # 013-D/E: FAILED, COMMIT_STATUS_UNKNOWN, COMMITTED_WITH_POST_ERROR 및 PARTIAL_SUCCESS 발생 시 즉시 루프 안전 중단
                 col_status = res.get("collection_status")
-                if col_status in ("FAILED", "COMMIT_STATUS_UNKNOWN", "COMMITTED_WITH_POST_ERROR"):
-                    print(f"[!] [치명적 장애 ({col_status})] 안전을 위해 스케줄러 루프를 즉시 종료합니다 (Fail-Safe Break).")
+                overall_status = res.get("status")
+                if (
+                    col_status in ("FAILED", "COMMIT_STATUS_UNKNOWN", "COMMITTED_WITH_POST_ERROR")
+                    or overall_status == "PARTIAL_SUCCESS"
+                ):
+                    print(
+                        f"[!] [안전 차단 (수집:{col_status}, 전체:{overall_status})] "
+                        "치명적 오류 또는 운영 보고 실패로 스케줄러 루프를 즉시 안전 종료합니다 (Fail-Safe Break)."
+                    )
                     break
 
                 if max_cycles and cycle_count >= max_cycles:

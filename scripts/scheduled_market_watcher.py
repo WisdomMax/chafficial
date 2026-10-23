@@ -32,21 +32,30 @@ def main():
     parser.add_argument("--interval-seconds", type=float, default=86400.0, help="관측 주기 초 단위 (기본: 86400.0 / 24시간)")
     parser.add_argument("--max-retries", type=int, default=3, help="장애 시 최대 재시도 횟수 (기본: 3)")
     parser.add_argument("--initial-backoff", type=float, default=5.0, help="초기 백오프 대기 시간 초 (기본: 5.0)")
-    parser.add_argument("--enable-live-scheduler", action="store_true", help="LIVE 자동 수집 활성화 (총괄 감독 공식 승인 시만 사용)")
+    parser.add_argument("--enable-live-scheduler", action="store_true", help="LIVE 자동 수집 플래그 (감독 승인 없이는 실행 거부됨)")
+    parser.add_argument("--approved-by-supervisor", action="store_true", help="총괄 감독의 LIVE 수집 공식 운영 승인 플래그 (013-E)")
+    parser.add_argument("--approval-token", type=str, default="", help="총괄 감독의 LIVE 공식 승인 검증 토큰 (013-E)")
     parser.add_argument("--once", action="store_true", help="1회만 실행하고 즉시 종료")
     parser.add_argument("--db-path", type=str, default="data/chaficial_market_timeseries.db", help="대상 DB 경로")
 
     args = parser.parse_args()
 
-    # 환경 변수 기반 활성화도 지원
+    # 환경 변수 기반 활성화 및 승인 검증 지원
     env_enable = os.getenv("CHAFFICIAL_ENABLE_LIVE_SCHEDULER", "").lower() in ("true", "1", "yes")
     live_enabled = args.enable_live_scheduler or env_enable
+
+    env_approved = os.getenv("CHAFFICIAL_LIVE_OPS_APPROVED", "").lower() in ("true", "1", "yes")
+    ops_approved = args.approved_by_supervisor or env_approved
+
+    approval_token = args.approval_token or os.getenv("CHAFFICIAL_LIVE_OPS_APPROVAL_TOKEN", "")
 
     config = SchedulerConfig(
         interval_seconds=args.interval_seconds,
         max_retries=args.max_retries,
         initial_backoff_sec=args.initial_backoff,
         enable_live_execution=live_enabled,
+        live_ops_approved=ops_approved,
+        live_ops_approval_token=approval_token,
         db_path=Path(args.db_path),
     )
 
