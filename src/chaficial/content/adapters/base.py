@@ -52,6 +52,8 @@ class VideoGenerationAdapter(abc.ABC):
         master_prompt: str,
         assets: list[MediaAsset],
         dry_run: bool = True,
+        api_payload: dict[str, Any] | None = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """영상 생성 실행.
         
@@ -63,6 +65,7 @@ class VideoGenerationAdapter(abc.ABC):
             "model": self.model_type.value,
             "status": "READY_FOR_SUBMISSION" if dry_run else "MOCK_SUCCESS",
             "is_dry_run": dry_run,
+            "api_payload": api_payload or {},
             "prompt_length": len(master_prompt),
             "asset_count": len(assets),
             "message": "외부 API 미연동 상태로 오프라인 프롬프트 검증 및 명세 생성이 완료되었습니다.",

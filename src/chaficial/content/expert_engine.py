@@ -21,7 +21,13 @@ from chaficial.content.repository import ContentRepository
 
 
 class ExpertIntelligenceEngine:
-    """차마트 사장님과의 질의응답을 관리하고 대본에 필요한 실전 지식을 보강하는 엔진."""
+    """차마트 사장님과의 질의응답을 관리하고 실전 지식을 대본에 연결하는 규칙 기반 인터뷰 엔진.
+    
+    [알고리즘 명세]:
+    - 질문 생성: 25년 현장 딜러 검증 체크리스트에 기반한 '규칙 기반 도메인 템플릿(Rule-based Domain Template)'
+    - 답변 관리: 사용자가 직접 입력한 대표님 음성/텍스트 구술 답변을 1:1로 매핑하여 영속화
+    - (LLM 자동 생성 질의가 아닌 사전 정의된 전문가 안전 검증 템플릿을 조합하여 출력합니다.)
+    """
 
     def __init__(self, repository: ContentRepository) -> None:
         self.repository = repository

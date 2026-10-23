@@ -123,6 +123,13 @@ class ShotPrompt(BaseModel):
     reference_asset_tags: list[str] = Field(default_factory=list)
 
 
+class ProvenanceType(str, enum.Enum):
+    """대본 문장 및 팩트의 출처 유형."""
+    FACT = "FACT"                        # 등록원부, 성능점검기록부 등 객관적 검증 팩트
+    EXPERT_VERIFIED = "EXPERT_VERIFIED"  # 25년 차마트 사장님이 직접 진술/확인한 답변
+    AI_CREATIVE = "AI_CREATIVE"          # AI가 제안한 창작 표현 (광고성 후킹, 비유 등)
+
+
 class StoryboardScene(BaseModel):
     """스토리보드 장면 구성."""
     scene_number: int
@@ -130,6 +137,11 @@ class StoryboardScene(BaseModel):
     duration_seconds: float
     visual_description: str
     narration: str
+    provenance_type: ProvenanceType = ProvenanceType.FACT
+    provenance_detail: str = Field(
+        default="",
+        description="출처 상세 근거 (예: 성능점검기록부, 딜러 인터뷰 답변, AI 연출)"
+    )
     matched_asset_ids: list[str] = Field(default_factory=list)
 
 

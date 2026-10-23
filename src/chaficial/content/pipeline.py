@@ -62,13 +62,13 @@ class ContentProductionPipeline:
         return self.repository.save_project(project)
 
     def create_vehicle_project(self, vehicle_candidate_id: str) -> ProductionProject:
-        """차량 후보 기반 프로젝트 생성 (차량 정보 검증 포함)."""
+        """차량 후보 기반 프로젝트 생성 (상업적 판매 홍보 적격성 엄격 감사)."""
         vehicle = self.repository.get_vehicle(vehicle_candidate_id)
         if not vehicle:
             raise ValueError(f"차량 후보 ID '{vehicle_candidate_id}'를 찾을 수 없습니다.")
 
-        # 제원 및 상태 무결성 검증
-        VehicleContentAdapter.validate_production_readiness(vehicle, require_strict=False)
+        # 제원, 상태, 매물 활성도 및 사진 권한 엄격 검증
+        VehicleContentAdapter.validate_commercial_eligibility(vehicle)
 
         project = ProductionProject(
             content_type=ContentType.VEHICLE_PROMOTION,
@@ -228,6 +228,11 @@ class ContentProductionPipeline:
             master_prompt=project.master_prompt or "",
             assets=project.visual_assets,
             dry_run=dry_run,
+            api_payload=(
+                adapter.format_api_payload(project.script, project.visual_assets, project.shot_prompts)
+                if isinstance(adapter, Wan3Adapter) and project.script
+                else None
+            ),
         )
 
         project.generation_result = result

@@ -22,7 +22,13 @@ from chaficial.content.repository import ContentRepository
 
 
 class TrendIntelligenceEngine:
-    """인기 영상 발굴, 중복 방지, 반응률 분석 및 구조 추출 엔진."""
+    """인기 영상 발굴, 중복 방지, 통계적 반응률 수식 계산 및 규칙 기반 구조 추출 엔진.
+    
+    [알고리즘 명세]:
+    - 인기도 산출: 가중 참여율(Engagement) 및 로그 스케일 시간 감쇄에 기반한 '통계적 수식(Statistical Formula)'
+    - 후킹 패턴 추출: 특정 키워드 및 패턴 사전에 기반한 '규칙 기반 분류기(Rule-based Keyword Classifier)'
+    - (LLM 딥러닝 추론이나 강화학습이 아닌 결정론적 통계/규칙 엔진입니다.)
+    """
 
     def __init__(self, repository: ContentRepository) -> None:
         self.repository = repository
