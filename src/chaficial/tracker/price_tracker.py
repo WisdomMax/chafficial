@@ -544,6 +544,7 @@ class PriceEventTracker:
         search_scope_success: bool = True,
         data_origin: str = "REAL_OBSERVED",
         notes: str | None = None,
+        auto_commit: bool = True,
     ) -> list[PriceEvent]:
         """검색 범위(플랫폼 및 차종/검색조건) 내에서 관측되지 않은 활성 매물의 누락 횟수를 갱신하고
         연속 3회 누락 시 DELISTED_SUSPECT 상태로 안전 전이합니다.
@@ -644,7 +645,8 @@ class PriceEventTracker:
         )
         session.add(audit_log)
 
-        session.commit()
+        if auto_commit:
+            session.commit()
         return events
 
     @staticmethod

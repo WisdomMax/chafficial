@@ -1,20 +1,26 @@
-"""CHA-FICIAL AI PROJECT - DIRECTIVE 011 / 011-A
+"""CHA-FICIAL AI PROJECT - DIRECTIVE 011 / 011-A / 011-B
 이미 DB에 적재된 관측 배치의 감사 보고서 안전 복구 및 재생성 유틸리티.
 
-[원칙 준수 - DIRECTIVE 011-A]
-1. processed_at은 DB 적재 시각으로만 표기하며, 원본 웹 수집 시각이 영속 저장되지 않은 경우
-   추정하지 않고 NOT_RECORDED로 명시합니다.
-2. 신규 배치부터 원본 JSON 경로와 SHA-256을 배치 메타데이터에서 대조 검증합니다.
-   (파일 누락, 해시 불일치, 배치 ID 불일치 시 엄격하게 예외 발생)
-   레거시 배치는 LEGACY_UNVERIFIED로 정직하게 구분합니다.
-3. total_price_drop_krw는 실제 PriceEvent로부터 재계산하며, 0원 하드코딩을 원천 금지합니다.
-4. 과거 배치 당시의 통계와 복구 실행 시점의 누적 DB 통계/해시를 명확히 분리 표기합니다.
-5. 기존 보고서가 이미 존재할 경우 overwrite=True 플래그 없이 덮어쓰는 것을 원천 거부합니다.
+[원칙 준수 - DIRECTIVE 011-B]
+1. 원본 무결성 엄격 검증:
+   - SHA-256 일치뿐 아니라 JSON 내부 batch_id와 DB batch_id 필수 대조.
+   - raw_file_sha256 또는 raw_file_path 누락 시 VERIFIED_MATCH 거부 및 예외 발생.
+   - JSON 파싱 실패, 필수 필드 누락, 배치 ID 불일치 시 복구 실패 처리.
+   - 레거시 배치는 LEGACY_UNVERIFIED로 명확히 격리.
+2. 이벤트 통계 교차 검증 (Cross-Validation):
+   - 메타데이터 수치를 맹신하지 않고 DB 실제 PriceEvent/스냅샷과 대조.
+   - 불일치 시 AUDIT_MISMATCH 상태 마킹 및 불일치 경고 기재.
+3. 원자적 안전 파일 저장:
+   - 임시 파일(.tmp)에 전체 작성 후 os.replace로 원자적 반영.
+   - 기존 보고서 존재 시 overwrite=False이면 FileExistsError 거부.
+   - 쓰기 실패 시 기존 파일 및 DB 훼손 원천 방지.
 """
 
 import argparse
 import hashlib
 import json
+import os
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -80,17 +86,23 @@ def reconstruct_batch_report(
         meta = batch_audit.get_audit_metadata()
         is_legacy = meta is None
 
-        # 4. 원본 JSON 파일 검증 및 연결
+        # 4. 원본 JSON 파일 검증 및 연결 (DIRECTIVE 011-B 무결성 강화)
         raw_file_path: Path | None = None
         raw_sha: str = "NOT_RECORDED"
         verification_status: str = "UNKNOWN"
+        total_raw_cards = batch_audit.record_count
 
-        if not is_legacy and meta.get("raw_file_path"):
-            # 신규 배치: 영속 기록된 경로 및 해시와 엄격히 대조
-            recorded_path = Path(meta["raw_file_path"])
+        if not is_legacy:
+            recorded_path_str = meta.get("raw_file_path")
             recorded_sha = meta.get("raw_file_sha256")
 
-            # 상대 경로 또는 대체 디렉토리 처리
+            # DIRECTIVE 011-B 지침 1: 경로 또는 SHA-256 누락 시 검증 실패
+            if not recorded_path_str or not recorded_sha or not recorded_sha.strip():
+                raise ValueError(
+                    f"[무결성 오류] 신규 배치({batch_id}) 메타데이터에 필수 원본 정보(raw_file_path 또는 raw_file_sha256)가 누락되었습니다."
+                )
+
+            recorded_path = Path(recorded_path_str)
             if recorded_path.exists():
                 raw_file_path = recorded_path
             elif (raw_observations_dir / recorded_path.name).exists():
@@ -100,12 +112,33 @@ def reconstruct_batch_report(
                     f"[무결성 오류] 배치({batch_id})에 기록된 원본 JSON 파일을 찾을 수 없습니다: {recorded_path}"
                 )
 
+            # SHA-256 대조
             actual_sha = get_file_sha256(raw_file_path)
-            if recorded_sha and actual_sha != recorded_sha:
+            if actual_sha != recorded_sha:
                 raise ValueError(
                     f"[무결성 오류] 원본 JSON 파일 변조 감지! (기록된 해시: {recorded_sha}, 실제 파일 해시: {actual_sha})"
                 )
 
+            # JSON 파싱 및 내부 batch_id 대조 (DIRECTIVE 011-B 필수 검증)
+            try:
+                with open(raw_file_path, "r", encoding="utf-8") as f:
+                    rdata = json.load(f)
+            except Exception as e:
+                raise ValueError(f"[무결성 오류] 원본 JSON 파일 파싱 실패: {e}") from e
+
+            if not isinstance(rdata, dict):
+                raise ValueError("[무결성 오류] 원본 JSON 루트가 올바른 사전(dict) 구조가 아닙니다.")
+
+            json_batch_id = rdata.get("batch_id")
+            if not json_batch_id:
+                raise ValueError("[무결성 오류] 원본 JSON 내에 필수 필드 'batch_id'가 누락되었습니다.")
+
+            if json_batch_id != batch_id:
+                raise ValueError(
+                    f"[무결성 오류] 원본 JSON 내부 batch_id({json_batch_id})와 DB 감사 로그 batch_id({batch_id})가 일치하지 않습니다!"
+                )
+
+            total_raw_cards = rdata.get("total_cards_collected", len(rdata.get("raw_cards", [])))
             raw_sha = actual_sha
             verification_status = "VERIFIED_MATCH"
         else:
@@ -116,22 +149,18 @@ def reconstruct_batch_report(
                 raw_file_path = candidate
                 raw_sha = get_file_sha256(candidate)
                 verification_status = "LEGACY_UNVERIFIED_CANDIDATE"
+                try:
+                    with open(candidate, "r", encoding="utf-8") as f:
+                        rdata = json.load(f)
+                        total_raw_cards = rdata.get("total_cards_collected", len(rdata.get("raw_cards", [])))
+                except Exception:
+                    pass
             else:
                 raw_file_path = Path(f"data/raw_observations/encar_cn7_live_{batch_ts_suffix}.json")
                 raw_sha = "NOT_RECORDED"
                 verification_status = "LEGACY_NOT_FOUND"
 
-        # 원본 JSON 내 원천 카드 수 파악
-        total_raw_cards = batch_audit.record_count
-        if raw_file_path and raw_file_path.exists():
-            try:
-                with open(raw_file_path, "r", encoding="utf-8") as f:
-                    rdata = json.load(f)
-                    total_raw_cards = rdata.get("total_cards_collected", len(rdata.get("raw_cards", [])))
-            except Exception:
-                pass
-
-        # 5. 수집 시각 복구 (허위 표기 금지)
+        # 5. 수집 시각 복구
         db_processed_utc = batch_audit.processed_at
         db_processed_kst_str = (
             db_processed_utc.replace(tzinfo=UTC).astimezone(KST).strftime("%Y-%m-%d %H:%M:%S KST")
@@ -148,28 +177,49 @@ def reconstruct_batch_report(
             web_end_str = "NOT_RECORDED (레거시 배치: 웹 수집 시각 미기록)"
             web_timing_note = f"NOT_RECORDED (DB 적재 시각 {db_processed_kst_str}만 영속됨)"
 
-        # 6. 가격 이벤트 및 재관측 통계 역조회
+        # 6. 가격 이벤트 및 재관측 통계 역조회 및 교차 검증 (DIRECTIVE 011-B 지침 2)
         events_in_batch = session.execute(
             select(PriceEvent).where(PriceEvent.event_timestamp == batch_audit.processed_at)
         ).scalars().all()
 
-        if not is_legacy:
-            first_seen_count = meta.get("first_seen_count", sum(1 for e in events_in_batch if e.event_type == "FIRST_SEEN"))
-            re_observed_count = meta.get("re_observed_count", max(0, batch_audit.record_count - first_seen_count))
-            price_drop_count = meta.get("price_drop_count", sum(1 for e in events_in_batch if e.event_type == "PRICE_DROP"))
-            price_increase_count = meta.get("price_increase_count", sum(1 for e in events_in_batch if e.event_type == "PRICE_INCREASE"))
-            total_price_drop_krw = meta.get(
-                "total_price_drop_krw",
-                sum(abs(e.price_delta_krw) for e in events_in_batch if e.event_type == "PRICE_DROP")
-            )
-        else:
-            first_seen_count = sum(1 for e in events_in_batch if e.event_type == "FIRST_SEEN")
-            re_observed_count = max(0, batch_audit.record_count - first_seen_count)
-            price_drop_count = sum(1 for e in events_in_batch if e.event_type == "PRICE_DROP")
-            price_increase_count = sum(1 for e in events_in_batch if e.event_type == "PRICE_INCREASE")
-            total_price_drop_krw = sum(abs(e.price_delta_krw) for e in events_in_batch if e.event_type == "PRICE_DROP")
+        actual_first_seen = sum(1 for e in events_in_batch if e.event_type in ("NEW_LISTING", "FIRST_SEEN"))
+        actual_price_drops = sum(1 for e in events_in_batch if e.event_type == "PRICE_DROP")
+        actual_price_increases = sum(1 for e in events_in_batch if e.event_type == "PRICE_INCREASE")
+        actual_delisted_suspects = sum(1 for e in events_in_batch if e.event_type == "DELISTED_SUSPECT")
+        actual_price_drop_krw = sum(abs(e.price_delta_krw) for e in events_in_batch if e.event_type == "PRICE_DROP")
+        actual_re_observed = max(0, batch_audit.record_count - actual_first_seen)
 
-        delisted_suspect_count = sum(1 for e in events_in_batch if e.event_type == "DELISTED_SUSPECT")
+        # 메타데이터 수치와 실제 DB 이벤트 간 교차 대조
+        mismatch_notes = []
+        if not is_legacy:
+            saved_drop_krw = meta.get("total_price_drop_krw")
+            if saved_drop_krw is not None and saved_drop_krw != actual_price_drop_krw:
+                mismatch_notes.append(
+                    f"가격 인하 총액 불일치 (메타데이터: {saved_drop_krw:,}원 vs DB 실제: {actual_price_drop_krw:,}원)"
+                )
+
+            saved_drop_cnt = meta.get("price_drop_count")
+            if saved_drop_cnt is not None and saved_drop_cnt != actual_price_drops:
+                mismatch_notes.append(
+                    f"가격 인하 건수 불일치 (메타데이터: {saved_drop_cnt}건 vs DB 실제: {actual_price_drops}건)"
+                )
+
+            saved_first_seen = meta.get("first_seen_count")
+            if saved_first_seen is not None and saved_first_seen != actual_first_seen:
+                mismatch_notes.append(
+                    f"최초 관측 건수 불일치 (메타데이터: {saved_first_seen}건 vs DB 실제: {actual_first_seen}건)"
+                )
+
+            if mismatch_notes:
+                verification_status = "AUDIT_MISMATCH"
+
+        # 최종 채택 수치: 실제 DB PriceEvent가 진실의 원천(Source of Truth)
+        first_seen_count = actual_first_seen
+        re_observed_count = actual_re_observed
+        price_drop_count = actual_price_drops
+        price_increase_count = actual_price_increases
+        total_price_drop_krw = actual_price_drop_krw
+        delisted_suspect_count = actual_delisted_suspects
 
         # 7. 복구 시점의 현재 누적 DB 통계 및 논리 해시
         recon_listings = session.execute(select(func.count(Listing.listing_id))).scalar()
@@ -179,12 +229,13 @@ def reconstruct_batch_report(
         recon_links = session.execute(select(func.count(VehicleIdentityLink.link_id))).scalar()
         recon_db_hashes = compute_db_logical_hashes(session)
 
-    # 8. 감사 보고서 마크다운 생성 (과거 배치 상태와 현재 누적 상태 명확 분리)
+    # 8. 감사 보고서 마크다운 생성
     report_md = _render_reconstructed_report_markdown(
         batch_id=batch_id,
         batch_audit=batch_audit,
         is_legacy=is_legacy,
         verification_status=verification_status,
+        mismatch_notes=mismatch_notes,
         raw_file_path=raw_file_path,
         raw_sha=raw_sha,
         total_raw_cards=total_raw_cards,
@@ -207,10 +258,23 @@ def reconstruct_batch_report(
         all_batches=all_batches,
     )
 
-    with open(out_file, "w", encoding="utf-8") as f:
-        f.write(report_md)
+    # 9. 원자적 파일 저장 (DIRECTIVE 011-B 지침 3: .tmp에 작성 후 원자적 교체)
+    tmp_fd, tmp_path_str = tempfile.mkstemp(
+        dir=output_dir, prefix=f"reconstruct_{batch_id}_", suffix=".tmp"
+    )
+    try:
+        with open(tmp_fd, "w", encoding="utf-8") as f:
+            f.write(report_md)
+        os.replace(tmp_path_str, out_file)
+    except Exception:
+        if os.path.exists(tmp_path_str):
+            try:
+                os.remove(tmp_path_str)
+            except OSError:
+                pass
+        raise
 
-    print(f"[+] [DIRECTIVE 011-A] 배치 감사 보고서 복구/재생성 완료: {out_file}")
+    print(f"[+] [DIRECTIVE 011-B] 배치 감사 보고서 원자적 복구/재생성 완료: {out_file}")
     return out_file
 
 
@@ -219,6 +283,7 @@ def _render_reconstructed_report_markdown(
     batch_audit: BatchAuditLog,
     is_legacy: bool,
     verification_status: str,
+    mismatch_notes: list[str],
     raw_file_path: Path | None,
     raw_sha: str,
     total_raw_cards: int,
@@ -243,6 +308,18 @@ def _render_reconstructed_report_markdown(
     """과거 배치 상태와 복구 시점 현재 상태를 명확히 분리하여 정직하게 마크다운 보고서를 렌더링합니다."""
     recon_time_kst = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S KST")
 
+    # 교차 검증 불일치 알림 마크다운 생성
+    mismatch_alert = ""
+    if mismatch_notes:
+        notes_str = "\n".join(f"- {n}" for n in mismatch_notes)
+        mismatch_alert = f"""
+> [!WARNING]
+> **[교차 검증 불일치 감지 (AUDIT_MISMATCH)]**
+> 메타데이터에 기록된 통계와 실제 DB PriceEvent 간 불일치가 발견되었습니다:
+>{notes_str}
+> 본 복구 보고서는 실제 DB PriceEvent를 최종 진실의 원천(Source of Truth)으로 채택하여 정밀 재계산했습니다.
+"""
+
     # 배치 이력 테이블 마크다운 생성
     batch_history_rows = []
     for b in all_batches:
@@ -260,11 +337,11 @@ def _render_reconstructed_report_markdown(
     return f"""# CHA-FICIAL AI PROJECT: 시장 관측 배치 감사 보고서 (안전 복구본)
 ## BATCH ID: `{batch_id}` (RECONSTRUCTED)
 
-**작성 주체:** CHA-FICIAL AI 시계열 관측 파이프라인 안전 복구 엔진 (DIRECTIVE 011-A)  
+**작성 주체:** CHA-FICIAL AI 시계열 관측 파이프라인 안전 복구 엔진 (DIRECTIVE 011-B)  
 **복구 실행 시각:** {recon_time_kst}  
 **배치 원본 검증 상태:** `{verification_status}`  
 **레거시 배치 여부:** `{"YES (LEGACY_UNVERIFIED)" if is_legacy else "NO (METADATA_VERIFIED)"}`  
-
+{mismatch_alert}
 ---
 
 ## 1. 관측 배치 기본 식별 정보 및 원본 무결성
@@ -296,7 +373,7 @@ def _render_reconstructed_report_markdown(
 | **미노출 의심 판정 (DELISTED_SUSPECT)** | **{delisted_suspect_count}건** | 연속 미관측으로 판매 종료 또는 매물 삭제가 의심되는 건수 |
 
 > [!NOTE]
-> 과거 배치 당시의 가격 변동 금액과 재관측 통계는 PriceEvent 및 Snapshot 이력으로부터 정밀 재계산되었습니다.
+> 과거 배치 당시의 가격 변동 금액과 재관측 통계는 PriceEvent 및 Snapshot 이력으로부터 정밀 교차 검증 및 재계산되었습니다.
 
 ---
 
@@ -340,7 +417,7 @@ def _render_reconstructed_report_markdown(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="CHA-FICIAL DIRECTIVE 011-A Report Reconstructor")
+    parser = argparse.ArgumentParser(description="CHA-FICIAL DIRECTIVE 011-B Report Reconstructor")
     parser.add_argument("batch_id", help="복구할 관측 배치 ID")
     parser.add_argument("--db", type=Path, default=Path("data/chaficial_market_timeseries.db"), help="대상 DB 경로")
     parser.add_argument("--raw-dir", type=Path, default=Path("data/raw_observations"), help="원천 관측 JSON 디렉토리")

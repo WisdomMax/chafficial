@@ -84,6 +84,7 @@ class MarketObservationStreamPipeline:
         notes: str | None = None,
         raw_file_path: str | Path | None = None,
         raw_file_sha256: str | None = None,
+        auto_commit: bool = True,
     ) -> BatchExecutionResult:
         """단일 수집 배치를 원자적으로 실행하고 상세 통계를 반환합니다."""
         # 1. 배치 ID 필수성 검증
@@ -182,6 +183,7 @@ class MarketObservationStreamPipeline:
                 search_scope_success=is_success,
                 data_origin=data_origin,
                 notes=json.dumps(audit_metadata, ensure_ascii=False, sort_keys=True),
+                auto_commit=auto_commit,
             )
         else:
             # 부분 수집 또는 실패 시 감사 로그만 별도 기록
@@ -195,7 +197,8 @@ class MarketObservationStreamPipeline:
             )
             audit_log.set_audit_metadata(audit_metadata)
             session.add(audit_log)
-            session.commit()
+            if auto_commit:
+                session.commit()
 
         end_utc = datetime.now(UTC)
 
