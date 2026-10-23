@@ -1,4 +1,4 @@
-"""차피셜 기회 탐지 엔진 파라미터 및 수익 시나리오 비용 가정 설정 (DIRECTIVE 015)."""
+"""차피셜 기회 탐지 엔진 파라미터 및 수익 시나리오 비용 가정 설정 (DIRECTIVE 015-A)."""
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -6,29 +6,29 @@ from pathlib import Path
 
 @dataclass
 class CostAssumptions:
-    """차량 매입 후 상품화 및 부대비용 가정치 (Hypothetical Estimates).
+    """차량 매입 후 실제 운영비용(Operating Cost) 및 목표마진(Target Margin) 가정치.
 
-    주의: 실제 딜러 매입 원가나 수수료 데이터가 없는 현 단계에서는
-    업계 표준 기반의 보수적/기준/낙관적 시나리오 분석을 위한 가정치입니다.
+    - 운영비용 (Operating Cost): 실제 지출되는 상품화비 및 탁송/이전비
+    - 목표마진 (Target Margin): 딜러 파트너가 요구하는 최소 기대 수익 기준
     """
 
-    # 기준(Base) 시나리오 비용 (단위: 원)
-    base_reconditioning_cost_krw: int = 800_000   # 표준 상품화(광택, 세차, 경정비) 비용
-    base_logistics_cost_krw: int = 300_000        # 수도권 표준 탁송/이전 부대비용
+    # 기준(Base) 시나리오
+    base_reconditioning_cost_krw: int = 800_000   # 표준 상품화(광택, 세차, 경정비) 실제 지출비
+    base_logistics_cost_krw: int = 300_000        # 수도권 표준 탁송/이전 실제 지출비
     base_remote_surcharge_krw: int = 200_000      # 비수도권/지방 매물 추가 탁송료
-    base_target_margin_krw: int = 500_000         # 딜러 목표 기본 마진 및 판매 수수료
+    base_target_margin_krw: int = 500_000         # 딜러 목표 기본 마진 (비용이 아닌 기대수익 기준)
 
-    # 보수적(Conservative) 시나리오 비용 (단위: 원)
-    conservative_reconditioning_cost_krw: int = 1_200_000  # 주요 부품 교환 등 보수적 상품화 비용
-    conservative_logistics_cost_krw: int = 400_000         # 보수적 이전 부대비용
+    # 보수적(Conservative) 시나리오
+    conservative_reconditioning_cost_krw: int = 1_200_000  # 정비 리스크 반영 상품화비
+    conservative_logistics_cost_krw: int = 400_000         # 보수적 탁송/부대비용
     conservative_remote_surcharge_krw: int = 300_000       # 장거리 탁송료
-    conservative_target_margin_krw: int = 700_000          # 보수적 최소 요구 마진
+    conservative_target_margin_krw: int = 700_000          # 보수적 최소 요구 마진 기준
 
-    # 낙관적(Optimistic) 시나리오 비용 (단위: 원)
-    optimistic_reconditioning_cost_krw: int = 500_000      # 단순 세차/기본 점검 수준
+    # 낙관적(Optimistic) 시나리오
+    optimistic_reconditioning_cost_krw: int = 500_000      # 기본 세차/점검 수준 상품화비
     optimistic_logistics_cost_krw: int = 200_000          # 근거리 탁송료
-    optimistic_remote_surcharge_krw: int = 150_000        # 원거리 탁송 할인
-    optimistic_target_margin_krw: int = 400_000           # 최소 운영 마진
+    optimistic_remote_surcharge_krw: int = 150_000        # 탁송료 할인
+    optimistic_target_margin_krw: int = 400_000           # 최소 기대 마진 기준
 
 
 @dataclass

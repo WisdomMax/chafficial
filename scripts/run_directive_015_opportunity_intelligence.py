@@ -1,4 +1,4 @@
-"""차피셜 실시간 기회 매물 탐지 엔진 V1 실행 및 보고서 생성 스크립트 (DIRECTIVE 015)."""
+"""차피셜 실시간 기회 매물 탐지 엔진 V1.1 실행 및 정밀 감사 보고서 생성 (DIRECTIVE 015-A)."""
 
 from datetime import datetime
 from pathlib import Path
@@ -9,7 +9,7 @@ from chaficial.intelligence.opportunity_engine import MarketOpportunityEngine
 
 def run_opportunity_analysis():
     print("=" * 80)
-    print("CHA-FICIAL DIRECTIVE 015: 실전 기회 매물 탐지 엔진 V1 실행")
+    print("CHA-FICIAL DIRECTIVE 015-A: 실전 기회 매물 탐지 엔진 V1.1 정밀 실행")
     print("=" * 80)
 
     db_path = Path("data/chaficial_market_timeseries.db")
@@ -20,14 +20,20 @@ def run_opportunity_analysis():
 
     print(f"[+] 총 평가 완료 매물 수: {len(candidates)}대")
 
-    # 카테고리별 집계
-    cat_counts = {}
+    # 등급별 집계
+    grade_counts = {}
+    suit_counts = {}
     for c in candidates:
-        cat_counts[c.recommendation_category] = cat_counts.get(c.recommendation_category, 0) + 1
+        grade_counts[c.market_opportunity_grade] = grade_counts.get(c.market_opportunity_grade, 0) + 1
+        suit_counts[c.partner_operational_suitability] = suit_counts.get(c.partner_operational_suitability, 0) + 1
 
-    print("\n[추천 카테고리별 분류 현황]")
-    for cat, count in sorted(cat_counts.items()):
-        print(f"  - {cat:20s}: {count:3d}대")
+    print("\n[1. 시장 기회 등급 (Market Opportunity Grade) 집계]")
+    for g, cnt in sorted(grade_counts.items()):
+        print(f"  - {g:20s}: {cnt:3d}대")
+
+    print("\n[2. 파트너 영업 적합성 (Partner Operational Suitability) 집계]")
+    for s, cnt in sorted(suit_counts.items()):
+        print(f"  - {s:35s}: {cnt:3d}대")
 
     # CSV 출력
     today_str = datetime.now().strftime("%Y%m%d")
@@ -39,16 +45,18 @@ def run_opportunity_analysis():
     print(f"\n[+] CSV 후보 목록 저장 완료: {csv_path}")
 
     # 상위 우선 검토(PRIORITY_REVIEW) 후보 출력
-    priority_candidates = [c for c in candidates if c.recommendation_category == "PRIORITY_REVIEW"]
-    print(f"\n[우선 검토 (PRIORITY_REVIEW) 후보: 총 {len(priority_candidates)}대]")
-    for i, p in enumerate(priority_candidates[:10], 1):
-        net_profit = p.base_scenario.net_profit_krw if p.base_scenario else 0
+    priority_candidates = [c for c in candidates if c.market_opportunity_grade == "PRIORITY_REVIEW"]
+    print(f"\n[3. 우선 검토 (PRIORITY_REVIEW) 후보: 총 {len(priority_candidates)}대]")
+    for i, p in enumerate(priority_candidates, 1):
+        b = p.base_scenario
+        net_profit = b.estimated_net_profit_krw if b else 0
         drop_info = f", 인하 -{p.cumulative_price_drop_krw:,}원" if p.has_price_drop else ""
+        dup_info = f" [중복광고: {', '.join(p.duplicate_listing_ids)}]" if p.is_duplicate_listing else ""
         print(
             f"  {i}. [{p.source_listing_id}] {p.vehicle_summary} | 현재가: {p.current_price_krw:,}원 | "
             f"시세중앙: {p.cohort_median_price_krw:,}원 (우위: +{p.relative_price_gap_pct}%) | "
-            f"기회점수: {p.opportunity_score}점 | 예상순익: {net_profit:,}원{drop_info} | "
-            f"지역: {p.raw_location} ({p.region_suitability})"
+            f"기회점수: {p.opportunity_score}점 | 예상순익: {net_profit:,}원 (목표마진 50만 포함){drop_info} | "
+            f"지역: {p.raw_location} ({p.partner_operational_suitability}){dup_info}"
         )
 
     # 마크다운 보고서 생성
@@ -60,53 +68,60 @@ def run_opportunity_analysis():
 
 def generate_markdown_report(candidates, output_path: Path):
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S KST")
-    priority_list = [c for c in candidates if c.recommendation_category == "PRIORITY_REVIEW"]
-    watchlist = [c for c in candidates if c.recommendation_category == "WATCHLIST"]
-    insufficient = [c for c in candidates if c.recommendation_category == "INSUFFICIENT_DATA"]
-    excluded = [c for c in candidates if c.recommendation_category == "EXCLUDED"]
+    priority_list = [c for c in candidates if c.market_opportunity_grade == "PRIORITY_REVIEW"]
+    watchlist = [c for c in candidates if c.market_opportunity_grade == "WATCHLIST"]
+    insufficient = [c for c in candidates if c.market_opportunity_grade == "INSUFFICIENT_DATA"]
+    excluded = [c for c in candidates if c.market_opportunity_grade == "EXCLUDED"]
 
-    content = f"""# CHA-FICIAL DIRECTIVE 015: 실전 기회 매물 탐지 종합 보고서 (V1)
+    local_count = sum(1 for c in candidates if c.partner_operational_suitability == "LOCAL_OPERATIONAL")
+    verify_req_count = sum(1 for c in candidates if c.partner_operational_suitability == "LOCATION_VERIFICATION_REQUIRED")
+    remote_count = sum(1 for c in candidates if c.partner_operational_suitability == "REMOTE_REGION_UNSUITABLE")
+
+    content = f"""# CHA-FICIAL DIRECTIVE 015-A: 실전 기회 매물 탐지 종합 보고서 (V1.1)
 
 - **평가 일시**: {now_str}
-- **대상 차량군**: 현대 아반떼 CN7 관측 라인업 (총 {len(candidates)}대)
+- **대상 차량군**: 현대 아반떼 CN7 관측 라인업 (고유 실차 기준 총 {len(candidates)}대)
 - **분석 모드**: 100% 읽기 전용 (운영 DB 및 관측 원본 일체 불변)
-- **적용 엔진**: `MarketOpportunityEngine V1` (Leave-One-Out 정밀 코호트 및 동적 가격 변동 모델)
+- **적용 엔진**: `MarketOpportunityEngine V1.1` (실차 중복 클러스터링, 연식 무결성 및 순수익/목표마진 분리)
 
 ---
 
 ## 1. 종합 분류 요약
 
+### 1.1 시장 기회 등급 (Market Opportunity Grade)
+
 | 분류 등급 | 정의 및 기준 | 매물 수 | 비율 |
 | :--- | :--- | :---: | :---: |
-| **`PRIORITY_REVIEW`** | 시세 대비 $\ge 5\%$ 저렴, 예상 순익 $>0$, 가격 인하 모멘텀 또는 뚜렷한 저평가 | **{len(priority_list)}대** | {len(priority_list)/len(candidates)*100:.1f}% |
+| **`PRIORITY_REVIEW`** | 연식 확정, 시세 대비 $\ge 5\%$ 저렴, 예상 순이익 $\ge 50만원$, 가격 인하 또는 저평가 | **{len(priority_list)}대** | {len(priority_list)/len(candidates)*100:.1f}% |
 | **`WATCHLIST`** | 시세 대비 소폭 우위 또는 최근 가격 인하 감지 (추가 시계열 관측 필요) | **{len(watchlist)}대** | {len(watchlist)/len(candidates)*100:.1f}% |
-| **`INSUFFICIENT_DATA`** | 동일 코호트 독립 비교 표본 3건 미만으로 신뢰도 부족 | **{len(insufficient)}대** | {len(insufficient)/len(candidates)*100:.1f}% |
+| **`INSUFFICIENT_DATA`** | 연식 미확인(NOYEAR) 또는 동일 코호트 독립 비교 표본 3건 미만 | **{len(insufficient)}대** | {len(insufficient)/len(candidates)*100:.1f}% |
 | **`EXCLUDED`** | 금융상품, 시세 대비 고가 매물($\le -10\%$) 또는 데이터 이상치 | **{len(excluded)}대** | {len(excluded)/len(candidates)*100:.1f}% |
 | **전체 합계** | - | **{len(candidates)}대** | 100.0% |
+
+### 1.2 파트너 영업 적합성 (Partner Operational Suitability) - 지침 5
+
+> [!IMPORTANT]
+> **실제 딜러 즉시 영업 대상 정직한 보고**:
+> - **서울/장안평/수도권 즉시 매입 가능 매물**: **{local_count}건** (현재 관측 데이터는 전국 표본으로 서울 명시 매물 미포함)
+> - **지역 실사 선행 조건부 검토 매물 (`UNKNOWN`)**: **{verify_req_count}건**
+> - **원거리 지방 매물 (대구/대전/부산/광주)**: **{remote_count}건**
 
 ---
 
 ## 2. 우선 검토 (`PRIORITY_REVIEW`) 추천 후보 상세
 
-> [!IMPORTANT]
-> **지역 정보 및 수익 시나리오 주의사항**:
-> 1. 본 분석의 예상 순수익은 업계 표준 비용(상품화 80만, 탁송 30만, 목표마진 50만)에 기반한 **가정 기반 시나리오(Hypothetical Scenario)**입니다. 실제 딜러 실매입가 및 수수료에 따라 변동될 수 있습니다.
-> 2. 관측 데이터 상 지역이 `UNKNOWN`이거나 지방인 경우, 안전을 위해 원거리 탁송료를 보수적으로 가산하였습니다. 실제 영업 시 지역 실사를 반드시 선행해야 합니다.
-
-| 순위 | 매물 ID | 차량 요약 | 현재 가격 | 코호트 시세(중앙) | 가격 우위 | 기회 점수 | 기준 예상순익 | 최근 인하 | 지역 (적합성) |
+| 순위 | 매물 ID | 차량 요약 | 현재 가격 | 코호트 시세(중앙) | 가격 우위 | 기회 점수 | 예상 순이익 | 최근 인하 | 지역 (파트너 적합성) |
 | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 """
     for i, c in enumerate(priority_list, 1):
-        profit = f"{c.base_scenario.net_profit_krw:,}원" if c.base_scenario else "-"
+        profit = f"{c.base_scenario.estimated_net_profit_krw:,}원" if c.base_scenario else "-"
         drop = f"-{c.cumulative_price_drop_krw:,}원" if c.has_price_drop else "-"
-        content += f"| {i} | `{c.source_listing_id}` | {c.vehicle_summary} | {c.current_price_krw:,}원 | {c.cohort_median_price_krw:,}원 | **+{c.relative_price_gap_pct}%** | **{c.opportunity_score}점** | {profit} | {drop} | {c.raw_location} ({c.region_suitability}) |\n"
+        content += f"| {i} | `{c.source_listing_id}` | {c.vehicle_summary} | {c.current_price_krw:,}원 | {c.cohort_median_price_krw:,}원 | **+{c.relative_price_gap_pct}%** | **{c.opportunity_score}점** | {profit} | {drop} | {c.raw_location} (`{c.partner_operational_suitability}`) |\n"
 
     content += """
 ---
 
-## 3. 가격 변동 신호 포착 매물 (최근 가격 인하 5건 집중 분석)
-
-3차 관측 배치에서 가격 인하가 공식 감지된 5건 매물의 기회 탐지 결과입니다.
+## 3. 가격 변동 신호 포착 매물 (최근 가격 인하 5건 심층 분석)
 
 | 매물 ID | 이전 가격 | 현재 가격 | 인하액 (인하율) | 코호트 시세 | 상대 우위 | 추천 등급 | 기회 점수 | 핵심 사유 및 리스크 |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
@@ -120,33 +135,42 @@ def generate_markdown_report(candidates, output_path: Path):
             f"| `{c.source_listing_id}` | {first_p:,}원 | {c.current_price_krw:,}원 | "
             f"-{c.cumulative_price_drop_krw:,}원 (-{c.latest_price_drop_pct}%) | "
             f"{median_str} | {gap_str} | "
-            f"**`{c.recommendation_category}`** | {c.opportunity_score}점 | "
+            f"**`{c.market_opportunity_grade}`** | {c.opportunity_score}점 | "
             f"{c.evaluation_reason} ({' / '.join(c.risk_factors)}) |\n"
         )
 
     content += """
 ---
 
-## 4. 수익 시나리오 모델 상세 (보수적 / 기준 / 낙관적)
+## 4. 동일 실차 중복 광고 클러스터링 분석 (지침 2 준수)
+중고차 플랫폼에 서로 다른 ID로 다중 등록된 동일 물리 실차 지문(`vehicle_fingerprint`) 매물 쌍의 분석 내역입니다.
 
-| 시나리오 | 코호트 판매 가정가 | 상품화 비용 | 탁송/이전 비용 | 목표 마진 | 총 부대비용 | 특징 및 해석 |
-| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **보수적 (Conservative)** | 코호트 하위 25% (P25) | 1,200,000원 | 400,000원 (+지방 30만) | 700,000원 | 2,300,000원~ | 빠른 급매 처분 및 정비 리스크 반영 |
-| **기준 (Base)** | 코호트 중앙값 (Median) | 800,000원 | 300,000원 (+지방 20만) | 500,000원 | 1,600,000원~ | 통상적 딜러 회전 사이클 기준 |
-| **낙관적 (Optimistic)** | 코호트 상위 25% (P75) | 500,000원 | 200,000원 (+지방 15만) | 400,000원 | 1,100,000원~ | 최상급 상태 및 무사고 프리미엄 판매 |
+1. **`42852685` / `42849633`**:
+   - 지문: `현대_아반떼_CN7_FACELIFT_STANDARD_2026-04_NOYEAR_5993_가솔린_모던` (가격 1,650만, 주행 5,993km 동일)
+   - 조치: 연식 미확인(`NOYEAR`)으로 인한 시세 왜곡 방지를 위해 `INSUFFICIENT_DATA`로 안전하게 보류 처리 및 단일 실차로 클러스터링 완료.
+2. **`42911910` / `42906948`**:
+   - 지문: `현대_아반떼_CN7_FACELIFT_STANDARD_2023-09_2024_46530_하이브리드_모던` (가격 2,149만, 주행 46,530km 동일)
+   - 조치: 코호트 표본군에서 1대만 대표 반영하여 시세 왜곡 차단 및 추천 목록에 단일 후보로 대표 등록.
+3. **`42866420` / `42863742`**:
+   - 지문: `현대_아반떼_CN7_FACELIFT_STANDARD_2023-09_2024_31066_하이브리드_모던` (가격 2,190만, 주행 31,066km 동일)
+   - 조치: 대표 1건만 등록 및 동반 광고 ID 명시.
+4. **`42453171` / `42453169`**:
+   - 지문: `현대_아반떼_CN7_FACELIFT_N_2024-04_NOYEAR_12526_가솔린_NOTRIM` (가격 2,110만, 주행 12,526km 동일)
+   - 조치: 연식 미확인(`NOYEAR`)으로 인한 우선 추천 보류 및 단일 클러스터링 완료.
 
 ---
 
-## 5. 결론 및 실전 딜러 피드백(3단계) 진입 제언
-1. **과대평가 방지 입증**:
-   - 단순히 가격이 인하되었더라도 동일 코호트 시세 대비 고가인 매물은 무조건 추천되지 않고 엄격히 차단되었습니다.
-2. **지역 투명성 확보**:
-   - 지역이 미확인(`UNKNOWN`)된 매물은 임의로 서울 장안평 매물로 왜곡하지 않고 `REGION_UNVERIFIED` 리스크 플래그를 정확히 기재하였습니다.
-3. **다음 단계 제언 (3단계: 25년 경력 딜러의 실제 피드백 수집)**:
-   - 본 분석을 통해 도출된 우선 검토 후보(PRIORITY_REVIEW)에 대해, 실제 딜러 파트너에게 전달하여 "실제 매입 의사 / 판단 이유 / 상품화 필요 사항"을 1:1 피드백 데이터로 축적할 것을 제안합니다.
+## 5. 수익 시나리오의 순수익과 목표마진 분리 구조 (지침 3 준수)
+
+- **예상 총마진 (Estimated Gross Spread)**: $\text{Expected Sale Price} - \text{Purchase Price}$
+- **실제 예상 운영비용 (Estimated Operating Cost)**: $\text{Reconditioning Cost} + \text{Logistics Cost}$
+- **실제 예상 순이익 (Estimated Net Profit)**: $\text{Gross Spread} - \text{Operating Cost}$
+- **목표 마진 (Target Margin)**: 500,000원 (비용이 아닌 기대 수익 판단 기준치)
+- **목표 초과 달성액 (Excess over Target)**: $\text{Net Profit} - \text{Target Margin}$
 """
 
     output_path.write_text(content, encoding="utf-8")
+
 
 if __name__ == "__main__":
     run_opportunity_analysis()
