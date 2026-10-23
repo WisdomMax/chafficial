@@ -4,6 +4,7 @@
 - **임무**: DIRECTIVE 013-B 지침에 따른 커밋 경계 안전성(Commit Boundary Safety) 완비, 재시도 예외 범위 엄격화(Strict Network-Only Transient Errors), 운영 DB 논리 해시 무결성 검증.
 - **선행 작업**: PR #11 공식 병합 완료 (`e342aa71750ab2c2b4d802aad3cdb9ddd51ccff2`)
 - **작업 브랜치**: `feat/directive-013-scheduled-observation-system`
+- **최신 커밋 SHA**: `34849ea267e8111e11a6d713c77e682cb30d32bb`
 - **기준(Base) 브랜치**: `feat/directive-009-price-event-tracker`
 - **PR 생성 및 비교 URL**: https://github.com/WisdomMax/chafficial/compare/feat/directive-009-price-event-tracker...feat/directive-013-scheduled-observation-system?expand=1
 
