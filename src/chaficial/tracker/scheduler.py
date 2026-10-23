@@ -151,9 +151,14 @@ def verify_live_authorization(auth_file: Path | None) -> tuple[bool, str]:
         if not isinstance(expires_at_str, str) or not expires_at_str.strip():
             return False, "운영 승인 만료일자(expires_at) 누락"
 
-        expires_at = datetime.fromisoformat(expires_at_str)
-        if expires_at.tzinfo is None:
-            return False, "운영 승인 만료일자에 시간대(Timezone/UTC) 정보가 누락되었습니다"
+        # 013-H: 엄격한 UTC 전용 시간대 (+00:00 또는 Z) 검증 (비-UTC 오프셋 즉시 거부)
+        clean_exp = expires_at_str.strip()
+        if not (clean_exp.endswith("Z") or clean_exp.endswith("+00:00") or clean_exp.endswith("+0000")):
+            return False, f"운영 승인 만료일자는 반드시 UTC 시간대(+00:00 또는 Z)여야 합니다 (실제: {expires_at_str})"
+
+        expires_at = datetime.fromisoformat(clean_exp)
+        if expires_at.tzinfo is None or expires_at.utcoffset() != timedelta(0):
+            return False, f"운영 승인 만료일자가 UTC 시간대가 아닙니다 (오프셋: {expires_at.utcoffset()})"
 
         now_utc = datetime.now(UTC)
         if now_utc > expires_at:
@@ -364,11 +369,45 @@ class MarketObservationScheduler:
                             f"raw_file_sha256은 64자리 16진수 해시 문자열이어야 합니다 (실제: {raw_sha_val})"
                         )
 
-                    # 원천 파일 실존 검증
+                    # 원천 파일 실존 및 경로 보안 검증 (013-H)
                     raw_path = Path(raw_path_val)
+
+                    # 1) 상위 경로 이탈(..) 문자열 검사
+                    if ".." in raw_path.parts:
+                        raise CommitStatusUnknownError(
+                            f"보안 위반: 원천 파일 경로에 상위 디렉터리 이탈(..)이 포함되어 있습니다: {raw_path_val}"
+                        )
+
+                    # 2) 심볼릭 링크 차단
+                    if raw_path.is_symlink():
+                        raise CommitStatusUnknownError(
+                            f"보안 위반: 원천 파일은 심볼릭 링크일 수 없습니다 ({raw_path})"
+                        )
+
+                    # 3) 실존 및 일반 파일 검증
                     if not raw_path.exists():
                         raise CommitStatusUnknownError(
                             f"배치 원천 파일 소실 감지: {raw_path} 파일이 디스크에 존재하지 않습니다."
+                        )
+                    if not raw_path.is_file():
+                        raise CommitStatusUnknownError(
+                            f"보안 위반: 원천 파일이 일반 파일이 아닙니다: {raw_path}"
+                        )
+
+                    # 4) 허용된 데이터 디렉터리 내부 제한 검증
+                    allowed_roots = [
+                        Path("data/raw_observations").resolve(),
+                        Path("data").resolve(),
+                        self.config.db_path.parent.resolve(),
+                    ]
+                    resolved_raw = raw_path.resolve()
+                    is_within_allowed = any(
+                        resolved_raw == root or root in resolved_raw.parents
+                        for root in allowed_roots
+                    )
+                    if not is_within_allowed:
+                        raise CommitStatusUnknownError(
+                            f"보안 위반: 원천 파일({raw_path})이 허용된 데이터 디렉터리 외부 경로입니다."
                         )
 
                     # 원천 파일 SHA-256 1:1 대조 검증

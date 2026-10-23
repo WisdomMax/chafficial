@@ -1150,4 +1150,134 @@ def test_check_batch_committed_fails_on_boolean_counts(tmp_path):
         scheduler.check_batch_committed(target_batch_id)
 
 
+# ==============================================================================
+# DIRECTIVE 013-H: 최종 PR 병합 준비 (원천 파일 경로 보안 & UTC 엄격 검증)
+# ==============================================================================
+
+
+def test_verify_live_authorization_rejects_non_utc_offset(tmp_path):
+    """지침 3 (013-H): expires_at에 +09:00 등 비-UTC 오프셋이 지정된 경우 즉시 거부 검증."""
+    auth_file = tmp_path / "kst_auth.json"
+    payload = {
+        "is_approved": True,
+        "approved_by": "LOCAL_OPERATOR_TEST",
+        "expires_at": "2026-10-25T15:00:00+09:00",  # 비-UTC 시간대 주입
+    }
+    auth_file.write_text(json.dumps(payload), encoding="utf-8")
+
+    is_valid, reason = verify_live_authorization(auth_file)
+    assert is_valid is False
+    assert "반드시 UTC 시간대(+00:00 또는 Z)" in reason
+
+
+def test_check_batch_committed_rejects_raw_file_outside_allowed_dir(tmp_path):
+    """지침 2 (013-H): 원천 파일이 허용된 데이터 디렉터리 외부 경로이면 거부 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    target_batch_id = "ENCAR_CN7_LIVE_OUTSIDE_DIR"
+    # 외부 시스템 디렉터리 파일 흉내 (tmp_path 부모의 부모)
+    outside_raw = Path("/tmp/outside_raw_test_file.json")
+    outside_raw.write_text("{}", encoding="utf-8")
+    import hashlib
+    sha = hashlib.sha256(b"{}").hexdigest()
+
+    notes = json.dumps({
+        "raw_file_path": str(outside_raw),
+        "raw_file_sha256": sha,
+        "first_seen_count": 10,
+        "re_observed_count": 0,
+    })
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    try:
+        with pytest.raises(CommitStatusUnknownError, match="허용된 데이터 디렉터리 외부 경로"):
+            scheduler.check_batch_committed(target_batch_id)
+    finally:
+        outside_raw.unlink(missing_ok=True)
+
+
+def test_check_batch_committed_rejects_raw_file_path_traversal(tmp_path):
+    """지침 2 (013-H): 원천 파일 경로에 상위 경로 이탈(..)이 포함된 경우 거부 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    target_batch_id = "ENCAR_CN7_LIVE_TRAVERSAL"
+    traversal_path = "data/raw_observations/../../etc/passwd"
+
+    notes = json.dumps({
+        "raw_file_path": traversal_path,
+        "raw_file_sha256": "0" * 64,
+        "first_seen_count": 10,
+        "re_observed_count": 0,
+    })
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="상위 디렉터리 이탈"):
+        scheduler.check_batch_committed(target_batch_id)
+
+
+def test_check_batch_committed_rejects_raw_file_symlink(tmp_path):
+    """지침 2 (013-H): 원천 파일이 심볼릭 링크인 경우 보안 위반으로 거부 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    target_batch_id = "ENCAR_CN7_LIVE_SYMLINK_RAW"
+    real_raw = tmp_path / "real_raw.json"
+    real_raw.write_text("{}", encoding="utf-8")
+    symlink_raw = tmp_path / "symlink_raw.json"
+    symlink_raw.symlink_to(real_raw)
+
+    import hashlib
+    sha = hashlib.sha256(b"{}").hexdigest()
+
+    notes = json.dumps({
+        "raw_file_path": str(symlink_raw),
+        "raw_file_sha256": sha,
+        "first_seen_count": 10,
+        "re_observed_count": 0,
+    })
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="원천 파일은 심볼릭 링크일 수 없습니다"):
+        scheduler.check_batch_committed(target_batch_id)
+
+
+
 
