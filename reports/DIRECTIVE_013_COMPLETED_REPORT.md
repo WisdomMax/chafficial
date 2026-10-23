@@ -4,6 +4,7 @@
 - **임무**: DIRECTIVE 013-F 지침에 따른 소스 코드 내 공개 승인 토큰 완전 제거 및 로컬 비추적 승인 체계 구축, 신규 LIVE 배치와 1~3차 레거시 배치의 감사 계약 분리(Strict Commit Audit).
 - **선행 작업**: PR #11 공식 병합 완료 (`e342aa71750ab2c2b4d802aad3cdb9ddd51ccff2`)
 - **작업 브랜치**: `feat/directive-013-scheduled-observation-system`
+- **최신 원격 HEAD SHA**: `9a7e32411eb68a77973513e6ceac8b834d9f5edb`
 - **기준(Base) 브랜치**: `feat/directive-009-price-event-tracker` (100% 일치)
 - **공식 PR URL**: https://github.com/WisdomMax/chafficial/pull/12
 - **PR 비교 URL**: https://github.com/WisdomMax/chafficial/compare/feat/directive-009-price-event-tracker...feat/directive-013-scheduled-observation-system?expand=1
