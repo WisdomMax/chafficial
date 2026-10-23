@@ -4,7 +4,8 @@
 - **임무**: DIRECTIVE 013-A 지침에 따른 수집 성공과 보고서 실패의 엄격한 분리, 일시적/영구적 장애 구분 재시도 정책, 루프 안전 종료(Fail-Safe Break), 설정값 유효성 검증, 원자적 일별 보고서 저장 완성.
 - **선행 작업**: PR #11 공식 병합 완료 (`e342aa71750ab2c2b4d802aad3cdb9ddd51ccff2`)
 - **작업 브랜치**: `feat/directive-013-scheduled-observation-system`
-- **대상 PR**: PR #13 (https://github.com/WisdomMax/chafficial/pull/new/feat/directive-013-scheduled-observation-system)
+- **최신 커밋 SHA**: `47987f6208be1d4a821d3f9bca88383a8b417240`
+- **PR 비교 및 생성 링크**: https://github.com/WisdomMax/chafficial/compare/feat/directive-009-price-event-tracker...feat/directive-013-scheduled-observation-system?expand=1
 
 ---
 
