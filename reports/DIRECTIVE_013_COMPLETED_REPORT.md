@@ -4,6 +4,7 @@
 - **임무**: DIRECTIVE 013-H 지침에 따른 원천 파일 경로 보안(허용 디렉터리 내부 제한, 상위 이탈 `../` 차단, 심볼릭 링크 차단), UTC 전용 시간대(+00:00/Z) 엄격 검증, 로컬·원격·PR HEAD SHA 100% 동기화.
 - **선행 작업**: PR #11 공식 병합 완료 (`e342aa71750ab2c2b4d802aad3cdb9ddd51ccff2`)
 - **작업 브랜치**: `feat/directive-013-scheduled-observation-system`
+- **최신 원격 HEAD SHA**: `1a32e406e63600db842823d826d5fdf8fcd706af`
 - **기준(Base) 브랜치**: `feat/directive-009-price-event-tracker` (100% 일치)
 - **공식 PR URL**: https://github.com/WisdomMax/chafficial/pull/12
 - **PR 비교 URL**: https://github.com/WisdomMax/chafficial/compare/feat/directive-009-price-event-tracker...feat/directive-013-scheduled-observation-system?expand=1
