@@ -25,25 +25,25 @@
 
 ---
 
-## 3. 우선 검토 8대 후보 및 지역 적합성(3단계) 분류 현황
+## 3. 우선 검토 8대 후보 및 지역 적합성(3단계) 분류 현황 (실제 엔진 출력 100% 일치)
 
 수집된 엔카 관측 데이터(총 348대)의 `raw_location` 필드 전수 조사 결과, **서울/수도권 명시 매물이 0건**으로 확인되었습니다. 따라서 무리하게 장안평 즉시 매입 가능 매물로 포장하지 않고, 3단계 분류 체계에 따라 정직하게 분류하여 딜러 파트너에게 전달했습니다:
 
-| 순위 | 매물 식별자 (CarID) | 연식/주행거리 | AI 관측가 | 코호트 중앙가 | 가격 격차율 | 가상 순수익 | 지역 분류 (`raw_location`) | 지역 적합성 등급 | 엔카 실차 확인 URL |
+| 순위 | 매물 식별자 (CarID) | 연식/주행거리 | AI 관측가 | 코호트 중앙가 | 가격 우위율 | 가상 순수익 | 지역 분류 (`raw_location`) | 지역 적합성 등급 | 엔카 실차 확인 URL |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **1** | 42969608 | 2024년식 / 42,076km | 1,690만 | 2,190만 | -22.8% | +415만 | 미기재 (`None`) | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42969608) |
-| **2** | 41366410 | 2024년식 / 53,382km | 1,499만 | 2,190만 | -31.6% | +587만 | 미기재 (`None`) | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=41366410) |
-| **3** | 42706751 | 2024년식 / 35,192km | 1,874만 | 2,190만 | -14.4% | +249만 | 미기재 (`None`) | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42706751) |
-| **4** | 42814110 | 2024년식 / 10,057km | 2,120만 | 2,190만 | -3.2% | +28만 | 대구 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42814110) |
-| **5** | 42811604 | 2024년식 / 84,331km | 1,590만 | 2,190만 | -27.4% | +505만 | 충북 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42811604) |
-| **6** | 42671808 | 2024년식 / 81,603km | 1,590만 | 2,190만 | -27.4% | +505만 | 충북 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42671808) |
-| **7** | 42911910 | 2024년식 / 46,530km | 2,149만 | 2,190만 | -1.9% | +2만 | 충남 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42911910) |
-| **8** | 42863742 | 2024년식 / 31,066km | 2,190만 | 2,190만 | 0.0% | -35만 | 광주 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42863742) |
+| **1** | 42969608 | 2024년식 / 42,076km | 1,690만 | 2,235만 | 24.38% | +415만 | UNKNOWN | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42969608) |
+| **2** | 41366410 | 2024년식 / 53,382km | 1,499만 | 1,855만 | 19.19% | +226만 | 대구 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=41366410) |
+| **3** | 42706751 | 2024년식 / 35,192km | 1,874만 | 2,235만 | 16.15% | +231만 | UNKNOWN | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42706751) |
+| **4** | 42814110 | 2024년식 / 10,057km | 2,120만 | 2,390만 | 11.30% | +140만 | UNKNOWN | `LOCATION_UNVERIFIED` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42814110) |
+| **5** | 42811604 | 2024년식 / 84,331km | 1,590만 | 1,855만 | 14.29% | +135만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42811604) |
+| **6** | 42671808 | 2024년식 / 81,603km | 1,590만 | 1,855만 | 14.29% | +135만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42671808) |
+| **7** | 42911910 | 2024년식 / 46,530km | 2,149만 | 2,390만 | 10.08% | +111만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42911910) |
+| **8** | 42863742 | 2024년식 / 31,066km | 2,190만 | 2,390만 | 8.37% | +70만 | 대전 | `REMOTE_MARKET_REFERENCE` | [엔카 바로가기](https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid=42863742) |
 
 - **지역 분류 집계**:
   - `LOCAL_VERIFIED` (서울/장안평 매물): **0건**
-  - `LOCATION_UNVERIFIED` (지역 미확인 - 딜러 실사 필요): **3건**
-  - `REMOTE_MARKET_REFERENCE` (원거리 참고 매물 - 지방 시세 벤치마크): **5건**
+  - `LOCATION_UNVERIFIED` (지역 미확인 - 딜러 실사 필요): **3건** (42969608, 42706751, 42814110)
+  - `REMOTE_MARKET_REFERENCE` (원거리 참고 매물 - 지방 시세 벤치마크): **5건** (대구 1건, 대전 4건)
 
 ---
 
@@ -63,10 +63,14 @@
    - 엑셀 및 텍스트 편집기 호환(`utf-8-sig` / `utf-8`) 자동 감지.
    - 쉼표(`,`) 및 원화 기호 자동 제거 및 정수 파싱.
    - 미작성 행 자동 필터링 및 유효 행 정밀 인입.
-5. **재평가 이력(History) 누적 보존 구조**:
-   - 기존 JSON 파일이 존재할 경우 기존 데이터를 덮어쓰지 않고 `combined = existing_data + new_data` 구조로 누적 보존.
-6. **실제 데이터와 목업 분리 플래그 (`is_pilot_actual`)**:
-   - 단위 테스트용 mock 데이터(`is_pilot_actual=False`)와 실제 딜러의 피드백(`is_pilot_actual=True`)을 엄격히 분리하여 성과 지표 산출.
+   - `is_pilot_actual` 필수 인자 강제 (기본값 제거로 오분류 원천 차단).
+5. **과거 피드백 데이터 안전 보존 및 원자적 교체(atomic replace) 저장**:
+   - 기존 파일이 손상되었거나 읽을 수 없는 경우 절대로 빈 목록으로 대체하지 않고 `RuntimeError`를 발생시켜 기존 데이터 보존.
+   - 임시 파일 작성 후 `Path.replace()`를 통한 원자적 저장으로 비정상 종료 시에도 파일 손상 방지.
+   - 동일 회신 파일 재업로드 시 핑거프린트 기반 중복 감지로 불필요한 누적 차단.
+6. **평가 지표 정합성 고도화**:
+   - 고유 차량(`unique listing_id`) 최신 평가 기준 집계로 재평가 이력 누적 시 분모 왜곡 차단.
+   - 평가 완료 기준 긍정률(`hit_ratio_pct`)과 전체 대상(8대) 기준 긍정률(`total_target_hit_ratio_pct`) 분리.
 
 ---
 
@@ -81,15 +85,15 @@
 
 ## 6. 품질 검증 및 회귀 테스트 결과
 
-- **전체 pytest 회귀 테스트**: **215개 테스트 ALL PASS (100% 통과, 5.98초)**
-  - 신규 `test_directive_017_dealer_pilot_execution.py` 6개 테스트 ALL PASS
+- **전체 pytest 회귀 테스트**: **219개 테스트 ALL PASS (100% 통과, 5.67초)**
+  - `test_directive_017_a_feedback_safety.py` 5개 테스트 ALL PASS (CSV-엔진 100% 일치 포함)
+  - `test_directive_017_dealer_pilot_execution.py` 5개 테스트 ALL PASS
   - 기존 209개 테스트(스케줄러, 지문 클러스터링, 다이나믹 시나리오, DB 무결성 등) 100% 통과
 - **운영 DB 무결성 검증 (`verify_directive_012b.py`)**:
   - 원본 JSON 해시(SHA-256: `da72c658...`) 100% 일치
   - 가격 인하 5건 3차 배치 귀속 및 원본 가격 1:1 대조 통과
   - 기존 스냅샷 246건 행 단위(Row-by-Row) 100% 불변 보존 통과
   - 운영 DB 레코드(348대 매물, 382건 스냅샷, 353건 이벤트) 완벽 보존 확인
-
 
 ---
 
@@ -99,8 +103,3 @@
 - **PR URL**: https://github.com/WisdomMax/chafficial/pull/14
 - **작업 브랜치**: `feat/directive-017-dealer-pilot-execution`
 - **기준(Base) 브랜치**: `feat/directive-009-price-event-tracker` (PR #12, PR #13 병합 완료)
-- **3자 SHA 100% 일치 증적**:
-  - **Local Commit SHA**: `5aa6af1962f8eabf15ef63f0f2bf2399a1e8322b`
-  - **Origin Remote SHA**: `5aa6af1962f8eabf15ef63f0f2bf2399a1e8322b`
-  - **GitHub PR #14 Head SHA**: `5aa6af1962f8eabf15ef63f0f2bf2399a1e8322b`
-  - **검증 결과**: 3자 SHA 100% 완벽 일치 (`ALL 3 SHAs MATCH 100% PERFECTLY`)
