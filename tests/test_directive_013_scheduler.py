@@ -53,12 +53,22 @@ def create_test_auth_file(
 
 
 def make_live_config(**kwargs):
-    """테스트 더블 전용 LIVE 승인 설정 헬퍼 (013-F 로컬 분리 운영 승인 체계 준수)."""
-    if "auth_file_path" not in kwargs:
-        base_dir = kwargs["db_path"].parent if "db_path" in kwargs and kwargs["db_path"] else Path("/tmp")
-        auth_file = base_dir / ".test_live_auth.json"
-        create_test_auth_file(auth_file, is_approved=True, expired=False)
-        kwargs["auth_file_path"] = auth_file
+    """테스트 더블 전용 LIVE 승인 설정 헬퍼 (013-I 로컬 분리 운영 승인 및 원천 경로 격리)."""
+    if "db_path" in kwargs and kwargs["db_path"]:
+        base_dir = kwargs["db_path"].parent
+        if "auth_file_path" not in kwargs:
+            auth_file = base_dir / ".test_live_auth.json"
+            create_test_auth_file(auth_file, is_approved=True, expired=False)
+            kwargs["auth_file_path"] = auth_file
+        if "raw_observations_dir" not in kwargs:
+            raw_obs_dir = base_dir / "raw_observations"
+            raw_obs_dir.mkdir(parents=True, exist_ok=True)
+            kwargs["raw_observations_dir"] = raw_obs_dir
+    else:
+        if "auth_file_path" not in kwargs:
+            auth_file = Path("/tmp/.test_live_auth.json")
+            create_test_auth_file(auth_file, is_approved=True, expired=False)
+            kwargs["auth_file_path"] = auth_file
 
     defaults = {
         "enable_live_execution": True,
@@ -321,7 +331,7 @@ def test_commit_boundary_post_error_does_not_re_collect(tmp_path):
     )
 
     import hashlib
-    raw_f = tmp_path / "mock_live_raw.json"
+    raw_f = config.raw_observations_dir / "mock_live_raw.json"
     raw_f.write_text("{}", encoding="utf-8")
     raw_sha = hashlib.sha256(b"{}").hexdigest()
     valid_notes = json.dumps({
@@ -879,8 +889,11 @@ def test_check_batch_committed_fails_on_raw_file_sha_mismatch(tmp_path):
     from sqlalchemy.orm import Session
     from chaficial.tracker.scheduler import CommitStatusUnknownError
 
+    raw_obs_dir = tmp_path / "raw_observations"
+    raw_obs_dir.mkdir(parents=True, exist_ok=True)
+
     target_batch_id = "ENCAR_CN7_LIVE_HASH_TAMPERED"
-    real_raw = tmp_path / "tampered_raw.json"
+    real_raw = raw_obs_dir / "tampered_raw.json"
     real_raw.write_text("SOME_ACTUAL_CONTENT", encoding="utf-8")
 
     # 가짜 조작 해시 주입
@@ -895,7 +908,7 @@ def test_check_batch_committed_fails_on_raw_file_sha_mismatch(tmp_path):
         session.add(b)
         session.commit()
 
-    config = SchedulerConfig(db_path=dummy_db)
+    config = SchedulerConfig(db_path=dummy_db, raw_observations_dir=raw_obs_dir)
     scheduler = MarketObservationScheduler(config=config)
 
     with pytest.raises(CommitStatusUnknownError, match="배치 원천 파일 SHA-256 변조 감지"):
@@ -914,8 +927,11 @@ def test_check_batch_committed_fails_on_quantity_mismatch(tmp_path):
     from sqlalchemy.orm import Session
     from chaficial.tracker.scheduler import CommitStatusUnknownError
 
+    raw_obs_dir = tmp_path / "raw_observations"
+    raw_obs_dir.mkdir(parents=True, exist_ok=True)
+
     target_batch_id = "ENCAR_CN7_LIVE_QTY_MISMATCH"
-    dummy_raw = tmp_path / "qty_raw.json"
+    dummy_raw = raw_obs_dir / "qty_raw.json"
     dummy_raw.write_text("{}", encoding="utf-8")
     import hashlib
     d_sha = hashlib.sha256(b"{}").hexdigest()
@@ -931,7 +947,7 @@ def test_check_batch_committed_fails_on_quantity_mismatch(tmp_path):
         session.add(b)
         session.commit()
 
-    config = SchedulerConfig(db_path=dummy_db)
+    config = SchedulerConfig(db_path=dummy_db, raw_observations_dir=raw_obs_dir)
     scheduler = MarketObservationScheduler(config=config)
 
     with pytest.raises(CommitStatusUnknownError, match="배치 적재 수량 불일치"):
@@ -950,8 +966,11 @@ def test_check_batch_committed_success_with_valid_audit(tmp_path):
     from chaficial.models import BatchAuditLog
     from sqlalchemy.orm import Session
 
+    raw_obs_dir = tmp_path / "raw_observations"
+    raw_obs_dir.mkdir(parents=True, exist_ok=True)
+
     target_batch_id = "ENCAR_CN7_LIVE_VALID_AUDIT"
-    real_raw = tmp_path / "valid_raw.json"
+    real_raw = raw_obs_dir / "valid_raw.json"
     real_raw.write_bytes(b'{"valid": true}')
     sha = hashlib.sha256(b'{"valid": true}').hexdigest()
 
@@ -966,7 +985,7 @@ def test_check_batch_committed_success_with_valid_audit(tmp_path):
         session.add(b)
         session.commit()
 
-    config = SchedulerConfig(db_path=dummy_db)
+    config = SchedulerConfig(db_path=dummy_db, raw_observations_dir=raw_obs_dir)
     scheduler = MarketObservationScheduler(config=config)
 
     status = scheduler.check_batch_committed(target_batch_id)
@@ -1125,8 +1144,11 @@ def test_check_batch_committed_fails_on_boolean_counts(tmp_path):
     from sqlalchemy.orm import Session
     from chaficial.tracker.scheduler import CommitStatusUnknownError
 
+    raw_obs_dir = tmp_path / "raw_observations"
+    raw_obs_dir.mkdir(parents=True, exist_ok=True)
+
     target_batch_id = "ENCAR_CN7_LIVE_BOOL_COUNT"
-    real_raw = tmp_path / "raw.json"
+    real_raw = raw_obs_dir / "raw.json"
     real_raw.write_text("{}", encoding="utf-8")
     import hashlib
     sha = hashlib.sha256(b"{}").hexdigest()
@@ -1143,7 +1165,7 @@ def test_check_batch_committed_fails_on_boolean_counts(tmp_path):
         session.add(b)
         session.commit()
 
-    config = SchedulerConfig(db_path=dummy_db)
+    config = SchedulerConfig(db_path=dummy_db, raw_observations_dir=raw_obs_dir)
     scheduler = MarketObservationScheduler(config=config)
 
     with pytest.raises(CommitStatusUnknownError, match="first_seen_count는 0 이상의 정수여야 합니다"):
@@ -1151,7 +1173,7 @@ def test_check_batch_committed_fails_on_boolean_counts(tmp_path):
 
 
 # ==============================================================================
-# DIRECTIVE 013-H: 최종 PR 병합 준비 (원천 파일 경로 보안 & UTC 엄격 검증)
+# DIRECTIVE 013-H/I: 최종 PR 병합 준비 (원천 파일 경로 보안 & UTC 엄격 검증)
 # ==============================================================================
 
 
@@ -1171,7 +1193,7 @@ def test_verify_live_authorization_rejects_non_utc_offset(tmp_path):
 
 
 def test_check_batch_committed_rejects_raw_file_outside_allowed_dir(tmp_path):
-    """지침 2 (013-H): 원천 파일이 허용된 데이터 디렉터리 외부 경로이면 거부 검증."""
+    """지침 1 (013-I): 원천 파일이 허용된 raw_observations 디렉터리 외부 경로이면 거부 검증."""
     dummy_db = tmp_path / "dummy.db"
     dummy_db.touch()
     engine = create_engine(f"sqlite:///{dummy_db}")
@@ -1181,13 +1203,17 @@ def test_check_batch_committed_rejects_raw_file_outside_allowed_dir(tmp_path):
     from sqlalchemy.orm import Session
     from chaficial.tracker.scheduler import CommitStatusUnknownError
 
-    target_batch_id = "ENCAR_CN7_LIVE_OUTSIDE_DIR"
-    # 외부 시스템 디렉터리 파일 흉내 (tmp_path 부모의 부모)
-    outside_raw = Path("/tmp/outside_raw_test_file.json")
+    raw_obs_dir = tmp_path / "raw_observations"
+    raw_obs_dir.mkdir(parents=True, exist_ok=True)
+
+    other_dir = tmp_path / "other_folder"
+    other_dir.mkdir(parents=True, exist_ok=True)
+    outside_raw = other_dir / "outside_raw_test_file.json"
     outside_raw.write_text("{}", encoding="utf-8")
     import hashlib
     sha = hashlib.sha256(b"{}").hexdigest()
 
+    target_batch_id = "ENCAR_CN7_LIVE_OUTSIDE_DIR"
     notes = json.dumps({
         "raw_file_path": str(outside_raw),
         "raw_file_sha256": sha,
@@ -1199,14 +1225,51 @@ def test_check_batch_committed_rejects_raw_file_outside_allowed_dir(tmp_path):
         session.add(b)
         session.commit()
 
-    config = SchedulerConfig(db_path=dummy_db)
+    config = SchedulerConfig(db_path=dummy_db, raw_observations_dir=raw_obs_dir)
     scheduler = MarketObservationScheduler(config=config)
 
-    try:
-        with pytest.raises(CommitStatusUnknownError, match="허용된 데이터 디렉터리 외부 경로"):
-            scheduler.check_batch_committed(target_batch_id)
-    finally:
-        outside_raw.unlink(missing_ok=True)
+    with pytest.raises(CommitStatusUnknownError, match="승인된 관측 디렉터리.*외부 경로"):
+        scheduler.check_batch_committed(target_batch_id)
+
+
+def test_check_batch_committed_rejects_data_root_outside_raw_obs(tmp_path):
+    """지침 1 (013-I): data/ 루트 내부라도 raw_observations 외부인 파일은 엄격 거부 검증."""
+    dummy_db = tmp_path / "data" / "dummy.db"
+    dummy_db.parent.mkdir(parents=True, exist_ok=True)
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    raw_obs_dir = tmp_path / "data" / "raw_observations"
+    raw_obs_dir.mkdir(parents=True, exist_ok=True)
+
+    # data/ 루트 바로 아래 파일 (raw_observations 외부)
+    data_root_raw = tmp_path / "data" / "some_other.json"
+    data_root_raw.write_text("{}", encoding="utf-8")
+    import hashlib
+    sha = hashlib.sha256(b"{}").hexdigest()
+
+    target_batch_id = "ENCAR_CN7_LIVE_DATA_ROOT_REJECT"
+    notes = json.dumps({
+        "raw_file_path": str(data_root_raw),
+        "raw_file_sha256": sha,
+        "first_seen_count": 10,
+        "re_observed_count": 0,
+    })
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db, raw_observations_dir=raw_obs_dir)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="승인된 관측 디렉터리.*외부 경로"):
+        scheduler.check_batch_committed(target_batch_id)
 
 
 def test_check_batch_committed_rejects_raw_file_path_traversal(tmp_path):
@@ -1220,8 +1283,11 @@ def test_check_batch_committed_rejects_raw_file_path_traversal(tmp_path):
     from sqlalchemy.orm import Session
     from chaficial.tracker.scheduler import CommitStatusUnknownError
 
+    raw_obs_dir = tmp_path / "raw_observations"
+    raw_obs_dir.mkdir(parents=True, exist_ok=True)
+
     target_batch_id = "ENCAR_CN7_LIVE_TRAVERSAL"
-    traversal_path = "data/raw_observations/../../etc/passwd"
+    traversal_path = str(raw_obs_dir) + "/../../etc/passwd"
 
     notes = json.dumps({
         "raw_file_path": traversal_path,
@@ -1234,7 +1300,7 @@ def test_check_batch_committed_rejects_raw_file_path_traversal(tmp_path):
         session.add(b)
         session.commit()
 
-    config = SchedulerConfig(db_path=dummy_db)
+    config = SchedulerConfig(db_path=dummy_db, raw_observations_dir=raw_obs_dir)
     scheduler = MarketObservationScheduler(config=config)
 
     with pytest.raises(CommitStatusUnknownError, match="상위 디렉터리 이탈"):
@@ -1242,7 +1308,7 @@ def test_check_batch_committed_rejects_raw_file_path_traversal(tmp_path):
 
 
 def test_check_batch_committed_rejects_raw_file_symlink(tmp_path):
-    """지침 2 (013-H): 원천 파일이 심볼릭 링크인 경우 보안 위반으로 거부 검증."""
+    """지침 1 (013-I): 원천 파일 자체가 심볼릭 링크인 경우 보안 위반으로 거부 검증."""
     dummy_db = tmp_path / "dummy.db"
     dummy_db.touch()
     engine = create_engine(f"sqlite:///{dummy_db}")
@@ -1252,10 +1318,13 @@ def test_check_batch_committed_rejects_raw_file_symlink(tmp_path):
     from sqlalchemy.orm import Session
     from chaficial.tracker.scheduler import CommitStatusUnknownError
 
+    raw_obs_dir = tmp_path / "raw_observations"
+    raw_obs_dir.mkdir(parents=True, exist_ok=True)
+
     target_batch_id = "ENCAR_CN7_LIVE_SYMLINK_RAW"
     real_raw = tmp_path / "real_raw.json"
     real_raw.write_text("{}", encoding="utf-8")
-    symlink_raw = tmp_path / "symlink_raw.json"
+    symlink_raw = raw_obs_dir / "symlink_raw.json"
     symlink_raw.symlink_to(real_raw)
 
     import hashlib
@@ -1272,11 +1341,57 @@ def test_check_batch_committed_rejects_raw_file_symlink(tmp_path):
         session.add(b)
         session.commit()
 
-    config = SchedulerConfig(db_path=dummy_db)
+    config = SchedulerConfig(db_path=dummy_db, raw_observations_dir=raw_obs_dir)
     scheduler = MarketObservationScheduler(config=config)
 
     with pytest.raises(CommitStatusUnknownError, match="원천 파일은 심볼릭 링크일 수 없습니다"):
         scheduler.check_batch_committed(target_batch_id)
+
+
+def test_check_batch_committed_rejects_parent_dir_symlink(tmp_path):
+    """지침 1 (013-I): 원천 파일의 상위 디렉터리가 심볼릭 링크인 경우 보안 위반으로 거부 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    dummy_db.touch()
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+
+    raw_obs_dir = tmp_path / "raw_observations"
+    raw_obs_dir.mkdir(parents=True, exist_ok=True)
+
+    real_sub = tmp_path / "external_sub"
+    real_sub.mkdir(parents=True, exist_ok=True)
+    real_file = real_sub / "test.json"
+    real_file.write_text("{}", encoding="utf-8")
+
+    # raw_obs_dir 내부에 외부 디렉터리를 가리키는 심볼릭 링크 생성
+    symlink_dir = raw_obs_dir / "linked_sub"
+    symlink_dir.symlink_to(real_sub)
+
+    import hashlib
+    sha = hashlib.sha256(b"{}").hexdigest()
+
+    target_batch_id = "ENCAR_CN7_LIVE_PARENT_SYMLINK"
+    notes = json.dumps({
+        "raw_file_path": str(symlink_dir / "test.json"),
+        "raw_file_sha256": sha,
+        "first_seen_count": 10,
+        "re_observed_count": 0,
+    })
+    with Session(engine) as session:
+        b = BatchAuditLog(batch_id=target_batch_id, source_platform="ENCAR", search_scope="ENCAR:현대:아반떼", record_count=10, notes=notes)
+        session.add(b)
+        session.commit()
+
+    config = SchedulerConfig(db_path=dummy_db, raw_observations_dir=raw_obs_dir)
+    scheduler = MarketObservationScheduler(config=config)
+
+    with pytest.raises(CommitStatusUnknownError, match="원천 파일의 상위 디렉터리가 심볼릭 링크입니다"):
+        scheduler.check_batch_committed(target_batch_id)
+
 
 
 

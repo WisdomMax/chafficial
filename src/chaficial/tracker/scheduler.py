@@ -175,7 +175,7 @@ def verify_live_authorization(auth_file: Path | None) -> tuple[bool, str]:
 
 @dataclasses.dataclass
 class SchedulerConfig:
-    """스케줄러 설정 데이터클래스 (013-F: 로컬 분리 운영 승인 체계)."""
+    """스케줄러 설정 데이터클래스 (013-I: 로컬 분리 운영 승인 및 엄격한 원천 경로 제한)."""
 
     interval_seconds: float = 86400.0  # 기본: 24시간
     max_retries: int = 3               # 최대 재시도 횟수
@@ -183,6 +183,7 @@ class SchedulerConfig:
     backoff_factor: float = 2.0        # 지수 증가 배수
     enable_live_execution: bool = False  # 개발/실행 플래그: LIVE 시도 의도 여부
     auth_file_path: Path = DEFAULT_AUTH_FILE_PATH  # 로컬 운영 승인 파일 경로 (Git 비추적)
+    raw_observations_dir: Path = Path("data/raw_observations")  # 013-I: 엄격한 원천 관측 JSON 전용 디렉터리
     db_path: Path = Path("data/chaficial_market_timeseries.db")
     lock_file: Path = Path("data/.scheduler.lock")
     report_dir: Path = Path("reports/daily_summaries")
@@ -369,7 +370,7 @@ class MarketObservationScheduler:
                             f"raw_file_sha256은 64자리 16진수 해시 문자열이어야 합니다 (실제: {raw_sha_val})"
                         )
 
-                    # 원천 파일 실존 및 경로 보안 검증 (013-H)
+                    # 원천 파일 실존 및 경로 보안 검증 (013-I: 엄격한 단일 디렉터리 및 상위 심볼릭 링크 전수 차단)
                     raw_path = Path(raw_path_val)
 
                     # 1) 상위 경로 이탈(..) 문자열 검사
@@ -378,13 +379,22 @@ class MarketObservationScheduler:
                             f"보안 위반: 원천 파일 경로에 상위 디렉터리 이탈(..)이 포함되어 있습니다: {raw_path_val}"
                         )
 
-                    # 2) 심볼릭 링크 차단
+                    # 2) 파일 자체의 심볼릭 링크 검사
                     if raw_path.is_symlink():
                         raise CommitStatusUnknownError(
                             f"보안 위반: 원천 파일은 심볼릭 링크일 수 없습니다 ({raw_path})"
                         )
 
-                    # 3) 실존 및 일반 파일 검증
+                    # 3) 상위 경로의 심볼릭 링크 전수 검사 (013-I)
+                    curr = raw_path.parent
+                    while curr != self.config.raw_observations_dir and curr.parent != curr:
+                        if curr.is_symlink():
+                            raise CommitStatusUnknownError(
+                                f"보안 위반: 원천 파일의 상위 디렉터리가 심볼릭 링크입니다 ({curr})"
+                            )
+                        curr = curr.parent
+
+                    # 4) 실존 및 일반 파일 검증
                     if not raw_path.exists():
                         raise CommitStatusUnknownError(
                             f"배치 원천 파일 소실 감지: {raw_path} 파일이 디스크에 존재하지 않습니다."
@@ -394,25 +404,24 @@ class MarketObservationScheduler:
                             f"보안 위반: 원천 파일이 일반 파일이 아닙니다: {raw_path}"
                         )
 
-                    # 4) 허용된 데이터 디렉터리 내부 제한 검증
-                    allowed_roots = [
-                        Path("data/raw_observations").resolve(),
-                        Path("data").resolve(),
-                        self.config.db_path.parent.resolve(),
-                    ]
+                    # 5) 엄격한 원천 관측 디렉터리(raw_observations_dir) 단독 내부 제한 검증 (013-I)
+                    # data 전체 및 DB 부모 디렉터리 허용은 보안 강화를 위해 완전히 제거되었습니다.
+                    allowed_raw_dir = self.config.raw_observations_dir.resolve()
                     resolved_raw = raw_path.resolve()
-                    is_within_allowed = any(
-                        resolved_raw == root or root in resolved_raw.parents
-                        for root in allowed_roots
-                    )
+
+                    try:
+                        is_within_allowed = resolved_raw.is_relative_to(allowed_raw_dir) and resolved_raw != allowed_raw_dir
+                    except AttributeError:
+                        is_within_allowed = str(resolved_raw).startswith(str(allowed_raw_dir) + "/")
+
                     if not is_within_allowed:
                         raise CommitStatusUnknownError(
-                            f"보안 위반: 원천 파일({raw_path})이 허용된 데이터 디렉터리 외부 경로입니다."
+                            f"보안 위반: 원천 파일({raw_path})이 승인된 관측 디렉터리({allowed_raw_dir}) 외부 경로입니다."
                         )
 
-                    # 원천 파일 SHA-256 1:1 대조 검증
+                    # 6) 안전한 파일 열기 및 SHA-256 1:1 대조 검증
                     hasher = hashlib.sha256()
-                    with open(raw_path, "rb") as rf:
+                    with open(resolved_raw, "rb") as rf:
                         while chunk := rf.read(65536):
                             hasher.update(chunk)
                     actual_sha = hasher.hexdigest()
