@@ -244,11 +244,12 @@ def test_directive_011b_atomic_file_write_and_error_cleanup(isolated_db_and_raw,
         session.add(audit)
         session.commit()
 
-    # 쓰기 도중 에러를 주입하기 위해 os.replace를 패치
+    # 쓰기 도중 에러를 주입하기 위해 os.replace 및 os.link를 패치
     def broken_replace(src, dst):
         raise IOError("Simulated Disk Full During Atomic Replace")
 
     monkeypatch.setattr("os.replace", broken_replace)
+    monkeypatch.setattr("os.link", broken_replace)
 
     with pytest.raises(IOError, match="Simulated Disk Full"):
         reconstruct_batch_report(
@@ -472,6 +473,197 @@ def test_failure_scenario_7_past_batch_reconstruction_after_new_live_added(isola
 
     assert "| **신규 매물 최초 관측 (FIRST_SEEN)** | **2대** |" in b1_text
     assert "**누적 고유 실매물 수 (listings):** **5대**" in b1_text
+
+
+# ==============================================================================
+# DIRECTIVE 011-C 최종 결함 방지 테스트 (지침 1, 2, 3)
+# ==============================================================================
+
+def test_directive_011c_live_execution_path_transaction_rollback(tmp_path):
+    """지침 1: 실제 실행 경로(run_pipeline)에서 execute_batch 정상 반환 후
+
+    외부 커밋 직전에 예외 발생 시, 5개 테이블의 변경이 전혀 남지 않고 100% 롤백됨을 검증.
+    """
+    from scripts.run_directive_010_market_stream import run_pipeline
+
+    test_db = tmp_path / "rollback_test.db"
+    dummy_input = tmp_path / "replay_input.json"
+
+    # 재생용 샘플 데이터 생성 (엔카 실제 카드 형식 준수)
+    raw_cards = [
+        {
+            "carid": "999901",
+            "href": "https://fem.encar.com/cars/detail/999901",
+            "raw_text": "엔카진단 무사고 아반떼 (CN7) 1.6 모던 21/05식 30,000km 가솔린 서울 2,000만원",
+        }
+    ]
+    raw_payload = {
+        "batch_id": "REPLAY_ROLLBACK_TEST_01",
+        "collected_at_utc": "2026-10-21T03:00:00Z",
+        "completed_at_utc": "2026-10-21T03:00:30Z",
+        "total_cards_collected": 1,
+        "raw_cards": raw_cards,
+    }
+    dummy_input.write_text(json.dumps(raw_payload, ensure_ascii=False), encoding="utf-8")
+
+    # execute_batch 정상 완료 후 외부 커밋 직전 실패 주입
+    with pytest.raises(RuntimeError, match="Simulated Crash Immediately After execute_batch"):
+        run_pipeline(
+            mode="replay",
+            input_file=dummy_input,
+            db_path_override=test_db,
+            test_hook_fail_before_commit=True,
+        )
+
+    # 별도 독립 DB 연결로 5개 테이블 레코드 수 검증 (0건 롤백 보장)
+    engine = create_engine(f"sqlite:///{test_db}")
+    Session = sessionmaker(bind=engine)
+    with Session() as s:
+        l_cnt = s.execute(select(func.count(Listing.listing_id))).scalar()
+        s_cnt = s.execute(select(func.count(ListingSnapshot.snapshot_id))).scalar()
+        e_cnt = s.execute(select(func.count(PriceEvent.event_id))).scalar()
+        b_cnt = s.execute(select(func.count(BatchAuditLog.batch_id))).scalar()
+
+        assert l_cnt == 0, f"롤백 실패: listings에 {l_cnt}건 잔존"
+        assert s_cnt == 0, f"롤백 실패: listing_snapshots에 {s_cnt}건 잔존"
+        assert e_cnt == 0, f"롤백 실패: price_events에 {e_cnt}건 잔존"
+        assert b_cnt == 0, f"롤백 실패: batch_audit_logs에 {b_cnt}건 잔존"
+
+
+def test_directive_011c_same_timestamp_different_batches_event_isolation(isolated_db_and_raw):
+    """지침 2: 동일한 observation_time을 가진 서로 다른 두 배치가 생성되어도,
+
+    각 배치의 가격 인하 및 인상 이벤트 통계가 섞이지 않고 독립적으로 정확히 귀속됨을 검증.
+    """
+    db_path = isolated_db_and_raw["db_path"]
+    reports_dir = isolated_db_and_raw["reports_dir"]
+    raw_dir = isolated_db_and_raw["raw_dir"]
+    Session = isolated_db_and_raw["Session"]
+
+    pipeline = MarketObservationStreamPipeline()
+    scope = SearchScopeSpec(platform="ENCAR", manufacturer="현대", model_name="아반떼")
+
+    # 1단계: 초기 매물 2대 등록 (CAR_DROP, CAR_INCREASE)
+    t_init = datetime(2026, 10, 21, 1, 0, 0, tzinfo=UTC)
+    with Session() as s:
+        pipeline.execute_batch(
+            records=[
+                StandardListingRecord(source_platform="ENCAR", source_listing_id="CAR_DROP", manufacturer="현대", model_name="아반떼", price_krw=20000000, mileage_km=10000, observed_at=t_init),
+                StandardListingRecord(source_platform="ENCAR", source_listing_id="CAR_INCREASE", manufacturer="현대", model_name="아반떼", price_krw=15000000, mileage_km=20000, observed_at=t_init),
+            ],
+            session=s,
+            batch_id="BATCH_INIT",
+            scope=scope,
+            observation_time=t_init,
+        )
+        s.commit()
+
+    # 2단계: 동일 시각(t_same)에 두 개의 서로 다른 배치 실행
+    t_same = datetime(2026, 10, 21, 3, 0, 0, tzinfo=UTC)
+
+    # 배치 A: CAR_DROP 가격 인하 (2000만 -> 1900만, 100만원 인하)
+    raw_fa = raw_dir / "batch_a.json"
+    sha_a = _create_sample_raw_json(raw_fa, "BATCH_SAME_A", ["CAR_DROP"])
+    with Session() as s:
+        pipeline.execute_batch(
+            records=[
+                StandardListingRecord(source_platform="ENCAR", source_listing_id="CAR_DROP", manufacturer="현대", model_name="아반떼", price_krw=19000000, mileage_km=10010, observed_at=t_same)
+            ],
+            session=s,
+            batch_id="BATCH_SAME_A",
+            scope=scope,
+            observation_time=t_same,
+            raw_file_path=raw_fa,
+            raw_file_sha256=sha_a,
+        )
+        s.commit()
+
+    # 배치 B: CAR_INCREASE 가격 인상 (1500만 -> 1550만, 50만원 인상)
+    raw_fb = raw_dir / "batch_b.json"
+    sha_b = _create_sample_raw_json(raw_fb, "BATCH_SAME_B", ["CAR_INCREASE"])
+    with Session() as s:
+        pipeline.execute_batch(
+            records=[
+                StandardListingRecord(source_platform="ENCAR", source_listing_id="CAR_INCREASE", manufacturer="현대", model_name="아반떼", price_krw=15500000, mileage_km=20010, observed_at=t_same)
+            ],
+            session=s,
+            batch_id="BATCH_SAME_B",
+            scope=scope,
+            observation_time=t_same,
+            raw_file_path=raw_fb,
+            raw_file_sha256=sha_b,
+        )
+        s.commit()
+
+    # 배치 A 복구 검증: 가격 인하 1건(100만원), 가격 인상 0건이어야 함
+    rep_a = reconstruct_batch_report(batch_id="BATCH_SAME_A", db_path=db_path, output_dir=reports_dir, raw_observations_dir=raw_dir)
+    text_a = rep_a.read_text(encoding="utf-8")
+    assert "| **실제 가격 인하 (PRICE_DROP)** | **1건** |" in text_a
+    assert "1,000,000원" in text_a
+    assert "| **실제 가격 인상 (PRICE_INCREASE)** | **0건** |" in text_a
+
+    # 배치 B 복구 검증: 가격 인상 1건, 가격 인하 0건(0원)이어야 함
+    rep_b = reconstruct_batch_report(batch_id="BATCH_SAME_B", db_path=db_path, output_dir=reports_dir, raw_observations_dir=raw_dir)
+    text_b = rep_b.read_text(encoding="utf-8")
+    assert "| **실제 가격 인하 (PRICE_DROP)** | **0건** |" in text_b
+    assert "0원" in text_b
+    assert "| **실제 가격 인상 (PRICE_INCREASE)** | **1건** |" in text_b
+
+
+def test_directive_011c_concurrent_report_reconstruction_prevents_overwrite(isolated_db_and_raw):
+    """지침 3: 동일 배치에 대해 두 스레드가 동시에 복구를 시도할 때,
+
+    정확히 하나만 성공하고 다른 하나는 FileExistsError로 안전하게 차단됨을 검증.
+    """
+    import concurrent.futures
+
+    db_path = isolated_db_and_raw["db_path"]
+    reports_dir = isolated_db_and_raw["reports_dir"]
+    raw_dir = isolated_db_and_raw["raw_dir"]
+    Session = isolated_db_and_raw["Session"]
+
+    raw_file = raw_dir / "conc_batch.json"
+    sha = _create_sample_raw_json(raw_file, "BATCH_CONCURRENT", ["C1"])
+
+    with Session() as session:
+        audit = BatchAuditLog(
+            batch_id="BATCH_CONCURRENT",
+            source_platform="ENCAR",
+            search_scope="ENCAR::HYUNDAI::AVANTE",
+            processed_at=datetime.now(UTC),
+            record_count=1,
+            is_partial_scrape=False,
+        )
+        audit.set_audit_metadata({"raw_file_path": str(raw_file), "raw_file_sha256": sha})
+        session.add(audit)
+        session.commit()
+
+    results = []
+    errors = []
+
+    def run_reconstruct():
+        try:
+            p = reconstruct_batch_report(
+                batch_id="BATCH_CONCURRENT",
+                db_path=db_path,
+                output_dir=reports_dir,
+                raw_observations_dir=raw_dir,
+                overwrite=False,
+            )
+            results.append(p)
+        except Exception as e:
+            errors.append(e)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        f1 = executor.submit(run_reconstruct)
+        f2 = executor.submit(run_reconstruct)
+        concurrent.futures.wait([f1, f2])
+
+    # 1개는 성공, 1개는 FileExistsError 발생 확인
+    assert len(results) == 1, f"성공 건수가 1개가 아닙니다: {len(results)}"
+    assert len(errors) == 1, f"차단된 에러 건수가 1개가 아닙니다: {len(errors)}"
+    assert isinstance(errors[0], FileExistsError), f"차단 에러가 FileExistsError가 아닙니다: {errors[0]}"
+    assert (reports_dir / "observation_batch_BATCH_CONCURRENT.md").exists()
 
 
 # ==============================================================================

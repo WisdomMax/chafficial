@@ -177,10 +177,31 @@ def reconstruct_batch_report(
             web_end_str = "NOT_RECORDED (레거시 배치: 웹 수집 시각 미기록)"
             web_timing_note = f"NOT_RECORDED (DB 적재 시각 {db_processed_kst_str}만 영속됨)"
 
-        # 6. 가격 이벤트 및 재관측 통계 역조회 및 교차 검증 (DIRECTIVE 011-B 지침 2)
-        events_in_batch = session.execute(
-            select(PriceEvent).where(PriceEvent.event_timestamp == batch_audit.processed_at)
-        ).scalars().all()
+        # 6. 가격 이벤트 및 재관측 통계 역조회 및 교차 검증 (DIRECTIVE 011-C: 명시적 배치 귀속)
+        attribution_status = "UNKNOWN"
+        events_in_batch: list[PriceEvent] = []
+
+        if not is_legacy and meta.get("event_ids"):
+            event_ids = meta["event_ids"]
+            if event_ids:
+                events_in_batch = list(session.execute(
+                    select(PriceEvent).where(PriceEvent.event_id.in_(event_ids))
+                ).scalars().all())
+            attribution_status = "EXPLICIT_EVENT_IDS"
+        else:
+            # 2순위: notes 내 [BATCH:{batch_id}] 태그 조회
+            events_in_batch = list(session.execute(
+                select(PriceEvent).where(PriceEvent.notes.like(f"%[BATCH:{batch_id}]%"))
+            ).scalars().all())
+
+            if events_in_batch:
+                attribution_status = "BATCH_TAG_ATTRIBUTION"
+            else:
+                # 3순위 (레거시 배치 폴백): 타임스탬프 매칭
+                events_in_batch = list(session.execute(
+                    select(PriceEvent).where(PriceEvent.event_timestamp == batch_audit.processed_at)
+                ).scalars().all())
+                attribution_status = "ATTRIBUTION_UNVERIFIED (LEGACY_TIMESTAMP_FALLBACK)"
 
         actual_first_seen = sum(1 for e in events_in_batch if e.event_type in ("NEW_LISTING", "FIRST_SEEN"))
         actual_price_drops = sum(1 for e in events_in_batch if e.event_type == "PRICE_DROP")
@@ -258,14 +279,25 @@ def reconstruct_batch_report(
         all_batches=all_batches,
     )
 
-    # 9. 원자적 파일 저장 (DIRECTIVE 011-B 지침 3: .tmp에 작성 후 원자적 교체)
+    # 9. 원자적 파일 저장 및 동시성 충돌 방어 (DIRECTIVE 011-C 지침 3)
     tmp_fd, tmp_path_str = tempfile.mkstemp(
         dir=output_dir, prefix=f"reconstruct_{batch_id}_", suffix=".tmp"
     )
     try:
         with open(tmp_fd, "w", encoding="utf-8") as f:
             f.write(report_md)
-        os.replace(tmp_path_str, out_file)
+
+        if not overwrite:
+            # POSIX 원자적 하드링크를 통해 동시 실행 충돌 차단
+            try:
+                os.link(tmp_path_str, out_file)
+                os.remove(tmp_path_str)
+            except FileExistsError:
+                raise FileExistsError(
+                    f"보고서 파일이 이미 존재합니다: {out_file}. 덮어쓰려면 overwrite=True를 명시해야 합니다."
+                )
+        else:
+            os.replace(tmp_path_str, out_file)
     except Exception:
         if os.path.exists(tmp_path_str):
             try:

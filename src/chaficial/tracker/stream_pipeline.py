@@ -130,6 +130,7 @@ class MarketObservationStreamPipeline:
         re_listed_count = 0
 
         observed_source_ids: set[str] = set()
+        batch_event_ids: list[str] = []
 
         for rec in records:
             observed_source_ids.add(rec.source_listing_id)
@@ -142,7 +143,12 @@ class MarketObservationStreamPipeline:
             ).scalar_one_or_none()
 
             is_new = existing_listing is None
-            ev = self.tracker.process_observation(rec, session, data_origin=data_origin)
+            ev = self.tracker.process_observation(
+                rec, session, data_origin=data_origin, batch_id=batch_id
+            )
+
+            if ev:
+                batch_event_ids.append(ev.event_id)
 
             if is_new:
                 first_seen_count += 1
@@ -159,18 +165,6 @@ class MarketObservationStreamPipeline:
 
         # 4. 미노출 매물 처리 (완전 성공 배치인 경우에만 수행)
         delisted_suspect_events = []
-        audit_metadata = {
-            "raw_file_path": str(raw_file_path) if raw_file_path else None,
-            "raw_file_sha256": raw_file_sha256,
-            "web_fetch_started_at": web_fetch_started_at.isoformat() if web_fetch_started_at else None,
-            "web_fetch_completed_at": web_fetch_completed_at.isoformat() if web_fetch_completed_at else None,
-            "first_seen_count": first_seen_count,
-            "re_observed_count": re_observed_count,
-            "price_drop_count": price_drop_count,
-            "price_increase_count": price_increase_count,
-            "total_price_drop_krw": total_price_drop_krw,
-            "user_notes": notes,
-        }
 
         if is_success and not is_partial_scrape:
             delisted_suspect_events = self.tracker.process_missing_listings(
@@ -182,9 +176,34 @@ class MarketObservationStreamPipeline:
                 is_partial_scrape=is_partial_scrape,
                 search_scope_success=is_success,
                 data_origin=data_origin,
-                notes=json.dumps(audit_metadata, ensure_ascii=False, sort_keys=True),
                 auto_commit=auto_commit,
             )
+            for dev in delisted_suspect_events:
+                batch_event_ids.append(dev.event_id)
+
+        audit_metadata = {
+            "raw_file_path": str(raw_file_path) if raw_file_path else None,
+            "raw_file_sha256": raw_file_sha256,
+            "web_fetch_started_at": web_fetch_started_at.isoformat() if web_fetch_started_at else None,
+            "web_fetch_completed_at": web_fetch_completed_at.isoformat() if web_fetch_completed_at else None,
+            "first_seen_count": first_seen_count,
+            "re_observed_count": re_observed_count,
+            "price_drop_count": price_drop_count,
+            "price_increase_count": price_increase_count,
+            "total_price_drop_krw": total_price_drop_krw,
+            "event_ids": batch_event_ids,
+            "user_notes": notes,
+        }
+
+        if is_success and not is_partial_scrape:
+            # process_missing_listings가 생성한 audit_log의 notes에 메타데이터 저장
+            audit_log = session.execute(
+                select(BatchAuditLog).where(BatchAuditLog.batch_id == batch_id)
+            ).scalar_one_or_none()
+            if audit_log:
+                audit_log.set_audit_metadata(audit_metadata)
+                if auto_commit:
+                    session.commit()
         else:
             # 부분 수집 또는 실패 시 감사 로그만 별도 기록
             audit_log = BatchAuditLog(

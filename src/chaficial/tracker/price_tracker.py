@@ -14,6 +14,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
+import uuid
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -281,10 +282,12 @@ class PriceEventTracker:
         record: StandardListingRecord,
         session: Session,
         data_origin: str | None = None,
+        batch_id: str | None = None,
     ) -> PriceEvent | None:
         """단일 매물 관측 레코드를 수신하여 시계열 스냅샷 적재 및 가격 변동 이벤트 탐지."""
         obs_utc = self._to_utc(record.observed_at)
         effective_origin = data_origin or record.data_origin or "REAL_OBSERVED"
+        batch_tag = f"[BATCH:{batch_id}] " if batch_id else ""
 
         # 금융상품 및 비정상 가격 검증: 월납입액을 차량 총가격으로 오인하는 결함 차단
         is_financial = record.product_type in ("RENT", "LEASE")
@@ -340,6 +343,7 @@ class PriceEventTracker:
 
             # 최초 관측 이벤트 생성
             event = PriceEvent(
+                event_id=str(uuid.uuid4()),
                 listing_id=new_listing.listing_id,
                 source_platform=record.source_platform,
                 source_listing_id=record.source_listing_id,
@@ -357,7 +361,7 @@ class PriceEventTracker:
                 product_type=record.product_type,
                 data_origin=effective_origin,
                 is_anomaly=(is_financial and record.price_krw is not None and record.price_krw <= 1_000_000),
-                notes="신규 매물 최초 관측",
+                notes=f"{batch_tag}신규 매물 최초 관측",
             )
             session.add(event)
             return event
@@ -422,6 +426,7 @@ class PriceEventTracker:
         if existing_listing.current_status in ("DELISTED", "DELISTED_SUSPECT"):
             existing_listing.current_status = "ACTIVE"
             event = PriceEvent(
+                event_id=str(uuid.uuid4()),
                 listing_id=existing_listing.listing_id,
                 source_platform=record.source_platform,
                 source_listing_id=record.source_listing_id,
@@ -438,7 +443,7 @@ class PriceEventTracker:
                 days_since_first_observed=days_passed,
                 product_type=record.product_type,
                 data_origin=effective_origin,
-                notes="비노출 처리되었던 매물의 재등록 관측",
+                notes=f"{batch_tag}비노출 처리되었던 매물의 재등록 관측",
             )
             session.add(event)
 
@@ -463,13 +468,14 @@ class PriceEventTracker:
             if delta_krw < 0:
                 ev_type = "PRICE_DROP"
                 existing_listing.current_status = "PRICE_CHANGED"
-                note_str = f"가격 인하 탐지: {prev_price:,}원 -> {effective_price:,}원 ({delta_krw:+,}원, {delta_pct:+.2f}%)"
+                note_str = f"{batch_tag}가격 인하 탐지: {prev_price:,}원 -> {effective_price:,}원 ({delta_krw:+,}원, {delta_pct:+.2f}%)"
             else:
                 ev_type = "PRICE_INCREASE"
                 existing_listing.current_status = "PRICE_CHANGED"
-                note_str = f"가격 인상 탐지: {prev_price:,}원 -> {effective_price:,}원 ({delta_krw:+,}원, {delta_pct:+.2f}%)"
+                note_str = f"{batch_tag}가격 인상 탐지: {prev_price:,}원 -> {effective_price:,}원 ({delta_krw:+,}원, {delta_pct:+.2f}%)"
 
             event = PriceEvent(
+                event_id=str(uuid.uuid4()),
                 listing_id=existing_listing.listing_id,
                 source_platform=record.source_platform,
                 source_listing_id=record.source_listing_id,
@@ -611,6 +617,7 @@ class PriceEventTracker:
                     first_obs = self._to_utc(l.first_observed_at)
                     days_passed = max(0, (obs_time_utc.date() - first_obs.date()).days)
                     ev = PriceEvent(
+                        event_id=str(uuid.uuid4()),
                         listing_id=l.listing_id,
                         source_platform=l.source_platform,
                         source_listing_id=l.source_listing_id,
@@ -626,7 +633,7 @@ class PriceEventTracker:
                         mileage_at_event=0,
                         days_since_first_observed=days_passed,
                         data_origin=data_origin,
-                        notes=f"연속 {l.consecutive_missing_count}회 미관측으로 판매 종료 의심(DELISTED_SUSPECT) 판정 (범위: {scope_spec.to_scope_key()})",
+                        notes=f"[BATCH:{batch_id}] 연속 {l.consecutive_missing_count}회 미관측으로 판매 종료 의심(DELISTED_SUSPECT) 판정 (범위: {scope_spec.to_scope_key()})",
                     )
                     session.add(ev)
                     events.append(ev)
