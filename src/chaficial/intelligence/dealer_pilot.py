@@ -1,12 +1,16 @@
-"""차피셜 딜러 파일럿 실전 피드백 수집 및 성과 측정 엔진 (DIRECTIVE 016 & 017 & 017-A).
+"""차피셜 딜러 파일럿 실전 피드백 수집 및 성과 측정 엔진 (DIRECTIVE 016 & 017 & 017-A & 017-B).
 
 운영 원칙:
 - 기존 원본 관측 데이터 및 운영 DB와 100% 분리된 독립 피드백 저장소(`data/dealer_feedback/`) 사용
 - 25년 경력 딜러 파트너의 실전 매입 판단 데이터셋 축적 및 AI 추천 정확도 검증
 - 엄격한 입력 검증: VERDICT 허용값(BUY_REVIEW, WATCH, EXCLUDE), 금액 필드 음수 금지
 - 실제 딜러 회신(is_pilot_actual) 필수 명시화 (기본값 제거로 오분류 원천 차단)
-- 과거 피드백 데이터 안전 보존: 손상된 JSON 파일 덮어쓰기 원천 차단 및 원자적 교체(atomic replace) 저장
-- 중복 회신 감지: 동일 회신 재업로드 시 중복 방지, 일자별 정당한 재평가는 이력 보존
+- 과거 피드백 데이터 안전 보존:
+  * 빈 파일(0 bytes), 파싱 오류, 비정상 구조(non-list/invalid dict) 시 즉시 중단 및 원본 보존
+  * 임시 파일 작성 후 원자적 교체(atomic replace) 저장
+- 제출 세션 식별자(submission_id):
+  * 동일 CSV 반복 업로드 시 중복 방지 (파일 해시 기반 submission_id)
+  * 새로운 평가 시점(재평가)에는 판단 내용이 같아도 정식 이력으로 누적 보존
 - 평가 지표 정합성: 고유 차량(unique listing_id) 최신 평가 기준 집계 및 평가완료 기준/전체8대 기준 긍정률 분리
 """
 
@@ -46,6 +50,7 @@ class DealerFeedbackRecord:
     is_pilot_actual: bool  # 실제 딜러 평가 여부 (필수 인자: 목업과 엄격 분리)
     reviewed_by: str = "장안평_25년경력_수석파트너"
     reviewed_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+    submission_id: str = "sub-default"  # 평가 제출 세션 식별자 (재평가와 단순 중복업로드 분리)
 
     def __post_init__(self) -> None:
         """입력 데이터 정합성 검증."""
@@ -76,19 +81,14 @@ class DealerFeedbackRecord:
         if not self.dealer_decision_reason or not self.dealer_decision_reason.strip():
             raise ValueError("딜러 판단 사유(dealer_decision_reason)는 필수 입력 사항입니다.")
 
-    def get_fingerprint(self) -> str:
-        """동일 회신 중복 감지를 위한 레코드 고유 식별자."""
-        raw = (
-            f"{self.source_listing_id}|{self.dealer_verdict}|"
-            f"{self.dealer_expected_purchase_krw}|{self.dealer_expected_sale_krw}|"
-            f"{self.dealer_expected_reconditioning_cost_krw}|{self.dealer_decision_reason.strip()}"
-        )
-        return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+    def get_submission_key(self) -> str:
+        """세션 내 중복 방지 키 (동일 제출 세션 내 동일 차량 중복 방지)."""
+        return f"{self.submission_id}|{self.source_listing_id}"
 
 
 @dataclass
 class PilotPerformanceMetrics:
-    """딜러 파일럿 성과 측정 지표 (DIRECTIVE 017-A)."""
+    """딜러 파일럿 성과 측정 지표 (DIRECTIVE 017-A & 017-B)."""
 
     total_candidates_reviewed: int  # 실제 평가 완료된 고유 차량 수
     hit_ratio_pct: float  # 평가 완료 차량 대비 BUY_REVIEW 비율 (%)
@@ -147,51 +147,64 @@ class DealerPilotManager:
     ) -> Path:
         """딜러 피드백을 안전하게 원자적 교체(atomic replace) 방식으로 저장 및 이력 누적.
         
-        안전 보장:
-        - 기존 JSON이 손상되었거나 파싱할 수 없는 경우 빈 목록으로 대체하지 않고 예외 발생 (데이터 손실 방지)
-        - 임시 파일에 먼저 기록 후 원자적으로 교체(atomic replace)하여 쓰기 도중 크래시 대응
-        - 동일 내용 중복 회신 감지하여 불필요한 중복 누적 방지
+        안전 보장 (DIRECTIVE 017-B):
+        - 기존 파일이 빈 파일(0 bytes or 공백)이면 즉시 중단 및 원본 보존
+        - JSON 파싱 오류, non-list 구조, non-dict 레코드 모두 즉시 중단 및 원본 보존
+        - 동일 제출 세션(submission_id) 중복 업로드는 무시
+        - 다른 제출 세션의 정당한 재평가는 판단 내용이 같아도 새로운 이력으로 누적 보존
+        - 임시 파일 작성 후 원자적 교체(atomic replace)로 크래시 안전성 보장
         """
         save_path = self.feedback_dir / filename
 
         existing_data: list[dict[str, Any]] = []
-        existing_fingerprints: set[str] = set()
+        existing_keys: set[str] = set()
 
         if append_history and save_path.exists():
-            content = save_path.read_text(encoding="utf-8")
-            if content.strip():
-                try:
-                    parsed = json.loads(content)
-                    if not isinstance(parsed, list):
-                        raise ValueError(f"피드백 JSON 형식이 유효한 리스트가 아닙니다: {save_path}")
-                    existing_data = parsed
-                    # 기존 레코드 핑거프린트 추출
-                    for item in existing_data:
-                        raw = (
-                            f"{item.get('source_listing_id')}|{item.get('dealer_verdict')}|"
-                            f"{item.get('dealer_expected_purchase_krw')}|{item.get('dealer_expected_sale_krw')}|"
-                            f"{item.get('dealer_expected_reconditioning_cost_krw')}|"
-                            f"{(item.get('dealer_decision_reason') or '').strip()}"
-                        )
-                        existing_fingerprints.add(hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16])
-                except json.JSONDecodeError as err:
-                    # 손상된 기존 파일을 무시하고 덮어쓰는 행위 원천 차단
-                    raise RuntimeError(
-                        f"기존 피드백 파일({save_path})이 손상되어 읽을 수 없습니다. "
-                        f"과거 데이터 보존을 위해 작업을 중단합니다: {err}"
-                    ) from err
+            raw_bytes = save_path.read_bytes()
 
-        # 신규 데이터 중 동일 내용 중복 제외 (날짜가 다른 재평가나 변경된 내용은 정상 누적)
+            # 1. 빈 파일(0 bytes or 공백만 있는 경우) 엄격 차단
+            if len(raw_bytes.strip()) == 0:
+                raise RuntimeError(
+                    f"기존 피드백 파일({save_path})이 빈 파일(0 bytes)입니다. 과거 데이터 보존을 위해 작업을 중단합니다."
+                )
+
+            # 2. JSON 파싱 검증
+            try:
+                parsed = json.loads(raw_bytes.decode("utf-8"))
+            except Exception as err:
+                raise RuntimeError(
+                    f"기존 피드백 파일({save_path})의 JSON 파싱에 실패했습니다: {err}. 작업을 중단합니다."
+                ) from err
+
+            # 3. 리스트 타입 검증
+            if not isinstance(parsed, list):
+                raise RuntimeError(
+                    f"기존 피드백 파일({save_path}) 구조가 리스트가 아닙니다(타입: {type(parsed).__name__}). 작업을 중단합니다."
+                )
+
+            # 4. 각 레코드 무결성 검증
+            for idx, item in enumerate(parsed):
+                if not isinstance(item, dict) or "source_listing_id" not in item or "dealer_verdict" not in item:
+                    raise RuntimeError(
+                        f"기존 피드백 파일({save_path}) 인덱스 {idx} 레코드 구조가 유효하지 않습니다. 작업을 중단합니다."
+                    )
+                sub_id = item.get("submission_id", "sub-legacy")
+                lid = item.get("source_listing_id", "")
+                existing_keys.add(f"{sub_id}|{lid}")
+
+            existing_data = parsed
+
+        # 신규 데이터 중 동일 세션 중복은 건너뛰고 정당한 세션/재평가만 추가
         new_records_to_add: list[dict[str, Any]] = []
         for f in feedback_list:
-            fp = f.get_fingerprint()
-            if fp not in existing_fingerprints:
+            key = f.get_submission_key()
+            if key not in existing_keys:
                 new_records_to_add.append(asdict(f))
-                existing_fingerprints.add(fp)
+                existing_keys.add(key)
 
         combined = existing_data + new_records_to_add
 
-        # 원자적 파일 교체 (Atomic write using tempfile)
+        # 원자적 파일 교체 (Atomic write using NamedTemporaryFile)
         temp_file = tempfile.NamedTemporaryFile(
             mode="w",
             dir=str(self.feedback_dir),
@@ -215,14 +228,23 @@ class DealerPilotManager:
         csv_path: Path | str,
         *,
         is_pilot_actual: bool,
+        submission_id: str | None = None,
     ) -> list[DealerFeedbackRecord]:
         """딜러가 작성하여 회신한 CSV 파일을 읽고 유효성을 검증하여 피드백 레코드로 로드.
         
-        주의: is_pilot_actual 기본값은 존재하지 않으며 호출자가 실제 평가 여부를 명시해야 합니다.
+        주의: 
+        - is_pilot_actual 기본값은 존재하지 않으며 호출자가 실제 평가 여부를 명시해야 합니다.
+        - submission_id를 생략하면 CSV 파일 내용 해시 기반으로 자동 부여되어 동일 파일 중복 업로드를 방지합니다.
         """
         path = Path(csv_path)
         if not path.exists():
             raise FileNotFoundError(f"피드백 CSV 파일을 찾을 수 없습니다: {path}")
+
+        file_bytes = path.read_bytes()
+        # submission_id가 지정되지 않은 경우 파일 내용 해시로 자동 결정 (동일 CSV 중복 방지)
+        if not submission_id:
+            content_hash = hashlib.sha256(file_bytes).hexdigest()[:12]
+            submission_id = f"sub-csv-{content_hash}"
 
         records: list[DealerFeedbackRecord] = []
 
@@ -261,6 +283,7 @@ class DealerPilotManager:
                     dealer_expected_reconditioning_cost_krw=_parse_int(clean_row.get("dealer_expected_reconditioning_cost_krw", "")),
                     dealer_decision_reason=clean_row.get("dealer_decision_reason", ""),
                     is_pilot_actual=is_pilot_actual,
+                    submission_id=submission_id,
                 )
                 records.append(record)
 
@@ -269,7 +292,7 @@ class DealerPilotManager:
     def calculate_performance(
         self, feedback_list: list[DealerFeedbackRecord]
     ) -> PilotPerformanceMetrics:
-        """딜러 피드백 기반 추천 엔진 성과 측정 (DIRECTIVE 017-A).
+        """딜러 피드백 기반 추천 엔진 성과 측정 (DIRECTIVE 017-A & 017-B).
         
         정합성 원칙:
         1. 실제 딜러 평가(is_pilot_actual=True)만 성과 지표 산출에 반영 (테스트 목업 분리)
