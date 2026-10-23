@@ -193,9 +193,11 @@ def test_past_data_preservation_and_real_mutation_test(tmp_path):
 # ==============================================================================
 # 3. 백업 경로 배타적 예약 및 실제 멀티프로세스 잠금 경합 검증
 # ==============================================================================
-def _child_process_hold_lock(lock_file_path: str, hold_seconds: float):
+def _child_process_hold_lock(lock_file_path: str, hold_seconds: float, ready_event=None):
     """독립 OS 자식 프로세스에서 락을 획득하고 일정 시간 유지하는 함수."""
     with FileLockContext(Path(lock_file_path)):
+        if ready_event is not None:
+            ready_event.set()
         time.sleep(hold_seconds)
 
 
@@ -211,11 +213,12 @@ def test_backup_exclusive_reservation_and_multiprocess_lock_contention(tmp_path)
 
     # 2. 독립 프로세스 간 실제 잠금 경합 검증
     lock_file = tmp_path / "proc_contention.lock"
+    ready_event = multiprocessing.Event()
 
-    # 자식 프로세스 시작 (0.8초간 락 유지)
-    p = multiprocessing.Process(target=_child_process_hold_lock, args=(str(lock_file), 0.8))
+    # 자식 프로세스 시작 (1.5초간 락 유지)
+    p = multiprocessing.Process(target=_child_process_hold_lock, args=(str(lock_file), 1.5, ready_event))
     p.start()
-    time.sleep(0.2)  # 자식 프로세스가 락을 잡을 때까지 잠시 대기
+    assert ready_event.wait(timeout=5.0), "자식 프로세스가 제시간에 파일 락을 획득하지 못했습니다."
 
     try:
         # 부모 프로세스가 동일 락으로 LIVE 진입 시도 -> 즉시 OperationalLockError 발생

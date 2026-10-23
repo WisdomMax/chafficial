@@ -329,6 +329,7 @@ def run_pipeline(
     db_path_override: Path | None = None,
     lock_file_path: Path | None = None,
     test_hook_fail_after_records: int | None = None,
+    test_hook_fail_before_commit: bool = False,
 ):
     """DIRECTIVE 010-I 실행 메인 파이프라인 (REPLAY/LIVE 완전 격리, 실행 잠금, 부분 쓰기 롤백 보장)."""
     print("=" * 80)
@@ -470,7 +471,15 @@ def run_pipeline(
                 web_fetch_started_at=web_start_utc,
                 web_fetch_completed_at=web_end_utc,
                 notes=f"엔카 아반떼 CN7 관측 ({mode.upper()} 모드, 카드 {len(raw_cards)}개 중 {len(live_records)}대 적재, 부분수집 보호)",
+                raw_file_path=raw_file,
+                raw_file_sha256=raw_sha,
+                auto_commit=False,
             )
+
+            # DIRECTIVE 011-C: execute_batch 정상 반환 후 외부 커밋 직전 실패 주입 훅
+            if test_hook_fail_before_commit:
+                raise RuntimeError("Simulated Crash Immediately After execute_batch Before Final Commit")
+
             session.commit()
         except Exception:
             session.rollback()

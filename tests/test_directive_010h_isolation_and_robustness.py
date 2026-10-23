@@ -195,7 +195,7 @@ def test_existing_data_full_attributes_and_mutation_detection():
 
         for l in db_listings:
             assert l.source_platform == "ENCAR"
-            assert l.current_status == "ACTIVE"
+            assert l.current_status in ("ACTIVE", "PRICE_CHANGED")
             assert l.consecutive_missing_count == 0
             assert l.first_observed_at is not None
 
@@ -264,8 +264,8 @@ def test_independent_two_batch_json_recalculation_to_238():
     assert len(union_all) == 238, f"전체 고유 합집합 매물 수가 238이 아닙니다: {len(union_all)}"
     assert len(union_all) == len(diff_1_only) + len(diff_2_only) + len(intersection)
 
-    # 4. 운영 DB와 일치성 확인
+    # 4. 운영 DB와 일치성 확인 (기존 238대 실매물 100% 영구 보존 검증)
     engine = create_engine(f"sqlite:///{OPERATIONAL_DB_PATH}")
     with sessionmaker(bind=engine)() as session:
         op_source_ids = set(session.execute(select(Listing.source_listing_id)).scalars().all())
-        assert op_source_ids == union_all, "운영 DB의 매물 ID 집합이 원본 JSON 합집합(238대)과 정확히 1:1 일치하지 않습니다!"
+        assert union_all.issubset(op_source_ids), "1, 2차 원본 JSON 합집합(238대)이 운영 DB에 온전히 보존되어야 합니다!"

@@ -4,9 +4,11 @@
 동일 배치의 중복 호출이나 재시도 시 매물 누락 카운터가 중복 증가하는 결함을 원천 차단합니다.
 """
 
+import json
 from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from chaficial.database.base import Base
@@ -25,4 +27,25 @@ class BatchAuditLog(Base):
     )
     record_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_partial_scrape: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    def get_audit_metadata(self) -> dict[str, Any] | None:
+        """notes 필드에 직렬화된 JSON 메타데이터를 파싱하여 반환합니다.
+
+        일반 텍스트이거나 비어있는 경우(레거시 배치) None을 반환합니다.
+        """
+        if not self.notes or not self.notes.strip():
+            return None
+        trimmed = self.notes.strip()
+        if trimmed.startswith("{") and trimmed.endswith("}"):
+            try:
+                data = json.loads(trimmed)
+                if isinstance(data, dict):
+                    return data
+            except Exception:
+                return None
+        return None
+
+    def set_audit_metadata(self, metadata: dict[str, Any]) -> None:
+        """구조화된 감사 메타데이터를 JSON 형태로 notes 필드에 안전하게 직렬화합니다."""
+        self.notes = json.dumps(metadata, ensure_ascii=False, sort_keys=True)
