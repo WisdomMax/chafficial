@@ -49,9 +49,9 @@ def run_opportunity_analysis():
     print(f"\n[3. 우선 검토 (PRIORITY_REVIEW) 후보: 총 {len(priority_candidates)}대]")
     for i, p in enumerate(priority_candidates, 1):
         b = p.base_scenario
-        net_profit = b.estimated_net_profit_krw if b else 0
+        net_profit = b.hypothetical_net_profit_krw if b else 0
         drop_info = f", 인하 -{p.cumulative_price_drop_krw:,}원" if p.has_price_drop else ""
-        dup_info = f" [중복광고: {', '.join(p.duplicate_listing_ids)}]" if p.is_duplicate_listing else ""
+        dup_info = f" [중복광고: {', '.join(p.duplicate_listing_ids)}]" if p.duplicate_status != "NO_DUPLICATE_DETECTED" else ""
         print(
             f"  {i}. [{p.source_listing_id}] {p.vehicle_summary} | 현재가: {p.current_price_krw:,}원 | "
             f"시세중앙: {p.cohort_median_price_krw:,}원 (우위: +{p.relative_price_gap_pct}%) | "
@@ -114,7 +114,7 @@ def generate_markdown_report(candidates, output_path: Path):
 | :---: | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 """
     for i, c in enumerate(priority_list, 1):
-        profit = f"{c.base_scenario.estimated_net_profit_krw:,}원" if c.base_scenario else "-"
+        profit = f"{c.base_scenario.hypothetical_net_profit_krw:,}원" if c.base_scenario else "-"
         drop = f"-{c.cumulative_price_drop_krw:,}원" if c.has_price_drop else "-"
         content += f"| {i} | `{c.source_listing_id}` | {c.vehicle_summary} | {c.current_price_krw:,}원 | {c.cohort_median_price_krw:,}원 | **+{c.relative_price_gap_pct}%** | **{c.opportunity_score}점** | {profit} | {drop} | {c.raw_location} (`{c.partner_operational_suitability}`) |\n"
 

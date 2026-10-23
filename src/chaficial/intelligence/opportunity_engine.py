@@ -1,11 +1,10 @@
-"""차피셜 실시간 가격 변동 기반 기회 매물 탐지 엔진 V1.1 (DIRECTIVE 015-A).
+"""차피셜 실시간 가격 변동 기반 기회 매물 탐지 엔진 V1.2 (DIRECTIVE 015-B).
 
-개선 사항 (DIRECTIVE 015-A):
-1. [연식 무결성] model_year 및 vehicle_fingerprint 연식 추출 통일 및 연식 미확인(NOYEAR) 차량의 우선 추천 원천 차단
-2. [실차 중복 방지] 동일 vehicle_fingerprint 기반 클러스터링을 통한 코호트 시세 왜곡 및 추천 목록 중복 완전 배제
-3. [수익/마진 분리] 순수익(Net Profit)과 목표마진(Target Margin)을 명확히 분리하여 정확한 재무 계산 제공
-4. [과거 시점 누수 차단] as_of_time 시점 제한을 모든 SQL 서브쿼리와 이벤트 조회에 100% 적용하여 결정적 백테스트 보장
-5. [영업 적합성 분리] 시장 기회 등급(Market Grade)과 파트너 영업 적합성(Partner Suitability) 필드 완전 분리
+개선 사항 (DIRECTIVE 015-B):
+1. [결정적 단일 행 선택] CTE ROW_NUMBER() OVER (PARTITION BY listing_id ORDER BY observed_at DESC, snapshot_id DESC) 적용으로 동일 시각 스냅샷 중복 조회 원천 차단
+2. [중복 신뢰 수준 분리] POSSIBLE_DUPLICATE(지문 기반 추정), CONFIRMED_DUPLICATE(독립 식별자 확인), NO_DUPLICATE_DETECTED 분리
+3. [수익 추정 표현 정정] hypothetical_net_profit 명시 및 미반영 비용(세금, 상사수수료, 금융비용 등) 주의사항 명기
+4. [딜러 파일럿 준비] 딜러 실전 검토표 및 피드백 입력 필드(dealer_review_verdict 등) 완비
 """
 
 import csv
@@ -23,17 +22,18 @@ from chaficial.scorer.opportunity import ScorerParameters
 
 @dataclass
 class ProfitScenario:
-    """수익 시나리오 분석 결과 (순수익과 목표마진 완전 분리)."""
+    """가정 기반 수익 시나리오 분석 결과 (DIRECTIVE 015-B)."""
 
-    estimated_purchase_price_krw: int
-    estimated_sale_price_krw: int
-    estimated_gross_spread_krw: int   # 예상 총마진 (판매가 - 매입가)
-    estimated_operating_cost_krw: int  # 실제 예상 운영비용 (상품화비 + 탁송/이전비)
-    estimated_net_profit_krw: int      # 예상 순이익 (총마진 - 실제 운영비용)
-    target_margin_krw: int             # 딜러 목표 마진 기준 (판단 기준치)
-    excess_over_target_krw: int        # 목표 마진 초과 달성분 (순이익 - 목표마진)
-    net_margin_pct: float              # 순이익률 (순이익 / 매입가 * 100)
-    scenario_type: str                 # CONSERVATIVE, BASE, OPTIMISTIC
+    hypothetical_purchase_price_krw: int
+    hypothetical_sale_price_krw: int
+    hypothetical_gross_spread_krw: int       # 가정 총마진 (판매가 - 매입가)
+    hypothetical_operating_cost_krw: int     # 가정 운영비용 (상품화비 + 탁송/이전비)
+    hypothetical_net_profit_krw: int         # 가정 순이익 (총마진 - 실제 운영비용)
+    target_margin_krw: int                   # 딜러 목표 마진 기준 (판단 기준치)
+    excess_over_target_krw: int              # 목표 마진 초과 달성분 (순이익 - 목표마진)
+    hypothetical_margin_pct: float           # 가정 순이익률 (순이익 / 매입가 * 100)
+    scenario_type: str                       # CONSERVATIVE, BASE, OPTIMISTIC
+    unreflected_costs_note: str = "취득세, 매매수수료, 금융비용, 재고보유비용 미반영 가정치"
 
 
 @dataclass
@@ -54,17 +54,17 @@ class OpportunityCandidate:
     raw_location: str
 
     # 분리된 평가 지표 (지침 5)
-    market_opportunity_grade: str       # PRIORITY_REVIEW, WATCHLIST, INSUFFICIENT_DATA, EXCLUDED
-    partner_operational_suitability: str # LOCAL_OPERATIONAL, LOCATION_VERIFICATION_REQUIRED, REMOTE_REGION_UNSUITABLE
+    market_opportunity_grade: str        # PRIORITY_REVIEW, WATCHLIST, INSUFFICIENT_DATA, EXCLUDED
+    partner_operational_suitability: str  # LOCAL_OPERATIONAL, LOCATION_VERIFICATION_REQUIRED, REMOTE_REGION_UNSUITABLE
 
-    # 실차 지문 및 중복 추적 (지침 2)
+    # 실차 지문 및 중복 신뢰 수준 (지침 2)
     vehicle_fingerprint: str
-    is_duplicate_listing: bool
+    duplicate_status: str                # NO_DUPLICATE_DETECTED, POSSIBLE_DUPLICATE, CONFIRMED_DUPLICATE
     duplicate_listing_ids: list[str]
 
     # 시세 및 비교 분석 (Leave-One-Out 및 실차 단위 표본 정제)
     cohort_key: str
-    sample_count: int                   # 독립 비교 표본 수 (동일 실차 지문 배제)
+    sample_count: int                    # 독립 비교 표본 수 (동일 실차 지문 배제)
     cohort_median_price_krw: int | None
     relative_price_gap_krw: int | None
     relative_price_gap_pct: float | None
@@ -86,17 +86,17 @@ class OpportunityCandidate:
     score_price_drop: float
     score_profitability: float
     score_data_confidence: float
-    opportunity_score: float  # 총합 (0 ~ 100)
-    data_confidence: str      # HIGH, MEDIUM, LOW, INSUFFICIENT
+    opportunity_score: float             # 총합 (0 ~ 100)
+    data_confidence: str                 # HIGH, MEDIUM, LOW, INSUFFICIENT
 
     # 최종 추천 분류
-    recommendation_category: str  # 이전 호환성 필드 (= market_opportunity_grade)
+    recommendation_category: str         # 이전 호환성 필드 (= market_opportunity_grade)
     evaluation_reason: str
     risk_factors: list[str] = field(default_factory=list)
 
 
 class MarketOpportunityEngine:
-    """가격 변동 및 상대 시세 기반 기회 매물 선별 엔진 V1.1."""
+    """가격 변동 및 상대 시세 기반 기회 매물 선별 엔진 V1.2."""
 
     def __init__(self, config: OpportunityEngineConfig | None = None):
         self.config = config or OpportunityEngineConfig()
@@ -107,15 +107,12 @@ class MarketOpportunityEngine:
         db_path: Path | None = None,
         as_of_time: datetime | None = None,
     ) -> list[OpportunityCandidate]:
-        """운영 DB를 읽기 전용으로 조회하여 기회 매물을 선별 및 평가합니다.
-
-        as_of_time이 제공되면 해당 시점 이전 데이터만 사용하는 시점 누수 방지 쿼리를 실행합니다.
-        """
+        """운영 DB를 읽기 전용으로 조회하여 기회 매물을 선별 및 평가합니다."""
         target_db = db_path or self.config.db_path
         if not target_db.exists():
             raise FileNotFoundError(f"운영 데이터베이스를 찾을 수 없습니다: {target_db}")
 
-        # 1. DB에서 활성 매물, 최신 스냅샷, 가격 변동 데이터 조회 (100% 읽기 전용, 시점 필터 완비)
+        # 1. DB에서 활성 매물, 최신 스냅샷 조회 (CTE ROW_NUMBER() 적용으로 단 1행만 결정적 로드)
         listings_data = self._load_active_listings_with_snapshots(target_db, as_of_time)
         price_events_data = self._load_price_events_summary(target_db, as_of_time)
 
@@ -145,9 +142,8 @@ class MarketOpportunityEngine:
                 duplicate_ids=other_ids,
             )
 
-            # 추천 목록 중복 방지: 동일 실차 지문이 복수일 경우 최초 1건만 추천 목록에 포함
+            # 추천 목록 중복 방지: 동일 실차 지문이 복수일 경우 1건만 대표로 추천 등록
             if fp and fp in seen_fingerprints and is_dup:
-                # 이미 대표 매물이 등록되었으므로 중복 매물은 후보 목록에서 제외 또는 플래그 처리
                 continue
             if fp:
                 seen_fingerprints.add(fp)
@@ -173,7 +169,7 @@ class MarketOpportunityEngine:
     def _load_active_listings_with_snapshots(
         self, db_path: Path, as_of_time: datetime | None
     ) -> list[dict[str, Any]]:
-        """DB에서 활성 매물 및 최신 스냅샷 레코드 읽기 전용 로드 (과거 시점 누수 완전 차단)."""
+        """DB에서 활성 매물 및 최신 스냅샷 레코드 읽기 전용 로드 (CTE ROW_NUMBER() 적용 - 지침 1)."""
         uri = f"file:{db_path.resolve()}?mode=ro"
         conn = sqlite3.connect(uri, uri=True)
         conn.row_factory = sqlite3.Row
@@ -181,8 +177,23 @@ class MarketOpportunityEngine:
 
         as_of_str = as_of_time.strftime("%Y-%m-%d %H:%M:%S") if as_of_time else "9999-12-31 23:59:59"
 
-        # 지침 4: as_of_time 이전 관측된 스냅샷 중 최신 스냅샷만 조회
+        # 지침 1: CTE ROW_NUMBER()를 사용하여 동일 시각 복수 스냅샷이 존재해도 결정적으로 단 1행만 반환
         query = """
+            WITH ranked_snapshots AS (
+                SELECT 
+                    snapshot_id,
+                    listing_id,
+                    observed_at,
+                    price_krw,
+                    mileage_km,
+                    raw_specs,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY listing_id 
+                        ORDER BY observed_at DESC, snapshot_id DESC
+                    ) as rn
+                FROM listing_snapshots
+                WHERE observed_at <= ?
+            )
             SELECT 
                 l.listing_id,
                 l.source_platform,
@@ -210,18 +221,11 @@ class MarketOpportunityEngine:
                     LIMIT 1
                 ) as first_price_krw
             FROM listings l
-            JOIN listing_snapshots s ON s.listing_id = l.listing_id
+            JOIN ranked_snapshots s ON s.listing_id = l.listing_id AND s.rn = 1
             WHERE l.first_observed_at <= ?
-              AND s.observed_at <= ?
-              AND s.observed_at = (
-                  SELECT MAX(s2.observed_at) 
-                  FROM listing_snapshots s2 
-                  WHERE s2.listing_id = l.listing_id 
-                    AND s2.observed_at <= ?
-              )
             ORDER BY s.observed_at DESC, s.snapshot_id DESC
         """
-        rows = cursor.execute(query, (as_of_str, as_of_str, as_of_str, as_of_str, as_of_str)).fetchall()
+        rows = cursor.execute(query, (as_of_str, as_of_str, as_of_str, as_of_str)).fetchall()
         results: list[dict[str, Any]] = []
 
         for r in rows:
@@ -231,7 +235,6 @@ class MarketOpportunityEngine:
                     raw_specs = json.loads(raw_specs)
                 except Exception:
                     pass
-            # 이중 인코딩(JSON string)인 경우 2차 파싱
             if isinstance(raw_specs, str):
                 try:
                     raw_specs = json.loads(raw_specs)
@@ -240,7 +243,6 @@ class MarketOpportunityEngine:
             if not isinstance(raw_specs, dict):
                 raw_specs = {}
 
-            # 연식 및 지문 정밀 추출 (지침 1)
             fp = raw_specs.get("vehicle_fingerprint") or ""
             year = self._extract_clean_year(raw_specs, fp)
 
@@ -306,26 +308,23 @@ class MarketOpportunityEngine:
         return summary
 
     def _extract_clean_year(self, specs: dict[str, Any], fingerprint: str) -> int | None:
-        """model_year 및 vehicle_fingerprint에서 정밀 연식 추출 (NOYEAR 및 비정상값 배제)."""
-        # 1. specs의 model_year 검사
+        """model_year 및 vehicle_fingerprint에서 정밀 연식 추출."""
         s_year = str(specs.get("model_year", "")).strip()
         if s_year.isdigit() and len(s_year) == 4 and (s_year.startswith("201") or s_year.startswith("202")):
             return int(s_year)
 
-        # 2. fingerprint 검사
         if fingerprint:
             parts = fingerprint.split("_")
             for p in parts:
                 if len(p) == 4 and p.isdigit() and (p.startswith("201") or p.startswith("202")):
                     return int(p)
 
-        # 연식이 확인되지 않으면 절대 임의 연식을 부여하지 않고 None 반환 (지침 1)
         return None
 
     def _cluster_duplicate_fingerprints(
         self, listings: list[dict[str, Any]]
     ) -> tuple[dict[str, list[dict[str, Any]]], list[list[str]]]:
-        """동일 vehicle_fingerprint 기반 중복 매물 클러스터링 (지침 2)."""
+        """동일 vehicle_fingerprint 기반 중복 매물 클러스터링."""
         fp_map: dict[str, list[dict[str, Any]]] = {}
         for item in listings:
             fp = item["vehicle_fingerprint"]
@@ -357,7 +356,6 @@ class MarketOpportunityEngine:
                 seen_fp_per_cohort[key] = set()
 
             fp = item["vehicle_fingerprint"]
-            # 동일 실차 지문이 이미 해당 코호트에 등록되었다면 대표 1건만 표본군으로 등록 (시세 왜곡 원천 차단)
             if fp and fp in seen_fp_per_cohort[key]:
                 continue
             if fp:
@@ -368,7 +366,7 @@ class MarketOpportunityEngine:
         return groups
 
     def _extract_cohort_key(self, item: dict[str, Any]) -> str:
-        """아이템으로부터 정밀 코호트 키 생성 (연식 미확인은 UNKNOWN_YEAR로 완전 격리)."""
+        """아이템으로부터 정밀 코호트 키 생성."""
         specs = item.get("raw_specs", {})
         mfg = specs.get("manufacturer", "현대")
         model = specs.get("model", "아반떼")
@@ -422,7 +420,7 @@ class MarketOpportunityEngine:
         ]
         sample_count = len(peer_prices)
 
-        # 2. 상대 시세 산출 (연식 미확인은 시세 비교 불가 처리)
+        # 2. 상대 시세 산출
         cohort_median: int | None = None
         rel_gap_krw: int | None = None
         rel_gap_pct: float | None = None
@@ -447,7 +445,7 @@ class MarketOpportunityEngine:
         latest_drop_pct = abs(price_events_summary.get("latest_drop_pct", 0.0))
         has_price_drop = drop_count > 0
 
-        # 4. 파트너 영업 적합성 분리 (지침 5)
+        # 4. 파트너 영업 적합성 분리
         if raw_location in ["서울", "장안평", "경기", "인천"]:
             partner_suitability = "LOCAL_OPERATIONAL"
             is_remote = False
@@ -458,7 +456,13 @@ class MarketOpportunityEngine:
             partner_suitability = "REMOTE_REGION_UNSUITABLE"
             is_remote = True
 
-        # 5. 수익 시나리오 계산 (순수익과 목표마진 완전 분리 - 지침 3)
+        # 중복 신뢰 수준 설정 (지침 2: 독립 식별자 없으므로 POSSIBLE_DUPLICATE)
+        if is_duplicate:
+            dup_status = "POSSIBLE_DUPLICATE"
+        else:
+            dup_status = "NO_DUPLICATE_DETECTED"
+
+        # 5. 수익 시나리오 계산 (가정 기반 수익 추정치 - 지침 3)
         base_scenario: ProfitScenario | None = None
         conservative_scenario: ProfitScenario | None = None
         optimistic_scenario: ProfitScenario | None = None
@@ -502,7 +506,7 @@ class MarketOpportunityEngine:
             1,
         )
 
-        # 7. 추천 분류 및 사유/위험요인 결정 (연식 미확인 및 중복 매물 엄격 필터)
+        # 7. 추천 분류 및 사유/위험요인 결정
         category, reason, risks = self._classify_candidate(
             current_price=current_price,
             product_type=specs.get("product_type", "CASH_OR_INSTALLMENT"),
@@ -537,7 +541,7 @@ class MarketOpportunityEngine:
             market_opportunity_grade=category,
             partner_operational_suitability=partner_suitability,
             vehicle_fingerprint=fp,
-            is_duplicate_listing=is_duplicate,
+            duplicate_status=dup_status,
             duplicate_listing_ids=duplicate_ids,
             cohort_key=cohort_key,
             sample_count=sample_count,
@@ -592,7 +596,7 @@ class MarketOpportunityEngine:
             )
             target_margin = costs.base_target_margin_krw
 
-        # 1. 총 스프레드 (매매 차익)
+        # 1. 총 스프레드 (가정 매매 차익)
         gross_spread = expected_sale_price - purchase_price
 
         # 2. 실제 발생 운영비용 (상품화 + 탁송)
@@ -607,14 +611,14 @@ class MarketOpportunityEngine:
         net_margin_pct = round((net_profit / purchase_price) * 100.0, 2) if purchase_price > 0 else 0.0
 
         return ProfitScenario(
-            estimated_purchase_price_krw=purchase_price,
-            estimated_sale_price_krw=expected_sale_price,
-            estimated_gross_spread_krw=gross_spread,
-            estimated_operating_cost_krw=operating_cost,
-            estimated_net_profit_krw=net_profit,
+            hypothetical_purchase_price_krw=purchase_price,
+            hypothetical_sale_price_krw=expected_sale_price,
+            hypothetical_gross_spread_krw=gross_spread,
+            hypothetical_operating_cost_krw=operating_cost,
+            hypothetical_net_profit_krw=net_profit,
             target_margin_krw=target_margin,
             excess_over_target_krw=excess_over_target,
-            net_margin_pct=net_margin_pct,
+            hypothetical_margin_pct=net_margin_pct,
             scenario_type=scenario_type,
         )
 
@@ -628,23 +632,20 @@ class MarketOpportunityEngine:
         sample_count: int,
         model_year: int | None,
     ) -> tuple[dict[str, float], str]:
-        """4대 축 기회 점수 계산 (연식 결측 시 점수 엄격 제한)."""
+        """4대 축 기회 점수 계산."""
         cfg = self.config
 
-        # 연식 미확인 시 시세 비교 점수 원천 0점 (지침 1)
         if model_year is None:
             s_rel = 0.0
             data_conf = "INSUFFICIENT"
             s_conf = 0.0
         else:
-            # 1. 상대 시세 점수 (최대 40점)
             s_rel = 0.0
             if rel_gap_pct is not None and rel_gap_pct > 0:
                 s_rel = min(cfg.weight_relative_price, (rel_gap_pct / 10.0) * cfg.weight_relative_price)
             elif rel_gap_pct is not None and rel_gap_pct <= 0:
                 s_rel = 0.0
 
-            # 4. 데이터 신뢰도 점수 (최대 15점)
             if sample_count >= cfg.high_confidence_samples:
                 s_conf = cfg.weight_data_confidence
                 data_conf = "HIGH"
@@ -658,17 +659,15 @@ class MarketOpportunityEngine:
                 s_conf = 0.0
                 data_conf = "INSUFFICIENT"
 
-        # 2. 가격 변동 점수 (최대 25점)
         s_drop = 0.0
         if has_price_drop:
             pct_score = min(10.0, latest_drop_pct * 2.0)
             cnt_score = min(5.0, (drop_count - 1) * 2.5) if drop_count > 1 else 0.0
             s_drop = min(cfg.weight_price_drop, 10.0 + pct_score + cnt_score)
 
-        # 3. 수익성 점수 (최대 20점: 순이익 기준)
         s_profit = 0.0
-        if base_scenario and base_scenario.estimated_net_profit_krw > 0:
-            s_profit = min(cfg.weight_profitability, (base_scenario.estimated_net_profit_krw / 1_500_000.0) * cfg.weight_profitability)
+        if base_scenario and base_scenario.hypothetical_net_profit_krw > 0:
+            s_profit = min(cfg.weight_profitability, (base_scenario.hypothetical_net_profit_krw / 1_500_000.0) * cfg.weight_profitability)
 
         scores = {
             "relative_price": round(s_rel, 1),
@@ -693,27 +692,23 @@ class MarketOpportunityEngine:
         is_duplicate: bool,
         duplicate_ids: list[str],
     ) -> tuple[str, str, list[str]]:
-        """엄격한 4단계 기회 등급 분류 (연식 미확인 및 중복 광고 배제)."""
+        """엄격한 4단계 기회 등급 분류."""
         risks: list[str] = []
 
-        # 리스크 요인 기본 수집
         if partner_suitability == "LOCATION_VERIFICATION_REQUIRED":
             risks.append("지역 정보 미확인(추가 실사 필요)")
         elif partner_suitability == "REMOTE_REGION_UNSUITABLE":
             risks.append(f"원거리 지역({raw_location}) 매물(추가 탁송료 발생)")
 
         if is_duplicate:
-            risks.append(f"동일 실차 중복 광고 감지 (ID: {', '.join(duplicate_ids)})")
+            risks.append(f"동일 지문 추정 중복 광고 감지 (POSSIBLE_DUPLICATE: ID {', '.join(duplicate_ids)})")
 
-        # 배제 조건 1: 금융상품
         if product_type != "CASH_OR_INSTALLMENT":
             return "EXCLUDED", "금융상품(렌트/리스) 매물로 일반 매매 대상 제외", ["FINANCIAL_PRODUCT"]
 
-        # 배제 조건 2: 가격 결측 또는 비정상
         if not current_price or current_price <= 0:
             return "EXCLUDED", "가격 정보 누락 또는 비정상 가격 데이터", ["INVALID_PRICE"]
 
-        # 핵심 결함 1: 연식 미확인(NOYEAR) 차량은 절대 우선 추천하지 않고 보류
         if model_year is None:
             risks.append("연식 정보 미확인(NOYEAR: 시세 비교 불가)")
             return (
@@ -722,7 +717,6 @@ class MarketOpportunityEngine:
                 risks,
             )
 
-        # 표본 부족 조건
         if sample_count < self.config.min_benchmark_samples:
             risks.append("동일 코호트 비교 표본 부족")
             return (
@@ -731,38 +725,31 @@ class MarketOpportunityEngine:
                 risks,
             )
 
-        if base_scenario and base_scenario.estimated_net_profit_krw <= 0:
+        if base_scenario and base_scenario.hypothetical_net_profit_krw <= 0:
             risks.append("기준 시나리오 예상 순이익 적자/부족")
 
         if rel_gap_pct is not None and rel_gap_pct < 0:
             risks.append(f"동일 코호트 시세 대비 {abs(rel_gap_pct):.1f}% 고가 매물")
 
-        # 배제 조건 3: 시세 대비 과도하게 비싼 매물 (-10% 이하)
         if rel_gap_pct is not None and rel_gap_pct <= -10.0:
             return "EXCLUDED", f"시세 중앙값 대비 {abs(rel_gap_pct):.1f}% 고가로 가격 경쟁력 없음", risks
 
-        # 우선 검토 (PRIORITY_REVIEW) 조건:
-        # 1) 연식 확정
-        # 2) 시세 대비 5% 이상 저렴
-        # 3) 기준 순이익 > 목표 마진(50만원)
-        # 4) 기회 점수 50점 이상 또는 가격 인하 모멘텀
         if (
             model_year is not None
             and rel_gap_pct is not None
             and rel_gap_pct >= self.config.price_advantage_threshold_pct
             and base_scenario
-            and base_scenario.estimated_net_profit_krw >= self.config.costs.base_target_margin_krw
+            and base_scenario.hypothetical_net_profit_krw >= self.config.costs.base_target_margin_krw
             and (total_score >= 50.0 or has_price_drop)
         ):
             reason = (
                 f"{model_year}년식 동일 코호트 시세 대비 {rel_gap_pct:.1f}% 저렴하며, "
-                f"예상 순이익 {base_scenario.estimated_net_profit_krw:,}원 확보 가능"
+                f"가정 기반 순이익 {base_scenario.hypothetical_net_profit_krw:,}원 확보 가능"
             )
             if has_price_drop:
                 reason += " (최근 가격 인하 포착)"
             return "PRIORITY_REVIEW", reason, risks
 
-        # 추가 관측 (WATCHLIST) 조건:
         if (rel_gap_pct is not None and rel_gap_pct > 0) or has_price_drop:
             reason = "시세 대비 소폭 우위 또는 가격 변동 감지 매물로 지속 관측 필요"
             return "WATCHLIST", reason, risks
@@ -772,12 +759,13 @@ class MarketOpportunityEngine:
     def export_results_to_csv(
         self, candidates: list[OpportunityCandidate], output_path: Path
     ) -> None:
-        """분석 결과를 지정된 CSV 파일로 출력 (지침 5 필드 분리 반영)."""
+        """분석 결과를 지정된 CSV 파일로 출력 (지침 4 딜러 실전 검토표 양식 완비)."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
         fieldnames = [
             "listing_id",
             "source_platform",
             "source_listing_id",
+            "source_url",
             "vehicle_summary",
             "model_year",
             "mileage_km",
@@ -786,18 +774,26 @@ class MarketOpportunityEngine:
             "relative_price_gap_pct",
             "cumulative_price_drop_krw",
             "observation_count",
-            "estimated_gross_spread_krw",
-            "estimated_operating_cost_krw",
-            "estimated_net_profit_krw",
+            "hypothetical_gross_spread_krw",
+            "hypothetical_operating_cost_krw",
+            "hypothetical_net_profit_krw",
             "target_margin_krw",
             "excess_over_target_krw",
             "opportunity_score",
             "data_confidence",
             "market_opportunity_grade",
             "partner_operational_suitability",
-            "is_duplicate_listing",
+            "duplicate_status",
             "duplicate_listing_ids",
             "raw_location",
+            "history_check_required",
+            # 딜러 파일럿 실전 피드백 입력란 (지침 4)
+            "dealer_review_verdict",
+            "dealer_expected_purchase_price_krw",
+            "dealer_expected_sale_price_krw",
+            "dealer_expected_reconditioning_cost_krw",
+            "dealer_decision_reason",
+            "dealer_reviewed_at",
             "evaluation_reason",
             "risk_factors",
         ]
@@ -807,10 +803,12 @@ class MarketOpportunityEngine:
             writer.writeheader()
             for c in candidates:
                 b = c.base_scenario
+                url = f"https://www.encar.com/dc/dc_cardetailview.do?method=kidiCarDet&carid={c.source_listing_id}"
                 writer.writerow({
                     "listing_id": c.listing_id,
                     "source_platform": c.source_platform,
                     "source_listing_id": c.source_listing_id,
+                    "source_url": url,
                     "vehicle_summary": c.vehicle_summary,
                     "model_year": c.model_year or "",
                     "mileage_km": c.mileage_km,
@@ -819,18 +817,26 @@ class MarketOpportunityEngine:
                     "relative_price_gap_pct": c.relative_price_gap_pct or "",
                     "cumulative_price_drop_krw": c.cumulative_price_drop_krw,
                     "observation_count": c.observation_count,
-                    "estimated_gross_spread_krw": b.estimated_gross_spread_krw if b else 0,
-                    "estimated_operating_cost_krw": b.estimated_operating_cost_krw if b else 0,
-                    "estimated_net_profit_krw": b.estimated_net_profit_krw if b else 0,
+                    "hypothetical_gross_spread_krw": b.hypothetical_gross_spread_krw if b else 0,
+                    "hypothetical_operating_cost_krw": b.hypothetical_operating_cost_krw if b else 0,
+                    "hypothetical_net_profit_krw": b.hypothetical_net_profit_krw if b else 0,
                     "target_margin_krw": b.target_margin_krw if b else 0,
                     "excess_over_target_krw": b.excess_over_target_krw if b else 0,
                     "opportunity_score": c.opportunity_score,
                     "data_confidence": c.data_confidence,
                     "market_opportunity_grade": c.market_opportunity_grade,
                     "partner_operational_suitability": c.partner_operational_suitability,
-                    "is_duplicate_listing": "YES" if c.is_duplicate_listing else "NO",
+                    "duplicate_status": c.duplicate_status,
                     "duplicate_listing_ids": " | ".join(c.duplicate_listing_ids),
                     "raw_location": c.raw_location,
+                    "history_check_required": "보험사고/침수/용도이력 실사필요",
+                    # 딜러 입력 필드는 공백으로 초기화
+                    "dealer_review_verdict": "",
+                    "dealer_expected_purchase_price_krw": "",
+                    "dealer_expected_sale_price_krw": "",
+                    "dealer_expected_reconditioning_cost_krw": "",
+                    "dealer_decision_reason": "",
+                    "dealer_reviewed_at": "",
                     "evaluation_reason": c.evaluation_reason,
                     "risk_factors": " | ".join(c.risk_factors),
                 })
