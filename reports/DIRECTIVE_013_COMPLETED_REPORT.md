@@ -4,6 +4,7 @@
 - **임무**: DIRECTIVE 013-C 지침에 따른 커밋 불확실성 원천 차단(Fail-Closed) 및 고유 배치 귀속성(Batch Ownership) 1:1 검증 완비.
 - **선행 작업**: PR #11 공식 병합 완료 (`e342aa71750ab2c2b4d802aad3cdb9ddd51ccff2`)
 - **작업 브랜치**: `feat/directive-013-scheduled-observation-system`
+- **최신 커밋 SHA**: `232deb8034dbb93475149303530e3bb44464fc9a`
 - **기준(Base) 브랜치**: `feat/directive-009-price-event-tracker`
 - **PR 생성 및 비교 URL**: https://github.com/WisdomMax/chafficial/compare/feat/directive-009-price-event-tracker...feat/directive-013-scheduled-observation-system?expand=1
 
