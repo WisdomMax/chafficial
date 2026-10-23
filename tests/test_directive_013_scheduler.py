@@ -249,6 +249,93 @@ def test_kst_date_conversion_boundary():
     assert to_kst_date_str(None) is None
 
 
+def test_is_transient_network_error_classification():
+    """지침 11 (013-B): 일시적 네트워크 예외와 영구적 파일/DB 예외의 엄격한 분류 검증."""
+    from chaficial.tracker.scheduler import is_transient_network_error
+    import sqlite3
+
+    # 네트워크 일시적 예외 -> True
+    assert is_transient_network_error(ConnectionError("네트워크 단절")) is True
+    assert is_transient_network_error(TimeoutError("소켓 타임아웃")) is True
+
+    # 파일 / 권한 / DB 영구적 예외 -> 절대 False
+    assert is_transient_network_error(PermissionError("디스크 쓰기 권한 없음")) is False
+    assert is_transient_network_error(FileNotFoundError("파일 없음")) is False
+    assert is_transient_network_error(sqlite3.OperationalError("데이터베이스 락")) is False
+    assert is_transient_network_error(ValueError("데이터 형식 오류")) is False
+
+
+def test_commit_boundary_post_error_does_not_re_collect(tmp_path):
+    """지침 12 (013-B 핵심): DB 커밋 성공 직후 사후 예외 발생 시 파이프라인 재실행 금지 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        max_retries=3,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".commit_boundary.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    runner_call_count = 0
+    def mock_runner_commits_then_crashes(*args, **kwargs):
+        nonlocal runner_call_count
+        runner_call_count += 1
+        # DB에 배치 커밋 완료
+        with Session(engine) as session:
+            b = BatchAuditLog(
+                batch_id=f"COMMITTED_BATCH_{runner_call_count}",
+                source_platform="ENCAR",
+                search_scope="아반떼 CN7",
+                record_count=100,
+            )
+            session.add(b)
+            session.commit()
+
+        # 커밋 성공 후 네트워크 단절 또는 사후 로깅 예외 발생 주입
+        raise ConnectionError("커밋 후 소켓 닫힘 예외 주입")
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner_commits_then_crashes)
+    result = scheduler.execute_single_observation(mode="live")
+
+    # DB에 이미 커밋되었음을 스케줄러가 감지하여 재실행을 차단하고 1회만 호출되어야 함!
+    assert runner_call_count == 1, "DB 커밋 후 사후 예외가 발생해도 재수집하면 안 됩니다!"
+    assert result["collection_status"] == "SUCCESS"
+
+
+def test_disk_and_permission_errors_fail_fast_without_retry(tmp_path):
+    """지침 13 (013-B): PermissionError 등 디스크/권한 에러 발생 시 즉시 중단(Fail-Fast) 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        max_retries=3,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".perm_err.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    call_count = 0
+    def mock_perm_error_runner(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        raise PermissionError("디스크 권한 거부")
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_perm_error_runner)
+    result = scheduler.execute_single_observation(mode="live")
+
+    assert call_count == 1, "PermissionError는 재시도 없이 1회 만에 Fail-Fast 되어야 합니다!"
+    assert result["collection_status"] == "FAILED"
+    assert result["error_type"] == "PermissionError"
+
+
+
 def test_daily_market_reporter_atomic_creation(tmp_path):
     """지침 10 (013-A): DailyMarketReporter가 원자적으로 일별 보고서를 발행하고 메트릭을 포함하는지 검증."""
     op_db = Path("data/chaficial_market_timeseries.db")
