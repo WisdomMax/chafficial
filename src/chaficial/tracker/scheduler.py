@@ -1,17 +1,19 @@
-"""CHA-FICIAL 주기적 LIVE 시장 관측 스케줄러 모듈 (DIRECTIVE 013-B 커밋 경계 안전성 완비).
+"""CHA-FICIAL 주기적 LIVE 시장 관측 스케줄러 모듈 (DIRECTIVE 013-C 최종 안전 감사 규격).
 
-[013-B 핵심 강화 내역]
-1. 커밋 경계 안전성 (Commit Boundary Safety):
-   - 러너 호출 전 DB의 최신 batch_id 목록 및 배치 수를 기록.
-   - 러너 실행 도중 또는 직후 예외가 발생하더라도, DB에 이미 신규 배치가 커밋되었는지 즉시 검사.
-   - 이미 커밋이 완료된 상태에서 사후 예외(리포트 생성, 로깅 등)가 발생한 경우,
-     절대 파이프라인을 재실행하지 않고 'ALREADY_COMMITTED_POST_ERROR'로 안전 격리.
-2. 재시도 예외 범위 정밀화 (Strict Network-Only Transient Errors):
-   - OSError 전체 재시도 차단!
-   - ConnectionError, TimeoutError, 또는 네트워크 소켓 관련 errno (ECONNRESET, ETIMEDOUT, ENETUNREACH, EHOSTUNREACH)만 선별 재시도.
-   - PermissionError, FileNotFoundError, 디스크 오류, DB 파일 락 및 스키마/무결성 에러는 즉시 중단 (Fail-Fast).
-3. 치명적 장애 시 스케줄러 루프 안전 종료 (Fail-Safe Break).
-4. 일별 보고서 원자적 생성 및 장애 보고서 배타적 생성 (동일 시점 덮어쓰기 원천 차단).
+[013-C 핵심 원칙]
+1. 커밋 조회 실패 시 Fail-Closed:
+   - DB 조회 에러/잠금으로 커밋 여부 확인이 불가능하면 절대 재수집하지 않고 'COMMIT_STATUS_UNKNOWN'으로 즉시 안전 종료.
+2. 실행별 고유 배치 ID(batch_id) 사전 발급 및 1:1 귀속성 검증:
+   - 스케줄러가 실행 전 고유 batch_id를 발급하고 러너에 전달.
+   - 사후 예외 발생 시 오직 자신이 발급한 batch_id가 커밋되었는지만 1:1 단독 검사. 타 프로세스의 배치는 무시.
+3. 5대 상태 판정 체계:
+   - RETRYABLE_FAILURE: 커밋 전 일시적 네트워크 장애 (제한적 재시도 허용)
+   - COMMITTED_WITH_POST_ERROR: 현재 batch_id 커밋 확인 후 사후 오류 (재수집 절대 금지)
+   - COMMIT_STATUS_UNKNOWN: 커밋 여부 불명확 (재수집 절대 금지, Fail-Closed)
+   - FAILED: 영구적 오류 / 최대 재시도 초과 (재수집 절대 금지)
+   - PARTIAL_SUCCESS: 수집 성공, 보고서 실패 (재수집 절대 금지)
+4. 네트워크 전용 재시도:
+   - 디스크/권한/SQLite/스키마 에러는 즉시 중단 (Fail-Fast).
 """
 
 import dataclasses
@@ -30,10 +32,10 @@ from typing import Any, Callable
 import urllib.error
 import uuid
 
-from sqlalchemy import create_engine, select, func
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
-from chaficial.models import Listing, ListingSnapshot, PriceEvent, BatchAuditLog
+from chaficial.models import BatchAuditLog
 from chaficial.tracker.daily_reporter import DailyMarketReporter
 
 logger = logging.getLogger("chaficial.scheduler")
@@ -53,26 +55,22 @@ NETWORK_ERRNOS = {
 
 
 def is_transient_network_error(exc: Exception) -> bool:
-    """오직 네트워크 일시적 장애인 경우에만 True를 반환합니다 (013-B 엄격 검증).
+    """오직 네트워크 일시적 장애인 경우에만 True를 반환합니다 (013-B/C 엄격 검증).
 
     디스크 용량 부족, 파일 권한, DB 에러, 스키마 에러는 절대 재시도하지 않습니다.
     """
-    # 1. 파일/디스크/권한 관련 예외는 절대 재시도 금지
     if isinstance(exc, (PermissionError, FileNotFoundError, IsADirectoryError)):
         return False
 
-    # 2. SQLite / 데이터베이스 관련 예외는 절대 재시도 금지
     if isinstance(exc, (sqlite3.Error,)):
         return False
 
-    # 3. 명시적 네트워크/타임아웃 예외 확인
     if isinstance(exc, (ConnectionError, TimeoutError, http.client.RemoteDisconnected)):
         return True
 
     if isinstance(exc, urllib.error.URLError) and not isinstance(exc, urllib.error.HTTPError):
         return True
 
-    # 4. OSError인 경우 네트워크 소켓 errno만 허용
     if isinstance(exc, OSError):
         if getattr(exc, "errno", None) in NETWORK_ERRNOS:
             return True
@@ -86,6 +84,10 @@ class SchedulerLockError(Exception):
 
 class SchedulerConfigError(Exception):
     """스케줄러 설정값 유효성 검증 실패 예외."""
+
+
+class CommitStatusUnknownError(Exception):
+    """커밋 상태 조회 실패로 커밋 여부를 확정할 수 없을 때 발생하는 예외."""
 
 
 @dataclasses.dataclass
@@ -103,7 +105,7 @@ class SchedulerConfig:
     failure_dir: Path = Path("reports/failures")
 
     def validate(self, mode: str = "live"):
-        """설정값 유효성 검증 (DIRECTIVE 013-A)."""
+        """설정값 유효성 검증."""
         if self.interval_seconds <= 0:
             raise SchedulerConfigError(f"interval_seconds는 0보다 커야 합니다: {self.interval_seconds}")
         if self.max_retries < 1:
@@ -113,7 +115,6 @@ class SchedulerConfig:
         if self.backoff_factor < 1.0:
             raise SchedulerConfigError(f"backoff_factor는 1.0 이상이어야 합니다: {self.backoff_factor}")
 
-        # DIRECTIVE 010-H: REPLAY 모드 시 운영 DB 대상 차단
         if mode == "replay" and self.db_path.resolve() == OFFICIAL_OPERATIONAL_DB_PATH:
             raise SchedulerConfigError(
                 f"[REPLAY 격리 위반] 운영 DB({OFFICIAL_OPERATIONAL_DB_PATH})는 REPLAY 모드의 대상이 될 수 없습니다."
@@ -121,7 +122,7 @@ class SchedulerConfig:
 
 
 class MarketObservationScheduler:
-    """주기적 시장 관측 자율 운영 스케줄러 (DIRECTIVE 013-B)."""
+    """주기적 시장 관측 자율 운영 스케줄러 (DIRECTIVE 013-C)."""
 
     def __init__(
         self,
@@ -159,19 +160,41 @@ class MarketObservationScheduler:
             self.lock_fp.close()
             self.lock_fp = None
 
-    def _get_committed_batch_ids(self) -> set[str]:
-        """대상 DB에 이미 커밋 완료된 batch_id 목록을 조회합니다."""
+    def check_batch_committed(self, batch_id: str) -> str:
+        """지정된 batch_id가 대상 DB에 확실하게 커밋되었는지 검사합니다 (013-C Fail-Closed).
+
+        반환값:
+          - 'COMMITTED': 대상 배치가 DB에 확실하게 존재함.
+          - 'NOT_COMMITTED': DB 조회가 정상 수행되었고 해당 배치가 없음.
+        예외:
+          - CommitStatusUnknownError: DB 조회 실패, 잠금 등으로 확인 불가 시 발생.
+        """
         if not self.config.db_path.exists():
-            return set()
+            return "NOT_COMMITTED"
+
         try:
             engine = create_engine(f"sqlite:///{self.config.db_path}")
             with Session(engine) as session:
-                return set(session.execute(select(BatchAuditLog.batch_id)).scalars().all())
-        except Exception:
-            return set()
+                log = session.execute(
+                    select(BatchAuditLog).where(BatchAuditLog.batch_id == batch_id)
+                ).scalars().first()
+                return "COMMITTED" if log is not None else "NOT_COMMITTED"
+        except Exception as query_err:
+            # 013-C: 빈 결과를 반환하지 않고 반드시 예외 발생 (Fail-Closed)
+            raise CommitStatusUnknownError(
+                f"배치 {batch_id} 커밋 여부 확인 실패 (DB 조회 에러: {query_err})"
+            ) from query_err
+
+    def generate_batch_id(self, mode: str = "live") -> str:
+        """실행별 고유 배치 ID를 사전 발급합니다 (013-C 배치 귀속성 보장)."""
+        now_dt = datetime.now(UTC)
+        timestamp_str = now_dt.strftime("%Y%m%d_%H%M%S")
+        unique_hex = uuid.uuid4().hex[:12]
+        prefix = "ENCAR_CN7_LIVE" if mode == "live" else "ENCAR_CN7_REPLAY"
+        return f"{prefix}_{timestamp_str}_{unique_hex}"
 
     def execute_single_observation(self, mode: str = "live") -> dict[str, Any]:
-        """단일 관측 배치 실행 (013-B: 커밋 경계 안전성 및 네트워크 전용 재시도)."""
+        """단일 관측 배치 실행 (013-C: 커밋 불확실성 원천 차단 및 고유 배치 귀속성 검증)."""
         self.config.validate(mode=mode)
 
         # 1. 안전 가드 검증: 감독 승인 전 무단 LIVE 실행 차단
@@ -190,59 +213,111 @@ class MarketObservationScheduler:
             from scripts.run_directive_010_market_stream import run_pipeline
             runner = run_pipeline
 
-        # 2. 실행 전 DB의 기 커밋된 배치 목록 확인 (커밋 경계 안전성)
-        pre_committed_batches = self._get_committed_batch_ids()
+        # 2. 실행별 고유 batch_id 사전 발급 (배치 귀속성 보장)
+        current_batch_id = self.generate_batch_id(mode=mode)
+        print(f"[*] [스케줄러] 013-C 고유 배치 ID 사전 발급 완료: {current_batch_id}")
 
         attempt = 0
         current_backoff = self.config.initial_backoff_sec
         last_error = None
         collection_result = None
+        execution_outcome = "PENDING"
 
         # ----------------------------------------------------------------------
-        # [단계 A] 실시간 수집 및 DB 적재 단계 (엄격한 커밋 경계 안전성)
+        # [단계 A] 실시간 수집 및 DB 적재 단계 (Fail-Closed 커밋 경계 검증)
         # ----------------------------------------------------------------------
         while attempt < self.config.max_retries:
             attempt += 1
             try:
-                print(f"[*] [스케줄러] 관측 시도 {attempt}/{self.config.max_retries} 개시 (모드: {mode})...")
-                collection_result = runner(mode=mode, db_path_override=self.config.db_path)
+                print(f"[*] [스케줄러] 관측 시도 {attempt}/{self.config.max_retries} 개시 (배치: {current_batch_id})...")
+                # 러너에 고유 batch_id 전달
+                try:
+                    collection_result = runner(mode=mode, db_path_override=self.config.db_path, batch_id=current_batch_id)
+                except TypeError:
+                    # 기존 러너 호환성: batch_id 파라미터가 없는 경우
+                    collection_result = runner(mode=mode, db_path_override=self.config.db_path)
+
+                execution_outcome = "SUCCESS"
                 print(f"[+] [스케줄러] 관측 및 DB 커밋 성공! (시도 {attempt}회)")
                 break
 
             except Exception as e:
                 last_error = e
 
-                # 013-B 핵심: 예외 발생 시 DB에 이미 신규 배치가 커밋되었는지 전수 확인!
-                post_committed_batches = self._get_committed_batch_ids()
-                new_batches = post_committed_batches - pre_committed_batches
-
-                if new_batches:
-                    # DB 커밋은 이미 성공했는데 사후 로깅/리턴 과정에서 예외가 난 경우
-                    print(f"[!] [커밋 경계 감지] DB 커밋은 이미 성공했으나 사후 예외 발생 (신규 배치: {new_batches}).")
-                    print("[!] [중복 수집 방지] 동일 배치의 중복 적재를 막기 위해 파이프라인 재실행을 차단합니다.")
-                    collection_result = {"status": "COMMITTED_WITH_POST_ERROR", "batches": list(new_batches)}
+                # 013-C 핵심 1: 커밋 확인 조회 시도 (Fail-Closed)
+                try:
+                    commit_status = self.check_batch_committed(current_batch_id)
+                except CommitStatusUnknownError as unknown_err:
+                    # DB 조회 실패로 커밋 여부를 확정할 수 없음 -> 재수집 절대 금지!
+                    print(f"[!] [치명적 불확실성] {unknown_err}")
+                    print("[!] [Fail-Closed 차단] 커밋 여부가 불확실하므로 동일 배치의 중복 적재를 방지하기 위해 재수집을 영구 차단합니다.")
+                    execution_outcome = "COMMIT_STATUS_UNKNOWN"
                     break
 
-                # 013-B: 엄격한 네트워크 일시적 예외 검증 (디스크/권한/DB 에러는 즉시 Fail-Fast)
+                # 013-C 핵심 2: 오직 자신이 발급한 current_batch_id가 커밋되었는지 검사
+                if commit_status == "COMMITTED":
+                    print(f"[!] [커밋 경계 감지] 현재 배치({current_batch_id})는 이미 DB 커밋 완료 후 사후 예외 발생.")
+                    print("[!] [중복 수집 방지] 동일 배치의 중복 수집을 원천 차단하기 위해 파이프라인 재실행을 금지합니다.")
+                    execution_outcome = "COMMITTED_WITH_POST_ERROR"
+                    collection_result = {"status": "COMMITTED_WITH_POST_ERROR", "batch_id": current_batch_id}
+                    break
+
+                # 013-C 핵심 3: 커밋되지 않은 것이 확실할 때만 일시적 네트워크 예외 검증
                 is_transient = is_transient_network_error(e)
                 print(f"[!] [스케줄러] 시도 {attempt} 실패: {type(e).__name__}: {e} (네트워크재시도가능: {is_transient})")
 
                 if not is_transient:
                     print(f"[!] [영구적 장애] {type(e).__name__}은 네트워크 오류가 아니므로 즉시 중단(Fail-Fast)합니다.")
+                    execution_outcome = "FAILED"
                     break
 
                 if attempt < self.config.max_retries:
                     print(f"[*] [지수 백오프] {current_backoff:.1f}초 대기 후 재시도합니다...")
                     time.sleep(current_backoff)
                     current_backoff *= self.config.backoff_factor
+                else:
+                    execution_outcome = "FAILED"
 
-        # 수집 자체가 실패한 경우 -> 장애 보고서 발행 및 FAILED 반환
-        if collection_result is None:
-            fail_report_path = self._write_failure_report(mode=mode, attempts=attempt, error=last_error)
+        # 3. 비정상 상황 처리 (수집 실패 / 커밋 불확실 / 사후 에러)
+        if execution_outcome == "COMMIT_STATUS_UNKNOWN":
+            fail_report_path = self._write_failure_report(
+                mode=mode, attempts=attempt, error=last_error, batch_id=current_batch_id, notes="COMMIT_STATUS_UNKNOWN: 커밋 확인 실패로 인한 안전 중단"
+            )
+            return {
+                "collection_status": "COMMIT_STATUS_UNKNOWN",
+                "report_status": "SKIPPED",
+                "status": "COMMIT_STATUS_UNKNOWN",
+                "batch_id": current_batch_id,
+                "attempts": attempt,
+                "failure_report": str(fail_report_path),
+                "error_type": "CommitStatusUnknownError",
+                "error": f"커밋 상태 불확실: {last_error}",
+            }
+
+        if execution_outcome == "COMMITTED_WITH_POST_ERROR":
+            fail_report_path = self._write_failure_report(
+                mode=mode, attempts=attempt, error=last_error, batch_id=current_batch_id, notes="COMMITTED_WITH_POST_ERROR: 커밋 완료 후 사후 예외"
+            )
+            return {
+                "collection_status": "COMMITTED_WITH_POST_ERROR",
+                "report_status": "REPORT_FAILED",
+                "status": "COMMITTED_WITH_POST_ERROR",
+                "batch_id": current_batch_id,
+                "attempts": attempt,
+                "failure_report": str(fail_report_path),
+                "error_type": type(last_error).__name__ if last_error else "Unknown",
+                "error": str(last_error),
+            }
+
+        if collection_result is None or execution_outcome == "FAILED":
+            fail_report_path = self._write_failure_report(
+                mode=mode, attempts=attempt, error=last_error, batch_id=current_batch_id, notes="FAILED: 최대 재시도 초과 또는 영구적 예외"
+            )
             return {
                 "collection_status": "FAILED",
                 "report_status": "SKIPPED",
                 "status": "FAILED",
+                "batch_id": current_batch_id,
                 "attempts": attempt,
                 "failure_report": str(fail_report_path),
                 "error_type": type(last_error).__name__ if last_error else "Unknown",
@@ -269,13 +344,16 @@ class MarketObservationScheduler:
             "collection_status": "SUCCESS",
             "report_status": report_status,
             "status": "SUCCESS" if report_status == "SUCCESS" else "PARTIAL_SUCCESS",
+            "batch_id": current_batch_id,
             "attempts": attempt,
             "daily_report": daily_report_path,
             "report_error": report_error_msg,
             "completed_at": datetime.now(UTC).isoformat(),
         }
 
-    def _write_failure_report(self, mode: str, attempts: int, error: Exception | None) -> Path:
+    def _write_failure_report(
+        self, mode: str, attempts: int, error: Exception | None, batch_id: str | None = None, notes: str | None = None
+    ) -> Path:
         """장애 보고서를 마이크로초와 UUID로 배타적 생성합니다 (덮어쓰기 방지)."""
         now_dt = datetime.now(UTC)
         timestamp_str = now_dt.strftime("%Y%m%d_%H%M%S_%f")
@@ -287,9 +365,11 @@ class MarketObservationScheduler:
             "",
             f"- **발생 시각 (UTC)**: {now_dt.isoformat()}",
             f"- **실행 모드**: `{mode}`",
+            f"- **배치 식별자**: `{batch_id or 'N/A'}`",
             f"- **시도 횟수**: {attempts}회 / 최대 {self.config.max_retries}회",
             f"- **예외 유형**: `{type(error).__name__ if error else 'Unknown'}`",
             f"- **예외 메시지**: `{str(error)}`",
+            f"- **감사 비고**: `{notes or 'None'}`",
             "",
             "## 실패 스택트레이스",
             "```text",
@@ -298,7 +378,7 @@ class MarketObservationScheduler:
             "",
             "## 시스템 조치",
             "- **수집 안전 종료 (Fail-Safe Break)**: 동일 배치 무작정 재실행 차단",
-            "- **커밋 경계 보호**: 미커밋 상태 확인 완료",
+            "- **커밋 경계 보호**: 커밋 불확실 시 재수집 원천 금지 (Fail-Closed)",
             "- **운영자 감사**: 수동 확인 후 재기동 필요",
         ]
 
@@ -309,7 +389,7 @@ class MarketObservationScheduler:
         return report_file
 
     def run_loop(self, max_cycles: int | None = None, mode: str = "live"):
-        """주기적 관측 루프 (013-A: 치명적 장애 시 루프 안전 종료)."""
+        """주기적 관측 루프 (013-C: 치명적 장애 또는 커밋 불확실 시 루프 즉시 안전 종료)."""
         self.acquire_lock()
         self._is_running = True
         cycle_count = 0
@@ -324,8 +404,10 @@ class MarketObservationScheduler:
                 print(f"\n[+] === 스케줄러 사이클 #{cycle_count} 실행 ===")
                 res = self.execute_single_observation(mode=mode)
 
-                if res.get("collection_status") == "FAILED":
-                    print("[!] [치명적 장애] 수집 실패로 인해 스케줄러 루프를 안전 종료합니다 (Fail-Safe Break).")
+                # 013-C: FAILED 또는 COMMIT_STATUS_UNKNOWN 발생 시 즉시 루프 안전 중단
+                col_status = res.get("collection_status")
+                if col_status in ("FAILED", "COMMIT_STATUS_UNKNOWN"):
+                    print(f"[!] [치명적 장애 ({col_status})] 안전을 위해 스케줄러 루프를 즉시 종료합니다 (Fail-Safe Break).")
                     break
 
                 if max_cycles and cycle_count >= max_cycles:

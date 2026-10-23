@@ -266,7 +266,7 @@ def test_is_transient_network_error_classification():
 
 
 def test_commit_boundary_post_error_does_not_re_collect(tmp_path):
-    """지침 12 (013-B 핵심): DB 커밋 성공 직후 사후 예외 발생 시 파이프라인 재실행 금지 검증."""
+    """지침 12 (013-B/C 핵심): 현재 발급된 batch_id가 DB에 커밋된 후 사후 예외 발생 시 재수집 차단 검증."""
     dummy_db = tmp_path / "dummy.db"
     engine = create_engine(f"sqlite:///{dummy_db}")
     Base.metadata.create_all(engine)
@@ -287,10 +287,11 @@ def test_commit_boundary_post_error_does_not_re_collect(tmp_path):
     def mock_runner_commits_then_crashes(*args, **kwargs):
         nonlocal runner_call_count
         runner_call_count += 1
-        # DB에 배치 커밋 완료
+        b_id = kwargs.get("batch_id") or "UNKNOWN_BATCH"
+        # 러너가 현재 발급된 batch_id로 DB 커밋 완료
         with Session(engine) as session:
             b = BatchAuditLog(
-                batch_id=f"COMMITTED_BATCH_{runner_call_count}",
+                batch_id=b_id,
                 source_platform="ENCAR",
                 search_scope="아반떼 CN7",
                 record_count=100,
@@ -298,15 +299,15 @@ def test_commit_boundary_post_error_does_not_re_collect(tmp_path):
             session.add(b)
             session.commit()
 
-        # 커밋 성공 후 네트워크 단절 또는 사후 로깅 예외 발생 주입
+        # 커밋 성공 후 네트워크 단절 또는 사후 예외 발생 주입
         raise ConnectionError("커밋 후 소켓 닫힘 예외 주입")
 
     scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner_commits_then_crashes)
     result = scheduler.execute_single_observation(mode="live")
 
-    # DB에 이미 커밋되었음을 스케줄러가 감지하여 재실행을 차단하고 1회만 호출되어야 함!
+    # DB에 현재 배치가 이미 커밋되었음을 스케줄러가 감지하여 재실행을 차단하고 1회만 호출되어야 함!
     assert runner_call_count == 1, "DB 커밋 후 사후 예외가 발생해도 재수집하면 안 됩니다!"
-    assert result["collection_status"] == "SUCCESS"
+    assert result["collection_status"] == "COMMITTED_WITH_POST_ERROR"
 
 
 def test_disk_and_permission_errors_fail_fast_without_retry(tmp_path):
@@ -333,6 +334,113 @@ def test_disk_and_permission_errors_fail_fast_without_retry(tmp_path):
     assert call_count == 1, "PermissionError는 재시도 없이 1회 만에 Fail-Fast 되어야 합니다!"
     assert result["collection_status"] == "FAILED"
     assert result["error_type"] == "PermissionError"
+
+
+def test_check_batch_committed_fail_closed_on_db_query_error(tmp_path, monkeypatch):
+    """지침 14 (013-C 핵심): DB 커밋 상태 조회 실패 시 Fail-Closed로 재시도 0회 즉시 차단 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        max_retries=3,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".fail_closed.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    runner_called_count = 0
+    def mock_runner(*args, **kwargs):
+        nonlocal runner_called_count
+        runner_called_count += 1
+        raise ConnectionError("네트워크 오류 발생")
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner)
+
+    # check_batch_committed에서 DB 조회 실패 예외 주입
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+    def mock_check_fail(batch_id):
+        raise CommitStatusUnknownError("DB 잠금 경합으로 인한 커밋 조회 불가 주입")
+
+    monkeypatch.setattr(scheduler, "check_batch_committed", mock_check_fail)
+
+    result = scheduler.execute_single_observation(mode="live")
+
+    # 커밋 여부가 불확실하므로 재시도하지 않고 1회 시도 후 즉시 COMMIT_STATUS_UNKNOWN으로 안전 종료
+    assert runner_called_count == 1
+    assert result["collection_status"] == "COMMIT_STATUS_UNKNOWN"
+    assert result["error_type"] == "CommitStatusUnknownError"
+
+
+def test_batch_ownership_ignores_other_process_batches(tmp_path):
+    """지침 15 (013-C 핵심): 타 프로세스의 신규 배치가 DB에 있어도 현재 배치가 아니면 오인하지 않음 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    engine = create_engine(f"sqlite:///{dummy_db}")
+    Base.metadata.create_all(engine)
+
+    from chaficial.models import BatchAuditLog
+    from sqlalchemy.orm import Session
+
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        max_retries=1,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".ownership.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    def mock_runner_crashes_while_another_process_commits(*args, **kwargs):
+        # 다른 독립 프로세스가 자신의 batch_id를 커밋했다고 가정
+        with Session(engine) as session:
+            b = BatchAuditLog(
+                batch_id="OTHER_PROCESS_BATCH_999",
+                source_platform="ENCAR",
+                search_scope="아반떼 CN7",
+                record_count=50,
+            )
+            session.add(b)
+            session.commit()
+
+        # 현재 프로세스는 자신의 배치를 커밋하지 못하고 크래시
+        raise ConnectionError("내 배치는 미커밋 상태에서 크래시")
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner_crashes_while_another_process_commits)
+    result = scheduler.execute_single_observation(mode="live")
+
+    # 타 프로세스의 배치를 내 배치의 성공으로 오인하지 않고 FAILED 처리되어야 함!
+    assert result["collection_status"] == "FAILED"
+    assert result["batch_id"] != "OTHER_PROCESS_BATCH_999"
+
+
+def test_loop_breaks_on_commit_status_unknown(tmp_path, monkeypatch):
+    """지침 16 (013-C): COMMIT_STATUS_UNKNOWN 발생 시 run_loop가 즉시 안전 중단(Break)됨을 검증."""
+    dummy_db = tmp_path / "dummy.db"
+    config = SchedulerConfig(
+        enable_live_execution=True,
+        interval_seconds=0.01,
+        max_retries=1,
+        db_path=dummy_db,
+        lock_file=tmp_path / ".loop_unknown.lock",
+        report_dir=tmp_path / "reports",
+        failure_dir=tmp_path / "failures",
+    )
+
+    cycle_count = 0
+    def mock_runner(*args, **kwargs):
+        nonlocal cycle_count
+        cycle_count += 1
+        raise ConnectionError("네트워크 에러")
+
+    scheduler = MarketObservationScheduler(config=config, pipeline_runner=mock_runner)
+
+    from chaficial.tracker.scheduler import CommitStatusUnknownError
+    def mock_check_fail(batch_id):
+        raise CommitStatusUnknownError("DB 잠금")
+
+    monkeypatch.setattr(scheduler, "check_batch_committed", mock_check_fail)
+
+    scheduler.run_loop(max_cycles=5, mode="live")
+    assert cycle_count == 1, "COMMIT_STATUS_UNKNOWN 발생 시 즉시 루프가 중단되어야 함"
 
 
 
