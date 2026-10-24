@@ -1,18 +1,19 @@
 """CHA-FICIAL AI 콘텐츠 제작 오케스트레이션 파이프라인.
 
-DIRECTIVE 003-A2 개정 준수:
-- 대본 수정 시 기존 승인 자동 무효화 (invalidate_approval)
-- 승인 권한(DEALER_PARTNER_AUTHORIZED) 명시적 검증
-- 생성 상태 머신 분리:
-  - DRY_RUN_VALIDATED (드라이런 통과 시)
-  - GENERATION_SUBMITTED (실제 제출 시)
-  - GENERATION_SUCCEEDED (실제 비디오 결과 자산 확인 시만 허용)
-- 생성 직전 최신 매물 상태 재감사 (Fail-closed)
+DIRECTIVE 003-A3 개정 준수:
+- ApproverContext: 신뢰할 수 있는 승인자 컨텍스트 필수화 (기본 인자 완전 배제)
+- 승인 시 대본 내 모든 FACT 장면의 FactEvidence 적합성 전수 검증
+- 승인한 대본의 내용 해시(approved_content_hash: SHA-256) 보존
+- mock_success_url 운영 파이프라인 제거 및 MOCK 영상 성공 처리 엄격 격리
 """
 
 from __future__ import annotations
 
+import hashlib
+from datetime import UTC, datetime
 from typing import ClassVar
+
+from pydantic import BaseModel, Field
 
 from chaficial.content.adapters.base import VideoGenerationAdapter
 from chaficial.content.adapters.kling4 import Kling4Adapter
@@ -23,19 +24,36 @@ from chaficial.content.models import (
     ContentWorkflowStatus,
     MediaAsset,
     ProductionProject,
+    ProvenanceType,
     UnapprovedContentError,
     VideoModelType,
 )
 from chaficial.content.repository import ContentRepository
-from chaficial.content.script_engine import ContentScriptEngine
+from chaficial.content.script_engine import (
+    ContentScriptEngine,
+    validate_scene_evidence_compatibility,
+)
 from chaficial.content.trend_engine import TrendIntelligenceEngine
 from chaficial.content.vehicle_adapter import VehicleContentAdapter
+
+
+class ApproverContext(BaseModel):
+    """신뢰할 수 있는 승인자 컨텍스트 모델 (내부 MVP 명시적 승인 기록 인터페이스)."""
+    user_id: str
+    user_name: str
+    role: str
+    verified_identity: bool = False
+    authorization_token: str | None = None
+    approved_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ContentProductionPipeline:
     """통합 콘텐츠 제작 파이프라인 매니저."""
 
-    AUTHORIZED_APPROVER_ROLES: ClassVar[set[str]] = {"DEALER_PARTNER_AUTHORIZED", "ADMIN_CHAFICIAL"}
+    AUTHORIZED_APPROVER_ROLES: ClassVar[set[str]] = {
+        "DEALER_PARTNER_AUTHORIZED",
+        "ADMIN_CHAFICIAL",
+    }
 
     def __init__(self, repository: ContentRepository | None = None) -> None:
         self.repository = repository or ContentRepository()
@@ -72,7 +90,7 @@ class ContentProductionPipeline:
         if not vehicle:
             raise ValueError(f"차량 후보 ID '{vehicle_candidate_id}'를 찾을 수 없습니다.")
 
-        # 제원, 상태, 활성도 및 사진 존재 여부 전수 감사 (require_images=True)
+        # 제원, 상태, 활성도, 관측시점 최신성 및 사진 존재 전수 감사 (require_images=True)
         VehicleContentAdapter.validate_commercial_eligibility(vehicle, require_images=True)
 
         project = ProductionProject(
@@ -118,14 +136,13 @@ class ContentProductionPipeline:
         review_id: str,
         expert_answers: dict[str, str],
         revision_notes: str | None = None,
-        approve_review: bool = False,  # 기본값 False: 자동 승인 전면 배제
+        approve_review: bool = False,
     ) -> ProductionProject:
         """전문가 답변을 반영하여 대본 초안 작성 (기존 승인 시 자동 무효화)."""
         project = self.repository.get_project(project_id)
         if not project:
             raise ValueError(f"프로젝트 '{project_id}'를 찾을 수 없습니다.")
 
-        # 기존 대본이 있었으면 버전 계승 및 증가
         next_version = 1
         if project.script:
             next_version = project.script.version + 1
@@ -160,25 +177,37 @@ class ContentProductionPipeline:
     def approve_script(
         self,
         project_id: str,
-        approver_name: str = "차마트 사장님 (25년 경력)",
-        approver_role: str = "DEALER_PARTNER_AUTHORIZED",
+        approver_context: ApproverContext,  # 기본 인자 없음: 컨텍스트 강제
     ) -> ProductionProject:
-        """대본 승인 처리 (승인 권한 역할 확인 강제)."""
+        """대본 승인 처리 (ApproverContext 검증, 내용 해시 보존, FACT 증빙 전수 검증)."""
         project = self.repository.get_project(project_id)
         if not project:
             raise ValueError(f"프로젝트 '{project_id}'를 찾을 수 없습니다.")
 
-        if approver_role not in self.AUTHORIZED_APPROVER_ROLES:
+        if not approver_context or not approver_context.verified_identity:
+            raise UnapprovedContentError("신원이 확인되지 않은 승인자 컨텍스트입니다. 승인 권한이 없습니다.")
+
+        if approver_context.role not in self.AUTHORIZED_APPROVER_ROLES:
             raise UnapprovedContentError(
-                f"권한이 없는 사용자({approver_role})는 콘텐츠를 최종 승인할 수 없습니다."
+                f"승인 권한이 없는 역할({approver_context.role})입니다. 승인이 거부되었습니다."
             )
 
         if not project.script:
             raise UnapprovedContentError("대본이 작성되지 않아 승인할 수 없습니다.")
 
+        # 대본 내 모든 FACT 장면에 대해 실제 검증된 증빙 존재 및 적합성 검증
+        for scene in project.script.scenes:
+            if scene.provenance_type == ProvenanceType.FACT:
+                validate_scene_evidence_compatibility(scene.narration, scene.evidence)
+
+        # 대본 내용 SHA-256 해시 계산 및 보존
+        content_hash = hashlib.sha256(project.script.full_text.encode("utf-8")).hexdigest()
+
         project.script.is_approved = True
-        project.script.approved_by = approver_name
+        project.script.approved_by = approver_context.user_name
+        project.script.approved_at = datetime.now(UTC)
         project.script.approved_version = project.script.version
+        project.script.approved_content_hash = content_hash
         project.transition_to(ContentWorkflowStatus.APPROVED)
         return self.repository.save_project(project)
 
@@ -242,7 +271,7 @@ class ContentProductionPipeline:
         return self.repository.save_project(project)
 
     # -------------------------------------------------------------------------
-    # 드라이런 검증 및 생성 작업 오케스트레이션 (상태 분리)
+    # 드라이런 검증 및 생성 작업 오케스트레이션 (운영/테스트 격리)
     # -------------------------------------------------------------------------
 
     def validate_dry_run(self, project_id: str) -> ProductionProject:
@@ -269,40 +298,50 @@ class ContentProductionPipeline:
         self,
         project_id: str,
         dry_run: bool = True,
-        mock_success_url: str | None = None,
     ) -> ProductionProject:
-        """영상 생성 엔진 구동 (드라이런과 실제 생성 완료 상태 엄격 분리)."""
+        """운영 영상 생성 파이프라인.
+        
+        실제 외부 생성 API가 미연동 상태이므로, 임의의 성공 상태를 조작하지 않고
+        드라이런 검증(DRY_RUN_VALIDATED) 또는 미연동 알림(GENERATION_FAILED)으로 안전 처리합니다.
+        """
         if dry_run:
-            # 드라이런은 절대 GENERATION_SUCCEEDED로 가지 않고 DRY_RUN_VALIDATED로 전이
             return self.validate_dry_run(project_id)
 
         project = self.repository.get_project(project_id)
         if not project:
             raise ValueError(f"프로젝트 '{project_id}'를 찾을 수 없습니다.")
 
-        # 드라이런 검증을 거치지 않은 경우 자동 수행
         if project.status == ContentWorkflowStatus.PRODUCTION_READY:
             project = self.validate_dry_run(project_id)
 
         project.transition_to(ContentWorkflowStatus.GENERATION_SUBMITTED)
 
-        adapter = self.adapters.get(project.selected_model)
-        assert adapter is not None
+        # 실제 외부 API가 미연동이므로 실제 생성 성공은 불가하며 작업 실패/대기 상태로 기록
+        project.generation_result = {
+            "status": "UNINTEGRATED_API",
+            "message": "실제 상용 유료 생성 API 엔드포인트가 연동되지 않았습니다. 임의의 성공 처리가 차단되었습니다.",
+        }
+        project.transition_to(ContentWorkflowStatus.GENERATION_FAILED)
+        return self.repository.save_project(project)
 
-        result = adapter.execute_generation(
-            master_prompt=project.master_prompt or "",
-            assets=project.visual_assets,
-            dry_run=False,
-            api_payload=project.api_payload,
-        )
-        project.generation_result = result
+    def _simulate_generation_success_for_testing(
+        self,
+        project_id: str,
+        verified_video_url: str,
+    ) -> ProductionProject:
+        """테스트 환경 전용: 실제 외부 API 연동 시의 성공 상태 전이를 시뮬레이션."""
+        project = self.repository.get_project(project_id)
+        if not project:
+            raise ValueError(f"프로젝트 '{project_id}'를 찾을 수 없습니다.")
 
-        # 유효한 비디오 결과 자산이 확인된 경우에만 GENERATION_SUCCEEDED 처리
-        if mock_success_url:
-            project.result_video_url = mock_success_url
-            project.transition_to(ContentWorkflowStatus.GENERATION_SUCCEEDED)
-        else:
-            # 비디오 자산이 없는 경우 실패 또는 대기 처리
-            project.transition_to(ContentWorkflowStatus.GENERATION_FAILED)
+        if not verified_video_url:
+            raise ValueError("유효한 비디오 URL이 제공되어야 합니다.")
 
+        if project.status != ContentWorkflowStatus.GENERATION_SUBMITTED:
+            if project.status == ContentWorkflowStatus.PRODUCTION_READY:
+                project = self.validate_dry_run(project_id)
+            project.transition_to(ContentWorkflowStatus.GENERATION_SUBMITTED)
+
+        project.result_video_url = verified_video_url
+        project.transition_to(ContentWorkflowStatus.GENERATION_SUCCEEDED)
         return self.repository.save_project(project)

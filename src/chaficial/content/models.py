@@ -181,7 +181,7 @@ class StoryboardScene(BaseModel):
 
 
 class ContentScript(BaseModel):
-    """콘텐츠 대본 모델 (버전 관리 및 승인 무효화 지원)."""
+    """콘텐츠 대본 모델 (버전 관리, 승인 무효화 및 내용 해시 무결성 보존)."""
     title: str
     version: int = 1
     hook_sentence: str
@@ -191,6 +191,7 @@ class ContentScript(BaseModel):
     approved_by: str | None = None
     approved_at: datetime | None = None
     approved_version: int | None = None
+    approved_content_hash: str | None = None
 
     def invalidate_approval(self, reason: str = "대본 내용 수정") -> None:
         """대본 수정 시 기존 승인을 즉시 무효화하고 버전을 증가."""
@@ -198,6 +199,7 @@ class ContentScript(BaseModel):
         self.approved_by = None
         self.approved_at = None
         self.approved_version = None
+        self.approved_content_hash = None
         self.version += 1
 
 

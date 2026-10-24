@@ -205,6 +205,7 @@ def test_fail_closed_zero_photos_blocked(pipeline: ContentProductionPipeline):
         "availability_status": "AVAILABLE",
         "partner_review_status": "APPROVED",
         "listing_status": "ACTIVE",
+        "snapshot_observed_at": datetime.now(UTC),
         "images": [],  # 사진 없음
     })
     pipeline.repository.save_vehicle(no_photo_vehicle)
@@ -226,6 +227,7 @@ def test_internal_storage_only_photo_blocked(pipeline: ContentProductionPipeline
         "availability_status": "AVAILABLE",
         "partner_review_status": "APPROVED",
         "listing_status": "ACTIVE",
+        "snapshot_observed_at": datetime.now(UTC),
         "images": [
             {
                 "path_or_url": "/assets/g80.jpg",
@@ -316,17 +318,17 @@ def test_official_wan3_api_schema_contract():
     assert "promptText" in payload
     assert isinstance(payload["references"], list)
 
-    # 3. references 배열 항목 검증 (type, url)
+    # 3. references 배열 항목 검증 (오직 이미지만 포함, audio는 referenceAudio로 분리)
     refs = payload["references"]
-    assert len(refs) == 2
+    assert len(refs) == 1
     assert refs[0] == {"type": "image", "url": "https://cdn.chafficial.com/host.jpg"}
-    assert refs[1] == {"type": "audio", "url": "https://cdn.chafficial.com/voice.wav"}
+    assert payload["referenceAudio"] == {"url": "https://cdn.chafficial.com/voice.wav"}
 
     # 4. 비공식 임의 필드 전무 단언
     assert "resolution" not in payload
     assert "options" not in payload
     assert "referenceImages" not in payload
-    assert "referenceAudio" not in payload
+    assert "referenceAudio" in payload
 
 
 # ============================================================================
@@ -388,6 +390,7 @@ def test_script_approval_invalidation_and_unauthorized_block(pipeline: ContentPr
         "availability_status": "AVAILABLE",
         "partner_review_status": "APPROVED",
         "listing_status": "ACTIVE",
+        "snapshot_observed_at": datetime.now(UTC),
         "images": [{"path_or_url": "/img/1.jpg", "republication_allowed": True}],
     })
     pipeline.repository.save_vehicle(vehicle)
@@ -396,13 +399,26 @@ def test_script_approval_invalidation_and_unauthorized_block(pipeline: ContentPr
     _, review_id = pipeline.start_expert_review(project.project_id)
     project = pipeline.draft_script_with_expert_feedback(project.project_id, review_id, {"q": "정상 매물"})
 
+    from chaficial.content.pipeline import ApproverContext
+    unauth_ctx = ApproverContext(
+        user_id="user_anon",
+        user_name="익명",
+        role="ANONYMOUS_USER",
+        verified_identity=False,
+    )
     # 1. 비인가 사용자 승인 시도 차단
     with pytest.raises(UnapprovedContentError) as exc_info:
-        pipeline.approve_script(project.project_id, approver_role="ANONYMOUS_USER")
-    assert "권한이 없는 사용자" in str(exc_info.value)
+        pipeline.approve_script(project.project_id, approver_context=unauth_ctx)
+    assert "권한" in str(exc_info.value)
 
     # 2. 정규 승인권자 승인
-    project = pipeline.approve_script(project.project_id, approver_role="DEALER_PARTNER_AUTHORIZED")
+    auth_ctx = ApproverContext(
+        user_id="dealer_001",
+        user_name="차마트 사장님",
+        role="DEALER_PARTNER_AUTHORIZED",
+        verified_identity=True,
+    )
+    project = pipeline.approve_script(project.project_id, approver_context=auth_ctx)
     assert project.status == ContentWorkflowStatus.APPROVED
     assert project.script.is_approved is True
     assert project.script.version == 1
@@ -432,7 +448,14 @@ def test_generation_state_machine_isolation(pipeline: ContentProductionPipeline)
     project = pipeline.create_trend_project(trend.candidate_id)
     _, review_id = pipeline.start_expert_review(project.project_id)
     pipeline.draft_script_with_expert_feedback(project.project_id, review_id, {"q": "답변"})
-    pipeline.approve_script(project.project_id)
+    from chaficial.content.pipeline import ApproverContext
+    auth_ctx = ApproverContext(
+        user_id="dealer_001",
+        user_name="차마트 사장님",
+        role="DEALER_PARTNER_AUTHORIZED",
+        verified_identity=True,
+    )
+    pipeline.approve_script(project.project_id, approver_context=auth_ctx)
 
     host_asset = MediaAsset(
         asset_type=AssetType.IMAGE,
@@ -453,9 +476,9 @@ def test_generation_state_machine_isolation(pipeline: ContentProductionPipeline)
         project.transition_to(ContentWorkflowStatus.GENERATION_SUCCEEDED)
     assert "실제 비디오 결과 자산" in str(exc_info.value)
 
-    # 3. 유효한 결과 자산 주입 시 성공 완료 전이
-    project = pipeline.execute_video_generation(
-        project.project_id, dry_run=False, mock_success_url="https://storage.chafficial.com/video/result.mp4"
+    # 3. 유효한 결과 자산 주입 시 성공 완료 전이 (테스트 전용 시뮬레이터)
+    project = pipeline._simulate_generation_success_for_testing(
+        project.project_id, verified_video_url="https://storage.chafficial.com/video/result.mp4"
     )
     assert project.status == ContentWorkflowStatus.GENERATION_SUCCEEDED
     assert project.result_video_url == "https://storage.chafficial.com/video/result.mp4"
@@ -484,6 +507,7 @@ def test_speech_timing_and_quality_across_diverse_vehicles(pipeline: ContentProd
             "availability_status": "AVAILABLE",
             "partner_review_status": "APPROVED",
             "listing_status": "ACTIVE",
+            "snapshot_observed_at": datetime.now(UTC),
             "images": [{"path_or_url": "/img.jpg", "republication_allowed": True}],
         })
         pipeline.repository.save_vehicle(v)

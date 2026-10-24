@@ -147,18 +147,20 @@ class Wan3Adapter(VideoGenerationAdapter):
         image_assets = [a for a in assets if a.asset_type == AssetType.IMAGE][:10]
         audio_assets = [a for a in assets if a.asset_type == AssetType.AUDIO]
 
-        # 공식 references 배열 구축
+        # 공식 references 배열 구축 (오직 이미지만 포함, audio는 referenceAudio로 분리)
         references: list[dict[str, str]] = []
         for asset in image_assets:
             references.append({
                 "type": "image",
                 "url": asset.path_or_url,
             })
-        for asset in audio_assets:
-            references.append({
-                "type": "audio",
-                "url": asset.path_or_url,
-            })
+
+        # 공식 referenceAudio 전용 필드 (배열 내 오디오 삽입 금지)
+        reference_audio = None
+        if audio_assets:
+            reference_audio = {
+                "url": audio_assets[0].path_or_url,
+            }
 
         # 본문 프롬프트 (대사 및 씬 묘사 요약)
         dialogues = " | ".join(f"[{sp.scene_number}] {sp.dialogue}" for sp in shot_prompts)
@@ -167,13 +169,17 @@ class Wan3Adapter(VideoGenerationAdapter):
             f"Clear voice delivery: {dialogues}"
         )
 
-        return {
+        payload: dict[str, Any] = {
             "model": self.MODEL_ID,
             "promptText": prompt_text,
             "duration": 30,
             "ratio": self.VERTICAL_RATIO,
             "references": references,
         }
+        if reference_audio:
+            payload["referenceAudio"] = reference_audio
+
+        return payload
 
     def format_master_prompt(
         self,

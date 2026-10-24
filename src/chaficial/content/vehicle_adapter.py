@@ -252,6 +252,17 @@ class VehicleContentAdapter:
             availability_status = raw_avail
 
         evidences = list(data.get("evidences") or [])
+        if not evidences and snapshot_observed_at:
+            evidences.append(
+                FactEvidence(
+                    source_type="ListingSnapshot",
+                    document_ref=f"SNAP-OBS-{vehicle_id}",
+                    verified_at=snapshot_observed_at,
+                    verification_status=VerificationStatus.VERIFIED,
+                    verified_by="CHAFICIAL_MARKET_INTELLIGENCE",
+                    notes=f"관측 가격: {price}만원, 주행거리: {mileage}km",
+                )
+            )
 
         return VehicleContentCandidate(
             vehicle_id=vehicle_id,
@@ -307,17 +318,21 @@ class VehicleContentAdapter:
                 f"필수 제원이 누락된 차량은 홍보 영상을 제작할 수 없습니다: {missing}"
             )
 
-        # 3. 가격 관측 최신성 검증 (30일 초과 시 차단)
-        if candidate.snapshot_observed_at:
-            obs = candidate.snapshot_observed_at
-            if obs.tzinfo is None:
-                obs = obs.replace(tzinfo=UTC)
-            age_days = (datetime.now(UTC) - obs).total_seconds() / 86400.0
-            if age_days > max_observed_days:
-                raise CommercialIneligibilityError(
-                    f"가격 관측 시점({obs.date()})이 {max_observed_days}일을 초과하여 최신 가격 검증이 필요합니다. "
-                    f"(경과일: {age_days:.1f}일)"
-                )
+        # 3. 가격 관측 최신성 검증 (누락 시 차단, 30일 초과 시 차단)
+        if not candidate.snapshot_observed_at:
+            raise CommercialIneligibilityError(
+                "가격 관측 시각(snapshot_observed_at)이 누락되어 최신성을 검증할 수 없습니다."
+            )
+
+        obs = candidate.snapshot_observed_at
+        if obs.tzinfo is None:
+            obs = obs.replace(tzinfo=UTC)
+        age_days = (datetime.now(UTC) - obs).total_seconds() / 86400.0
+        if age_days > max_observed_days:
+            raise CommercialIneligibilityError(
+                f"가격 관측 시점({obs.date()})이 {max_observed_days}일을 초과하여 최신 가격 검증이 필요합니다. "
+                f"(경과일: {age_days:.1f}일)"
+            )
 
         # 4. 이미지 존재 및 권한 전수 감사 (실제 사진 없는 경로 전면 차단)
         if require_images and not candidate.images:

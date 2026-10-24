@@ -20,11 +20,12 @@ from chaficial.content.models import (
     VideoModelType,
     WorkflowTransitionError,
 )
-from chaficial.content.pipeline import ContentProductionPipeline
+from chaficial.content.pipeline import ApproverContext, ContentProductionPipeline
 from chaficial.content.repository import ContentRepository
 from chaficial.content.vehicle_adapter import VehicleContentAdapter
 
 __all__ = [
+    "ApproverContext",
     "AssetType",
     "ContentProductionPipeline",
     "ContentRepository",

@@ -20,9 +20,19 @@ from chaficial.content.models import (
     UnauthorizedAssetError,
     VideoModelType,
 )
-from chaficial.content.pipeline import ContentProductionPipeline
+from chaficial.content.pipeline import ApproverContext, ContentProductionPipeline
 from chaficial.content.repository import ContentRepository
 from chaficial.content.vehicle_adapter import VehicleContentAdapter
+
+
+@pytest.fixture
+def auth_context() -> ApproverContext:
+    return ApproverContext(
+        user_id="dealer_001",
+        user_name="차마트 사장님",
+        role="DEALER_PARTNER_AUTHORIZED",
+        verified_identity=True,
+    )
 
 
 @pytest.fixture
@@ -31,7 +41,7 @@ def pipeline() -> ContentProductionPipeline:
     return ContentProductionPipeline(repository=repo)
 
 
-def test_scenario_a_trend_content_lifecycle(pipeline: ContentProductionPipeline):
+def test_scenario_a_trend_content_lifecycle(pipeline: ContentProductionPipeline, auth_context: ApproverContext):
     """시나리오 A: 인기 영상 후보 등록 -> 질문 생성 -> 답변 기록 -> 대본 작성 -> 승인 -> WAN 3.0 프롬프트 출력."""
     trend = pipeline.trend_engine.register_trend_candidate(
         platform="YOUTUBE_SHORTS",
@@ -69,7 +79,7 @@ def test_scenario_a_trend_content_lifecycle(pipeline: ContentProductionPipeline)
     assert project.status == ContentWorkflowStatus.SCRIPT_DRAFT
     assert project.script is not None
 
-    project = pipeline.approve_script(project.project_id, approver_name="차마트 사장님")
+    project = pipeline.approve_script(project.project_id, approver_context=auth_context)
     assert project.status == ContentWorkflowStatus.APPROVED
     assert project.script.is_approved is True
 
@@ -105,7 +115,7 @@ def test_scenario_a_trend_content_lifecycle(pipeline: ContentProductionPipeline)
     assert project.generation_result["is_dry_run"] is True
 
 
-def test_scenario_b_vehicle_content_lifecycle(pipeline: ContentProductionPipeline):
+def test_scenario_b_vehicle_content_lifecycle(pipeline: ContentProductionPipeline, auth_context: ApproverContext):
     """시나리오 B: 추천 매물 데이터 입력 -> 검증 -> 사진 선택 -> 대본 -> WAN 3.0 프롬프트 출력."""
     raw_vehicle_data = {
         "vehicle_id": "CAR-2020-CAYENNE-001",
@@ -117,6 +127,7 @@ def test_scenario_b_vehicle_content_lifecycle(pipeline: ContentProductionPipelin
         "availability_status": "AVAILABLE",
         "partner_review_status": "APPROVED",
         "listing_status": "ACTIVE",
+        "snapshot_observed_at": datetime.now(UTC),
         "options": ["21인치 RS스파이더 휠", "보르도 레드 시트", "스포츠 크로노", "서라운드 뷰"],
         "verified_pros": ["인기 1위 크레용 외장", "보르도 레드 인테리어"],
         "precautions": ["트렁크 리드 단순교환 1건 있음 (골격 무사고)"],
@@ -159,7 +170,7 @@ def test_scenario_b_vehicle_content_lifecycle(pipeline: ContentProductionPipelin
     )
     assert project.status == ContentWorkflowStatus.SCRIPT_DRAFT
 
-    project = pipeline.approve_script(project.project_id)
+    project = pipeline.approve_script(project.project_id, approver_context=auth_context)
     assert project.status == ContentWorkflowStatus.APPROVED
 
     host_asset = MediaAsset(
@@ -220,7 +231,7 @@ def test_error_2_missing_essential_vehicle_info(pipeline: ContentProductionPipel
         pipeline.create_vehicle_project(candidate.candidate_id)
 
 
-def test_error_3_unauthorized_asset_blocked(pipeline: ContentProductionPipeline):
+def test_error_3_unauthorized_asset_blocked(pipeline: ContentProductionPipeline, auth_context: ApproverContext):
     """오류 3: 권한 없는 이미지(republication_allowed=False)의 제작 자산 사용 시 차단."""
     vehicle = VehicleContentAdapter.from_dict({
         "vehicle_id": "CAR-AUTH-TEST",
@@ -232,6 +243,7 @@ def test_error_3_unauthorized_asset_blocked(pipeline: ContentProductionPipeline)
         "availability_status": "AVAILABLE",
         "partner_review_status": "APPROVED",
         "listing_status": "ACTIVE",
+        "snapshot_observed_at": datetime.now(UTC),
         "images": [{"path_or_url": "/valid.jpg", "republication_allowed": True}],
     })
     pipeline.repository.save_vehicle(vehicle)
@@ -239,7 +251,7 @@ def test_error_3_unauthorized_asset_blocked(pipeline: ContentProductionPipeline)
 
     _, review_id = pipeline.start_expert_review(project.project_id)
     pipeline.draft_script_with_expert_feedback(project.project_id, review_id, {"q1": "a1"})
-    pipeline.approve_script(project.project_id)
+    pipeline.approve_script(project.project_id, approver_context=auth_context)
 
     illegal_asset = MediaAsset(
         asset_type=AssetType.IMAGE,
@@ -268,6 +280,7 @@ def test_error_4_unapproved_content_blocked(pipeline: ContentProductionPipeline)
         "availability_status": "AVAILABLE",
         "partner_review_status": "APPROVED",
         "listing_status": "ACTIVE",
+        "snapshot_observed_at": datetime.now(UTC),
         "images": [{"path_or_url": "/valid.jpg", "republication_allowed": True}],
     })
     pipeline.repository.save_vehicle(vehicle)
@@ -293,7 +306,9 @@ def test_error_5_invalid_vehicle_interface_mismatch():
     assert "vehicle_id" in str(exc_info.value)
 
 
-def test_error_6_external_api_absence_graceful_handling(pipeline: ContentProductionPipeline):
+def test_error_6_external_api_absence_graceful_handling(
+    pipeline: ContentProductionPipeline, auth_context: ApproverContext
+):
     """오류 6: 외부 API 부재 시 드라이런 검증(DRY_RUN_VALIDATED)으로 안전 처리."""
     trend = pipeline.trend_engine.register_trend_candidate(
         platform="TIKTOK",
@@ -304,7 +319,7 @@ def test_error_6_external_api_absence_graceful_handling(pipeline: ContentProduct
     project = pipeline.create_trend_project(trend.candidate_id)
     _, review_id = pipeline.start_expert_review(project.project_id)
     pipeline.draft_script_with_expert_feedback(project.project_id, review_id, {"q": "a"})
-    pipeline.approve_script(project.project_id)
+    pipeline.approve_script(project.project_id, approver_context=auth_context)
 
     host_asset = MediaAsset(
         asset_type=AssetType.IMAGE,

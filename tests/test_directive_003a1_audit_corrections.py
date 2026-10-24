@@ -10,6 +10,8 @@
 7. Runway Dev WAN 3.0 REST API JSON Payload 명세 규격(wan3, 720:1280) 검증
 """
 
+from datetime import UTC, datetime
+
 import pytest
 
 from chaficial.content.models import (
@@ -21,7 +23,7 @@ from chaficial.content.models import (
     UnauthorizedAssetError,
     VideoModelType,
 )
-from chaficial.content.pipeline import ContentProductionPipeline
+from chaficial.content.pipeline import ApproverContext, ContentProductionPipeline
 from chaficial.content.repository import ContentRepository
 from chaficial.content.script_engine import (
     attach_particle,
@@ -29,6 +31,16 @@ from chaficial.content.script_engine import (
     koreanize_numbers,
 )
 from chaficial.content.vehicle_adapter import VehicleContentAdapter
+
+
+@pytest.fixture
+def auth_context() -> ApproverContext:
+    return ApproverContext(
+        user_id="dealer_001",
+        user_name="차마트 사장님",
+        role="DEALER_PARTNER_AUTHORIZED",
+        verified_identity=True,
+    )
 
 
 @pytest.fixture
@@ -78,6 +90,7 @@ def test_unverified_accident_claim_prevention(pipeline: ContentProductionPipelin
         "availability_status": "AVAILABLE",
         "partner_review_status": "APPROVED",
         "listing_status": "ACTIVE",
+        "snapshot_observed_at": datetime.now(UTC),
         "verified_pros": [],       # 무사고 인증 없음
         "precautions": [],         # 단순 교환 언급 없음
         "images": [
@@ -184,6 +197,7 @@ def test_unauthorized_image_vehicle_blocked():
         "availability_status": "AVAILABLE",
         "partner_review_status": "APPROVED",
         "listing_status": "ACTIVE",
+        "snapshot_observed_at": datetime.now(UTC),
         "images": [
             {
                 "path_or_url": "/unauthorized/gv80.jpg",
@@ -201,7 +215,9 @@ def test_unauthorized_image_vehicle_blocked():
         pipe.create_vehicle_project(candidate.candidate_id)
 
 
-def test_wan3_runway_dev_api_payload_specification(pipeline: ContentProductionPipeline):
+def test_wan3_runway_dev_api_payload_specification(
+    pipeline: ContentProductionPipeline, auth_context: ApproverContext
+):
     """Runway Dev wan3 공식 규격 검증."""
     valid_data = {
         "vehicle_id": "CAR-WAN3-SPEC-TEST",
@@ -213,6 +229,7 @@ def test_wan3_runway_dev_api_payload_specification(pipeline: ContentProductionPi
         "availability_status": "AVAILABLE",
         "partner_review_status": "APPROVED",
         "listing_status": "ACTIVE",
+        "snapshot_observed_at": datetime.now(UTC),
         "verified_pros": ["크레용 컬러", "보르도 레드 시트"],
         "precautions": ["트렁크 단순교환 1건"],
         "images": [
@@ -233,7 +250,7 @@ def test_wan3_runway_dev_api_payload_specification(pipeline: ContentProductionPi
         review_id,
         {"q": "점검 완료 매물입니다."},
     )
-    pipeline.approve_script(project.project_id)
+    pipeline.approve_script(project.project_id, approver_context=auth_context)
 
     host_img = MediaAsset(
         asset_type=AssetType.IMAGE,
@@ -248,7 +265,7 @@ def test_wan3_runway_dev_api_payload_specification(pipeline: ContentProductionPi
         model_type=VideoModelType.WAN_3_0,
     )
 
-    assert "오늘 입고된 포르쉐 카이엔 쿠페가 판매 가격 육천구백만원입니다" in project.master_prompt
+    assert "관측된 포르쉐 카이엔 쿠페가 판매 가격 육천구백만원입니다" in project.master_prompt
 
     # 드라이런 검증
     project = pipeline.execute_video_generation(project.project_id, dry_run=True)
