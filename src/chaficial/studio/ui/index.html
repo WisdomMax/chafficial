@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHA-FICIAL AI Content Studio | 차피셜 기획실</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            },
+            accent: '#10b981',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { font-family: 'Pretendard', sans-serif; }
+    .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+    .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 700; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- 상단 네비게이션 헤더 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md">
+          차
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">CHA-FICIAL</span>
+          <span class="text-xs ml-2 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider" id="mode-badge">로딩중...</span>
+          <div class="text-[11px] text-slate-500 font-medium">차마트 상사 25년 딜러 유니버스 AI 콘텐츠 기획 스튜디오</div>
+        </div>
+      </div>
+      
+      <!-- 우측 빠른 액션 -->
+      <div class="flex items-center space-x-3">
+        <button onclick="triggerDiscovery()" id="btn-discover" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg flex items-center space-x-1.5 shadow-sm transition">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <span>집중 검색 실행</span>
+        </button>
+        <button onclick="refreshData()" class="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition" title="새로고침">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- 5대 메인 화면 탭 바 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100 flex space-x-8 text-sm">
+      <button onclick="switchTab('tab-topics')" id="nav-topics" class="py-3 px-1 font-medium text-slate-600 hover:text-blue-600 transition tab-active">
+        <i class="fa-solid fa-fire mr-1.5 text-amber-500"></i>1. 오늘의 추천 주제
+      </button>
+      <button onclick="switchTab('tab-videos')" id="nav-videos" class="py-3 px-1 font-medium text-slate-600 hover:text-blue-600 transition">
+        <i class="fa-solid fa-play mr-1.5 text-red-500"></i>2. 인기 영상 탐색
+      </button>
+      <button onclick="switchTab('tab-detail')" id="nav-detail" class="py-3 px-1 font-medium text-slate-600 hover:text-blue-600 transition">
+        <i class="fa-solid fa-chart-pie mr-1.5 text-indigo-500"></i>3. 주제 분석 상세
+      </button>
+      <button onclick="switchTab('tab-studio')" id="nav-studio" class="py-3 px-1 font-medium text-slate-600 hover:text-blue-600 transition">
+        <i class="fa-solid fa-clapperboard mr-1.5 text-emerald-500"></i>4. 콘텐츠 기획실
+      </button>
+      <button onclick="switchTab('tab-settings')" id="nav-settings" class="py-3 px-1 font-medium text-slate-600 hover:text-blue-600 transition">
+        <i class="fa-solid fa-sliders mr-1.5 text-slate-500"></i>5. 검색·운영 설정
+      </button>
+    </div>
+  </header>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- ================================================================= -->
+    <!-- 탭 1: 오늘의 AI 추천 주제 -->
+    <!-- ================================================================= -->
+    <section id="tab-topics" class="space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 flex items-center">
+            <span>🔥 오늘 제작할 가치가 가장 높은 주제 TOP 5~10</span>
+            <span class="ml-2 text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-bold" id="rec-count">0개 추천됨</span>
+          </h2>
+          <p class="text-xs text-slate-500 mt-1">단순 조회수 정렬이 아닌, 공통 관심사 클러스터링과 25년 딜러 경험 활용도(Dealer Fit)를 복합 반영한 근거 중심 랭킹입니다.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <select id="filter-topic-status" onchange="renderTopics()" class="text-xs border border-slate-200 rounded-lg px-3 py-1.5 bg-slate-50 text-slate-700 font-medium">
+            <option value="ALL">전체 상태 보기</option>
+            <option value="RECOMMENDED" selected>신규 추천 (RECOMMENDED)</option>
+            <option value="ADOPTED">채택 완료 (ADOPTED)</option>
+            <option value="SHELVED">보류 (SHELVED)</option>
+            <option value="DISMISSED">제외 (DISMISSED)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 추천 주제 카드 그리드 -->
+      <div id="topics-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- JS로 동적 렌더링 -->
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 탭 2: 인기 영상 탐색 -->
+    <!-- ================================================================= -->
+    <section id="tab-videos" class="space-y-6 hidden">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">🎬 실제 인기 자동차·중고차 영상 인텔리전스</h2>
+            <p class="text-xs text-slate-500 mt-1">유튜브 일반 롱폼과 쇼츠를 엄격히 분리하여 수집하며, 신뢰도 수준을 함께 표기합니다.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <!-- 플랫폼/포맷 필터 -->
+            <button onclick="filterVideos('ALL')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-blue-50 text-blue-700 font-bold vid-filter-btn" id="vf-all">전체</button>
+            <button onclick="filterVideos('YOUTUBE_SHORTS')" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 vid-filter-btn" id="vf-yt-shorts">YouTube 쇼츠</button>
+            <button onclick="filterVideos('YOUTUBE_LONG')" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 vid-filter-btn" id="vf-yt-long">YouTube 롱폼</button>
+            <button onclick="filterVideos('INSTAGRAM_REELS')" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 vid-filter-btn" id="vf-ig">Instagram 릴스</button>
+            <button onclick="filterVideos('TIKTOK_VIDEO')" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 vid-filter-btn" id="vf-tk">TikTok</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 비디오 목록 테이블 -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="px-4 py-3">포맷 / 구분</th>
+                <th class="px-4 py-3">영상 제목 & 채널</th>
+                <th class="px-4 py-3">길이</th>
+                <th class="px-4 py-3">조회수</th>
+                <th class="px-4 py-3">반응(좋아요/댓글)</th>
+                <th class="px-4 py-3">게시일</th>
+                <th class="px-4 py-3 text-center">원문 바로보기</th>
+              </tr>
+            </thead>
+            <tbody id="videos-tbody" class="divide-y divide-slate-100 text-slate-800">
+              <!-- JS 동적 렌더링 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 탭 3: 주제 분석 상세 -->
+    <!-- ================================================================= -->
+    <section id="tab-detail" class="space-y-6 hidden">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900" id="detail-topic-title">주제를 선택하세요</h2>
+          <p class="text-xs text-slate-500 mt-1" id="detail-topic-subtitle">인기 근거, 원본 영상 출처, AI 제작 전략 및 롱폼 쇼츠 분해 결과를 심층 확인합니다.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <select id="select-active-topic" onchange="loadTopicDetail(this.value)" class="text-xs border border-slate-300 rounded-lg px-3 py-1.5 font-medium bg-white">
+            <!-- 옵션 채움 -->
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 좌측 2열: 선정 근거 및 뒷받침 원본 영상 리스트 -->
+        <div class="lg:col-span-2 space-y-6">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center">
+              <i class="fa-solid fa-quote-left text-blue-600 mr-2"></i>
+              <span>왜 이 주제를 지금 제작해야 하는가? (선정 이유 & 트렌드 패턴)</span>
+            </h3>
+            <div id="detail-reason-box" class="bg-blue-50/60 p-4 rounded-xl border border-blue-100 text-xs text-slate-700 leading-relaxed font-medium">
+              주제를 선택하면 상세 분석 이유가 표시됩니다.
+            </div>
+            <div class="grid grid-cols-3 gap-3 pt-2 text-center text-xs">
+              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <span class="text-slate-400 block text-[10px]">통계 인기도</span>
+                <span class="font-extrabold text-blue-700 text-sm" id="detail-pop-score">-</span>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <span class="text-slate-400 block text-[10px]">최근 성장세</span>
+                <span class="font-extrabold text-emerald-700 text-sm" id="detail-vel-score">-</span>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <span class="text-slate-400 block text-[10px]">차마트 딜러 적합도</span>
+                <span class="font-extrabold text-amber-700 text-sm" id="detail-fit-score">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 뒷받침 원본 영상 목록 -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center">
+              <i class="fa-solid fa-link text-indigo-600 mr-2"></i>
+              <span>이 주제를 뒷받침하는 실제 인기 영상 목록 (<span id="detail-supporting-count">0</span>개)</span>
+            </h3>
+            <div id="detail-supporting-videos" class="space-y-2">
+              <!-- 영상 카드 렌더링 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 우측 1열: 롱폼 기반 쇼츠 분해 소재 -->
+        <div class="space-y-6">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center">
+              <i class="fa-solid fa-scissors text-red-500 mr-2"></i>
+              <span>유튜브 롱폼 기반 쇼츠 독립 소재 (1~5개)</span>
+            </h3>
+            <p class="text-[11px] text-slate-500">자막이 확보된 롱폼에서 추출한 타임코드 및 핵심 질문입니다.</p>
+            <div id="detail-short-extracts" class="space-y-3 pt-2">
+              <!-- 쇼츠 소재 렌더링 -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 탭 4: 콘텐츠 기획실 (사장님 인터뷰 & 대본 초안) -->
+    <!-- ================================================================= -->
+    <section id="tab-studio" class="space-y-6 hidden">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900" id="brief-topic-title">콘텐츠 제작 기획서</h2>
+          <p class="text-xs text-slate-500 mt-1">차마트 사장님께 질문하고 실제 답변을 입력하면, 사실에 기반한 대본 초안이 즉시 확정됩니다.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="linkToProject()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm flex items-center space-x-1.5 transition">
+            <i class="fa-solid fa-file-export"></i>
+            <span>차피셜 EXPERT_STORY 프로젝트로 연계 생성</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 좌측: 제목/후킹 후보 & 사장님 질문 입력 폼 -->
+        <div class="space-y-6">
+          <!-- 추천 제목 및 후킹 -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div>
+              <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">클릭 유도 추천 제목 후보 (3종)</h3>
+              <div id="brief-titles-box" class="space-y-1.5 text-xs"></div>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">첫 3초 후킹 멘트 후보 (3종)</h3>
+              <div id="brief-hooks-box" class="space-y-1.5 text-xs"></div>
+            </div>
+          </div>
+
+          <!-- 차마트 사장님 인터뷰 질문 & 입력 폼 -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center">
+                <i class="fa-solid fa-microphone-lines text-amber-500 mr-2"></i>
+                <span>차마트 25년 딜러 인터뷰 (실제 답변 입력)</span>
+              </h3>
+              <span id="brief-answer-status" class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600">미답변 (대본 가안)</span>
+            </div>
+            <p class="text-xs text-slate-500">전문가가 답변하지 않은 내용을 AI가 임의로 창작하지 않습니다. 사장님의 실제 구두 답변을 적어주세요.</p>
+            
+            <form id="expert-answer-form" onsubmit="submitAnswers(event)" class="space-y-3">
+              <div id="interview-questions-list" class="space-y-3">
+                <!-- 질문 및 텍스트에어리어 동적 렌더링 -->
+              </div>
+              <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+                <i class="fa-solid fa-check mr-1.5"></i> 사장님 답변 저장 및 대본 초안 갱신
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- 우측: 답변 반영 대본 초안 & 연출 가이드 -->
+        <div class="space-y-6">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center">
+                <i class="fa-solid fa-scroll text-blue-600 mr-2"></i>
+                <span>대본 초안 (Story Narration)</span>
+              </h3>
+              <span class="text-[11px] text-slate-400 font-mono" id="brief-revision-badge">Rev 1</span>
+            </div>
+            <textarea id="brief-script-textarea" rows="8" readonly class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-800 leading-relaxed font-mono resize-none"></textarea>
+          </div>
+
+          <!-- 씬별 연출 및 컷 가이드 -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center">
+              <i class="fa-solid fa-video text-indigo-600 mr-2"></i>
+              <span>씬별 연출 및 자료화면(B-roll) 가이드</span>
+            </h3>
+            <div id="brief-scenes-list" class="space-y-2 text-xs">
+              <!-- 씬 가이드 렌더링 -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 탭 5: 검색·운영 설정 -->
+    <!-- ================================================================= -->
+    <section id="tab-settings" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- 플랫폼 연결 상태 및 쿼터 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center">
+            <i class="fa-solid fa-network-wired text-blue-600 mr-2"></i>
+            <span>플랫폼 연결 상태 및 쿼터 사용량</span>
+          </h3>
+          <div id="connectors-status-list" class="space-y-3 text-xs">
+            <!-- 커넥터 목록 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 검색 키워드 및 운영 모드 설정 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center">
+            <i class="fa-solid fa-tags text-emerald-600 mr-2"></i>
+            <span>탐색 키워드 및 운영 모드</span>
+          </h3>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">운영 모드 선택</label>
+            <select id="setting-op-mode" class="text-xs border border-slate-300 rounded-lg p-2 w-full bg-white font-medium">
+              <option value="INTENSIVE_DISCOVERY">집중 탐색 모드 (키워드 전수 검색 및 신규 토픽 발굴 우선)</option>
+              <option value="STABLE_OPERATION">안정 운영 모드 (API 쿼터 절약 및 인기 토픽 지표 주기적 추적)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">검색 대상 키워드 (쉼표 구분)</label>
+            <textarea id="setting-keywords" rows="5" class="w-full text-xs border border-slate-300 rounded-xl p-3 text-slate-800 leading-relaxed font-mono"></textarea>
+          </div>
+          <button onclick="saveSettings()" class="w-full py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow-sm transition">
+            <i class="fa-solid fa-floppy-disk mr-1.5"></i> 설정 저장
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 하단 푸터 -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div>CHA-FICIAL AI Content Intelligence & Production Studio &copy; 2026 차피셜</div>
+      <div class="text-[11px] text-slate-400">Runway WAN 3.0 / YouTube Data API v3 / 25년 차마트 상사 유니버스 연동</div>
+    </div>
+  </footer>
+
+  <!-- 알림 토스트 -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium flex items-center space-x-2">
+    <i class="fa-solid fa-circle-check text-emerald-400" id="toast-icon"></i>
+    <span id="toast-msg">알림 메시지</span>
+  </div>
+
+  <!-- 클라이언트 로직 JS -->
+  <script>
+    let appState = {
+      topics: [],
+      videos: [],
+      settings: {},
+      activeTopicId: null,
+      activeBrief: null,
+      videoFilter: 'ALL',
+    };
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toast-icon');
+      const text = document.getElementById('toast-msg');
+      text.innerText = msg;
+      icon.className = isError ? "fa-solid fa-circle-exclamation text-rose-400" : "fa-solid fa-circle-check text-emerald-400";
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3000);
+    }
+
+    function switchTab(tabId) {
+      ['tab-topics', 'tab-videos', 'tab-detail', 'tab-studio', 'tab-settings'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      ['nav-topics', 'nav-videos', 'nav-detail', 'nav-studio', 'nav-settings'].forEach(id => {
+        document.getElementById(id).classList.remove('tab-active');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      document.getElementById('nav-' + tabId.replace('tab-', '')).classList.add('tab-active');
+
+      if (tabId === 'tab-detail' && !appState.activeTopicId && appState.topics.length > 0) {
+        loadTopicDetail(appState.topics[0].recommendation_id);
+      }
+      if (tabId === 'tab-studio' && !appState.activeBrief && appState.topics.length > 0) {
+        loadBrief(appState.activeTopicId || appState.topics[0].recommendation_id);
+      }
+    }
+
+    async function refreshData() {
+      try {
+        const [topicsRes, videosRes, settingsRes] = await Promise.all([
+          fetch('/api/topics'),
+          fetch('/api/videos'),
+          fetch('/api/settings')
+        ]);
+        appState.topics = await topicsRes.json();
+        appState.videos = await videosRes.json();
+        appState.settings = await settingsRes.json();
+
+        updateModeBadge();
+        renderTopics();
+        renderVideos();
+        populateTopicSelects();
+        renderSettings();
+        showToast("데이터를 성공적으로 새로고침했습니다.");
+      } catch (e) {
+        showToast("데이터 로드 실패: " + e, true);
+      }
+    }
+
+    function updateModeBadge() {
+      const badge = document.getElementById('mode-badge');
+      const ytConn = (appState.settings.connectors || []).find(c => c.platform === 'YOUTUBE');
+      if (ytConn && ytConn.connection_mode === 'LIVE') {
+        badge.className = "text-xs ml-2 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300";
+        badge.innerHTML = '<i class="fa-solid fa-satellite-dish mr-1"></i> LIVE 모드 (YouTube API 연결됨)';
+      } else {
+        badge.className = "text-xs ml-2 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300";
+        badge.innerHTML = '<i class="fa-solid fa-shield-halved mr-1"></i> DEMO 모드 (안전 검증 데이터셋)';
+      }
+    }
+
+    function renderTopics() {
+      const filter = document.getElementById('filter-topic-status').value;
+      const grid = document.getElementById('topics-grid');
+      grid.innerHTML = '';
+
+      let filtered = appState.topics;
+      if (filter !== 'ALL') {
+        filtered = filtered.filter(t => t.status === filter);
+      }
+      document.getElementById('rec-count').innerText = `${filtered.length}개 표시 중`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-200 text-xs text-slate-400">해당 상태의 추천 주제가 없습니다.</div>`;
+        return;
+      }
+
+      filtered.forEach(t => {
+        let statusBadge = '';
+        if (t.status === 'RECOMMENDED') statusBadge = '<span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-md font-bold">신규 추천</span>';
+        else if (t.status === 'ADOPTED') statusBadge = '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md font-bold">채택 완료</span>';
+        else if (t.status === 'SHELVED') statusBadge = '<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-bold">보류</span>';
+        else if (t.status === 'DISMISSED') statusBadge = '<span class="px-2 py-0.5 bg-rose-100 text-rose-700 rounded-md font-bold">제외</span>';
+
+        const card = document.createElement('div');
+        card.className = "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition flex flex-col justify-between";
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="w-6 h-6 rounded-full bg-slate-900 text-white text-[11px] font-bold flex items-center justify-center">${t.rank}</span>
+              <div class="space-x-1.5 text-[10px]">
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-medium">${t.category}</span>
+                ${statusBadge}
+              </div>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 leading-snug hover:text-blue-600 cursor-pointer" onclick="viewTopicDetail('${t.recommendation_id}')">${t.topic_name}</h3>
+              <p class="text-xs text-slate-500 mt-1 line-clamp-2">${t.selection_reason}</p>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 grid grid-cols-3 gap-2 text-center text-[11px]">
+              <div><span class="text-slate-400 block text-[9px]">종합점수</span><span class="font-bold text-blue-700">${t.composite_score}</span></div>
+              <div><span class="text-slate-400 block text-[9px]">딜러적합도</span><span class="font-bold text-amber-700">${t.dealer_fit_score}</span></div>
+              <div><span class="text-slate-400 block text-[9px]">인기영상</span><span class="font-bold text-slate-700">${t.supporting_video_ids.length}개</span></div>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between text-xs">
+            <div class="space-x-1">
+              <button onclick="updateTopicStatus('${t.recommendation_id}', 'ADOPTED')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold rounded-lg transition" title="채택"><i class="fa-solid fa-check"></i> 채택</button>
+              <button onclick="updateTopicStatus('${t.recommendation_id}', 'SHELVED')" class="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg transition" title="보류">보류</button>
+              <button onclick="updateTopicStatus('${t.recommendation_id}', 'DISMISSED')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition" title="제외">제외</button>
+            </div>
+            <button onclick="openStudioForTopic('${t.recommendation_id}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center space-x-1">
+              <span>기획서</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderVideos() {
+      const tbody = document.getElementById('videos-tbody');
+      tbody.innerHTML = '';
+
+      let list = appState.videos;
+      if (appState.videoFilter !== 'ALL') {
+        list = list.filter(v => v.content_format === appState.videoFilter);
+      }
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">표시할 영상이 없습니다.</td></tr>`;
+        return;
+      }
+
+      list.forEach(v => {
+        let fmtBadge = '';
+        if (v.content_format === 'YOUTUBE_SHORTS') fmtBadge = '<span class="px-2 py-0.5 bg-red-100 text-red-700 rounded font-bold">YouTube Shorts</span>';
+        else if (v.content_format === 'YOUTUBE_LONG') fmtBadge = '<span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-bold">YouTube 일반</span>';
+        else if (v.content_format === 'INSTAGRAM_REELS') fmtBadge = '<span class="px-2 py-0.5 bg-pink-100 text-pink-700 rounded font-bold">Instagram Reels</span>';
+        else if (v.content_format === 'TIKTOK_VIDEO') fmtBadge = '<span class="px-2 py-0.5 bg-slate-900 text-white rounded font-bold">TikTok</span>';
+
+        const confBadge = v.format_confidence === 'VERIFIED'
+          ? '<span class="text-[10px] text-emerald-600 font-bold ml-1" title="공식/구조 검증됨">✓검증</span>'
+          : '<span class="text-[10px] text-amber-600 font-bold ml-1" title="길이로 추정됨">~추정</span>';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="px-4 py-3 whitespace-nowrap">${fmtBadge} ${confBadge}</td>
+          <td class="px-4 py-3">
+            <div class="font-bold text-slate-900 line-clamp-1">${v.title}</div>
+            <div class="text-[11px] text-slate-500">${v.channel_name}</div>
+          </td>
+          <td class="px-4 py-3 whitespace-nowrap text-slate-500 font-mono">${v.duration_seconds}초</td>
+          <td class="px-4 py-3 whitespace-nowrap font-bold text-blue-700">${v.view_count.toLocaleString()}회</td>
+          <td class="px-4 py-3 whitespace-nowrap text-slate-600">👍 ${v.like_count.toLocaleString()} / 💬 ${v.comment_count.toLocaleString()}</td>
+          <td class="px-4 py-3 whitespace-nowrap text-slate-400 text-[11px]">${v.published_at.substring(0, 10)}</td>
+          <td class="px-4 py-3 text-center whitespace-nowrap">
+            <a href="${v.url}" target="_blank" class="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-600 rounded font-medium inline-flex items-center space-x-1">
+              <span>열기</span>
+              <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterVideos(fmt) {
+      appState.videoFilter = fmt;
+      document.querySelectorAll('.vid-filter-btn').forEach(b => b.classList.remove('bg-blue-50', 'text-blue-700', 'font-bold'));
+      const activeId = fmt === 'ALL' ? 'vf-all' : (fmt === 'YOUTUBE_SHORTS' ? 'vf-yt-shorts' : (fmt === 'YOUTUBE_LONG' ? 'vf-yt-long' : (fmt === 'INSTAGRAM_REELS' ? 'vf-ig' : 'vf-tk')));
+      document.getElementById(activeId).classList.add('bg-blue-50', 'text-blue-700', 'font-bold');
+      renderVideos();
+    }
+
+    function populateTopicSelects() {
+      const sel = document.getElementById('select-active-topic');
+      sel.innerHTML = '';
+      appState.topics.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.recommendation_id;
+        opt.innerText = `[#${t.rank}] ${t.topic_name}`;
+        sel.appendChild(opt);
+      });
+    }
+
+    async function loadTopicDetail(topicId) {
+      appState.activeTopicId = topicId;
+      document.getElementById('select-active-topic').value = topicId;
+      const topic = appState.topics.find(t => t.recommendation_id === topicId);
+      if (!topic) return;
+
+      document.getElementById('detail-topic-title').innerText = `[TOP ${topic.rank}] ${topic.topic_name}`;
+      document.getElementById('detail-reason-box').innerHTML = `
+        <div class="font-bold text-slate-900 mb-1">📌 AI 선정 근거:</div>
+        <div>${topic.selection_reason}</div>
+        <div class="mt-2 text-slate-500 font-normal">📊 트렌드 요약: ${topic.trend_summary}</div>
+      `;
+      document.getElementById('detail-pop-score').innerText = topic.popularity_score;
+      document.getElementById('detail-vel-score').innerText = topic.velocity_score;
+      document.getElementById('detail-fit-score').innerText = topic.dealer_fit_score;
+
+      // 뒷받침 영상 렌더링
+      const suppContainer = document.getElementById('detail-supporting-videos');
+      suppContainer.innerHTML = '';
+      const suppVideos = appState.videos.filter(v => topic.supporting_video_ids.includes(v.video_id));
+      document.getElementById('detail-supporting-count').innerText = suppVideos.length;
+
+      suppVideos.forEach(v => {
+        const div = document.createElement('div');
+        div.className = "p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between text-xs";
+        div.innerHTML = `
+          <div>
+            <div class="font-bold text-slate-800 line-clamp-1">${v.title}</div>
+            <div class="text-[11px] text-slate-500">${v.channel_name} · 조회수 ${v.view_count.toLocaleString()}회</div>
+          </div>
+          <a href="${v.url}" target="_blank" class="px-2.5 py-1 bg-white border border-slate-200 rounded text-slate-600 hover:text-blue-600 font-medium">보기</a>
+        `;
+        suppContainer.appendChild(div);
+      });
+
+      // 롱폼 기반 쇼츠 분해 (롱폼 영상 1건 선택하여 분석)
+      const longVideo = suppVideos.find(v => v.content_format === 'YOUTUBE_LONG') || suppVideos[0];
+      const extractContainer = document.getElementById('detail-short-extracts');
+      extractContainer.innerHTML = '<div class="text-xs text-slate-400">롱폼 분석 로딩 중...</div>';
+
+      if (longVideo) {
+        try {
+          const res = await fetch(`/api/longform/analyze?video_id=${longVideo.video_id}`);
+          const analysis = await res.json();
+          extractContainer.innerHTML = '';
+
+          const confBadge = analysis.analyzed_from_captions
+            ? '<span class="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold">자막/대본 기반 정밀 분석</span>'
+            : '<span class="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-bold">제목/설명 기반 추정</span>';
+
+          const header = document.createElement('div');
+          header.className = "text-[11px] text-slate-500 mb-2";
+          header.innerHTML = `대상: <span class="font-bold">${longVideo.title.substring(0, 25)}...</span> ${confBadge}`;
+          extractContainer.appendChild(header);
+
+          analysis.short_extracts.forEach(ext => {
+            const extDiv = document.createElement('div');
+            extDiv.className = "p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5";
+            extDiv.innerHTML = `
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-blue-700">${ext.title}</span>
+                <span class="text-[10px] px-2 py-0.5 bg-slate-200 rounded font-mono">${ext.timecode_range}</span>
+              </div>
+              <div class="text-slate-600">${ext.key_insight}</div>
+              <div class="text-[11px] text-slate-400">❓ 질문: ${ext.core_question}</div>
+            `;
+            extractContainer.appendChild(extDiv);
+          });
+        } catch (e) {
+          extractContainer.innerHTML = `<div class="text-xs text-rose-500">롱폼 분석 오류</div>`;
+        }
+      } else {
+        extractContainer.innerHTML = `<div class="text-xs text-slate-400">연결된 롱폼 영상이 없습니다.</div>`;
+      }
+    }
+
+    function viewTopicDetail(topicId) {
+      switchTab('tab-detail');
+      loadTopicDetail(topicId);
+    }
+
+    function openStudioForTopic(topicId) {
+      switchTab('tab-studio');
+      loadBrief(topicId);
+    }
+
+    async function loadBrief(topicId) {
+      appState.activeTopicId = topicId;
+      try {
+        const res = await fetch(`/api/briefs?recommendation_id=${topicId}`);
+        const brief = await res.json();
+        appState.activeBrief = brief;
+
+        document.getElementById('brief-topic-title').innerText = `제작 기획서: ${brief.topic_name}`;
+        
+        // 제목 후보
+        const titlesBox = document.getElementById('brief-titles-box');
+        titlesBox.innerHTML = brief.recommended_titles.map((t, i) => `
+          <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-medium">
+            <span class="text-blue-600 font-bold mr-1.5">후보 ${i+1}.</span> ${t}
+          </div>
+        `).join('');
+
+        // 후킹 후보
+        const hooksBox = document.getElementById('brief-hooks-box');
+        hooksBox.innerHTML = brief.hook_sentences.map((h, i) => `
+          <div class="p-2.5 bg-amber-50/60 border border-amber-200/60 rounded-lg text-slate-800 font-medium">
+            <span class="text-amber-700 font-bold mr-1.5">후킹 ${i+1}.</span> ${h}
+          </div>
+        `).join('');
+
+        // 사장님 인터뷰 질문 폼
+        const qList = document.getElementById('interview-questions-list');
+        qList.innerHTML = brief.interview_questions.map((q, idx) => `
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-700">Q${idx+1}. ${q}</label>
+            <textarea name="q_${idx}" rows="2" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 text-slate-800 resize-none font-medium" placeholder="사장님의 현장 답변을 입력하세요">${brief.expert_answers[q] || ''}</textarea>
+          </div>
+        `).join('');
+
+        // 상태 배지
+        const statusBadge = document.getElementById('brief-answer-status');
+        if (brief.has_expert_answered) {
+          statusBadge.className = "text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800";
+          statusBadge.innerText = "전문가 답변 반영됨 (대본 확정)";
+        } else {
+          statusBadge.className = "text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800";
+          statusBadge.innerText = "미답변 (가안 상태)";
+        }
+
+        document.getElementById('brief-revision-badge').innerText = `Rev ${brief.revision_count}`;
+        document.getElementById('brief-script-textarea').value = brief.draft_script_text;
+
+        // 씬 가이드
+        const scenesList = document.getElementById('brief-scenes-list');
+        scenesList.innerHTML = brief.scene_guides.map(s => `
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+            <div class="flex items-center justify-between font-bold">
+              <span class="text-blue-700">Scene ${s.scene_number} [${s.phase}]</span>
+              ${s.dealer_face_recommended ? '<span class="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-bold">딜러 얼굴 추천</span>' : '<span class="text-[10px] text-slate-400">자료화면</span>'}
+            </div>
+            <div class="text-slate-600">${s.narration_guide}</div>
+            <div class="text-[11px] text-slate-400">🎥 촬영 큐: ${s.visual_broll_guide}</div>
+          </div>
+        `).join('');
+
+      } catch (e) {
+        showToast("기획서 로드 오류: " + e, true);
+      }
+    }
+
+    async function submitAnswers(event) {
+      event.preventDefault();
+      if (!appState.activeBrief) return;
+
+      const formData = new FormData(event.target);
+      const answers = {};
+      appState.activeBrief.interview_questions.forEach((q, idx) => {
+        answers[q] = formData.get(`q_${idx}`) || '';
+      });
+
+      try {
+        const res = await fetch('/api/briefs/answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recommendation_id: appState.activeBrief.recommendation_id,
+            answers: answers,
+          })
+        });
+        const updated = await res.json();
+        appState.activeBrief = updated;
+        loadBrief(updated.recommendation_id);
+        showToast("사장님 답변이 대본 초안에 즉시 반영되었습니다!");
+      } catch (e) {
+        showToast("답변 저장 실패: " + e, true);
+      }
+    }
+
+    async function updateTopicStatus(recommendationId, newStatus) {
+      try {
+        await fetch('/api/topics/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recommendation_id: recommendationId, status: newStatus })
+        });
+        showToast(`주제 상태가 [${newStatus}]으로 변경되었습니다.`);
+        refreshData();
+      } catch (e) {
+        showToast("상태 변경 실패: " + e, true);
+      }
+    }
+
+    async function linkToProject() {
+      if (!appState.activeBrief) return;
+      try {
+        const res = await fetch('/api/briefs/link-project', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recommendation_id: appState.activeBrief.recommendation_id })
+        });
+        const data = await res.json();
+        showToast(`차피셜 콘텐츠 파이프라인 연계 완료! Project ID: ${data.project_id}`);
+        refreshData();
+      } catch (e) {
+        showToast("프로젝트 연계 실패: " + e, true);
+      }
+    }
+
+    async function triggerDiscovery() {
+      const btn = document.getElementById('btn-discover');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>검색 중...</span>';
+      try {
+        const res = await fetch('/api/discovery/run', { method: 'POST' });
+        const data = await res.json();
+        showToast(`집중 검색 완료! 신규 영상 ${data.total_videos_found}개 및 추천 주제 갱신.`);
+        await refreshData();
+      } catch (e) {
+        showToast("검색 실행 실패: " + e, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> <span>집중 검색 실행</span>';
+      }
+    }
+
+    function renderSettings() {
+      const list = document.getElementById('connectors-status-list');
+      list.innerHTML = (appState.settings.connectors || []).map(c => `
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <div class="flex items-center justify-between font-bold">
+            <span>${c.platform}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] ${c.is_connected ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">${c.connection_mode}</span>
+          </div>
+          <div class="text-slate-500 text-[11px]">${c.notes}</div>
+          <div class="text-[10px] text-slate-400 font-mono">일일 쿼터: ${c.daily_quota_used} / ${c.daily_quota_limit}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('setting-op-mode').value = appState.settings.operation_mode || 'INTENSIVE_DISCOVERY';
+      document.getElementById('setting-keywords').value = (appState.settings.search_keywords || []).join(', ');
+    }
+
+    async function saveSettings() {
+      const mode = document.getElementById('setting-op-mode').value;
+      const rawKw = document.getElementById('setting-keywords').value;
+      const keywords = rawKw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+      try {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operation_mode: mode, search_keywords: keywords })
+        });
+        showToast("설정이 성공적으로 저장되었습니다.");
+        refreshData();
+      } catch (e) {
+        showToast("설정 저장 실패: " + e, true);
+      }
+    }
+
+    // 초기 로딩
+    window.addEventListener('DOMContentLoaded', () => {
+      refreshData();
+    });
+  </script>
+</body>
+</html>
