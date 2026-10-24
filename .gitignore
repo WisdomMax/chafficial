@@ -55,3 +55,8 @@ data/.live_authorization.json
 *.live_auth.json
 *.lock
 data/*.lock
+
+# Environment Variables & Secrets
+.env
+*.env
+.env.*
