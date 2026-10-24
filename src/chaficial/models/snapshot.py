@@ -52,11 +52,11 @@ class ListingSnapshot(Base):
     ingested_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
     )
-    price_krw: Mapped[int] = mapped_column(Integer, nullable=False)
+    price_krw: Mapped[int | None] = mapped_column(Integer, nullable=True)
     mileage_km: Mapped[int] = mapped_column(Integer, nullable=False)
     listing_status: Mapped[str] = mapped_column(
         String(30), nullable=False, default="ACTIVE"
-    )  # ACTIVE, PRICE_CHANGED, DELISTED, UNKNOWN
+    )  # ACTIVE, PRICE_CHANGED, DELISTED, DELISTED_SUSPECT, UNKNOWN
     normalized_region_id: Mapped[str | None] = mapped_column(
         String(50), nullable=True, index=True
     )
@@ -64,10 +64,10 @@ class ListingSnapshot(Base):
     source_record_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     __table_args__ = (
-        CheckConstraint("price_krw >= 0", name="chk_snapshot_price_non_negative"),
+        CheckConstraint("price_krw IS NULL OR price_krw >= 0", name="chk_snapshot_price_non_negative"),
         CheckConstraint("mileage_km >= 0", name="chk_snapshot_mileage_non_negative"),
         CheckConstraint(
-            "listing_status IN ('ACTIVE', 'PRICE_CHANGED', 'DELISTED', 'UNKNOWN')",
+            "listing_status IN ('ACTIVE', 'PRICE_CHANGED', 'DELISTED', 'DELISTED_SUSPECT', 'UNKNOWN')",
             name="chk_snapshot_status",
         ),
     )

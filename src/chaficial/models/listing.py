@@ -6,7 +6,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, event, text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, event, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from chaficial.database.base import Base
@@ -44,11 +44,12 @@ class Listing(Base):
     )
     current_status: Mapped[str] = mapped_column(
         String(30), nullable=False, default="ACTIVE", index=True
-    )  # ACTIVE, PRICE_CHANGED, DELISTED, UNKNOWN
+    )  # ACTIVE, PRICE_CHANGED, DELISTED, DELISTED_SUSPECT, UNKNOWN
+    consecutive_missing_count: Mapped[int] = mapped_column(Integer, server_default="0", default=0, nullable=False)
 
     __table_args__ = (
         CheckConstraint(
-            "current_status IN ('ACTIVE', 'PRICE_CHANGED', 'DELISTED', 'UNKNOWN')",
+            "current_status IN ('ACTIVE', 'PRICE_CHANGED', 'DELISTED', 'DELISTED_SUSPECT', 'UNKNOWN')",
             name="chk_listing_status",
         ),
     )

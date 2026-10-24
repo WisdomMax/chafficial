@@ -46,5 +46,17 @@ Thumbs.db
 # Chat automation temp dumps
 chatgpt_full_thread.txt
 directive_002c_raw.txt
-latest_gpt_response.txt
+latest*.txt
 chat_messages.json
+
+# Live Operation Authorization (Strict Git Exclusion)
+.chaficial_live_approval.json
+data/.live_authorization.json
+*.live_auth.json
+*.lock
+data/*.lock
+
+# Environment Variables & Secrets
+.env
+*.env
+.env.*

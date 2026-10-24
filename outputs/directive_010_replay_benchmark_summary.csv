@@ -1,0 +1,4 @@
+batch_id,data_origin,started_at_utc,started_at_kst,completed_at_utc,completed_at_kst,search_scope_key,total_records_ingested,first_seen_count,re_observed_count,price_drop_count,price_increase_count,total_price_drop_krw,re_listed_count,delisted_suspect_count,is_success,notes
+REPLAY_CN7_FIXTURE_B01,REPLAY_FIXTURE,2026-10-21T10:00:00+00:00,2026-10-21 19:00:00 KST,2026-10-21T10:00:02+00:00,2026-10-21 19:00:02 KST,ENCAR:현대:아반떼:ALL:MIN~MAX,417,417,0,0,0,0,0,0,True,재생 벤치마크 1차: 기저 매물 적재
+REPLAY_CN7_FIXTURE_B02,REPLAY_FIXTURE,2026-10-21T15:00:00+00:00,2026-10-22 00:00:00 KST,2026-10-21T15:00:02+00:00,2026-10-22 00:00:02 KST,ENCAR:현대:아반떼:ALL:MIN~MAX,417,0,417,0,0,0,0,0,True,재생 벤치마크 2차: 멱등성 검증 (동일 가격 재관측 시 변동 이벤트 0건)
+REPLAY_CN7_FIXTURE_B03,REPLAY_FIXTURE,2026-10-21T20:00:00+00:00,2026-10-22 05:00:00 KST,2026-10-21T20:00:02+00:00,2026-10-22 05:00:02 KST,ENCAR:현대:아반떼:ALL:MIN~MAX,418,2,416,0,0,0,0,0,True,재생 벤치마크 3차: 알고리즘 검증 (1대 미노출 카운터 1 보존 및 픽스처 신규 2대 FIRST_SEEN)
