@@ -1,14 +1,14 @@
 """Aside CLI를 통해 ChatGPT 단일 세션에서 열기, 메시지 전송, 응답 대기 및 추출을 한 번에 수행하는 통합 스크립트.
 
 [안정화 및 CPU 70% 제한 원칙]
-- 과도한 폴링 루프 대신 적절한 sleep(2~3초)을 두어 CPU 점유율을 5% 미만으로 유지합니다.
-- Cloudflare 등 페이지 로딩 지연 시 최대 30초까지 대기합니다.
+- 120초 CLI 타임아웃 내 완결되도록 최대 75초 대기.
+- ProseMirror 직접 값 설정 및 p.keyboard 활용.
+- Assistant 최신 응답을 파일로 저장.
 """
 
 import json
 import subprocess
 import sys
-import time
 
 TARGET_PROFILE = "c759b216-69cc-436b-941a-dab4e621632d"
 
@@ -27,16 +27,15 @@ const targetUrl = {json.dumps(target_room_url)};
 async function run() {{
   // 1. ChatGPT 탭 열기 및 로딩 대기
   const p = await openTab(targetUrl);
-  await sleep(8000);
+  await sleep(6000);
 
-  // 2. Cloudflare 등 통과 대기
-  for (let i = 0; i < 15; i++) {{
+  // 2. Cloudflare 대기 (최대 15초)
+  for (let i = 0; i < 5; i++) {{
     const title = await p.title();
     if (!title.includes('잠시만 기다리십시오') && !title.includes('Just a moment')) {{
       console.log('PAGE_READY: ' + title);
       break;
     }}
-    console.log('WAITING_PAGE_LOAD: ' + title);
     await sleep(3000);
   }}
 
@@ -45,73 +44,78 @@ async function run() {{
     const retryBtn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('다시 시도') || b.innerText.includes('Retry'));
     if (retryBtn) retryBtn.click();
   }});
-  await sleep(2000);
+  await sleep(1500);
 
-  // 4. 하단 입력창(ProseMirror) 포커스
-  await p.evaluate(() => {{
-    const all = document.querySelectorAll('div.ProseMirror');
-    const target = all[all.length - 1];
-    if (target) {{
-      target.focus();
-      target.click();
-    }}
-  }});
-  await sleep(1000);
+  // 4. 하단 입력창(맨 마지막 ProseMirror) 포커스 및 텍스트 주입
+  const injected = await p.evaluate((text) => {{
+    const pms = Array.from(document.querySelectorAll('div.ProseMirror'));
+    const el = pms.length > 0 ? pms[pms.length - 1] : document.querySelector('#prompt-textarea');
+    if (!el) return false;
+    el.focus();
+    // 클립보드 방식 대체: execCommand로 안전하게 텍스트 삽입
+    document.execCommand('selectAll', false, null);
+    document.execCommand('insertText', false, text);
+    return true;
+  }}, fullText);
 
-  // 5. 키보드로 텍스트 주입
-  await page.keyboard.insertText(fullText);
-  await sleep(2500);
+  console.log('INJECTED:' + injected);
+  await sleep(1500);
 
-  // 6. 전송 버튼 클릭 (또는 Enter)
-  const clickRes = await p.evaluate(() => {{
+  // 만약 evaluate 삽입이 실패했을 경우 keyboard fallback
+  if (!injected) {{
+    await p.evaluate(() => {{
+      const el = document.querySelector('div.ProseMirror');
+      if (el) el.focus();
+    }});
+    await p.keyboard.insertText(fullText);
+    await sleep(2000);
+  }}
+
+  // 5. 전송 버튼 클릭
+  const sendRes = await p.evaluate(() => {{
     const sendBtn = document.querySelector('button[data-testid="send-button"]') ||
                     document.querySelector('button[data-testid="fruitjuice-send-button"]') ||
                     document.querySelector('button[aria-label*="보내기"]') ||
                     document.querySelector('button[aria-label*="Send"]');
     if (sendBtn && !sendBtn.disabled) {{
       sendBtn.click();
-      return {{ success: true }};
+      return {{ clicked: true }};
     }}
-    return {{ success: false }};
+    return {{ clicked: false }};
   }});
 
-  if (!clickRes.success) {{
-    await page.keyboard.press('Enter');
+  if (!sendRes.clicked) {{
+    await p.keyboard.press('Enter');
   }}
-  console.log("SENT_CLICKED");
+  console.log('SENT_CLICKED:' + JSON.stringify(sendRes));
 
-  // 7. 생성 시작 및 완료 대기 (CPU 절약: 3초 주기 폴링)
-  console.log("WAITING_FOR_GENERATION...");
-  await sleep(5000);
-
-  for (let i = 0; i < 90; i++) {{
-    await sleep(3000);
+  // 6. 생성 시작 및 완료 대기 (CPU 저부하 2초 주기 폴링, 최대 70초)
+  await sleep(4000);
+  for (let i = 0; i < 35; i++) {{
+    await sleep(2000);
     const isBusy = await p.evaluate(() => {{
       const stopBtn = document.querySelector('button[data-testid="stop-button"]') ||
                       document.querySelector('button[aria-label*="중지"]') ||
                       document.querySelector('button[aria-label*="중단"]') ||
                       document.querySelector('button[aria-label*="Stop"]');
       if (stopBtn) return true;
-
-      const bodyText = document.body.innerText;
-      if (bodyText.includes("작업 중입니다") || bodyText.includes("생각 중")) {{
-        return true;
-      }}
+      const body = document.body.innerText;
+      if (body.includes("작업 중입니다") || body.includes("생각 중")) return true;
       return false;
     }});
 
     if (!isBusy && i >= 3) {{
-      console.log("GENERATION_FINISHED_AT_STEP:" + i);
+      console.log('GENERATION_FINISHED_AT_STEP:' + i);
       break;
     }}
   }}
 
-  // 8. 안정화 대기
-  await sleep(4000);
+  // 7. 결과 안정화 및 스크롤
+  await sleep(3000);
   await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await sleep(2000);
+  await sleep(1500);
 
-  // 9. 최신 Assistant 응답 추출
+  // 8. 최신 어시스턴트 응답 추출
   const res = await p.evaluate(() => {{
     const turns = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
     if (turns.length > 0) {{
@@ -154,6 +158,6 @@ await run();
 
 
 if __name__ == "__main__":
-    report = sys.argv[1] if len(sys.argv) > 1 else "reports/DIRECTIVE_011A_COMPLETED_REPORT.md"
-    url = sys.argv[2] if len(sys.argv) > 2 else "https://chatgpt.com/c/6ad7be96-e470-83e8-a5bf-1e8560f936e3"
+    report = sys.argv[1] if len(sys.argv) > 1 else "reports/REPORT_046D_VEHICLE_INTELLIGENCE_AND_MASTER.md"
+    url = sys.argv[2] if len(sys.argv) > 2 else "https://chatgpt.com/c/6ade5dae-1c94-83ee-acf8-d6058171a94d"
     run_chatgpt_roundtrip(report, url)

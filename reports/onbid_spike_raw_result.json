@@ -1,17 +1,22 @@
 {
   "total_calls": 1,
-  "max_allowed": 3,
+  "max_allowed": 1,
   "calls": [
     {
       "step": "1회차: 아반떼 입찰결과 목록 조회",
       "call_index": 1,
       "url": "https://apis.data.go.kr/B010003/OnbidCltrBidRsltListSrvc2/getCltrBidRsltList2",
-      "http_status": 403,
-      "error_body": "{\n  \"OpenAPI_ServiceResponse\": {\n    \"cmmMsgHeader\": {\n      \"errMsg\": \"SERVICE_KEY_IS_NOT_REGISTERED_ERROR\",\n      \"returnAuthMsg\": \"등록되지 않은 서비스키\",\n      \"returnReasonCode\": \"30\"\n    }\n  }\n}\n"
+      "http_status": 200,
+      "response_preview": {
+        "result": {
+          "resultCode": "11",
+          "resultMsg": "NO_MANDATORY_REQUEST_PARAMETERS_ERROR"
+        }
+      }
     }
   ],
   "outcomes": {
-    "HTTP_OK": false,
+    "HTTP_OK": true,
     "API_SUCCESS": false,
     "RECORD_FOUND": false,
     "PRICE_VERIFIED": false,

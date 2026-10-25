@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>차마트(CHAMART) 통합 운영 플랫폼</title>
+  <!-- Tailwind CSS & Pretendard Font & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- 상단 글로벌 헤더 -->
+  <header class="h-16 bg-slate-900/90 backdrop-blur border-b border-slate-800 flex items-center justify-between px-6 sticky top-0 z-40">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-black text-xl shadow-lg shadow-indigo-500/20">
+        차
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="font-bold text-lg tracking-tight">CHAMART OS</span>
+          <span class="text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">DEMO ENVIRONMENT</span>
+          <span class="text-[11px] font-medium bg-slate-800 text-slate-400 px-2 py-0.5 rounded">v1.0-alpha</span>
+        </div>
+        <p class="text-xs text-slate-400 hidden sm:block">차마트 법인 장한평 본사 & 거점 확장 통합 운영 플랫폼</p>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-4">
+      <!-- 외부 접속 가이드 버튼 -->
+      <button onclick="openTunnelModal()" class="flex items-center space-x-1.5 text-xs bg-indigo-950/60 hover:bg-indigo-900/70 text-indigo-300 border border-indigo-700/50 px-3 py-1.5 rounded-lg transition">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+        <span>외부 시연 보안접속 안내</span>
+      </button>
+
+      <!-- 사용자 프로필 / 로그인 -->
+      <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+        <div class="w-6 h-6 rounded-full bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-xs font-bold" id="userAvatar">관</div>
+        <span class="text-xs font-medium text-slate-200" id="userNameLabel">차마트 총괄관리자</span>
+        <button onclick="handleAuthAction()" class="text-[11px] text-slate-400 hover:text-rose-400 ml-1 transition" id="authBtn">로그아웃</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden">
+    <!-- 좌측 사이드바: 12대 전체 메뉴 네비게이션 -->
+    <aside class="w-64 bg-slate-900/60 border-r border-slate-800 flex flex-col justify-between overflow-y-auto scrollbar-thin">
+      <div class="p-3 space-y-6">
+        <!-- 핵심 운영 영역 -->
+        <div>
+          <div class="text-[11px] font-semibold tracking-wider text-slate-500 uppercase px-3 mb-2">실작동 코어 운영</div>
+          <nav class="space-y-1">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition bg-indigo-600 text-white">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                <span>대시보드</span>
+              </div>
+            </button>
+            <button onclick="switchTab('vehicles')" id="nav-vehicles" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="car" class="w-4 h-4"></i>
+                <span>차량 관리</span>
+              </div>
+              <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono" id="sidebarVehicleBadge">4</span>
+            </button>
+            <button onclick="switchTab('crm')" id="nav-crm" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span>고객 CRM</span>
+              </div>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono" id="sidebarCrmBadge">3</span>
+            </button>
+            <button onclick="switchTab('transactions')" id="nav-transactions" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="receipt" class="w-4 h-4"></i>
+                <span>거래·계약 관리</span>
+              </div>
+            </button>
+            <button onclick="switchTab('documents')" id="nav-documents" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="file-scan" class="w-4 h-4"></i>
+                <span>AI 서류 인식</span>
+              </div>
+              <span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono" id="sidebarDocBadge">대기 1</span>
+            </button>
+            <button onclick="switchTab('studio')" id="nav-studio" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="video" class="w-4 h-4"></i>
+                <span>AI 영상 스튜디오</span>
+              </div>
+              <span class="text-[10px] bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded font-mono" id="sidebarStudioBadge">2</span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- 분석 및 기존 자산 연결 -->
+        <div>
+          <div class="text-[11px] font-semibold tracking-wider text-slate-500 uppercase px-3 mb-2">분석 및 마켓 인텔리전스</div>
+          <nav class="space-y-1">
+            <button onclick="switchTab('market-analysis')" id="nav-market-analysis" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="line-chart" class="w-4 h-4"></i>
+                <span>AI 매물 분석</span>
+              </div>
+              <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">엔카 관측</span>
+            </button>
+            <button onclick="switchTab('marketing')" id="nav-marketing" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                <span>마케팅 성과</span>
+              </div>
+              <span class="text-[10px] bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/20">퍼널 구조</span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- 커뮤니티 및 미래 연동 (P1) -->
+        <div>
+          <div class="text-[11px] font-semibold tracking-wider text-slate-500 uppercase px-3 mb-2">외부 연동 및 채널 (Phase 2)</div>
+          <nav class="space-y-1">
+            <button onclick="switchTab('telegram')" id="nav-telegram" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span>텔레그램 센터</span>
+              </div>
+              <span class="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20">연동대기</span>
+            </button>
+            <button onclick="switchTab('sms')" id="nav-sms" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="message-square" class="w-4 h-4"></i>
+                <span>문자 메시지 센터</span>
+              </div>
+              <span class="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20">게이트웨이</span>
+            </button>
+            <button onclick="switchTab('carmanager')" id="nav-carmanager" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                <span>카매니저 연동</span>
+              </div>
+              <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">규격검토</span>
+            </button>
+            <button onclick="switchTab('organization')" id="nav-organization" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800/60">
+              <div class="flex items-center space-x-2.5">
+                <i data-lucide="building" class="w-4 h-4"></i>
+                <span>조직·지점 설정</span>
+              </div>
+              <span class="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono">2개 거점</span>
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <!-- 하단 시스템 상태 -->
+      <div class="p-3 border-t border-slate-800 bg-slate-900/40 text-xs space-y-2">
+        <div class="flex items-center justify-between text-slate-400">
+          <span>거점 모드</span>
+          <span class="text-indigo-400 font-medium">장한평 본사 / 수원 (확장 예정 거점)</span>
+        </div>
+        <div class="flex items-center justify-between text-slate-400">
+          <span>데모 DB</span>
+          <span class="text-emerald-400 font-mono">격리 보존 (OK)</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="flex-1 overflow-y-auto p-6 scrollbar-thin bg-slate-950">
+      
+      <!-- TAB 1: 대시보드 -->
+      <section id="tab-dashboard" class="tab-content space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">차마트 통합 운영 현황 대시보드</h1>
+            <p class="text-sm text-slate-400 mt-1">장한평 본사와 수원 지점의 실시간 매입, 재고, 고객 상담 및 영상 콘텐츠 파이프라인</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center space-x-1.5">
+              <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span id="currentClock">2026-10-26 02:50</span>
+            </span>
+            <button onclick="refreshAll()" class="p-1.5 text-slate-400 hover:text-white bg-slate-800 rounded-lg hover:bg-slate-700 transition">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4대 핵심 KPI 카드 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-400">총 보유 차량 / 판매 중</span>
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                <i data-lucide="car" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline space-x-2">
+              <span class="text-3xl font-bold text-white" id="kpiTotalVehicles">4</span>
+              <span class="text-sm text-emerald-400 font-medium" id="kpiForSaleVehicles">2대 판매 중</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">상품화 진행 1대 / 계약 1대</p>
+          </div>
+
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-400">CRM 고객 / 활성 상담</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                <i data-lucide="users" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline space-x-2">
+              <span class="text-3xl font-bold text-white" id="kpiTotalCustomers">3</span>
+              <span class="text-sm text-emerald-400 font-medium" id="kpiActiveConsultations">2명 상담 진행</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">유튜브 쇼츠 & 텔레그램 유입 연결</p>
+          </div>
+
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-400">AI 영상 스튜디오 프로젝트</span>
+              <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                <i data-lucide="video" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline space-x-2">
+              <span class="text-3xl font-bold text-white" id="kpiTotalProjects">2</span>
+              <span class="text-sm text-rose-400 font-medium" id="kpiInProdProjects">1건 제작/검토 중</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">쇼츠 1건 승인 완료 / 릴스 1건 제작</p>
+          </div>
+
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-400">AI 서류 검토 대기열</span>
+              <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                <i data-lucide="file-check" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="mt-3 flex items-baseline space-x-2">
+              <span class="text-3xl font-bold text-white" id="kpiPendingDocs">1</span>
+              <span class="text-sm text-amber-400 font-medium">검토 승인 대기</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">승인 전 거래 확정 방지 필터 적용</p>
+          </div>
+        </div>
+
+        <!-- 거점별 현황 요약 및 최근 활동 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- 거점별 현황 -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 lg:col-span-1 space-y-4">
+            <h2 class="text-base font-semibold text-white flex items-center space-x-2">
+              <i data-lucide="map-pin" class="w-4 h-4 text-indigo-400"></i>
+              <span>거점별 차량 & 고객 배분</span>
+            </h2>
+            <div class="space-y-3" id="branchesSummaryContainer">
+              <!-- JS 렌더링 -->
+            </div>
+            <div class="pt-3 border-t border-slate-800/80 text-xs text-slate-400">
+              * 장한평 본사 체계를 수원 및 수도권 거점으로 확장 중입니다.
+            </div>
+          </div>
+
+          <!-- 주요 업무 바로가기 & 빠른 작업 -->
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 lg:col-span-2 space-y-4">
+            <h2 class="text-base font-semibold text-white flex items-center space-x-2">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+              <span>차마트 4대 실제 작동 업무 퀵액션</span>
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <button onclick="openNewVehicleModal()" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/60 transition group">
+                <div class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition">
+                  <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                </div>
+                <span class="text-xs font-medium text-slate-200 mt-2">신규 차량 등록</span>
+              </button>
+              <button onclick="openNewCustomerModal()" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/60 transition group">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition">
+                  <i data-lucide="user-plus" class="w-5 h-5"></i>
+                </div>
+                <span class="text-xs font-medium text-slate-200 mt-2">고객 CRM 등록</span>
+              </button>
+              <button onclick="openUploadDocModal()" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/60 transition group">
+                <div class="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:scale-110 transition">
+                  <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                </div>
+                <span class="text-xs font-medium text-slate-200 mt-2">계약서 사진 업로드</span>
+              </button>
+              <button onclick="openNewMediaModal()" class="flex flex-col items-center justify-center p-4 bg-slate-800/50 hover:bg-slate-800 rounded-xl border border-slate-700/60 transition group">
+                <div class="w-10 h-10 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center group-hover:scale-110 transition">
+                  <i data-lucide="video" class="w-5 h-5"></i>
+                </div>
+                <span class="text-xs font-medium text-slate-200 mt-2">영상 프로젝트 생성</span>
+              </button>
+            </div>
+
+            <!-- 최근 거래 현황 박스 -->
+            <div class="bg-slate-950/60 border border-slate-800/80 rounded-lg p-3.5">
+              <div class="flex items-center justify-between text-xs font-medium mb-2">
+                <span class="text-slate-400">데모 누적 거래 실적</span>
+                <span class="text-indigo-400">정산 확정</span>
+              </div>
+              <div class="grid grid-cols-2 gap-4 text-sm font-semibold">
+                <div>매입 정산: <span class="text-emerald-400" id="kpiPurchaseSum">2,450만원</span></div>
+                <div>판매 정산: <span class="text-indigo-400" id="kpiSaleSum">4,550만원</span> (계약 진행 1건)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: 차량 관리 (P0 실작동) -->
+      <section id="tab-vehicles" class="tab-content hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">차량 관리</h1>
+            <p class="text-sm text-slate-400 mt-1">차마트 보유 차량의 매입, 상품화, 전시 판매, 계약 및 타임라인 이력 관리</p>
+          </div>
+          <button onclick="openNewVehicleModal()" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-indigo-600/20">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>차량 신규 등록</span>
+          </button>
+        </div>
+
+        <!-- 필터바 -->
+        <div class="flex flex-wrap items-center gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-sm">
+          <select id="vehicleBranchFilter" onchange="loadVehicles()" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-indigo-500">
+            <option value="">전체 지점</option>
+            <!-- JS 렌더링 -->
+          </select>
+          <select id="vehicleStatusFilter" onchange="loadVehicles()" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-indigo-500">
+            <option value="">전체 재고 상태</option>
+            <option value="PURCHASE_REVIEW">매입 검토</option>
+            <option value="IN_STOCK">입고</option>
+            <option value="DETAILING">상품화 진행</option>
+            <option value="FOR_SALE">판매 중</option>
+            <option value="CONTRACTING">계약 진행</option>
+            <option value="SOLD">판매 완료</option>
+          </select>
+          <span class="text-xs text-slate-500 ml-auto" id="vehicleCountText">총 4대 등록됨</span>
+        </div>
+
+        <!-- 차량 목록 테이블 -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-800/60 text-slate-400 text-xs uppercase font-medium border-b border-slate-800">
+                <tr>
+                  <th class="px-4 py-3">차량번호</th>
+                  <th class="px-4 py-3">모델명</th>
+                  <th class="px-4 py-3">연식/주행거리</th>
+                  <th class="px-4 py-3">매입가 / 희망가</th>
+                  <th class="px-4 py-3">거점</th>
+                  <th class="px-4 py-3">재고 상태</th>
+                  <th class="px-4 py-3 text-right">상태 변경 & 타임라인</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800" id="vehicleTableBody">
+                <!-- JS 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: 고객 CRM (P0 실작동) -->
+      <section id="tab-crm" class="tab-content hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">고객 CRM 관리</h1>
+            <p class="text-sm text-slate-400 mt-1">유튜브 쇼츠, 텔레그램, 유선 문의 고객의 상담 내역 및 관심 차량 매칭</p>
+          </div>
+          <button onclick="openNewCustomerModal()" class="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-emerald-600/20">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>고객 신규 등록</span>
+          </button>
+        </div>
+
+        <!-- 검색 및 필터 -->
+        <div class="flex flex-wrap items-center gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800 text-sm">
+          <input type="text" id="crmSearchInput" placeholder="고객명 또는 연락처 검색..." onkeyup="if(event.key==='Enter') loadCustomers()" class="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-indigo-500 w-64" />
+          <button onclick="loadCustomers()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700">검색</button>
+          <span class="text-xs text-slate-500 ml-auto" id="customerCountText">총 3명 관리 중</span>
+        </div>
+
+        <!-- 고객 목록 테이블 -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-800/60 text-slate-400 text-xs uppercase font-medium border-b border-slate-800">
+                <tr>
+                  <th class="px-4 py-3">고객명</th>
+                  <th class="px-4 py-3">연락처</th>
+                  <th class="px-4 py-3">관심 차종</th>
+                  <th class="px-4 py-3">희망 예산</th>
+                  <th class="px-4 py-3">담당 직원</th>
+                  <th class="px-4 py-3">진행 상태</th>
+                  <th class="px-4 py-3 text-right">상담 기록 추가</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800" id="customerTableBody">
+                <!-- JS 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: 거래·계약 관리 (P0 실작동) -->
+      <section id="tab-transactions" class="tab-content hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">거래·계약 관리</h1>
+            <p class="text-sm text-slate-400 mt-1">차마트 매입 정산 및 고객 판매 계약 체결 내역 관리</p>
+          </div>
+          <button onclick="openNewTransactionModal()" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-indigo-600/20">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>거래 기록 등록</span>
+          </button>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-800/60 text-slate-400 text-xs uppercase font-medium border-b border-slate-800">
+                <tr>
+                  <th class="px-4 py-3">거래일자</th>
+                  <th class="px-4 py-3">구분</th>
+                  <th class="px-4 py-3">대상 차량</th>
+                  <th class="px-4 py-3">거래금액</th>
+                  <th class="px-4 py-3">거래 상대방</th>
+                  <th class="px-4 py-3">정산 상태</th>
+                  <th class="px-4 py-3">비고</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800" id="transactionTableBody">
+                <!-- JS 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: AI 서류 인식 (P0 실작동) -->
+      <section id="tab-documents" class="tab-content hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">AI 서류 인식 & 거래 검토 대기열</h1>
+            <p class="text-sm text-slate-400 mt-1">계약서·양도증명서·성능점검기록부 업로드, SHA-256 검증 및 담당자 승인 파이프라인</p>
+          </div>
+          <button onclick="openUploadDocModal()" class="flex items-center space-x-2 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-amber-600/20">
+            <i data-lucide="upload" class="w-4 h-4"></i>
+            <span>서류 업로드</span>
+          </button>
+        </div>
+
+        <!-- 안내 배너 -->
+        <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start space-x-3 text-sm">
+          <i data-lucide="shield-alert" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+          <div>
+            <span class="font-semibold text-amber-300">승인 전 거래정보 확정 방지 원칙:</span>
+            <span class="text-slate-300">업로드된 계약서나 점검기록부는 AI 추출 메타데이터 검증 후, 권한 있는 담당자가 승인하기 전까지는 실제 거래 DB에 확정 반영되지 않습니다. 동일 파일 재업로드 시 SHA-256 해시를 통해 중복을 자동 차단합니다.</span>
+          </div>
+        </div>
+
+        <!-- 서류 목록 테이블 -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-800/60 text-slate-400 text-xs uppercase font-medium border-b border-slate-800">
+                <tr>
+                  <th class="px-4 py-3">업로드일시</th>
+                  <th class="px-4 py-3">서류 유형</th>
+                  <th class="px-4 py-3">파일명 / SHA-256</th>
+                  <th class="px-4 py-3">추출 메타데이터 요약</th>
+                  <th class="px-4 py-3">검토 상태</th>
+                  <th class="px-4 py-3 text-right">담당자 승인 처리</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800" id="documentTableBody">
+                <!-- JS 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: AI 매물 분석 (기존 자산 연결) -->
+      <section id="tab-market-analysis" class="tab-content hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight text-white">AI 매물 분석 (엔카 관측 & 국토부 통계 연계)</h1>
+          <p class="text-sm text-slate-400 mt-1">기존 차피셜 엔카 스크래퍼 및 기회 매물 추천 엔진 연계 뷰</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5">
+            <div class="text-xs text-slate-400 font-medium">국토교통부 공식 통계 (2026년 9월 행정 이전등록)</div>
+            <div class="text-xl font-bold text-white mt-1">전국 298,293건 (행정 이전등록)</div>
+            <p class="text-xs text-slate-500 mt-2">매매업자 199,879건 (67.0%) / 당사자 92,751건 / 기타 5,663건 (SHA-256: 4d372e...)</p>
+          </div>
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5">
+            <div class="text-xs text-slate-400 font-medium">수도권 매매업자 거래 비중 (검증 원본)</div>
+            <div class="text-xl font-bold text-indigo-400 mt-1">서울 63.9% / 경기 73.8%</div>
+            <p class="text-xs text-slate-500 mt-2">서울 19,534건 / 경기 74,764건 업자 매매 검증</p>
+          </div>
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5">
+            <div class="text-xs text-slate-400 font-medium">매물 관측 정책</div>
+            <div class="text-xl font-bold text-emerald-400 mt-1">LIVE 스크래핑 정지 모드</div>
+            <p class="text-xs text-slate-500 mt-2">승인된 로컬 캐시 및 파일럿 데이터만 안전 참조</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-6 text-center space-y-3">
+          <i data-lucide="database" class="w-12 h-12 text-indigo-400 mx-auto"></i>
+          <h3 class="text-lg font-bold text-white">기존 엔카 관측 기회 매물 데이터 탑재 대기</h3>
+          <p class="text-sm text-slate-400 max-w-xl mx-auto">기존 <code class="text-indigo-300 font-mono">OpportunityEngine</code> 및 <code class="text-indigo-300 font-mono">ValuationValidator</code> 모듈과의 연동 계층이 준비되어 있으며, 차마트 매입 추천 알고리즘으로 직접 연결됩니다.</p>
+        </div>
+      </section>
+
+      <!-- TAB 7: AI 영상 스튜디오 (P0 실작동) -->
+      <section id="tab-studio" class="tab-content hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">AI 영상 스튜디오</h1>
+            <p class="text-sm text-slate-400 mt-1">차마트 보유 실매물 연계 쇼츠·릴스 영상 기획, 대본 자동 생성 및 제작 워크플로우</p>
+          </div>
+          <button onclick="openNewMediaModal()" class="flex items-center space-x-2 bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-rose-600/20">
+            <i data-lucide="video" class="w-4 h-4"></i>
+            <span>영상 프로젝트 생성</span>
+          </button>
+        </div>
+
+        <!-- 프로젝트 목록 테이블 -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-800/60 text-slate-400 text-xs uppercase font-medium border-b border-slate-800">
+                <tr>
+                  <th class="px-4 py-3">프로젝트 제목</th>
+                  <th class="px-4 py-3">연결 차량</th>
+                  <th class="px-4 py-3">포맷/콘셉트</th>
+                  <th class="px-4 py-3">대본 초안 미리보기</th>
+                  <th class="px-4 py-3">제작 상태</th>
+                  <th class="px-4 py-3 text-right">워크플로우 상태 전이</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800" id="mediaProjectTableBody">
+                <!-- JS 렌더링 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 8: 텔레그램 센터 (P1 미래 연동) -->
+      <section id="tab-telegram" class="tab-content hidden space-y-6">
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-2xl font-bold tracking-tight text-white">텔레그램 고객 커뮤니티 센터</h1>
+            <span class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-semibold">Phase 2 연동 대기</span>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">차마트 공식 채널 매물 게시, 고객 문의 자동 분석 및 CRM 상담 자동 연결 허브</p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
+          <div class="flex items-center space-x-3 text-indigo-400">
+            <i data-lucide="send" class="w-8 h-8"></i>
+            <div>
+              <h3 class="text-base font-bold text-white">텔레그램 봇 연동 아키텍처</h3>
+              <p class="text-xs text-slate-400">공식 Telegram Bot API 및 Webhook 보안 통신 준비 중</p>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs font-mono space-y-1.5 text-slate-300">
+            <div>• 연동 대상 채널: @chamart_official (차마트 공식 검증 매물 알리미)</div>
+            <div>• 개인정보 보호 정책: 공개 그룹 전체 메시지 무단 수집 금지, 상담 요청 시에만 동의 기반 CRM 등록</div>
+            <div>• 현재 상태: 연동 인터페이스 및 대기열 데이터 모델 구축 완료 (Phase 2에서 Bot Token 연결)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 9: 문자 메시지 센터 (P1 미래 연동) -->
+      <section id="tab-sms" class="tab-content hidden space-y-6">
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-2xl font-bold tracking-tight text-white">문자 메시지 센터 (안드로이드 게이트웨이)</h1>
+            <span class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-semibold">Phase 2 연동 대기</span>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">불특정 광고 스팸이 아닌, 상담 중인 고객에게 담당자가 AI 맞춤 제안 문자를 검토·발송하는 시스템</p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
+          <div class="flex items-center space-x-3 text-emerald-400">
+            <i data-lucide="smartphone" class="w-8 h-8"></i>
+            <div>
+              <h3 class="text-base font-bold text-white">안드로이드 단말기 로컬 페어링 상태</h3>
+              <p class="text-xs text-slate-400">직원 스마트폰 SMS 게이트웨이 앱과 HTTPS 암호화 통신 준비</p>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs font-mono space-y-1.5 text-slate-300">
+            <div>• 일일 발송 한도 관리: 통신사 이용약관 준수 (일 200건 초과 방지)</div>
+            <div>• 발송 프로세스: CRM 고객 선택 → AI 초안 생성 → 담당 매니저 수정·승인 → 단말기 발송 → 타임라인 기록</div>
+            <div>• 현재 상태: 게이트웨이 프로토콜 설계 완료, 단말기 연동 대기</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 10: 카매니저 연동 (P1 미래 연동) -->
+      <section id="tab-carmanager" class="tab-content hidden space-y-6">
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-2xl font-bold tracking-tight text-white">카매니저 외부 매물 연동</h1>
+            <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold">공식 규격 검토 중</span>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">상사 매물 전산 등록·수정·판매처리 동기화 연동 허브</p>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-6 space-y-4">
+          <div class="flex items-center space-x-3 text-indigo-400">
+            <i data-lucide="refresh-cw" class="w-8 h-8"></i>
+            <div>
+              <h3 class="text-base font-bold text-white">상사 전산 연동 인터페이스 가이드</h3>
+              <p class="text-xs text-slate-400">단순 삭제를 판매로 오인하지 않는 다중 검증 프로토콜</p>
+            </div>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs font-mono space-y-1.5 text-slate-300">
+            <div>• 확인된 사실: 광고 삭제와 실제 판매처리는 엄격히 구별되어야 함</div>
+            <div>• 연동 방식: 공식 제휴 API 또는 상사 전산 정식 내보내기 규격 조사 중</div>
+            <div>• 현재 상태: 인터페이스 및 데이터 매핑 모델 준비 완료</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 11: 마케팅 성과 (P1 데이터 구조) -->
+      <section id="tab-marketing" class="tab-content hidden space-y-6">
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-2xl font-bold tracking-tight text-white">마케팅 성과 파이프라인 분석</h1>
+            <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-semibold">퍼널 데이터 모델</span>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">영상 콘텐츠 노출부터 고객 유입, 상담, 최종 계약에 이르는 전 과정 퍼널 추적</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3" id="marketingFunnelContainer">
+          <!-- JS 렌더링 -->
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-3">
+          <h3 class="text-sm font-semibold text-white">상위 유입 콘텐츠 성과 순위 (데모)</h3>
+          <div class="space-y-2" id="topContentsContainer">
+            <!-- JS 렌더링 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 12: 조직·설정 (P0 실작동) -->
+      <section id="tab-organization" class="tab-content hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight text-white">조직 및 지점 설정</h1>
+          <p class="text-sm text-slate-400 mt-1">차마트 본사 및 지역 거점, 권한 관리, 데모 환경 관리</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-4">
+            <h3 class="text-base font-semibold text-white flex items-center space-x-2">
+              <i data-lucide="building" class="w-4 h-4 text-indigo-400"></i>
+              <span>등록된 거점 목록 (다중 거점 아키텍처)</span>
+            </h3>
+            <div class="space-y-3" id="orgBranchList">
+              <!-- JS 렌더링 -->
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 space-y-4">
+            <h3 class="text-base font-semibold text-white flex items-center space-x-2">
+              <i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i>
+              <span>보안 및 데모 데이터 무결성</span>
+            </h3>
+            <div class="text-xs text-slate-300 space-y-2 bg-slate-950 p-4 rounded-lg border border-slate-800">
+              <p>• <strong>데모 DB 경로:</strong> <code class="text-emerald-400">data/chamart/chamart_platform_demo.db</code></p>
+              <p>• <strong>운영 데이터 격리:</strong> 정부 통계, 엔카 관측 파일럿 DB는 불변 보존</p>
+              <p>• <strong>외부 접속 제어:</strong> Cloudflare Tunnel 기반 터널링 권장 (포트 직접 오픈 금지)</p>
+            </div>
+            <button onclick="alert('데모 데이터베이스가 안전하게 보존 중입니다.')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2 rounded-lg border border-slate-700 transition">
+              데모 데이터 상태 점검
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- 모달 1: 신규 차량 등록 모달 -->
+  <div id="modalVehicle" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+          <i data-lucide="car" class="w-5 h-5 text-indigo-400"></i>
+          <span>신규 차량 등록 (실작동)</span>
+        </h3>
+        <button onclick="closeModal('modalVehicle')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleCreateVehicle(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">담당 지점</label>
+          <select id="vBranchId" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">차량번호</label>
+            <input type="text" id="vPlateNumber" placeholder="예: 34머 5678" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">연식 (년)</label>
+            <input type="number" id="vYear" value="2022" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">모델명 (세부 트림)</label>
+          <input type="text" id="vModelName" placeholder="예: 기아 쏘렌토 4세대 2.2 디젤 4WD 시그니처" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">주행거리 (km)</label>
+            <input type="number" id="vMileage" value="45000" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">연료</label>
+            <select id="vFuel" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+              <option value="가솔린">가솔린</option>
+              <option value="디젤">디젤</option>
+              <option value="하이브리드">하이브리드</option>
+              <option value="전기">전기</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">매입가 (만원)</label>
+            <input type="number" id="vPurchasePrice" value="2500" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">희망판매가 (만원)</label>
+            <input type="number" id="vTargetPrice" value="2850" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">초기 재고 상태</label>
+          <select id="vStatus" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+            <option value="PURCHASE_REVIEW">매입 검토</option>
+            <option value="IN_STOCK">입고</option>
+            <option value="DETAILING">상품화 진행</option>
+            <option value="FOR_SALE" selected>판매 중</option>
+          </select>
+        </div>
+        <div class="pt-3 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modalVehicle')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">취소</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium">등록 완료</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 모달 2: 고객 CRM 등록 모달 -->
+  <div id="modalCustomer" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-emerald-400"></i>
+          <span>고객 CRM 신규 등록 (실작동)</span>
+        </h3>
+        <button onclick="closeModal('modalCustomer')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleCreateCustomer(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">담당 지점</label>
+          <select id="cBranchId" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">고객명</label>
+            <input type="text" id="cName" placeholder="예: 김철수" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">연락처</label>
+            <input type="text" id="cPhone" placeholder="010-0000-0000" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">관심 차종</label>
+            <input type="text" id="cTargetModel" placeholder="예: 쏘렌토 / 싼타페" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">희망 예산 (만원)</label>
+            <input type="number" id="cBudget" placeholder="예: 3000" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">담당 직원명</label>
+          <input type="text" id="cStaff" value="장한평 김수석 매니저" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">초기 상담 메모</label>
+          <textarea id="cNotes" rows="2" placeholder="유튜브 쇼츠 영상 보고 문의 접수..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-xs"></textarea>
+        </div>
+        <div class="pt-3 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modalCustomer')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">취소</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium">고객 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 모달 3: 상담 기록 추가 모달 -->
+  <div id="modalConsultation" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i data-lucide="message-circle" class="w-4 h-4 text-emerald-400"></i>
+          <span>상담 이력 기록 추가</span>
+        </h3>
+        <button onclick="closeModal('modalConsultation')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <input type="hidden" id="consCustomerId" />
+      <form onsubmit="handleCreateConsultation(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">상담 채널</label>
+          <select id="consChannel" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+            <option value="전화">전화 상담</option>
+            <option value="매장방문">매장 실차 방문</option>
+            <option value="카카오톡">카카오톡</option>
+            <option value="텔레그램">텔레그램 채널</option>
+            <option value="유튜브댓글">유튜브 댓글</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">상담 내용</label>
+          <textarea id="consContent" rows="3" required placeholder="고객 요청사항, 시운전 결과, 가격 조율 등..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-xs"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">담당자</label>
+            <input type="text" id="consStaff" value="담당 매니저" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">후속 일정</label>
+            <input type="date" id="consNextDate" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+        </div>
+        <div class="pt-3 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modalConsultation')" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg">취소</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium">상담 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 모달 4: AI 서류 업로드 모달 -->
+  <div id="modalUploadDoc" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i data-lucide="file-up" class="w-5 h-5 text-amber-400"></i>
+          <span>계약서 / 점검기록부 업로드 (실작동)</span>
+        </h3>
+        <button onclick="closeModal('modalUploadDoc')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleUploadDoc(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">서류 유형</label>
+          <select id="docTypeSelect" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+            <option value="TRANSFER_CERTIFICATE">자동차양도증명서</option>
+            <option value="SALE_CONTRACT">자동차 매매계약서</option>
+            <option value="INSPECTION_RECORD">자동차 성능·상태점검기록부</option>
+            <option value="SETTLEMENT_SHEET">차량 매입·판매 정산서</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">파일 선택 (사진 / PDF, 최대 10MB)</label>
+          <input type="file" id="docFileInput" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-300 text-xs" />
+        </div>
+        <p class="text-[11px] text-slate-500">
+          * 업로드 즉시 SHA-256 해시가 계산되며 대기열에 등록됩니다. 담당자 승인 전에는 거래로 확정되지 않습니다.
+        </p>
+        <div class="pt-3 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modalUploadDoc')" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg">취소</button>
+          <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-medium">업로드 분석</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 모달 5: 영상 프로젝트 생성 모달 -->
+  <div id="modalMediaProject" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i data-lucide="video" class="w-5 h-5 text-rose-400"></i>
+          <span>AI 영상 프로젝트 생성 (실작동)</span>
+        </h3>
+        <button onclick="closeModal('modalMediaProject')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleCreateMediaProject(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">홍보 대상 차량 선택</label>
+          <select id="mVehicleId" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+            <!-- JS 렌더링 -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">프로젝트 제목</label>
+          <input type="text" id="mTitle" placeholder="예: [쇼츠] 장한평 무사고 쏘렌토 실매물 검증" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">포맷</label>
+            <select id="mFormat" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+              <option value="SHORTS">유튜브 쇼츠 (9:16)</option>
+              <option value="REELS">인스타 릴스 (9:16)</option>
+              <option value="LONGFORM">유튜브 롱폼 (16:9)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">타깃 플랫폼</label>
+            <select id="mPlatform" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+              <option value="YOUTUBE">유튜브</option>
+              <option value="INSTAGRAM">인스타그램</option>
+              <option value="TIKTOK">틱톡</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">콘셉트</label>
+          <input type="text" id="mConcept" value="가성비 패밀리 SUV" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+        </div>
+        <div class="pt-3 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modalMediaProject')" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg">취소</button>
+          <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-medium">프로젝트 생성</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 모달 6: 거래 기록 추가 모달 -->
+  <div id="modalTransaction" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <i data-lucide="receipt" class="w-5 h-5 text-indigo-400"></i>
+          <span>거래·계약 기록 등록 (실작동)</span>
+        </h3>
+        <button onclick="closeModal('modalTransaction')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form onsubmit="handleCreateTransaction(event)" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">거래 차량 선택</label>
+          <select id="tVehicleId" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">거래 구분</label>
+            <select id="tType" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+              <option value="SALE">판매 (고객 인도)</option>
+              <option value="PURCHASE">매입 (상사 입고)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">금액 (만원)</label>
+            <input type="number" id="tAmount" value="2800" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">거래 상대방명</label>
+          <input type="text" id="tPartyName" placeholder="예: 박고객" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">거래일자</label>
+          <input type="date" id="tDate" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white" />
+        </div>
+        <div class="pt-3 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modalTransaction')" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg">취소</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium">거래 등록</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 모달 7: 차량 타임라인 상세 모달 -->
+  <div id="modalTimeline" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center space-x-2">
+            <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
+            <span id="timelineTitle">차량 이력 타임라인</span>
+          </h3>
+          <p class="text-xs text-slate-400" id="timelineSubtitle">차량번호: -</p>
+        </div>
+        <button onclick="closeModal('modalTimeline')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="space-y-3 max-h-72 overflow-y-auto pr-2 scrollbar-thin" id="timelineList">
+        <!-- JS 렌더링 -->
+      </div>
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button onclick="closeModal('modalTimeline')" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg text-slate-200">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모달 8: 외부 접속 보안 가이드 모달 -->
+  <div id="modalTunnel" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+          <i data-lucide="shield-check" class="w-5 h-5 text-indigo-400"></i>
+          <span>외부 노트북/스마트폰 시연 보안 접속 안내</span>
+        </h3>
+        <button onclick="closeModal('modalTunnel')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="space-y-3 text-xs text-slate-300">
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5 font-mono">
+          <div class="text-indigo-400 font-bold">1. 현재 로컬 실행 주소:</div>
+          <div class="text-white">http://localhost:8501</div>
+          <div class="text-slate-400">개발 컴퓨터 내부에서 모든 기능이 정상 실행 중입니다.</div>
+        </div>
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5 font-mono">
+          <div class="text-emerald-400 font-bold">2. 외부 보안 터널 (Cloudflare Zero Trust 권장):</div>
+          <div class="text-slate-300">포트를 외부에 직접 열지 않고, 암호화된 Cloudflare Tunnel을 통해 외부 스마트폰이나 노트북에서 접속할 수 있습니다:</div>
+          <div class="bg-slate-900 p-2 rounded text-indigo-300">$ cloudflared tunnel --url http://localhost:8501</div>
+          <div class="text-[11px] text-amber-300 mt-1">※ 주의: Quick Tunnel 임시 주소는 링크를 아는 누구나 접근 가능하므로, 정식 미팅 시 Cloudflare Access(이메일 OTP 인증) 정책을 반드시 적용하십시오.</div>
+        </div>
+        <div class="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-amber-300 text-[11px] space-y-1">
+          <div class="font-bold">• 검증 원칙 (EXTERNAL_ACCESS_PENDING):</div>
+          <div>외부 네트워크에서 실제 접속이 검증되기 전까지는 EXTERNAL_ACCESS_VERIFIED를 선언하지 않으며, 현재는 LOCAL_READY 상태로 유지됩니다. 실제 고객 개인정보는 일체 노출되지 않도록 DEMO_DATA 격리 원칙을 준수합니다.</div>
+        </div>
+      </div>
+      <div class="pt-3 flex justify-end">
+        <button onclick="closeModal('modalTunnel')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium">확인 완료</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 자바스크립트 프론트엔드 비즈니스 로직 -->
+  <script>
+    // 전역 상태
+    let currentTab = 'dashboard';
+    let branches = [];
+    let vehicles = [];
+    let customers = [];
+    let transactions = [];
+    let documents = [];
+    let mediaProjects = [];
+
+    // DOM 초기화
+    document.addEventListener("DOMContentLoaded", async () => {
+      lucide.createIcons();
+      updateClock();
+      setInterval(updateClock, 1000);
+      document.getElementById('tDate').value = new Date().toISOString().split('T')[0];
+      
+      // 세션 상태 확인
+      await checkAuthStatus();
+      refreshAll();
+    });
+
+    async function checkAuthStatus() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        const label = document.getElementById('userNameLabel');
+        const btn = document.getElementById('authBtn');
+        if (data.authenticated && data.username) {
+          label.innerText = '차마트 총괄관리자';
+          btn.innerText = '로그아웃';
+        } else {
+          label.innerText = '인증 필요 (게스트)';
+          btn.innerText = '로그인';
+        }
+      } catch (err) {
+        console.error("세션 확인 실패:", err);
+      }
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const str = now.toISOString().slice(0, 16).replace('T', ' ');
+      const clockEl = document.getElementById('currentClock');
+      if (clockEl) clockEl.innerText = str;
+    }
+
+    // 탭 전환
+    function switchTab(tabName) {
+      currentTab = tabName;
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.remove('bg-indigo-600', 'text-white');
+        el.classList.add('text-slate-300', 'hover:bg-slate-800/60');
+      });
+
+      const targetTab = document.getElementById(`tab-${tabName}`);
+      if (targetTab) targetTab.classList.remove('hidden');
+
+      const activeNav = document.getElementById(`nav-${tabName}`);
+      if (activeNav) {
+        activeNav.classList.remove('text-slate-300', 'text-slate-400', 'hover:bg-slate-800/60');
+        activeNav.classList.add('bg-indigo-600', 'text-white');
+      }
+      lucide.createIcons();
+    }
+
+    // 모달 제어
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); lucide.createIcons(); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function openTunnelModal() { openModal('modalTunnel'); }
+    function openNewVehicleModal() { openModal('modalVehicle'); }
+    function openNewCustomerModal() { openModal('modalCustomer'); }
+    function openUploadDocModal() { openModal('modalUploadDoc'); }
+    function openNewMediaModal() { openModal('modalMediaProject'); }
+    function openNewTransactionModal() { openModal('modalTransaction'); }
+
+    // 데이터 전체 갱신
+    async function refreshAll() {
+      await loadBranches();
+      await loadOverview();
+      await loadVehicles();
+      await loadCustomers();
+      await loadTransactions();
+      await loadDocuments();
+      await loadMediaProjects();
+      await loadMarketingFunnel();
+    }
+
+    // 1. 거점 목록
+    async function loadBranches() {
+      try {
+        const res = await fetch('/api/branches');
+        branches = await res.json();
+        
+        // 지점 드롭다운 채우기
+        const vBranchSelect = document.getElementById('vBranchId');
+        const cBranchSelect = document.getElementById('cBranchId');
+        const vBranchFilter = document.getElementById('vehicleBranchFilter');
+        
+        vBranchSelect.innerHTML = '';
+        cBranchSelect.innerHTML = '';
+        vBranchFilter.innerHTML = '<option value="">전체 지점</option>';
+
+        branches.forEach(b => {
+          const opt = `<option value="${b.id}">${b.name}</option>`;
+          vBranchSelect.innerHTML += opt;
+          cBranchSelect.innerHTML += opt;
+          vBranchFilter.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+        });
+
+        // 조직 탭 지점 리스트 렌더링
+        const orgBranchList = document.getElementById('orgBranchList');
+        if (orgBranchList) {
+          orgBranchList.innerHTML = branches.map(b => `
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold text-white flex items-center space-x-1.5">
+                  <span>${b.name}</span>
+                  ${b.is_headquarters ? '<span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.2 rounded font-mono">본사</span>' : ''}
+                </div>
+                <div class="text-xs text-slate-400 mt-0.5">${b.address || b.region}</div>
+              </div>
+              <span class="text-xs text-emerald-400 font-mono">운영 중</span>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error("거점 목록 로드 실패:", err);
+      }
+    }
+
+    // 2. 대시보드 KPI
+    async function loadOverview() {
+      try {
+        const res = await fetch('/api/overview');
+        const data = await res.json();
+        const kpi = data.kpis;
+
+        document.getElementById('kpiTotalVehicles').innerText = kpi.total_vehicles;
+        document.getElementById('kpiForSaleVehicles').innerText = `${kpi.for_sale_vehicles}대 판매 중`;
+        document.getElementById('kpiTotalCustomers').innerText = kpi.total_customers;
+        document.getElementById('kpiActiveConsultations').innerText = `${kpi.active_consultations}명 상담 진행`;
+        document.getElementById('kpiTotalProjects').innerText = kpi.total_projects;
+        document.getElementById('kpiInProdProjects').innerText = `${kpi.in_prod_projects}건 제작/검토 중`;
+        document.getElementById('kpiPendingDocs').innerText = kpi.pending_docs;
+        document.getElementById('kpiPurchaseSum').innerText = `${kpi.purchase_sum_million_krw.toLocaleString()}만원`;
+        document.getElementById('kpiSaleSum').innerText = `${kpi.sale_sum_million_krw.toLocaleString()}만원`;
+
+        // 사이드바 배지
+        document.getElementById('sidebarVehicleBadge').innerText = kpi.total_vehicles;
+        document.getElementById('sidebarCrmBadge').innerText = kpi.total_customers;
+        document.getElementById('sidebarStudioBadge').innerText = kpi.total_projects;
+        document.getElementById('sidebarDocBadge').innerText = `대기 ${kpi.pending_docs}`;
+
+        // 거점 요약 렌더링
+        const container = document.getElementById('branchesSummaryContainer');
+        container.innerHTML = data.branches.map(b => `
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
+            <div>
+              <div class="text-sm font-semibold text-white">${b.name}</div>
+              <div class="text-xs text-slate-500">${b.region}</div>
+            </div>
+            <div class="text-right text-xs">
+              <span class="text-indigo-400 font-bold">${b.vehicle_count}대</span> 차량 /
+              <span class="text-emerald-400 font-bold">${b.customer_count}명</span> 고객
+            </div>
+          </div>
+        `).join('');
+
+      } catch (err) {
+        console.error("KPI 로드 실패:", err);
+      }
+    }
+
+    // 3. 차량 관리 (CRUD)
+    async function loadVehicles() {
+      try {
+        const bId = document.getElementById('vehicleBranchFilter').value;
+        const status = document.getElementById('vehicleStatusFilter').value;
+        let url = '/api/vehicles?';
+        if (bId) url += `branch_id=${bId}&`;
+        if (status) url += `status=${status}&`;
+
+        const res = await fetch(url);
+        vehicles = await res.json();
+
+        document.getElementById('vehicleCountText').innerText = `총 ${vehicles.length}대 등록됨`;
+
+        // 모달 내 차량 셀렉트 옵션도 동기화
+        const mVehicleSelect = document.getElementById('mVehicleId');
+        const tVehicleSelect = document.getElementById('tVehicleId');
+        if (mVehicleSelect) {
+          mVehicleSelect.innerHTML = vehicles.map(v => `<option value="${v.id}">[${v.plate_number}] ${v.model_name}</option>`).join('');
+        }
+        if (tVehicleSelect) {
+          tVehicleSelect.innerHTML = vehicles.map(v => `<option value="${v.id}">[${v.plate_number}] ${v.model_name}</option>`).join('');
+        }
+
+        const tbody = document.getElementById('vehicleTableBody');
+        tbody.innerHTML = vehicles.map(v => {
+          let statusBadge = '';
+          switch (v.status) {
+            case 'FOR_SALE': statusBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs">판매 중</span>'; break;
+            case 'DETAILING': statusBadge = '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-xs">상품화 진행</span>'; break;
+            case 'CONTRACTING': statusBadge = '<span class="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded text-xs">계약 진행</span>'; break;
+            case 'SOLD': statusBadge = '<span class="bg-slate-700 text-slate-300 px-2 py-0.5 rounded text-xs">판매 완료</span>'; break;
+            default: statusBadge = `<span class="bg-slate-800 text-slate-400 px-2 py-0.5 rounded text-xs">${v.status}</span>`;
+          }
+
+          return `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="px-4 py-3 font-semibold text-white">${v.plate_number}</td>
+              <td class="px-4 py-3 text-slate-200">
+                <div class="font-medium">${v.model_name}</div>
+                <div class="text-xs text-slate-500">${v.fuel_type} · ${v.color}</div>
+              </td>
+              <td class="px-4 py-3 text-slate-300 font-mono text-xs">${v.year}년 · ${v.mileage.toLocaleString()}km</td>
+              <td class="px-4 py-3 text-xs">
+                <div class="text-slate-400">매입: ${v.purchase_price.toLocaleString()}만원</div>
+                <div class="text-indigo-400 font-bold">희망: ${v.target_price.toLocaleString()}만원</div>
+              </td>
+              <td class="px-4 py-3 text-xs text-slate-400">${v.branch_name}</td>
+              <td class="px-4 py-3">${statusBadge}</td>
+              <td class="px-4 py-3 text-right space-x-1">
+                <button onclick="changeVehicleStatusPrompt('${v.id}')" class="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-300 px-2 py-1 rounded transition border border-slate-700">상태변경</button>
+                <button onclick="viewVehicleTimeline('${v.id}')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded transition border border-slate-700">이력</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error("차량 로드 실패:", err);
+      }
+    }
+
+    async function handleCreateVehicle(e) {
+      e.preventDefault();
+      const body = {
+        branch_id: document.getElementById('vBranchId').value,
+        plate_number: document.getElementById('vPlateNumber').value,
+        model_name: document.getElementById('vModelName').value,
+        year: parseInt(document.getElementById('vYear').value),
+        mileage: parseInt(document.getElementById('vMileage').value),
+        fuel_type: document.getElementById('vFuel').value,
+        purchase_price: parseInt(document.getElementById('vPurchasePrice').value || 0),
+        target_price: parseInt(document.getElementById('vTargetPrice').value || 0),
+        status: document.getElementById('vStatus').value,
+      };
+
+      try {
+        const res = await fetch('/api/vehicles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          closeModal('modalVehicle');
+          await refreshAll();
+          alert('차량이 정상 등록되었습니다.');
+        } else {
+          alert('차량 등록 실패');
+        }
+      } catch (err) {
+        alert('서버 통신 오류');
+      }
+    }
+
+    async function changeVehicleStatusPrompt(vehicleId) {
+      const nextStatus = prompt("변경할 재고 상태를 입력하세요:\n(PURCHASE_REVIEW, IN_STOCK, DETAILING, FOR_SALE, CONTRACTING, SOLD)", "FOR_SALE");
+      if (!nextStatus) return;
+
+      const reason = prompt("상태 변경 사유를 입력하세요 (선택):", "관리자 확인");
+
+      try {
+        const res = await fetch(`/api/vehicles/${vehicleId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus, reason: reason }),
+        });
+        if (res.ok) {
+          await refreshAll();
+          alert('상태가 정상 변경되었습니다.');
+        } else {
+          alert('상태 변경 실패');
+        }
+      } catch (err) {
+        alert('오류 발생');
+      }
+    }
+
+    async function viewVehicleTimeline(vehicleId) {
+      try {
+        const res = await fetch(`/api/vehicles/${vehicleId}`);
+        const data = await res.json();
+        document.getElementById('timelineTitle').innerText = `${data.model_name}`;
+        document.getElementById('timelineSubtitle').innerText = `차량번호: ${data.plate_number} (${data.branch_name})`;
+
+        const container = document.getElementById('timelineList');
+        if (!data.timeline || data.timeline.length === 0) {
+          container.innerHTML = '<p class="text-xs text-slate-500">등록된 이력이 없습니다.</p>';
+        } else {
+          container.innerHTML = data.timeline.map(t => `
+            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-xs">
+              <div class="text-slate-500 font-mono text-[11px]">${t.timestamp}</div>
+              <div class="text-slate-200 mt-0.5">${t.event}</div>
+            </div>
+          `).join('');
+        }
+        openModal('modalTimeline');
+      } catch (err) {
+        alert('이력 조회 실패');
+      }
+    }
+
+    // 4. 고객 CRM (CRUD)
+    async function loadCustomers() {
+      try {
+        const q = document.getElementById('crmSearchInput').value;
+        let url = '/api/customers?';
+        if (q) url += `query=${encodeURIComponent(q)}&`;
+
+        const res = await fetch(url);
+        customers = await res.json();
+
+        document.getElementById('customerCountText').innerText = `총 ${customers.length}명 관리 중`;
+
+        const tbody = document.getElementById('customerTableBody');
+        tbody.innerHTML = customers.map(c => `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="px-4 py-3 font-semibold text-white">${c.name}</td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-300">${c.phone}</td>
+            <td class="px-4 py-3 text-slate-300">${c.target_vehicle_model}</td>
+            <td class="px-4 py-3 text-indigo-400 font-bold text-xs">${c.budget_max ? c.budget_max.toLocaleString() + '만원' : '-'}</td>
+            <td class="px-4 py-3 text-xs text-slate-400">${c.assigned_staff}</td>
+            <td class="px-4 py-3">
+              <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs">${c.status}</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <button onclick="openConsultationModal('${c.id}')" class="text-xs bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/50 px-2.5 py-1 rounded transition">상담 추가 (${c.consultation_count}건)</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error("고객 로드 실패:", err);
+      }
+    }
+
+    async function handleCreateCustomer(e) {
+      e.preventDefault();
+      const body = {
+        branch_id: document.getElementById('cBranchId').value,
+        name: document.getElementById('cName').value,
+        phone: document.getElementById('cPhone').value,
+        target_vehicle_model: document.getElementById('cTargetModel').value,
+        budget_max: parseInt(document.getElementById('cBudget').value || 0),
+        assigned_staff: document.getElementById('cStaff').value,
+        notes: document.getElementById('cNotes').value,
+      };
+
+      try {
+        const res = await fetch('/api/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          closeModal('modalCustomer');
+          await refreshAll();
+          alert('고객이 등록되었습니다.');
+        } else {
+          alert('고객 등록 실패');
+        }
+      } catch (err) {
+        alert('오류 발생');
+      }
+    }
+
+    function openConsultationModal(customerId) {
+      document.getElementById('consCustomerId').value = customerId;
+      openModal('modalConsultation');
+    }
+
+    async function handleCreateConsultation(e) {
+      e.preventDefault();
+      const customerId = document.getElementById('consCustomerId').value;
+      const body = {
+        channel: document.getElementById('consChannel').value,
+        content: document.getElementById('consContent').value,
+        staff_name: document.getElementById('consStaff').value,
+        next_action_date: document.getElementById('consNextDate').value || null,
+      };
+
+      try {
+        const res = await fetch(`/api/customers/${customerId}/consultations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          closeModal('modalConsultation');
+          await refreshAll();
+          alert('상담 이력이 등록되었습니다.');
+        } else {
+          alert('상담 등록 실패');
+        }
+      } catch (err) {
+        alert('통신 오류');
+      }
+    }
+
+    // 5. 거래·계약 관리
+    async function loadTransactions() {
+      try {
+        const res = await fetch('/api/transactions');
+        transactions = await res.json();
+
+        const tbody = document.getElementById('transactionTableBody');
+        tbody.innerHTML = transactions.map(t => `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="px-4 py-3 font-mono text-xs text-slate-300">${t.transaction_date}</td>
+            <td class="px-4 py-3">
+              <span class="${t.transaction_type === 'PURCHASE' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'} px-2 py-0.5 rounded text-xs font-semibold">
+                ${t.transaction_type === 'PURCHASE' ? '매입' : '판매'}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-slate-200">
+              <span class="font-bold text-white">[${t.vehicle_plate}]</span> ${t.vehicle_model}
+            </td>
+            <td class="px-4 py-3 font-bold text-white">${t.amount.toLocaleString()}만원</td>
+            <td class="px-4 py-3 text-xs text-slate-300">${t.party_name}</td>
+            <td class="px-4 py-3">
+              <span class="text-xs text-emerald-400 font-mono">${t.settlement_status}</span>
+            </td>
+            <td class="px-4 py-3 text-xs text-slate-400">${t.notes}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error("거래 로드 실패:", err);
+      }
+    }
+
+    async function handleCreateTransaction(e) {
+      e.preventDefault();
+      const body = {
+        vehicle_id: document.getElementById('tVehicleId').value,
+        transaction_type: document.getElementById('tType').value,
+        amount: parseInt(document.getElementById('tAmount').value),
+        party_name: document.getElementById('tPartyName').value,
+        transaction_date: document.getElementById('tDate').value,
+        notes: "플랫폼 화면에서 직접 등록된 거래",
+      };
+
+      try {
+        const res = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          closeModal('modalTransaction');
+          await refreshAll();
+          alert('거래 기록이 성공적으로 등록되었습니다.');
+        } else {
+          alert('거래 등록 실패');
+        }
+      } catch (err) {
+        alert('오류 발생');
+      }
+    }
+
+    // 6. AI 서류 인식
+    async function loadDocuments() {
+      try {
+        const res = await fetch('/api/documents');
+        documents = await res.json();
+
+        const tbody = document.getElementById('documentTableBody');
+        tbody.innerHTML = documents.map(d => {
+          let statusBadge = '';
+          if (d.review_status === 'APPROVED') {
+            statusBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs font-semibold">승인 완료</span>';
+          } else {
+            statusBadge = '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-xs font-semibold">검토 대기</span>';
+          }
+
+          const extracted = d.extracted_data.extracted_fields || {};
+          const metaSummary = Object.entries(extracted).map(([k, v]) => `${k}: ${v}`).join(' | ');
+
+          return `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="px-4 py-3 font-mono text-xs text-slate-400">${d.created_at}</td>
+              <td class="px-4 py-3 text-xs font-medium text-slate-200">${d.doc_type}</td>
+              <td class="px-4 py-3 text-xs">
+                <div class="font-semibold text-white">${d.filename}</div>
+                <div class="font-mono text-[10px] text-slate-500">${d.file_sha256.slice(0, 16)}... (${d.file_size_kb} KB)</div>
+              </td>
+              <td class="px-4 py-3 text-xs text-slate-300 max-w-xs truncate">${metaSummary || '-'}</td>
+              <td class="px-4 py-3">${statusBadge}</td>
+              <td class="px-4 py-3 text-right">
+                ${d.review_status === 'PENDING' ? `
+                  <button onclick="approveDoc('${d.id}')" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded transition">승인 확정</button>
+                ` : `
+                  <span class="text-xs text-slate-500 font-mono">승인자: ${d.approved_by}</span>
+                `}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error("서류 로드 실패:", err);
+      }
+    }
+
+    async function handleUploadDoc(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('docFileInput');
+      if (!fileInput.files.length) return;
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('doc_type', document.getElementById('docTypeSelect').value);
+
+      try {
+        const res = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const result = await res.json();
+        if (res.ok) {
+          closeModal('modalUploadDoc');
+          await refreshAll();
+          alert(`서류가 성공적으로 업로드되었습니다.\n(SHA-256: ${result.sha256.slice(0, 16)}...)`);
+        } else {
+          alert(`업로드 실패: ${result.detail || '오류'}`);
+        }
+      } catch (err) {
+        alert('서버 업로드 오류');
+      }
+    }
+
+    async function approveDoc(docId) {
+      if (!confirm('해당 서류의 AI 추출 정보를 검토 후 최종 승인하시겠습니까?')) return;
+      try {
+        const res = await fetch(`/api/documents/${docId}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ approved: true, reviewer_name: '차마트 총괄관리자' }),
+        });
+        if (res.ok) {
+          await refreshAll();
+          alert('서류 검토 승인이 완료되었습니다.');
+        } else {
+          alert('승인 처리 실패');
+        }
+      } catch (err) {
+        alert('오류 발생');
+      }
+    }
+
+    // 7. AI 영상 스튜디오
+    async function loadMediaProjects() {
+      try {
+        const res = await fetch('/api/media-projects');
+        mediaProjects = await res.json();
+
+        const tbody = document.getElementById('mediaProjectTableBody');
+        tbody.innerHTML = mediaProjects.map(p => {
+          let statusBadge = '';
+          switch (p.status) {
+            case 'APPROVED': statusBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs">승인 완료</span>'; break;
+            case 'IN_PRODUCTION': statusBadge = '<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded text-xs">제작 진행 중</span>'; break;
+            case 'REVIEW': statusBadge = '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-xs">검수 단계</span>'; break;
+            default: statusBadge = `<span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-xs">${p.status}</span>`;
+          }
+
+          return `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="px-4 py-3 font-semibold text-white">${p.title}</td>
+              <td class="px-4 py-3 text-xs text-slate-200">
+                <span class="font-bold text-indigo-300">[${p.vehicle_plate}]</span> ${p.vehicle_model}
+              </td>
+              <td class="px-4 py-3 text-xs">
+                <span class="bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">${p.content_format}</span>
+                <span class="text-slate-400 ml-1">${p.concept}</span>
+              </td>
+              <td class="px-4 py-3 text-xs text-slate-400 max-w-xs truncate">${p.script_draft || '-'}</td>
+              <td class="px-4 py-3">${statusBadge}</td>
+              <td class="px-4 py-3 text-right">
+                <button onclick="advanceMediaWorkflow('${p.id}', '${p.status}')" class="text-xs bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 px-2.5 py-1 rounded transition">상태 전이</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error("영상 프로젝트 로드 실패:", err);
+      }
+    }
+
+    async function handleCreateMediaProject(e) {
+      e.preventDefault();
+      const body = {
+        title: document.getElementById('mTitle').value,
+        vehicle_id: document.getElementById('mVehicleId').value,
+        content_format: document.getElementById('mFormat').value,
+        target_platform: document.getElementById('mPlatform').value,
+        concept: document.getElementById('mConcept').value,
+      };
+
+      try {
+        const res = await fetch('/api/media-projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          closeModal('modalMediaProject');
+          await refreshAll();
+          alert('영상 프로젝트가 생성되었습니다.');
+        } else {
+          alert('프로젝트 생성 실패');
+        }
+      } catch (err) {
+        alert('오류 발생');
+      }
+    }
+
+    async function advanceMediaWorkflow(projectId, currentStatus) {
+      const order = ['DRAFT', 'REQUESTED', 'IN_PRODUCTION', 'REVIEW', 'APPROVED', 'DELIVERED'];
+      const nextIdx = (order.indexOf(currentStatus) + 1) % order.length;
+      const nextStatus = order[nextIdx];
+
+      if (!confirm(`워크플로우 상태를 '${currentStatus}' 에서 '${nextStatus}' 로 변경하시겠습니까?`)) return;
+
+      try {
+        const res = await fetch(`/api/media-projects/${projectId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus }),
+        });
+        if (res.ok) {
+          await refreshAll();
+        } else {
+          alert('상태 변경 실패');
+        }
+      } catch (err) {
+        alert('오류 발생');
+      }
+    }
+
+    // 8. 마케팅 퍼널 데이터 렌더링
+    async function loadMarketingFunnel() {
+      try {
+        const res = await fetch('/api/marketing/performance');
+        const data = await res.json();
+
+        const container = document.getElementById('marketingFunnelContainer');
+        if (container) {
+          container.innerHTML = data.funnel.map(f => `
+            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 text-center">
+              <div class="text-xs text-slate-400 font-medium">${f.stage}</div>
+              <div class="text-2xl font-bold text-white mt-1 font-mono">${f.count.toLocaleString()}</div>
+              <div class="text-[11px] text-slate-500 mt-1">${f.note}</div>
+            </div>
+          `).join('');
+        }
+
+        const topContainer = document.getElementById('topContentsContainer');
+        if (topContainer) {
+          topContainer.innerHTML = data.top_contents.map(c => `
+            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+              <span class="text-slate-200 font-medium">${c.title}</span>
+              <div class="space-x-3 text-slate-400 font-mono">
+                <span>조회: <strong class="text-white">${c.views.toLocaleString()}</strong></span>
+                <span>문의: <strong class="text-indigo-400">${c.inquiries}건</strong></span>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error("마케팅 퍼널 로드 실패:", err);
+      }
+    }
+
+    // 인증 핸들러
+    async function handleAuthAction() {
+      const btn = document.getElementById('authBtn');
+      if (btn.innerText === '로그아웃') {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        document.getElementById('userNameLabel').innerText = '인증 필요 (게스트)';
+        btn.innerText = '로그인';
+        alert('로그아웃되었습니다.');
+        refreshAll();
+      } else {
+        const pw = prompt('관리자 비밀번호를 입력하세요:');
+        if (pw) {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: 'admin', password: pw }),
+          });
+          if (res.ok) {
+            document.getElementById('userNameLabel').innerText = '차마트 총괄관리자';
+            btn.innerText = '로그아웃';
+            alert('로그인되었습니다.');
+            refreshAll();
+          } else if (res.status === 429) {
+            alert('로그인 시도 한도를 초과했습니다. 60초 후 다시 시도하십시오.');
+          } else {
+            alert('인증 실패: 비밀번호가 일치하지 않습니다.');
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>

@@ -44,10 +44,17 @@ htmlcov/
 Thumbs.db
 
 # Chat automation temp dumps
-chatgpt_full_thread.txt
-directive_002c_raw.txt
-latest*.txt
+chatgpt_*.txt
+directive_*.txt
+aside_*.txt
+gpt_*.txt
+snap_*.txt
 chat_messages.json
+*.txt
+*.log
+*.png
+!reports/screenshots*/**/*.png
+data/
 
 # Live Operation Authorization (Strict Git Exclusion)
 .chaficial_live_approval.json

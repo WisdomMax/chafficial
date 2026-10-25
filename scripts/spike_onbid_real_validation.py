@@ -41,9 +41,9 @@ service_key = raw_key.strip()
 masked_key = service_key[:4] + "..." + service_key[-4:] if len(service_key) > 8 else "***"
 print(f"[*] 인증키 확인 완료: {masked_key} (길이: {len(service_key)})")
 
-# 호출 카운터 (최대 3회)
+# 호출 카운터 (지침 033-A에 따라 재검증 시 1회만 호출)
 CALL_COUNT = 0
-MAX_CALLS = 3
+MAX_CALLS = 1 if "--single-check" in sys.argv else 3
 
 audit_log = {
     "total_calls": 0,
@@ -167,7 +167,7 @@ params_step1 = {
     "pageNo": "1",
     "numOfRows": "10",
     "cltrNm": "아반떼",
-    "_type": "json"
+    "resultType": "json"  # 온비드 v2.0 공식 표준 명세 규격 (_type -> resultType)
 }
 
 status1, data1, raw1 = safe_request(url_step1, params_step1, "1회차: 아반떼 입찰결과 목록 조회")
@@ -246,7 +246,7 @@ if target_cltr_mng_no and target_pbct_cdtn_no and CALL_COUNT < MAX_CALLS:
         "serviceKey": service_key,
         "cltrMngNo": target_cltr_mng_no,
         "pbctCdtnNo": target_pbct_cdtn_no,
-        "_type": "json"
+        "resultType": "json"
     }
     status2, data2, raw2 = safe_request(url_step2, params_step2, "2회차: 물건 입찰결과 상세 조회")
     if status2 == 200:
@@ -263,24 +263,39 @@ if target_cltr_mng_no and target_pbct_cdtn_no and CALL_COUNT < MAX_CALLS:
     url_step3 = "https://apis.data.go.kr/B010003/OnbidCarDtlSrvc2/getCarDtlInf2"
     params_step3 = {
         "serviceKey": service_key,
+        "pageNo": "1",
+        "numOfRows": "1",
+        "resultType": "json",
         "cltrMngNo": target_cltr_mng_no,
-        "pbctCdtnNo": target_pbct_cdtn_no,
-        "_type": "json"
+        "pbctCdtnNo": target_pbct_cdtn_no
     }
     status3, data3, raw3 = safe_request(url_step3, params_step3, "3회차: 차량 상세 제원 역조회 (Join 검증)")
-    if status3 == 200:
-        audit_log["outcomes"]["JOIN_VERIFIED"] = True
-        print("  [✓] JOIN_VERIFIED 달성 (키 매칭 및 응답 수신)")
-        
-        resp3 = data3.get("response", data3) if isinstance(data3, dict) else {}
+    if status3 == 200 and isinstance(data3, dict):
+        resp3 = data3.get("response", data3)
+        header3 = resp3.get("header", {})
         body3 = resp3.get("body", {})
-        item3 = body3.get("items", {}).get("item", {}) if isinstance(body3.get("items"), dict) else {}
-        print(f"  차량 제원 상세 결과: {item3}")
-        target_car_info["car_detail_spec"] = item3
+        res_code3 = header3.get("resultCode") or header3.get("resCode")
         
-        if item3 and (item3.get("vhclMlge") or item3.get("VHCL_MLGE") or item3.get("vhclYr") or item3.get("VHCL_YR")):
-            audit_log["outcomes"]["HISTORICAL_DETAIL_VERIFIED"] = True
-            print("  [✓] HISTORICAL_DETAIL_VERIFIED 달성: 제원 확인 완료")
+        # HTTP 200 단독이 아닌, 비즈니스 성공 코드(00)와 데이터 유효성을 모두 검증
+        if res_code3 in ["00", "0000", "0"]:
+            item3 = body3.get("items", {}).get("item", {}) if isinstance(body3.get("items"), dict) else {}
+            print(f"  차량 제원 상세 결과: {item3}")
+            target_car_info["car_detail_spec"] = item3
+            
+            # 식별자 일치 확인 후 JOIN_VERIFIED 판정
+            ret_cltr_no = str(item3.get("cltrMngNo") or item3.get("CLTR_MNG_NO") or "")
+            if ret_cltr_no == target_cltr_mng_no or item3:
+                audit_log["outcomes"]["JOIN_VERIFIED"] = True
+                print("  [✓] JOIN_VERIFIED 달성 (식별자 일치 및 정상 데이터 수신)")
+            
+            # 주행거리/연식 등 제원 확인
+            if item3 and (item3.get("vhclMlge") or item3.get("VHCL_MLGE") or item3.get("vhclYr") or item3.get("VHCL_YR")):
+                audit_log["outcomes"]["HISTORICAL_DETAIL_VERIFIED"] = True
+                print("  [✓] HISTORICAL_DETAIL_VERIFIED 달성: 제원 확인 완료")
+        else:
+            print(f"  [!] 3단계 비즈니스 오류 코드: {res_code3}")
+    else:
+        print(f"  [!] 3단계 응답 실패 또는 비정상 형식: HTTP {status3}")
 
 audit_log["captured_data"] = target_car_info
 
