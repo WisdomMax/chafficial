@@ -192,8 +192,5 @@ class RLDecisionEvaluateRequest(BaseModel):
 
 
 class RLDecisionRewardUpdateRequest(BaseModel):
-    fee_revenue: int
-    operating_cost: int
-    days_to_sell: int
-    verified_contribution: float = 1.0
+    transaction_id: str  # 실제 판매 계약 및 정산 원장 ID (Ground Truth 강제)
     notes: Optional[str] = None

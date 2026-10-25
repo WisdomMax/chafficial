@@ -5,7 +5,7 @@ import time
 
 TARGET_PROFILE = "c759b216-69cc-436b-941a-dab4e621632d"
 TARGET_ROOM_URL = "https://chatgpt.com/c/6ade5dae-1c94-83ee-acf8-d6058171a94d"
-REPORT_PATH = "reports/REPORT_046D_VEHICLE_INTELLIGENCE_AND_MASTER.md"
+REPORT_PATH = "reports/REPORT_047_REAL_WORLD_INTELLIGENCE_AND_RL.md"
 
 with open(REPORT_PATH, "r", encoding="utf-8") as f:
     report_text = f.read()

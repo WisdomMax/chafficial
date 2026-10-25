@@ -362,9 +362,10 @@ class RLDecisionLog(Base):
     # Reward: 실제 계약 및 정산 확정 시 산정 (미종결 시 None)
     reward: Mapped[float | None] = mapped_column(Float, nullable=True)
     reward_details_json: Mapped[str] = mapped_column(Text, default="{}")
+    verified_transaction_id: Mapped[str | None] = mapped_column(String(36), nullable=True)  # DIRECTIVE 048 실제 거래 증빙 ID
     
     is_censored: Mapped[bool] = mapped_column(Boolean, default=True)  # 판매 미종결 관측 중 플래그
-    split: Mapped[str] = mapped_column(String(20), default="TRAIN")   # TRAIN, VAL, TEST (시간순 분리)
+    split: Mapped[str] = mapped_column(String(20), default="TRAIN")   # TRAIN, VAL, TEST (시간순 엄격 분리)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)      # 실제 RL 훈련 시 데모 격리
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
@@ -458,6 +459,14 @@ def migrate_db_schema() -> None:
                 if col_name not in cons_cols:
                     cursor.execute(f"ALTER TABLE consultations ADD COLUMN {col_name} {col_type}")
 
+        # 5. rl_decision_logs 테이블 마이그레이션 (DIRECTIVE 048 실거래 증빙 ID)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='rl_decision_logs'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(rl_decision_logs)")
+            rl_cols = {row[1] for row in cursor.fetchall()}
+            if "verified_transaction_id" not in rl_cols:
+                cursor.execute("ALTER TABLE rl_decision_logs ADD COLUMN verified_transaction_id VARCHAR(36)")
+
         conn.commit()
     finally:
         conn.close()
@@ -545,38 +554,39 @@ def init_demo_db() -> None:
             if not v.options_json or v.options_json == "[]":
                 v.options_json = json.dumps(["스마트 크루즈 컨트롤", "통풍시트", "열선 스티어링 휠", "어라운드 뷰", "헤드업 디스플레이"], ensure_ascii=False)
             if not v.accident_history_json or v.accident_history_json == "{}":
+                # DIRECTIVE 048 P0-1: 증빙 없는 차량의 임의 무사고 위조 원천 방지
                 v.accident_history_json = json.dumps({
-                    "accident_state": "CLEAN",
-                    "frame_damage": "NONE",
-                    "outer_panel_exchange": "NONE",
-                    "flood_damage": "NONE",
-                    "total_loss": "NONE",
-                    "theft_history": "NONE",
+                    "accident_state": "UNCHECKED",
+                    "frame_damage": "미확인",
+                    "outer_panel_exchange": "미확인",
+                    "flood_damage": "미확인",
+                    "total_loss": "미확인",
+                    "theft_history": "미확인",
                     "insurance_my_damage_count": 0,
                     "insurance_my_damage_amount": 0,
                     "insurance_other_damage_count": 0,
                     "insurance_other_damage_amount": 0,
-                    "verified_source": "카히스토리(보험개발원) 전산 검증",
-                    "verified_at": "2026-10-25"
+                    "verified_source": "카히스토리 미조회 (성능점검 대기)",
+                    "verified_at": None
                 }, ensure_ascii=False)
             if not v.inspection_summary_json or v.inspection_summary_json == "{}":
                 v.inspection_summary_json = json.dumps({
-                    "inspector": "한국교통안전공단 공인성능장",
-                    "inspection_date": "2026-10-24",
-                    "leak_status": "양호(누유없음)",
-                    "brake_system": "양호",
-                    "suspension": "양호",
-                    "overall_grade": "A+"
+                    "inspector": "미지정 (점검 대기)",
+                    "inspection_date": None,
+                    "leak_status": "미확인",
+                    "brake_system": "미확인",
+                    "suspension": "미확인",
+                    "overall_grade": "미조회"
                 }, ensure_ascii=False)
             if not v.marketing_auth_json or v.marketing_auth_json == "{}":
                 v.marketing_auth_json = json.dumps({
-                    "authorized": True,
-                    "video_allowed": True,
-                    "photo_allowed": True,
-                    "authorized_by": "차마트 본사 직영관리",
-                    "authorized_at": "2026-10-20",
-                    "expires_at": "2026-12-31",
-                    "allowed_platforms": ["YOUTUBE", "SHORTS", "REELS", "TELEGRAM"]
+                    "authorized": False,
+                    "video_allowed": False,
+                    "photo_allowed": False,
+                    "authorized_by": None,
+                    "expires_at": None,
+                    "allowed_platforms": [],
+                    "note": "제휴 계약 및 마케팅 권한 미확인 상태"
                 }, ensure_ascii=False)
             if not v.primary_photo_url:
                 v.primary_photo_url = "/uploads/vehicles/demo_car_front.jpg"
@@ -844,14 +854,22 @@ def init_demo_db() -> None:
             )
             session.add(rights_spt)
 
-        # 8. 거래 기여도 및 상담 유입 경로 보강 (DIRECTIVE 047)
+        # 8. 거래 기여도 및 상담 유입 경로 보강 (DIRECTIVE 047 / DIRECTIVE 048)
+        # 모든 기존 데모 거래에 is_demo=True 명시
+        all_txs = session.query(Transaction).all()
+        for t in all_txs:
+            if t.is_demo is None:
+                t.is_demo = True
+
         tx_sample = session.query(Transaction).filter(Transaction.transaction_type == "SALE").first()
-        if tx_sample and tx_sample.attribution_type == "ORGANIC_WALKIN":
+        if tx_sample:
             tx_sample.attribution_type = "AI_VIDEO"
             tx_sample.dealer_commission_amount = 85
             tx_sample.chamart_net_profit = 125
             tx_sample.operating_cost = 20
+            tx_sample.settlement_status = "SETTLED"
             tx_sample.is_verified_sale = True
+            tx_sample.is_demo = True
 
         consultation_sample = session.query(Consultation).first()
         if consultation_sample and consultation_sample.inquiry_source == "DIRECT_CALL":

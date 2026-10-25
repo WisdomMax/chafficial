@@ -31,6 +31,7 @@ from chaficial.platform.db import (
     VehicleListing,
     VehicleDefect,
     VehiclePhoto,
+    DocumentReview,
 )
 from chaficial.platform.models import (
     ConsultationCreateRequest,
@@ -645,13 +646,29 @@ async def upload_document(
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="파일 크기가 10MB를 초과할 수 없습니다.")
 
-    res = PlatformService.save_and_register_document(
-        db=db,
-        file_bytes=content,
-        filename=file.filename or "unknown_document",
-        doc_type=doc_type,
-    )
-    return res
+    try:
+        res = PlatformService.save_and_register_document(
+            db=db,
+            file_bytes=content,
+            filename=file.filename or "unknown_document",
+            doc_type=doc_type,
+        )
+        return res
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/documents/{doc_id}/file")
+def get_document_file(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> FileResponse:
+    """인증된 관리자만 접근 가능한 비공개 서류 다운로드 (DIRECTIVE 048 P0-5)."""
+    doc = db.query(DocumentReview).filter(DocumentReview.id == doc_id).first()
+    if not doc or not os.path.exists(doc.file_path):
+        raise HTTPException(status_code=404, detail="문서 파일을 찾을 수 없습니다.")
+    return FileResponse(doc.file_path, filename=doc.filename)
 
 
 @app.post("/api/documents/{doc_id}/approve")
@@ -887,7 +904,10 @@ def update_rl_reward(
     try:
         return PlatformService.update_rl_reward(db, decision_id, req)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        err_msg = str(e)
+        if "찾을 수 없습니다" in err_msg:
+            raise HTTPException(status_code=404, detail=err_msg)
+        raise HTTPException(status_code=400, detail=err_msg)
 
 
 @app.get("/api/rl/readiness")

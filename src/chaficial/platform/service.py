@@ -55,6 +55,8 @@ from chaficial.platform.models import (
 
 UPLOAD_DIR = Path("data/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+SECURE_DOC_DIR = Path("data/secure_documents")
+SECURE_DOC_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class PlatformService:
@@ -572,10 +574,22 @@ class PlatformService:
         title = req.custom_title or f"[{req.content_format}] {v.year}년식 {v.model_name} 실매물 검증"
         concept = req.concept or f"실차주 제휴 인증 매물 - {v.color}"
         
+        # DIRECTIVE 048 P0-5: 사고 및 성능점검 실제 검증 증빙 여부에 따른 정직한 대본 생성
+        accident_data = json.loads(v.accident_history_json) if v.accident_history_json else {}
+        is_accident_verified = (
+            accident_data.get("accident_state") == "CLEAN"
+            and accident_data.get("verified_at") is not None
+        )
+
+        if is_accident_verified:
+            verification_phrase = "카히스토리 및 성능점검 전산 조회를 통해 무사고를 직접 검증했습니다."
+        else:
+            verification_phrase = "현재 카히스토리 정밀 전산 조회 및 성능점검 진행 중인 실매물입니다."
+
         script = (
             f"오늘 소개해드릴 실매물은 {v.year}년식 {v.model_name}입니다!\n"
             f"주행거리 {v.mileage:,}km, {v.transmission} 변속기에 깔끔한 {v.color} 바디입니다.\n"
-            f"실제 광고가격 {v.target_price:,}만원에 입고되었으며, 차마트에서 성능점검과 사고이력을 직접 검증했습니다.\n"
+            f"실제 광고가격 {v.target_price:,}만원에 입고되었으며, {verification_phrase}\n"
             "지금 바로 문의주시면 빠른 시운전과 상담이 가능합니다!"
         )
 
@@ -915,7 +929,21 @@ class PlatformService:
         filename: str,
         doc_type: str,
     ) -> dict[str, Any]:
-        """업로드된 서류 파일의 SHA-256 검증 및 분석 대기열 등록."""
+        """업로드된 서류 파일의 SHA-256 검증 및 분석 대기열 등록 (DIRECTIVE 048 P0-5 보안 강화)."""
+        # 1. 파일 확장자 검증
+        allowed_exts = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+        ext = Path(filename).suffix.lower()
+        if ext not in allowed_exts:
+            raise ValueError(f"허용되지 않은 파일 형식입니다: {ext} (허용: PDF, JPG, PNG, WEBP)")
+
+        # 2. 매직 바이트 바이너리 위조 검증
+        is_pdf = file_bytes.startswith(b"%PDF-")
+        is_png = file_bytes.startswith(b"\x89PNG\r\n\x1a\n")
+        is_jpg = file_bytes.startswith(b"\xff\xd8\xff")
+        is_webp = (len(file_bytes) > 12 and file_bytes[8:12] == b"WEBP")
+        if not (is_pdf or is_png or is_jpg or is_webp):
+            raise ValueError("파일 내용이 선언된 이미지/PDF 규격과 일치하지 않습니다 (위조 바이너리 차단).")
+
         sha256_hash = hashlib.sha256(file_bytes).hexdigest()
 
         # 중복 파일 검사
@@ -928,8 +956,8 @@ class PlatformService:
                 "sha256": sha256_hash,
             }
 
-        # 로컬 파일 저장
-        save_path = UPLOAD_DIR / f"{uuid.uuid4().hex[:8]}_{filename}"
+        # 공개 uploads 대신 격리된 보안 디렉터리에 저장
+        save_path = SECURE_DOC_DIR / f"{uuid.uuid4().hex[:8]}_{filename}"
         with open(save_path, "wb") as f:
             f.write(file_bytes)
 
@@ -1262,22 +1290,35 @@ class PlatformService:
     # ==========================================
     @staticmethod
     def get_attribution_summary(db: Session) -> dict[str, Any]:
-        """AI 영상 콘텐츠 기여도, 자연 판매 구분 및 공헌이익 정산 분석."""
-        sales = db.query(Transaction).filter(Transaction.transaction_type == "SALE").all()
-        total_sales = len(sales)
+        """DIRECTIVE 048 P0-4: 실전 성과와 데모 시뮬레이션의 완전 분리 집계 및 ROI 공식 교정."""
+        all_sales = db.query(Transaction).filter(Transaction.transaction_type == "SALE").all()
         
-        ai_sales = [s for s in sales if getattr(s, "attribution_type", "") == "AI_VIDEO"]
-        organic_sales = [s for s in sales if getattr(s, "attribution_type", "") != "AI_VIDEO"]
+        # 1. 실제 계약 및 실거래 집계 (is_demo == False 엄격 필터)
+        real_sales = [
+            s for s in all_sales
+            if not getattr(s, "is_demo", True)
+            and getattr(s, "is_verified_sale", False)
+            and getattr(s, "settlement_status", "") == "SETTLED"
+        ]
+        real_total_count = len(real_sales)
+        real_ai_sales = [s for s in real_sales if getattr(s, "attribution_type", "") == "AI_VIDEO"]
+        real_organic_sales = [s for s in real_sales if getattr(s, "attribution_type", "") != "AI_VIDEO"]
+        real_net_profit = sum(getattr(s, "chamart_net_profit", 0) or 0 for s in real_sales)
+        real_operating_cost = sum(getattr(s, "operating_cost", 0) or 0 for s in real_ai_sales)
 
-        total_chamart_net = sum(getattr(s, "chamart_net_profit", 0) or 0 for s in sales)
-        ai_chamart_net = sum(getattr(s, "chamart_net_profit", 0) or 0 for s in ai_sales)
-        total_operating_cost = sum(getattr(s, "operating_cost", 0) or 0 for s in ai_sales)
+        # 실거래가 0건인 경우 임의의 수치 왜곡 금지 -> NOT_AVAILABLE
+        real_roi: Any = "NOT_AVAILABLE"
+        if real_total_count > 0 and real_operating_cost > 0:
+            real_roi = round((real_net_profit / real_operating_cost) * 100.0, 1)
 
-        roi_pct = 0.0
-        if total_operating_cost > 0:
-            roi_pct = round(((ai_chamart_net - total_operating_cost) / total_operating_cost) * 100.0, 1)
+        # 2. 데모 환경 가상 시뮬레이션 분리 집계
+        demo_sales = [s for s in all_sales if getattr(s, "is_demo", False)]
+        demo_ai_sales = [s for s in demo_sales if getattr(s, "attribution_type", "") == "AI_VIDEO"]
+        demo_net_profit = sum(getattr(s, "chamart_net_profit", 0) or 0 for s in demo_sales)
+        demo_operating_cost = sum(getattr(s, "operating_cost", 0) or 0 for s in demo_ai_sales)
+        demo_roi = round((demo_net_profit / demo_operating_cost) * 100.0, 1) if demo_operating_cost > 0 else 0.0
 
-        # 문의 채널 분석 (중복 문의 제외 유효 상담 수)
+        # 상담 리드 분석 (실데이터 / 데모 분리)
         consultations = db.query(Consultation).all()
         valid_consultations = [c for c in consultations if not getattr(c, "is_duplicate", False)]
         video_leads = [
@@ -1287,20 +1328,38 @@ class PlatformService:
 
         return {
             "demo_badge": "CHAMART_DEMO_ENVIRONMENT",
-            "total_sales_count": total_sales,
-            "ai_video_attributed_sales": len(ai_sales),
-            "organic_sales": len(organic_sales),
-            "ai_video_share_pct": round((len(ai_sales) / total_sales * 100.0), 1) if total_sales > 0 else 0.0,
-            "total_chamart_net_profit_million_krw": total_chamart_net,
-            "ai_video_net_profit_million_krw": ai_chamart_net,
-            "total_content_operating_cost_million_krw": total_operating_cost,
-            "ai_video_roi_pct": roi_pct,
+            # 실거래 영역 (DIRECTIVE 048 실적 오염 원천 차단)
+            "real_world_sales": {
+                "total_sales_count": real_total_count,
+                "ai_video_attributed_sales": len(real_ai_sales),
+                "organic_sales": len(real_organic_sales),
+                "chamart_net_profit_million_krw": real_net_profit,
+                "content_operating_cost_million_krw": real_operating_cost,
+                "ai_video_roi": real_roi,  # "NOT_AVAILABLE"
+                "status_note": "실거래 0건 (정식 외부 광고 집행 전 안전 샌드박스 대기)",
+            },
+            # 데모 시뮬레이션 분리 영역
+            "demo_simulation": {
+                "is_demo_data": True,
+                "simulation_sales_count": len(demo_sales),
+                "simulation_ai_sales": len(demo_ai_sales),
+                "simulation_net_profit_million_krw": demo_net_profit,
+                "simulation_operating_cost_million_krw": demo_operating_cost,
+                "simulation_roi_pct": demo_roi,
+                "warning": "데모 환경 가상 시뮬레이션 지표이며 실제 사업 실적이 아닙니다.",
+            },
+            # 하위 호환성 유지 필드 (실거래 0건 반영)
+            "total_sales_count": real_total_count,
+            "ai_video_attributed_sales": len(real_ai_sales),
+            "organic_sales": len(real_organic_sales),
+            "total_chamart_net_profit_million_krw": real_net_profit,
+            "ai_video_roi_pct": real_roi,  # "NOT_AVAILABLE"
             "lead_metrics": {
                 "total_valid_leads": len(valid_consultations),
                 "ai_video_sourced_leads": len(video_leads),
                 "duplicate_leads_quarantined": len(consultations) - len(valid_consultations),
             },
-            "attribution_rule": "영상 시청 및 해당 링크/태그 문의 고객 중복 제거 후 실계약 매칭",
+            "attribution_rule": "영상 시청 및 해당 링크/태그 문의 고객 중복 제거 후 검증된 실계약만 매칭",
         }
 
     @staticmethod
@@ -1404,11 +1463,12 @@ class PlatformService:
         defects = db.query(VehicleDefect).filter(VehicleDefect.vehicle_id == vehicle_id).all()
         repair_cost_sum = sum(d.estimated_repair_cost for d in defects)
 
-        # 1. State Vector 구성 (과거/현재 관측치만 사용)
+        # 1. State Vector 구성 (과거/현재 관측치만 사용, 사후 거래/정산 정보 절대 배제)
         discount_ratio = 0.0
         if market_avg > 0 and v.target_price > 0:
             discount_ratio = round((market_avg - v.target_price) / market_avg, 4)
 
+        now = datetime.datetime.utcnow()
         state = {
             "target_price": v.target_price,
             "market_avg_price": market_avg,
@@ -1422,33 +1482,53 @@ class PlatformService:
             "data_confidence": confidence,
             "rights_video_allowed": rights_allowed,
             "ownership_type": v.ownership_type,
+            "observed_at": now.isoformat(),
+            "ingested_at": now.isoformat(),
         }
 
-        # 2. Rule Baseline Policy 결정
-        # 가성비 및 권한 유무에 따른 기계적 규칙 기반 Action
+        # 2. Rule Baseline Policy 결정 (결정론적 규칙)
+        # DIRECTIVE 048 P0-3: 결정론적 규칙 정책의 실제 행동 선택 확률(Propensity)은 정확히 1.0입니다.
         if not rights_allowed:
             if discount_ratio > 0.05 or price_drop > 100:
                 action = "REQUEST_DEALER_REVIEW"  # 가성비가 높으나 권한이 없으므로 딜러 접촉 제휴 검토
-                action_prob = 0.88
-                action_details = {"priority": "HIGH", "reason": "시세 대비 저렴한 매물 제휴 시급"}
+                action_details = {
+                    "priority": "HIGH",
+                    "reason": "시세 대비 저렴한 매물 제휴 시급",
+                    "constraints": {"rights_allowed": False, "discount_ratio": discount_ratio}
+                }
             else:
                 action = "OBSERVE"  # 권한 없고 특이사항 없으므로 관망
-                action_prob = 0.95
-                action_details = {"priority": "LOW", "reason": "관측 유지"}
+                action_details = {
+                    "priority": "LOW",
+                    "reason": "관측 유지",
+                    "constraints": {"rights_allowed": False}
+                }
         else:
             if discount_ratio >= 0.05:
                 action = "PROPOSE_VIDEO"  # 권한 있고 가성비 우수 -> 즉시 영상 제작 제안
-                action_prob = 0.92
-                action_details = {"channels": ["YOUTUBE", "INSTAGRAM"], "budget_won": 200000}
+                action_details = {
+                    "channels": ["YOUTUBE", "INSTAGRAM"],
+                    "budget_won": 200000,
+                    "constraints": {"rights_allowed": True, "discount_ratio": discount_ratio}
+                }
             else:
                 action = "ADJUST_PRIORITY"  # 권한 있으나 시세와 유사 -> 우선순위 조정
-                action_prob = 0.80
-                action_details = {"priority": "MEDIUM", "reason": "영상 제작 대기열 보통 순위"}
+                action_details = {
+                    "priority": "MEDIUM",
+                    "reason": "영상 제작 대기열 보통 순위",
+                    "constraints": {"rights_allowed": True}
+                }
 
-        # 3. 시간순 데이터 분할 (Split)
-        # 2026-10월 이전은 TRAIN, 이후는 VAL / TEST
-        now = datetime.datetime.utcnow()
-        split = "VAL" if now.month >= 10 else "TRAIN"
+        action_prob = 1.0  # 결정론적 정책의 정직한 Propensity
+
+        # 3. 시간순 데이터 분할 (Split) - DIRECTIVE 048 타임스탬프 기준 3단계 연속 분할
+        # TRAIN: 2026-10-01 이전, VAL: 2026-10-01 ~ 2026-10-20, TEST: 2026-10-20 이후
+        if now < datetime.datetime(2026, 10, 1):
+            split = "TRAIN"
+        elif now < datetime.datetime(2026, 10, 20):
+            split = "VAL"
+        else:
+            split = "TEST"  # 10월 20일 이후는 엄격하게 TEST 집합에 배치
 
         decision = RLDecisionLog(
             timestamp=now,
@@ -1519,31 +1599,86 @@ class PlatformService:
         decision_id: str,
         req: RLDecisionRewardUpdateRequest,
     ) -> dict[str, Any]:
-        """실제 판매·정산 완결에 따른 강화학습 보상(Reward) 확정 및 검열 해제."""
+        """DIRECTIVE 048 P0-2: 실제 판매·정산 원장(Ground Truth) 기반 강화학습 보상(Reward) 확정.
+        
+        [임의 보상 차단 및 증빙 강제]:
+        - 클라이언트의 임의 입력값 대신 DB의 실제 Transaction 레코드를 직접 재조회
+        - is_demo=True 데모 거래 배제
+        - 정산 완료(SETTLED) 및 실제 차량 일치 검증
+        - 동일 거래의 중복 Reward 확정 차단
+        """
         log = db.query(RLDecisionLog).filter(RLDecisionLog.id == decision_id).first()
         if not log:
             raise ValueError(f"RL 의사결정 로그 '{decision_id}'를 찾을 수 없습니다.")
 
-        # 보상 계산: 확정수수료 - 운영비 + 검증계약기여도보너스 - (체류일수 페널티)
-        time_penalty = req.days_to_sell * 0.5
+        # 1. 실제 판매 계약 DB 조회 (Ground Truth 강제)
+        tx = db.query(Transaction).filter(Transaction.id == req.transaction_id).first()
+        if not tx:
+            raise ValueError(f"정산 계약 증빙 오류: 거래 ID '{req.transaction_id}'를 찾을 수 없습니다.")
+
+        if tx.transaction_type != "SALE":
+            raise ValueError("보상 확정 오류: 판매(SALE) 거래만 보상으로 연결 가능합니다.")
+
+        if tx.vehicle_id != log.vehicle_id:
+            raise ValueError(
+                f"차량 불일치 오류: 해당 거래의 차량({tx.vehicle_id})과 의사결정 대상 차량({log.vehicle_id})이 다릅니다."
+            )
+
+        if tx.settlement_status != "SETTLED":
+            raise ValueError("정산 미완결 오류: 정산 완료(SETTLED)된 거래만 보상을 확정할 수 있습니다.")
+
+        if tx.is_demo:
+            raise ValueError("데모 격리 원칙 위반: 데모 거래(is_demo=True)는 실전 강화학습 보상으로 확정할 수 없습니다.")
+
+        # 2. 동일 거래 중복 보상 확정 차단
+        existing = (
+            db.query(RLDecisionLog)
+            .filter(
+                RLDecisionLog.verified_transaction_id == tx.id,
+                RLDecisionLog.id != log.id,
+            )
+            .first()
+        )
+        if existing:
+            raise ValueError(
+                f"이중 보상 누적 차단: 거래 ID '{tx.id}'는 이미 결정 로그 '{existing.id}'에 보상으로 확정되었습니다."
+            )
+
+        # 3. Ground Truth: DB의 실제 거래 레코드로부터 직접 역산
+        fee_revenue = getattr(tx, "dealer_commission_amount", 0) or 0
+        operating_cost = getattr(tx, "operating_cost", 0) or 0
+        
+        # 체류일수 계산 (거래일자 - 의사결정일자)
+        try:
+            tx_dt = datetime.datetime.strptime(tx.transaction_date, "%Y-%m-%d")
+            days_to_sell = max(1, (tx_dt - log.timestamp).days)
+        except Exception:
+            days_to_sell = 10
+
+        verified_contribution = 1.0 if getattr(tx, "attribution_type", "") == "AI_VIDEO" else 0.0
+        time_penalty = round(days_to_sell * 0.5, 2)
         net_reward = round(
-            req.fee_revenue - req.operating_cost + (50.0 if req.verified_contribution > 0.5 else 0.0) - time_penalty,
+            fee_revenue - operating_cost + (50.0 if verified_contribution > 0.5 else 0.0) - time_penalty,
             2,
         )
 
         reward_details = {
-            "fee_revenue": req.fee_revenue,
-            "operating_cost": req.operating_cost,
-            "days_to_sell": req.days_to_sell,
-            "verified_contribution": req.verified_contribution,
+            "ground_truth_transaction_id": tx.id,
+            "transaction_amount": tx.amount,
+            "fee_revenue": fee_revenue,
+            "operating_cost": operating_cost,
+            "days_to_sell": days_to_sell,
+            "verified_contribution": verified_contribution,
             "time_penalty": time_penalty,
             "net_reward": net_reward,
-            "notes": req.notes,
+            "notes": req.notes or "실제 거래 및 정산 원장 검증 완료",
+            "verified_at": datetime.datetime.utcnow().isoformat(),
         }
 
         log.reward = net_reward
         log.reward_details_json = json.dumps(reward_details, ensure_ascii=False)
-        log.is_censored = False  # 관측 종결 (Uncensored)
+        log.verified_transaction_id = tx.id
+        log.is_censored = False  # 정당하게 Uncensored 해제!
         db.commit()
         db.refresh(log)
 
@@ -1551,6 +1686,7 @@ class PlatformService:
             "decision_id": log.id,
             "reward": log.reward,
             "is_censored": log.is_censored,
+            "verified_transaction_id": log.verified_transaction_id,
             "reward_details": reward_details,
         }
 

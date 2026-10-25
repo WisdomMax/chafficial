@@ -274,21 +274,56 @@ def test_10_rl_offline_decision_evaluation():
 
 
 def test_11_rl_reward_update_and_uncensor(decision_id: str):
-    """TEST 11: 거래 체결에 따른 사후 강화학습 Reward 확정 및 Censored 해제 검증."""
+    """TEST 11: 거래 체결에 따른 사후 강화학습 Reward 확정 및 Censored 해제 검증 (DIRECTIVE 048 Ground Truth 규격)."""
     print_step("TEST 11: 사후 강화학습 Reward 확정 및 Uncensored 해제 검증")
+    # 의사결정 대상 차량 조회
+    status, dec_list = http_request("/api/rl/decisions")
+    target_dec = next((d for d in dec_list if d.get("id") == decision_id), None)
+    vehicle_id = target_dec.get("vehicle_id") if target_dec else None
+
+    # 해당 차량의 검증된 실거래 생성 또는 조회
+    from chaficial.platform.db import SessionLocal, Transaction
+    db = SessionLocal()
+    try:
+        tx = db.query(Transaction).filter(
+            Transaction.vehicle_id == vehicle_id,
+            Transaction.transaction_type == "SALE",
+            Transaction.settlement_status == "SETTLED",
+            Transaction.is_demo == False,
+        ).first()
+        if not tx:
+            tx = Transaction(
+                transaction_date="2026-10-25",
+                transaction_type="SALE",
+                vehicle_id=vehicle_id,
+                party_name="실거래고객",
+                party_contact="010-3333-4444",
+                amount=2900,
+                dealer_commission_amount=120,
+                operating_cost=25,
+                chamart_net_profit=95,
+                settlement_status="SETTLED",
+                is_demo=False,
+                is_verified_sale=True,
+                attribution_type="AI_VIDEO",
+            )
+            db.add(tx)
+            db.commit()
+            db.refresh(tx)
+        tx_id = tx.id
+    finally:
+        db.close()
+
     reward_payload = {
-        "fee_revenue": 90,
-        "operating_cost": 20,
-        "days_to_sell": 12,
-        "verified_contribution": 1.0,
-        "notes": "실거래 체결 및 정산 완료 보상 확정"
+        "transaction_id": tx_id,
+        "notes": "실거래 체결 및 정산 완료 보상 확정 (DIRECTIVE 048 규격)"
     }
     status, data = http_request(f"/api/rl/decisions/{decision_id}/reward", method="POST", data=reward_payload)
     assert status == 200, f"Reward 확정 실패: {data}"
     assert data.get("reward") is not None, "Reward 누락"
     assert data.get("is_censored") is False, "종결 후 Censored가 False로 전환되지 않음"
     assert data["reward"] > 0, "보상 계산치 이상"
-    print(f"  -> PASS: 사후 보상 확정 (Reward: {data['reward']}, Censored: False)")
+    print(f"  -> PASS: 사후 보상 확정 (Reward: {data['reward']}, Censored: False, VerifiedTx: {data.get('verified_transaction_id')})")
 
 
 def test_12_rl_readiness_audit():
