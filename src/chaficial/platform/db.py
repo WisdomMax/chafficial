@@ -123,6 +123,8 @@ class Vehicle(Base):
     photos = relationship("VehiclePhoto", back_populates="vehicle", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="vehicle")
     media_projects = relationship("MediaProject", back_populates="vehicle")
+    rights_ledgers = relationship("DealerRightsLedger", back_populates="vehicle", cascade="all, delete-orphan")
+    rl_decisions = relationship("RLDecisionLog", back_populates="vehicle")
 
 
 class Dealer(Base):
@@ -143,7 +145,7 @@ class Dealer(Base):
 
 
 class VehicleListing(Base):
-    """엔카, KB차차차 등 외부 플랫폼 광고 매물 연동 모델 (DIRECTIVE 046-D)."""
+    """엔카, KB차차차 등 외부 플랫폼 광고 매물 연동 모델 (DIRECTIVE 046-D / 047 확장)."""
     __tablename__ = "vehicle_listings"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -155,6 +157,15 @@ class VehicleListing(Base):
     listing_status: Mapped[str] = mapped_column(String(30), default="ACTIVE")  # ACTIVE, DELISTED, PRICE_CHANGED
     first_observed_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
     last_observed_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+    # DIRECTIVE 047 장한평 시장 분석 및 가성비 점수 필드
+    region: Mapped[str] = mapped_column(String(50), default="장한평")
+    is_janghanpyeong: Mapped[bool] = mapped_column(Boolean, default=True)
+    data_confidence: Mapped[float] = mapped_column(Float, default=0.95)
+    price_drop_amount: Mapped[int] = mapped_column(Integer, default=0)  # 직전 대비 가격 인하 (만원)
+    market_avg_price: Mapped[int] = mapped_column(Integer, default=0)   # 동일 스펙 시장 평균가 (만원)
+    opportunity_score: Mapped[float] = mapped_column(Float, default=0.0) # 0.0 ~ 100.0 기회·가성비 점수
+    observation_notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     vehicle = relationship("Vehicle", back_populates="listings")
 
@@ -227,13 +238,18 @@ class Consultation(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     staff_name: Mapped[str] = mapped_column(String(50), default="담당 매니저")
     next_action_date: Mapped[str | None] = mapped_column(String(20), nullable=True)  # YYYY-MM-DD
+    
+    # DIRECTIVE 047 유입 경로 및 중복 문의 식별
+    inquiry_source: Mapped[str] = mapped_column(String(50), default="DIRECT_CALL")  # YOUTUBE_SHORTS, INSTAGRAM_REELS, TELEGRAM, DIRECT_CALL, PORTAL_ENCAR
+    media_project_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    is_duplicate: Mapped[bool] = mapped_column(Boolean, default=False)  # 동일 고객 중복 문의 플래그
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
     customer = relationship("Customer", back_populates="consultations")
 
 
 class Transaction(Base):
-    """거래·계약 관리 모델."""
+    """거래·계약 관리 모델 (DIRECTIVE 047 정산 및 공헌이익 확장)."""
     __tablename__ = "transactions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -247,6 +263,14 @@ class Transaction(Base):
     document_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # DIRECTIVE 047 정산 수익, 운영비용 및 AI 기여도 추적 필드
+    dealer_commission_amount: Mapped[int] = mapped_column(Integer, default=0) # 딜러 정산 수수료 (만원)
+    chamart_net_profit: Mapped[int] = mapped_column(Integer, default=0)       # 차마트 공헌이익/순수익 (만원)
+    operating_cost: Mapped[int] = mapped_column(Integer, default=0)           # 콘텐츠 제작/운영비 (만원)
+    attribution_type: Mapped[str] = mapped_column(String(30), default="ORGANIC_WALKIN") # AI_VIDEO, ORGANIC_WALKIN, DEALER_DIRECT
+    media_project_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    is_verified_sale: Mapped[bool] = mapped_column(Boolean, default=True)     # 검증된 실제 계약 여부
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
     vehicle = relationship("Vehicle", back_populates="transactions")
@@ -288,13 +312,72 @@ class MediaProject(Base):
     vehicle = relationship("Vehicle", back_populates="media_projects")
 
 
+class DealerRightsLedger(Base):
+    """제휴 딜러 권한 원장 모델 (DIRECTIVE 047 권한 세분화 및 철회 감사)."""
+    __tablename__ = "dealer_rights_ledgers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    vehicle_id: Mapped[str] = mapped_column(String(36), ForeignKey("vehicles.id"), nullable=False)
+    dealer_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("dealers.id"), nullable=True)
+    sale_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    photo_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    video_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    allowed_channels_json: Mapped[str] = mapped_column(Text, default='["YOUTUBE", "INSTAGRAM"]')
+    valid_until: Mapped[str | None] = mapped_column(String(20), nullable=True)  # YYYY-MM-DD
+    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+    revoked_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    approved_by: Mapped[str] = mapped_column(String(50), default="차마트 본부")
+    dealer_commission_pct: Mapped[float] = mapped_column(Float, default=5.0)  # 딜러 정산율 (%)
+    chamart_share_pct: Mapped[float] = mapped_column(Float, default=15.0)     # 차마트 배분율 (%)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+    vehicle = relationship("Vehicle", back_populates="rights_ledgers")
+
+
+class RLDecisionLog(Base):
+    """강화학습(RL) 오프라인 의사결정 원장 모델 (DIRECTIVE 047).
+    
+    미래 정보 누출(Data Leakage) 원천 차단:
+    - 결정 시점의 State, Action, Policy Version, Propensity(선택 확률) 엄격 보존
+    - 사후 거래 종결/정산 시점의 Reward 분리 연결
+    - Right Censored(미판매 관측 진행 중) 상태 및 시간순 데이터셋 분할(Train/Val/Test)
+    """
+    __tablename__ = "rl_decision_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    timestamp: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow, index=True)
+    policy_version: Mapped[str] = mapped_column(String(50), default="v1.0-rule_baseline")
+    vehicle_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("vehicles.id"), nullable=True)
+    
+    # State Vector: 결정 당시 관측 가능한 특징만 포함 (미래 정보 금지)
+    state_json: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # Action: OBSERVE, REQUEST_DEALER_REVIEW, ADJUST_PRIORITY, PROPOSE_VIDEO, PROPOSE_CHANNELS
+    action: Mapped[str] = mapped_column(String(50), nullable=False)
+    action_prob: Mapped[float] = mapped_column(Float, default=1.0)  # Propensity Score
+    action_details_json: Mapped[str] = mapped_column(Text, default="{}")
+    
+    # Reward: 실제 계약 및 정산 확정 시 산정 (미종결 시 None)
+    reward: Mapped[float | None] = mapped_column(Float, nullable=True)
+    reward_details_json: Mapped[str] = mapped_column(Text, default="{}")
+    
+    is_censored: Mapped[bool] = mapped_column(Boolean, default=True)  # 판매 미종결 관측 중 플래그
+    split: Mapped[str] = mapped_column(String(20), default="TRAIN")   # TRAIN, VAL, TEST (시간순 분리)
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=True)      # 실제 RL 훈련 시 데모 격리
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+    vehicle = relationship("Vehicle", back_populates="rl_decisions")
+
+
 # 엔진 및 세션 팩토리
 engine = create_engine(DEMO_DB_URL, echo=False, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def migrate_db_schema() -> None:
-    """기존 SQLite DB 테이블에 DIRECTIVE 046-D 확장 컬럼 및 신규 테이블을 안전하게 마이그레이션."""
+    """기존 SQLite DB 테이블에 DIRECTIVE 046-D / 047 확장 컬럼 및 신규 테이블을 안전하게 마이그레이션."""
     import sqlite3
     db_file = DEMO_DB_URL.replace("sqlite:///", "")
     if not os.path.exists(db_file):
@@ -303,11 +386,11 @@ def migrate_db_schema() -> None:
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
     try:
-        # vehicles 테이블 컬럼 목록 확인
+        # 1. vehicles 테이블 마이그레이션
         cursor.execute("PRAGMA table_info(vehicles)")
         existing_cols = {row[1] for row in cursor.fetchall()}
 
-        new_columns = [
+        vehicle_columns = [
             ("ownership_type", "VARCHAR(30) DEFAULT 'CHAMART_OWNED'"),
             ("dealer_id", "VARCHAR(36)"),
             ("vin", "VARCHAR(30)"),
@@ -322,10 +405,58 @@ def migrate_db_schema() -> None:
             ("primary_photo_url", "VARCHAR(255)"),
             ("video_status", "VARCHAR(30) DEFAULT 'NONE'"),
         ]
-
-        for col_name, col_type in new_columns:
+        for col_name, col_type in vehicle_columns:
             if col_name not in existing_cols:
                 cursor.execute(f"ALTER TABLE vehicles ADD COLUMN {col_name} {col_type}")
+
+        # 2. vehicle_listings 테이블 마이그레이션 (DIRECTIVE 047 장한평 시장 분석)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vehicle_listings'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(vehicle_listings)")
+            listing_cols = {row[1] for row in cursor.fetchall()}
+            listing_columns = [
+                ("region", "VARCHAR(50) DEFAULT '장한평'"),
+                ("is_janghanpyeong", "BOOLEAN DEFAULT 1"),
+                ("data_confidence", "FLOAT DEFAULT 0.95"),
+                ("price_drop_amount", "INTEGER DEFAULT 0"),
+                ("market_avg_price", "INTEGER DEFAULT 0"),
+                ("opportunity_score", "FLOAT DEFAULT 0.0"),
+                ("observation_notes", "VARCHAR(255)"),
+            ]
+            for col_name, col_type in listing_columns:
+                if col_name not in listing_cols:
+                    cursor.execute(f"ALTER TABLE vehicle_listings ADD COLUMN {col_name} {col_type}")
+
+        # 3. transactions 테이블 마이그레이션 (DIRECTIVE 047 정산 및 공헌이익)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(transactions)")
+            tx_cols = {row[1] for row in cursor.fetchall()}
+            tx_columns = [
+                ("dealer_commission_amount", "INTEGER DEFAULT 0"),
+                ("chamart_net_profit", "INTEGER DEFAULT 0"),
+                ("operating_cost", "INTEGER DEFAULT 0"),
+                ("attribution_type", "VARCHAR(30) DEFAULT 'ORGANIC_WALKIN'"),
+                ("media_project_id", "VARCHAR(36)"),
+                ("is_verified_sale", "BOOLEAN DEFAULT 1"),
+            ]
+            for col_name, col_type in tx_columns:
+                if col_name not in tx_cols:
+                    cursor.execute(f"ALTER TABLE transactions ADD COLUMN {col_name} {col_type}")
+
+        # 4. consultations 테이블 마이그레이션 (DIRECTIVE 047 유입 경로 및 중복 문의 식별)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='consultations'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(consultations)")
+            cons_cols = {row[1] for row in cursor.fetchall()}
+            cons_columns = [
+                ("inquiry_source", "VARCHAR(50) DEFAULT 'DIRECT_CALL'"),
+                ("media_project_id", "VARCHAR(36)"),
+                ("is_duplicate", "BOOLEAN DEFAULT 0"),
+            ]
+            for col_name, col_type in cons_columns:
+                if col_name not in cons_cols:
+                    cursor.execute(f"ALTER TABLE consultations ADD COLUMN {col_name} {col_type}")
 
         conn.commit()
     finally:
@@ -534,8 +665,85 @@ def init_demo_db() -> None:
                 listing_url="https://www.kbchachacha.com/public/car/detail.kbc?carSeq=88291039",
                 advertised_price=2980,
                 listing_status="ACTIVE",
+                region="장한평",
+                is_janghanpyeong=True,
+                data_confidence=0.96,
+                price_drop_amount=170,
+                market_avg_price=3150,
+                opportunity_score=87.5,
+                observation_notes="장한평 단지 내 KB차차차 실매물 확인",
             )
             session.add_all([listing1, listing2])
+
+        # 4-1. 전국 시세 비교용 외부 관측 매물 (장한평 외 지역)
+        v_sw_obs = session.query(Vehicle).filter(Vehicle.plate_number == "77라 4455").first()
+        if not v_sw_obs:
+            v_sw_obs = Vehicle(
+                branch_id=sw_branch.id,
+                plate_number="77라 4455",
+                model_name="기아 K8 2.5 가솔린 노블레스",
+                year=2023,
+                mileage=31000,
+                fuel_type="가솔린",
+                transmission="오토",
+                color="스노우 화이트 펄",
+                purchase_price=0,
+                target_price=3080,
+                status="FOR_SALE",
+                ownership_type="MARKET_OBSERVED",
+                dealer_id=None,
+                vin="KNAFE41BDP7744551",
+                displacement_cc=2497,
+                drive_type="2WD",
+                interior_color="블랙",
+                marketing_auth_json=json.dumps({"authorized": False, "video_allowed": False}, ensure_ascii=False),
+                video_status="NONE",
+            )
+            session.add(v_sw_obs)
+            session.flush()
+
+            listing_sw = VehicleListing(
+                vehicle_id=v_sw_obs.id,
+                platform="ENCAR",
+                listing_id="encar_sw_102938",
+                listing_url="https://www.encar.com/dc/dc_cardetailview.do?carid=102938",
+                advertised_price=3080,
+                listing_status="ACTIVE",
+                region="경기 수원",
+                is_janghanpyeong=False,  # 전국 시세 참고용 (장한평 외 매물)
+                data_confidence=0.92,
+                price_drop_amount=50,
+                market_avg_price=3150,
+                opportunity_score=74.0,
+                observation_notes="수원 도이치오토월드 매물 (전국 시세 기준점)",
+            )
+            session.add(listing_sw)
+
+        # 4-2. 기존 관측 리스팅의 DIRECTIVE 047 기회 점수 및 시세 보정 (Backfill)
+        existing_listings = session.query(VehicleListing).all()
+        for l in existing_listings:
+            if getattr(l, "opportunity_score", 0.0) == 0.0:
+                if l.platform == "KB_CHACHACHA":
+                    l.opportunity_score = 88.5
+                    l.price_drop_amount = 170
+                    l.market_avg_price = 3150
+                    l.region = "장한평"
+                    l.is_janghanpyeong = True
+                    l.data_confidence = 0.96
+                elif "sw" in l.listing_id:
+                    l.opportunity_score = 74.0
+                    l.price_drop_amount = 50
+                    l.market_avg_price = 3150
+                    l.region = "경기 수원"
+                    l.is_janghanpyeong = False
+                    l.data_confidence = 0.92
+                else:
+                    l.opportunity_score = 82.0
+                    l.price_drop_amount = 200
+                    l.market_avg_price = 3150
+                    l.region = "장한평"
+                    l.is_janghanpyeong = True
+                    l.data_confidence = 0.98
 
         v_cand = session.query(Vehicle).filter(Vehicle.ownership_type == "PARTNER_CANDIDATE").first()
         if not v_cand:
@@ -618,6 +826,102 @@ def init_demo_db() -> None:
                 caption="엔진룸 및 주요 장치",
             )
             session.add_all([p1, p2, p3])
+
+        # 7. 제휴 딜러 권한 원장 시딩 (DealerRightsLedger - DIRECTIVE 047)
+        if session.query(DealerRightsLedger).count() == 0 and v_spt and dealer_gaon:
+            rights_spt = DealerRightsLedger(
+                vehicle_id=v_spt.id,
+                dealer_id=dealer_gaon.id,
+                sale_allowed=True,
+                photo_allowed=True,
+                video_allowed=True,
+                allowed_channels_json=json.dumps(["YOUTUBE", "INSTAGRAM", "TIKTOK"], ensure_ascii=False),
+                valid_until="2026-12-31",
+                is_revoked=False,
+                approved_by="가온모터스 김민우 딜러 정식 계약",
+                dealer_commission_pct=4.5,
+                chamart_share_pct=15.0,
+            )
+            session.add(rights_spt)
+
+        # 8. 거래 기여도 및 상담 유입 경로 보강 (DIRECTIVE 047)
+        tx_sample = session.query(Transaction).filter(Transaction.transaction_type == "SALE").first()
+        if tx_sample and tx_sample.attribution_type == "ORGANIC_WALKIN":
+            tx_sample.attribution_type = "AI_VIDEO"
+            tx_sample.dealer_commission_amount = 85
+            tx_sample.chamart_net_profit = 125
+            tx_sample.operating_cost = 20
+            tx_sample.is_verified_sale = True
+
+        consultation_sample = session.query(Consultation).first()
+        if consultation_sample and consultation_sample.inquiry_source == "DIRECT_CALL":
+            consultation_sample.inquiry_source = "YOUTUBE_SHORTS"
+            consultation_sample.is_duplicate = False
+
+        # 9. 강화학습(RL) 오프라인 의사결정 로그 시딩 (RLDecisionLog - DIRECTIVE 047)
+        if session.query(RLDecisionLog).count() == 0:
+            # 의사결정 로그 1: 스포티지 - 영상 제작 제안 Action -> 판매 완결 -> 양의 보상 확정 (Train Split)
+            rl_log1 = RLDecisionLog(
+                timestamp=datetime.datetime(2026, 9, 10, 14, 30),
+                policy_version="v1.0-rule_baseline",
+                vehicle_id=v_spt.id if v_spt else None,
+                state_json=json.dumps({
+                    "target_price": 2450,
+                    "market_avg_price": 2600,
+                    "price_discount_ratio": 0.0577,
+                    "year": 2022,
+                    "mileage": 35000,
+                    "accident_count": 0,
+                    "defect_count": 1,
+                    "estimated_repair_cost": 15,
+                    "region": "장한평",
+                    "data_confidence": 0.98,
+                    "rights_video_allowed": True
+                }, ensure_ascii=False),
+                action="PROPOSE_VIDEO",
+                action_prob=0.92,
+                action_details_json=json.dumps({"channels": ["YOUTUBE", "INSTAGRAM"], "budget_won": 200000}, ensure_ascii=False),
+                reward=105.0,  # 순공헌이익 기반 Reward (125만 순익 - 20만 제작비)
+                reward_details_json=json.dumps({
+                    "fee_revenue": 85,
+                    "operating_cost": 20,
+                    "days_to_sell": 14,
+                    "verified_contribution": 1.0,
+                    "net_reward": 105.0
+                }, ensure_ascii=False),
+                is_censored=False,
+                split="TRAIN",
+                is_demo=True,
+            )
+
+            # 의사결정 로그 2: K8 관측 매물 - 권한 없음으로 관망/딜러검토 Action -> 관측 진행 중 (Right Censored)
+            rl_log2 = RLDecisionLog(
+                timestamp=datetime.datetime(2026, 10, 20, 11, 15),
+                policy_version="v1.0-rule_baseline",
+                vehicle_id=v_obs.id if v_obs else None,
+                state_json=json.dumps({
+                    "target_price": 2950,
+                    "market_avg_price": 3150,
+                    "price_discount_ratio": 0.0635,
+                    "year": 2023,
+                    "mileage": 24000,
+                    "accident_count": 0,
+                    "defect_count": 0,
+                    "estimated_repair_cost": 0,
+                    "region": "장한평",
+                    "data_confidence": 0.96,
+                    "rights_video_allowed": False
+                }, ensure_ascii=False),
+                action="REQUEST_DEALER_REVIEW",
+                action_prob=0.88,
+                action_details_json=json.dumps({"target_dealership": "장한평 엔카 등록 상사", "priority": "HIGH"}, ensure_ascii=False),
+                reward=None,  # 아직 판매/계약 미체결 (Censored)
+                reward_details_json=json.dumps({"status": "OBSERVING", "days_observed": 5}, ensure_ascii=False),
+                is_censored=True,
+                split="VAL",
+                is_demo=True,
+            )
+            session.add_all([rl_log1, rl_log2])
 
         session.commit()
 

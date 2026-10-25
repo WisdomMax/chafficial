@@ -165,3 +165,35 @@ class VehicleVideoProjectCreateRequest(BaseModel):
 
 class PlatformRegisterIntentRequest(BaseModel):
     platforms: list[str] = ["ENCAR", "KB_CHACHACHA", "CAR_MANAGER"]
+
+
+# ----------------------------------------------------
+# DIRECTIVE 047 시장 분석, 권한 원장, 기여도 및 RL 스키마
+# ----------------------------------------------------
+class DealerRightsGrantRequest(BaseModel):
+    sale_allowed: bool = True
+    photo_allowed: bool = True
+    video_allowed: bool = True
+    allowed_channels: list[str] = ["YOUTUBE", "INSTAGRAM", "TIKTOK"]
+    valid_until: Optional[str] = None  # YYYY-MM-DD
+    approved_by: str = "차마트 장한평 본부"
+    dealer_commission_pct: float = 4.5
+    chamart_share_pct: float = 15.0
+
+
+class DealerRightsRevokeRequest(BaseModel):
+    reason: str
+    revoked_by: str = "차마트 관리자"
+
+
+class RLDecisionEvaluateRequest(BaseModel):
+    vehicle_id: str
+    policy_version: str = "v1.0-rule_baseline"
+
+
+class RLDecisionRewardUpdateRequest(BaseModel):
+    fee_revenue: int
+    operating_cost: int
+    days_to_sell: int
+    verified_contribution: float = 1.0
+    notes: Optional[str] = None

@@ -36,12 +36,16 @@ from chaficial.platform.models import (
     ConsultationCreateRequest,
     CustomerCreateRequest,
     CustomerUpdateRequest,
+    DealerRightsGrantRequest,
+    DealerRightsRevokeRequest,
     DocumentApprovalRequest,
     LoginRequest,
     MediaProjectCreateRequest,
     MediaProjectStatusUpdateRequest,
     PhotoOrderItem,
     PlatformRegisterIntentRequest,
+    RLDecisionEvaluateRequest,
+    RLDecisionRewardUpdateRequest,
     TransactionCreateRequest,
     VehicleCreateRequest,
     VehicleDefectCreateRequest,
@@ -754,6 +758,145 @@ def get_marketing_performance() -> dict[str, Any]:
             {"title": "첫차 아반떼 CN7 인스퍼레이션", "views": 6100, "inquiries": 18},
         ],
     }
+
+
+# ----------------------------------------------------
+# 8-2. DIRECTIVE 047: 장한평 시장 분석 & 권한 원장 & 성과 기여 & RL 엔드포인트
+# ----------------------------------------------------
+@app.get("/api/market/summary")
+def get_market_analysis_summary(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """장한평 및 전국 매물 시장 분석 요약 지표 (DIRECTIVE 047)."""
+    return PlatformService.get_market_analysis_summary(db)
+
+
+@app.get("/api/market/listings")
+def list_market_listings(
+    is_janghanpyeong: Optional[bool] = None,
+    min_opportunity: float = 0.0,
+    price_dropped_only: bool = False,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> list[dict[str, Any]]:
+    """외부 플랫폼 매물 및 기회 점수 목록 (DIRECTIVE 047)."""
+    return PlatformService.list_market_listings(
+        db,
+        is_janghanpyeong=is_janghanpyeong,
+        min_opportunity=min_opportunity,
+        price_dropped_only=price_dropped_only,
+    )
+
+
+@app.get("/api/vehicles/{vehicle_id}/rights")
+def get_vehicle_rights(
+    vehicle_id: str,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """제휴 딜러 권한 원장 조회 (DIRECTIVE 047)."""
+    try:
+        return PlatformService.get_vehicle_rights(db, vehicle_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/vehicles/{vehicle_id}/rights/grant")
+def grant_vehicle_rights(
+    vehicle_id: str,
+    req: DealerRightsGrantRequest,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """제휴 딜러 권한 부여 및 승인 (DIRECTIVE 047)."""
+    try:
+        return PlatformService.grant_vehicle_rights(db, vehicle_id, req)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/vehicles/{vehicle_id}/rights/revoke")
+def revoke_vehicle_rights(
+    vehicle_id: str,
+    req: DealerRightsRevokeRequest,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """제휴 권한 철회 및 영상 제작 차단 (DIRECTIVE 047)."""
+    try:
+        return PlatformService.revoke_vehicle_rights(db, vehicle_id, req)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/api/attribution/summary")
+def get_attribution_summary(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """AI 영상 기여도 vs 자연 판매 분석 및 정산 공헌이익 (DIRECTIVE 047)."""
+    return PlatformService.get_attribution_summary(db)
+
+
+@app.get("/api/vehicles/{vehicle_id}/attribution-trail")
+def get_vehicle_attribution_trail(
+    vehicle_id: str,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """차량별 발굴-영상-문의-계약-정산 전체 이력 추적 (DIRECTIVE 047)."""
+    try:
+        return PlatformService.get_vehicle_attribution_trail(db, vehicle_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/rl/decisions/evaluate")
+def evaluate_rl_decision(
+    req: RLDecisionEvaluateRequest,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """의사결정 시점의 State 벡터 구성 및 Baseline Action 결정 로그 기록 (DIRECTIVE 047)."""
+    try:
+        return PlatformService.evaluate_rl_decision(db, req.vehicle_id, req.policy_version)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/api/rl/decisions")
+def list_rl_decisions(
+    split: Optional[str] = None,
+    is_censored: Optional[bool] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> list[dict[str, Any]]:
+    """강화학습 오프라인 의사결정 로그 목록 (DIRECTIVE 047)."""
+    return PlatformService.list_rl_decisions(db, split=split, is_censored=is_censored)
+
+
+@app.post("/api/rl/decisions/{decision_id}/reward")
+def update_rl_reward(
+    decision_id: str,
+    req: RLDecisionRewardUpdateRequest,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """판매 종결에 따른 Reward 확정 및 Censored 해제 (DIRECTIVE 047)."""
+    try:
+        return PlatformService.update_rl_reward(db, decision_id, req)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/api/rl/readiness")
+def get_rl_readiness(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """강화학습 데이터 파이프라인 준비도 및 모델 도입 적합성 감사 (DIRECTIVE 047)."""
+    return PlatformService.get_rl_readiness_audit(db)
 
 
 # ----------------------------------------------------

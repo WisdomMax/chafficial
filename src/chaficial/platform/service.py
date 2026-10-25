@@ -18,8 +18,10 @@ from chaficial.platform.db import (
     Consultation,
     Customer,
     Dealer,
+    DealerRightsLedger,
     DocumentReview,
     MediaProject,
+    RLDecisionLog,
     Transaction,
     User,
     Vehicle,
@@ -32,10 +34,14 @@ from chaficial.platform.models import (
     ConsultationCreateRequest,
     CustomerCreateRequest,
     CustomerUpdateRequest,
+    DealerRightsGrantRequest,
+    DealerRightsRevokeRequest,
     DocumentApprovalRequest,
     MediaProjectCreateRequest,
     PhotoOrderItem,
     PlatformRegisterIntentRequest,
+    RLDecisionEvaluateRequest,
+    RLDecisionRewardUpdateRequest,
     TransactionCreateRequest,
     VehicleCreateRequest,
     VehicleDefectCreateRequest,
@@ -520,11 +526,42 @@ class PlatformService:
         if not v:
             raise ValueError(f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
 
-        # 마케팅 권한 파싱 및 가드
+        # 마케팅 권한 파싱 및 가드 (DIRECTIVE 046-D / 047 정밀 권한 원장 감사)
         auth_data = json.loads(v.marketing_auth_json) if v.marketing_auth_json else {}
         is_market_observed = (v.ownership_type == "MARKET_OBSERVED")
         video_allowed = auth_data.get("video_allowed", False)
 
+        # 1. 제휴 딜러 권한 원장(Rights Ledger) 정밀 감사 (철회, 유효기간, 채널 허용 검증 우선)
+        latest_ledger = (
+            db.query(DealerRightsLedger)
+            .filter(DealerRightsLedger.vehicle_id == vehicle_id)
+            .order_by(desc(DealerRightsLedger.created_at))
+            .first()
+        )
+        if latest_ledger:
+            if latest_ledger.is_revoked:
+                raise PermissionError(
+                    f"제휴 권한 철회 차단: 해당 차량({v.plate_number})의 제휴 마케팅 권한이 "
+                    f"사유('{latest_ledger.revoked_reason or '딜러 요청'}')로 인해 철회되었습니다."
+                )
+            if not latest_ledger.video_allowed:
+                raise PermissionError(
+                    f"영상 제작 권한 제한: 해당 제휴 딜러 원장에서 AI 영상 변환 권한이 허용되지 않았습니다."
+                )
+            if latest_ledger.valid_until:
+                today_str = datetime.date.today().isoformat()
+                if latest_ledger.valid_until < today_str:
+                    raise PermissionError(
+                        f"제휴 권한 유효기간 만료 차단: 해당 제휴 계약은 {latest_ledger.valid_until}에 만료되었습니다."
+                    )
+            allowed_channels = json.loads(latest_ledger.allowed_channels_json or '["YOUTUBE"]')
+            if req.target_platform and req.target_platform not in allowed_channels:
+                raise PermissionError(
+                    f"타겟 플랫폼 불일치 차단: 제휴 딜러가 허용한 채널은 {allowed_channels}입니다. "
+                    f"요청된 플랫폼 '{req.target_platform}'은(는) 허용 범위 밖입니다."
+                )
+
+        # 2. 시장 관측 매물 및 기본 영상 권한 미승인 차단
         if is_market_observed or not video_allowed:
             raise PermissionError(
                 f"광고 및 영상 제작 권한 미승인 차단: 해당 매물({v.plate_number})은 시장 관측 또는 권한 미확인 매물입니다. "
@@ -1010,3 +1047,542 @@ class PlatformService:
         db.commit()
         db.refresh(p)
         return {"id": p.id, "status": p.status}
+
+    # ==========================================
+    # 7. DIRECTIVE 047: 장한평 시장 분석 엔진
+    # ==========================================
+    @staticmethod
+    def get_market_analysis_summary(db: Session) -> dict[str, Any]:
+        """장한평 중심 시장 매물 관측 및 전국 시세 비교 지표 집계."""
+        listings = db.query(VehicleListing).all()
+        total_count = len(listings)
+        
+        jh_listings = [l for l in listings if getattr(l, "is_janghanpyeong", True)]
+        other_listings = [l for l in listings if not getattr(l, "is_janghanpyeong", True)]
+        
+        encar_count = sum(1 for l in listings if l.platform == "ENCAR")
+        kb_count = sum(1 for l in listings if l.platform == "KB_CHACHACHA")
+        
+        price_dropped = [l for l in listings if (getattr(l, "price_drop_amount", 0) or 0) > 0]
+        high_opp = [l for l in listings if (getattr(l, "opportunity_score", 0.0) or 0.0) >= 80.0]
+        
+        avg_price = int(sum(l.advertised_price for l in listings) / total_count) if total_count > 0 else 0
+        avg_confidence = round(
+            sum(getattr(l, "data_confidence", 0.95) or 0.95 for l in listings) / total_count, 3
+        ) if total_count > 0 else 0.95
+
+        return {
+            "demo_badge": "CHAMART_DEMO_ENVIRONMENT",
+            "is_real_world_market": False,  # 실거래 0건 데모 격리 표기
+            "total_listings": total_count,
+            "janghanpyeong_count": len(jh_listings),
+            "other_regions_count": len(other_listings),
+            "encar_count": encar_count,
+            "kb_count": kb_count,
+            "price_dropped_count": len(price_dropped),
+            "high_opportunity_count": len(high_opp),
+            "market_avg_price_million_krw": avg_price,
+            "avg_data_confidence": avg_confidence,
+            "monitored_region_focus": "장한평 중고차 매매단지 (서울 동대문구)",
+            "benchmark_region": "수원 도이치오토월드 및 전국 주요 거점",
+        }
+
+    @staticmethod
+    def list_market_listings(
+        db: Session,
+        is_janghanpyeong: Optional[bool] = None,
+        min_opportunity: float = 0.0,
+        price_dropped_only: bool = False,
+    ) -> list[dict[str, Any]]:
+        """외부 플랫폼 관측 매물 및 가성비·기회 점수 목록 조회."""
+        query = db.query(VehicleListing).order_by(desc(VehicleListing.opportunity_score))
+        if is_janghanpyeong is not None:
+            query = query.filter(VehicleListing.is_janghanpyeong == is_janghanpyeong)
+        if min_opportunity > 0.0:
+            query = query.filter(VehicleListing.opportunity_score >= min_opportunity)
+        if price_dropped_only:
+            query = query.filter(VehicleListing.price_drop_amount > 0)
+
+        listings = query.all()
+        results = []
+        for l in listings:
+            v = l.vehicle
+            results.append({
+                "listing_id": l.id,
+                "platform": l.platform,
+                "external_id": l.listing_id,
+                "listing_url": l.listing_url,
+                "advertised_price": l.advertised_price,
+                "market_avg_price": getattr(l, "market_avg_price", 0) or 0,
+                "price_drop_amount": getattr(l, "price_drop_amount", 0) or 0,
+                "opportunity_score": getattr(l, "opportunity_score", 0.0) or 0.0,
+                "region": getattr(l, "region", "장한평"),
+                "is_janghanpyeong": getattr(l, "is_janghanpyeong", True),
+                "data_confidence": getattr(l, "data_confidence", 0.95),
+                "listing_status": l.listing_status,
+                "vehicle": {
+                    "id": v.id if v else None,
+                    "plate_number": v.plate_number if v else "-",
+                    "model_name": v.model_name if v else "-",
+                    "year": v.year if v else 0,
+                    "mileage": v.mileage if v else 0,
+                    "ownership_type": v.ownership_type if v else "MARKET_OBSERVED",
+                    "primary_photo_url": v.primary_photo_url if v else None,
+                } if v else None,
+            })
+        return results
+
+    # ==========================================
+    # 8. DIRECTIVE 047: 제휴 딜러 권한 원장 (Rights Ledger)
+    # ==========================================
+    @staticmethod
+    def get_vehicle_rights(db: Session, vehicle_id: str) -> dict[str, Any]:
+        """차량의 제휴 권한 원장 및 상태 조회."""
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        if not v:
+            raise ValueError(f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
+
+        ledger = (
+            db.query(DealerRightsLedger)
+            .filter(DealerRightsLedger.vehicle_id == vehicle_id)
+            .order_by(desc(DealerRightsLedger.created_at))
+            .first()
+        )
+        auth_data = json.loads(v.marketing_auth_json) if v.marketing_auth_json else {}
+
+        return {
+            "vehicle_id": v.id,
+            "plate_number": v.plate_number,
+            "ownership_type": v.ownership_type,
+            "has_active_ledger": ledger is not None and not ledger.is_revoked,
+            "sale_allowed": ledger.sale_allowed if ledger else auth_data.get("authorized", False),
+            "photo_allowed": ledger.photo_allowed if ledger else auth_data.get("photo_allowed", False),
+            "video_allowed": ledger.video_allowed if ledger else auth_data.get("video_allowed", False),
+            "allowed_channels": json.loads(ledger.allowed_channels_json) if ledger else auth_data.get("allowed_platforms", []),
+            "valid_until": ledger.valid_until if ledger else auth_data.get("expires_at"),
+            "is_revoked": ledger.is_revoked if ledger else False,
+            "revoked_at": ledger.revoked_at.isoformat() if ledger and ledger.revoked_at else None,
+            "revoked_reason": ledger.revoked_reason if ledger else None,
+            "approved_by": ledger.approved_by if ledger else auth_data.get("authorized_by", "미승인"),
+            "dealer_commission_pct": ledger.dealer_commission_pct if ledger else 5.0,
+            "chamart_share_pct": ledger.chamart_share_pct if ledger else 15.0,
+        }
+
+    @staticmethod
+    def grant_vehicle_rights(
+        db: Session,
+        vehicle_id: str,
+        req: DealerRightsGrantRequest,
+    ) -> dict[str, Any]:
+        """제휴 딜러 권한 부여 및 원장 등록."""
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        if not v:
+            raise ValueError(f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
+
+        ledger = DealerRightsLedger(
+            vehicle_id=v.id,
+            dealer_id=v.dealer_id,
+            sale_allowed=req.sale_allowed,
+            photo_allowed=req.photo_allowed,
+            video_allowed=req.video_allowed,
+            allowed_channels_json=json.dumps(req.allowed_channels, ensure_ascii=False),
+            valid_until=req.valid_until,
+            is_revoked=False,
+            approved_by=req.approved_by,
+            dealer_commission_pct=req.dealer_commission_pct,
+            chamart_share_pct=req.chamart_share_pct,
+        )
+        db.add(ledger)
+
+        # Vehicle 마스터 동기화 및 승인 소유구분으로 격상
+        if v.ownership_type in ["MARKET_OBSERVED", "PARTNER_CANDIDATE"]:
+            v.ownership_type = "PARTNER_APPROVED"
+
+        v.marketing_auth_json = json.dumps({
+            "authorized": req.sale_allowed,
+            "video_allowed": req.video_allowed,
+            "photo_allowed": req.photo_allowed,
+            "authorized_by": req.approved_by,
+            "expires_at": req.valid_until,
+            "allowed_platforms": req.allowed_channels,
+            "is_revoked": False,
+        }, ensure_ascii=False)
+
+        db.commit()
+        db.refresh(ledger)
+        return PlatformService.get_vehicle_rights(db, vehicle_id)
+
+    @staticmethod
+    def revoke_vehicle_rights(
+        db: Session,
+        vehicle_id: str,
+        req: DealerRightsRevokeRequest,
+    ) -> dict[str, Any]:
+        """제휴 권한 철회 및 즉시 차단 처리."""
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        if not v:
+            raise ValueError(f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
+
+        ledger = (
+            db.query(DealerRightsLedger)
+            .filter(DealerRightsLedger.vehicle_id == vehicle_id)
+            .order_by(desc(DealerRightsLedger.created_at))
+            .first()
+        )
+        if not ledger:
+            ledger = DealerRightsLedger(
+                vehicle_id=v.id,
+                dealer_id=v.dealer_id,
+                sale_allowed=False,
+                photo_allowed=False,
+                video_allowed=False,
+            )
+            db.add(ledger)
+
+        ledger.is_revoked = True
+        ledger.revoked_at = datetime.datetime.utcnow()
+        ledger.revoked_reason = req.reason
+        ledger.video_allowed = False
+        ledger.sale_allowed = False
+
+        # 차량 마스터에도 권한 철회 즉시 반영
+        auth_data = json.loads(v.marketing_auth_json) if v.marketing_auth_json else {}
+        auth_data["video_allowed"] = False
+        auth_data["authorized"] = False
+        auth_data["is_revoked"] = True
+        auth_data["revoked_reason"] = req.reason
+        auth_data["revoked_by"] = req.revoked_by
+        v.marketing_auth_json = json.dumps(auth_data, ensure_ascii=False)
+
+        db.commit()
+        return PlatformService.get_vehicle_rights(db, vehicle_id)
+
+    # ==========================================
+    # 9. DIRECTIVE 047: AI 영상 판매 성과 및 기여도 (Attribution)
+    # ==========================================
+    @staticmethod
+    def get_attribution_summary(db: Session) -> dict[str, Any]:
+        """AI 영상 콘텐츠 기여도, 자연 판매 구분 및 공헌이익 정산 분석."""
+        sales = db.query(Transaction).filter(Transaction.transaction_type == "SALE").all()
+        total_sales = len(sales)
+        
+        ai_sales = [s for s in sales if getattr(s, "attribution_type", "") == "AI_VIDEO"]
+        organic_sales = [s for s in sales if getattr(s, "attribution_type", "") != "AI_VIDEO"]
+
+        total_chamart_net = sum(getattr(s, "chamart_net_profit", 0) or 0 for s in sales)
+        ai_chamart_net = sum(getattr(s, "chamart_net_profit", 0) or 0 for s in ai_sales)
+        total_operating_cost = sum(getattr(s, "operating_cost", 0) or 0 for s in ai_sales)
+
+        roi_pct = 0.0
+        if total_operating_cost > 0:
+            roi_pct = round(((ai_chamart_net - total_operating_cost) / total_operating_cost) * 100.0, 1)
+
+        # 문의 채널 분석 (중복 문의 제외 유효 상담 수)
+        consultations = db.query(Consultation).all()
+        valid_consultations = [c for c in consultations if not getattr(c, "is_duplicate", False)]
+        video_leads = [
+            c for c in valid_consultations
+            if getattr(c, "inquiry_source", "") in ["YOUTUBE_SHORTS", "INSTAGRAM_REELS", "TIKTOK"]
+        ]
+
+        return {
+            "demo_badge": "CHAMART_DEMO_ENVIRONMENT",
+            "total_sales_count": total_sales,
+            "ai_video_attributed_sales": len(ai_sales),
+            "organic_sales": len(organic_sales),
+            "ai_video_share_pct": round((len(ai_sales) / total_sales * 100.0), 1) if total_sales > 0 else 0.0,
+            "total_chamart_net_profit_million_krw": total_chamart_net,
+            "ai_video_net_profit_million_krw": ai_chamart_net,
+            "total_content_operating_cost_million_krw": total_operating_cost,
+            "ai_video_roi_pct": roi_pct,
+            "lead_metrics": {
+                "total_valid_leads": len(valid_consultations),
+                "ai_video_sourced_leads": len(video_leads),
+                "duplicate_leads_quarantined": len(consultations) - len(valid_consultations),
+            },
+            "attribution_rule": "영상 시청 및 해당 링크/태그 문의 고객 중복 제거 후 실계약 매칭",
+        }
+
+    @staticmethod
+    def get_vehicle_attribution_trail(db: Session, vehicle_id: str) -> dict[str, Any]:
+        """차량 1대의 발굴 -> 승인 -> 영상제작 -> 문의 -> 계약 -> 정산 전 과정 추적."""
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        if not v:
+            raise ValueError(f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
+
+        timeline = []
+        # 1. 관측/등록
+        timeline.append({
+            "stage": "MARKET_DISCOVERY",
+            "title": "매물 관측 및 마스터 등록",
+            "timestamp": v.created_at.strftime("%Y-%m-%d %H:%M"),
+            "details": f"{v.plate_number} ({v.model_name}) 매물 등록 (구분: {v.ownership_type})",
+        })
+
+        # 2. 제휴 권한
+        ledger = (
+            db.query(DealerRightsLedger)
+            .filter(DealerRightsLedger.vehicle_id == vehicle_id)
+            .order_by(desc(DealerRightsLedger.created_at))
+            .first()
+        )
+        if ledger:
+            timeline.append({
+                "stage": "RIGHTS_AUTHORIZATION",
+                "title": "제휴 딜러 권한 승인" if not ledger.is_revoked else "제휴 권한 철회",
+                "timestamp": ledger.created_at.strftime("%Y-%m-%d %H:%M"),
+                "details": f"승인자: {ledger.approved_by}, 영상허용: {ledger.video_allowed}, 철회: {ledger.is_revoked}",
+            })
+
+        # 3. 영상 프로젝트
+        projects = db.query(MediaProject).filter(MediaProject.vehicle_id == vehicle_id).all()
+        for p in projects:
+            timeline.append({
+                "stage": "AI_VIDEO_PRODUCTION",
+                "title": f"AI 영상 프로젝트 ({p.content_format})",
+                "timestamp": p.created_at.strftime("%Y-%m-%d %H:%M"),
+                "details": f"상태: {p.status}, 타겟: {p.target_platform}, 제목: {p.title}",
+            })
+
+        # 4. 거래 및 정산
+        transactions = db.query(Transaction).filter(Transaction.vehicle_id == vehicle_id).all()
+        for t in transactions:
+            timeline.append({
+                "stage": "TRANSACTION_SETTLEMENT",
+                "title": f"계약 및 정산 ({t.transaction_type})",
+                "timestamp": t.transaction_date,
+                "details": f"금액: {t.amount:,}만원, 기여유형: {getattr(t, 'attribution_type', 'ORGANIC')}, 순익: {getattr(t, 'chamart_net_profit', 0)}만원",
+            })
+
+        return {
+            "vehicle_id": v.id,
+            "plate_number": v.plate_number,
+            "model_name": v.model_name,
+            "ownership_type": v.ownership_type,
+            "trail_count": len(timeline),
+            "timeline": timeline,
+        }
+
+    # ==========================================
+    # 10. DIRECTIVE 047: 강화학습(RL) 오프라인 데이터 파이프라인
+    # ==========================================
+    @staticmethod
+    def evaluate_rl_decision(
+        db: Session,
+        vehicle_id: str,
+        policy_version: str = "v1.0-rule_baseline",
+    ) -> dict[str, Any]:
+        """관측 시점 기준 State 구성 -> Baseline Action 결정 -> Offline RL Log 기록.
+        
+        [Data Leakage 방지]:
+        미래의 거래/정산 결과나 삭제 여부를 State에 절대 포함하지 않으며,
+        현재 차량 스펙, 시장 평균가, 권한 유무, 결함비용만으로 상태 벡터를 만듭니다.
+        """
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        if not v:
+            raise ValueError(f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
+
+        # Listing에서 시장 평균 시세 및 가격 인하액 조회
+        listing = db.query(VehicleListing).filter(VehicleListing.vehicle_id == vehicle_id).first()
+        market_avg = getattr(listing, "market_avg_price", 0) if listing else (v.target_price + 150)
+        price_drop = getattr(listing, "price_drop_amount", 0) if listing else 0
+        region = getattr(listing, "region", "장한평") if listing else "장한평"
+        confidence = getattr(listing, "data_confidence", 0.95) if listing else 0.95
+
+        # 권한 원장 확인
+        ledger = (
+            db.query(DealerRightsLedger)
+            .filter(DealerRightsLedger.vehicle_id == vehicle_id)
+            .order_by(desc(DealerRightsLedger.created_at))
+            .first()
+        )
+        auth_data = json.loads(v.marketing_auth_json) if v.marketing_auth_json else {}
+        rights_allowed = (ledger.video_allowed and not ledger.is_revoked) if ledger else auth_data.get("video_allowed", False)
+
+        # 결함 및 수리비 집계
+        defect_count = db.query(VehicleDefect).filter(VehicleDefect.vehicle_id == vehicle_id).count()
+        defects = db.query(VehicleDefect).filter(VehicleDefect.vehicle_id == vehicle_id).all()
+        repair_cost_sum = sum(d.estimated_repair_cost for d in defects)
+
+        # 1. State Vector 구성 (과거/현재 관측치만 사용)
+        discount_ratio = 0.0
+        if market_avg > 0 and v.target_price > 0:
+            discount_ratio = round((market_avg - v.target_price) / market_avg, 4)
+
+        state = {
+            "target_price": v.target_price,
+            "market_avg_price": market_avg,
+            "price_discount_ratio": discount_ratio,
+            "price_drop_amount": price_drop,
+            "year": v.year,
+            "mileage": v.mileage,
+            "defect_count": defect_count,
+            "estimated_repair_cost": repair_cost_sum,
+            "region": region,
+            "data_confidence": confidence,
+            "rights_video_allowed": rights_allowed,
+            "ownership_type": v.ownership_type,
+        }
+
+        # 2. Rule Baseline Policy 결정
+        # 가성비 및 권한 유무에 따른 기계적 규칙 기반 Action
+        if not rights_allowed:
+            if discount_ratio > 0.05 or price_drop > 100:
+                action = "REQUEST_DEALER_REVIEW"  # 가성비가 높으나 권한이 없으므로 딜러 접촉 제휴 검토
+                action_prob = 0.88
+                action_details = {"priority": "HIGH", "reason": "시세 대비 저렴한 매물 제휴 시급"}
+            else:
+                action = "OBSERVE"  # 권한 없고 특이사항 없으므로 관망
+                action_prob = 0.95
+                action_details = {"priority": "LOW", "reason": "관측 유지"}
+        else:
+            if discount_ratio >= 0.05:
+                action = "PROPOSE_VIDEO"  # 권한 있고 가성비 우수 -> 즉시 영상 제작 제안
+                action_prob = 0.92
+                action_details = {"channels": ["YOUTUBE", "INSTAGRAM"], "budget_won": 200000}
+            else:
+                action = "ADJUST_PRIORITY"  # 권한 있으나 시세와 유사 -> 우선순위 조정
+                action_prob = 0.80
+                action_details = {"priority": "MEDIUM", "reason": "영상 제작 대기열 보통 순위"}
+
+        # 3. 시간순 데이터 분할 (Split)
+        # 2026-10월 이전은 TRAIN, 이후는 VAL / TEST
+        now = datetime.datetime.utcnow()
+        split = "VAL" if now.month >= 10 else "TRAIN"
+
+        decision = RLDecisionLog(
+            timestamp=now,
+            policy_version=policy_version,
+            vehicle_id=v.id,
+            state_json=json.dumps(state, ensure_ascii=False),
+            action=action,
+            action_prob=action_prob,
+            action_details_json=json.dumps(action_details, ensure_ascii=False),
+            reward=None,  # 의사결정 당시에는 미래 보상 미확정 (None)
+            reward_details_json=json.dumps({"status": "OBSERVING"}, ensure_ascii=False),
+            is_censored=True,
+            split=split,
+            is_demo=True,
+        )
+        db.add(decision)
+        db.commit()
+        db.refresh(decision)
+
+        return {
+            "decision_id": decision.id,
+            "vehicle_id": v.id,
+            "policy_version": decision.policy_version,
+            "action": decision.action,
+            "action_prob": decision.action_prob,
+            "action_details": action_details,
+            "is_censored": decision.is_censored,
+            "split": decision.split,
+            "state_vector": state,
+        }
+
+    @staticmethod
+    def list_rl_decisions(
+        db: Session,
+        split: Optional[str] = None,
+        is_censored: Optional[bool] = None,
+    ) -> list[dict[str, Any]]:
+        """강화학습 오프라인 의사결정 로그 목록 조회."""
+        query = db.query(RLDecisionLog).order_by(desc(RLDecisionLog.timestamp))
+        if split:
+            query = query.filter(RLDecisionLog.split == split)
+        if is_censored is not None:
+            query = query.filter(RLDecisionLog.is_censored == is_censored)
+
+        logs = query.all()
+        results = []
+        for l in logs:
+            results.append({
+                "id": l.id,
+                "timestamp": l.timestamp.strftime("%Y-%m-%d %H:%M"),
+                "policy_version": l.policy_version,
+                "vehicle_id": l.vehicle_id,
+                "vehicle_plate": l.vehicle.plate_number if l.vehicle else "-",
+                "action": l.action,
+                "action_prob": l.action_prob,
+                "action_details": json.loads(l.action_details_json or "{}"),
+                "reward": l.reward,
+                "reward_details": json.loads(l.reward_details_json or "{}"),
+                "is_censored": l.is_censored,
+                "split": l.split,
+                "state": json.loads(l.state_json or "{}"),
+            })
+        return results
+
+    @staticmethod
+    def update_rl_reward(
+        db: Session,
+        decision_id: str,
+        req: RLDecisionRewardUpdateRequest,
+    ) -> dict[str, Any]:
+        """실제 판매·정산 완결에 따른 강화학습 보상(Reward) 확정 및 검열 해제."""
+        log = db.query(RLDecisionLog).filter(RLDecisionLog.id == decision_id).first()
+        if not log:
+            raise ValueError(f"RL 의사결정 로그 '{decision_id}'를 찾을 수 없습니다.")
+
+        # 보상 계산: 확정수수료 - 운영비 + 검증계약기여도보너스 - (체류일수 페널티)
+        time_penalty = req.days_to_sell * 0.5
+        net_reward = round(
+            req.fee_revenue - req.operating_cost + (50.0 if req.verified_contribution > 0.5 else 0.0) - time_penalty,
+            2,
+        )
+
+        reward_details = {
+            "fee_revenue": req.fee_revenue,
+            "operating_cost": req.operating_cost,
+            "days_to_sell": req.days_to_sell,
+            "verified_contribution": req.verified_contribution,
+            "time_penalty": time_penalty,
+            "net_reward": net_reward,
+            "notes": req.notes,
+        }
+
+        log.reward = net_reward
+        log.reward_details_json = json.dumps(reward_details, ensure_ascii=False)
+        log.is_censored = False  # 관측 종결 (Uncensored)
+        db.commit()
+        db.refresh(log)
+
+        return {
+            "decision_id": log.id,
+            "reward": log.reward,
+            "is_censored": log.is_censored,
+            "reward_details": reward_details,
+        }
+
+    @staticmethod
+    def get_rl_readiness_audit(db: Session) -> dict[str, Any]:
+        """강화학습 실전 적용 적합성 및 데이터 규모 자동 진단."""
+        total_logs = db.query(RLDecisionLog).count()
+        uncensored_logs = db.query(RLDecisionLog).filter(RLDecisionLog.is_censored == False).count()
+        censored_logs = total_logs - uncensored_logs
+
+        # 권장 기준
+        min_required_samples = 500
+        is_ready_for_bandit = uncensored_logs >= 50
+        is_ready_for_offline_rl = uncensored_logs >= min_required_samples
+
+        status_text = "COLLECTING_INITIAL_BASELINE_DATA"
+        recommendation = (
+            "현재 실전 오프라인 데이터 수집 초기 단계입니다. "
+            "PPO 등 대규모 강화학습 모델의 성급한 도입은 과적합과 치명적 비용 왜곡을 유발하므로 절대 금지하며, "
+            "현재의 규칙 기반 추천과 성과 로깅을 유지하면서 비검열 데이터가 50건 이상 누적 시 Contextual Bandit, "
+            "500건 이상 누적 시 Conservative Q-Learning(CQL) 평가 단계로 순차 전환해야 합니다."
+        )
+
+        return {
+            "demo_badge": "CHAMART_DEMO_ENVIRONMENT",
+            "total_decision_logs": total_logs,
+            "uncensored_completed_logs": uncensored_logs,
+            "censored_observing_logs": censored_logs,
+            "min_required_samples": min_required_samples,
+            "readiness_status": status_text,
+            "can_train_contextual_bandit": is_ready_for_bandit,
+            "can_train_offline_rl": is_ready_for_offline_rl,
+            "guard_ppo_prohibited": True,  # 대규모 RL 조기 도입 차단 원칙
+            "recommendation": recommendation,
+        }
