@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 import hashlib
 import json
+import re
 import uuid
 from pathlib import Path
 from typing import Any, Optional
@@ -32,7 +33,9 @@ from chaficial.platform.db import (
 )
 from chaficial.platform.models import (
     ConsultationCreateRequest,
+    CustomerCandidate,
     CustomerCreateRequest,
+    CustomerFromCardRequest,
     CustomerUpdateRequest,
     DealerRightsGrantRequest,
     DealerRightsRevokeRequest,
@@ -43,6 +46,7 @@ from chaficial.platform.models import (
     RLDecisionEvaluateRequest,
     RLDecisionRewardUpdateRequest,
     TransactionCreateRequest,
+    TransactionDraftConfirmRequest,
     VehicleCreateRequest,
     VehicleDefectCreateRequest,
     VehicleDefectUpdateRequest,
@@ -190,6 +194,9 @@ class PlatformService:
         timeline = json.loads(v.timeline_json) if v.timeline_json else []
         options = json.loads(v.options_json) if v.options_json else []
         accident_history = json.loads(v.accident_history_json) if v.accident_history_json else {}
+        if accident_history.get("accident_state") == "UNCHECKED":
+            accident_history.setdefault("frame_damage", "미확인 (성능점검표 미등록)")
+            accident_history.setdefault("outer_panel_exchange", "미확인 (성능점검표 미등록)")
         inspection_summary = json.loads(v.inspection_summary_json) if v.inspection_summary_json else {}
         marketing_auth = json.loads(v.marketing_auth_json) if v.marketing_auth_json else {}
 
@@ -760,6 +767,10 @@ class PlatformService:
                 "target_vehicle_model": c.target_vehicle_model or "-",
                 "budget_max": c.budget_max or 0,
                 "assigned_staff": c.assigned_staff,
+                "job_title": getattr(c, "job_title", None) or "-",
+                "company_name": getattr(c, "company_name", None) or "-",
+                "email": getattr(c, "email", None) or "-",
+                "source": getattr(c, "source", "DIRECT"),
                 "consultation_count": len(c.consultations),
                 "created_at": c.created_at.strftime("%Y-%m-%d %H:%M"),
             })
@@ -795,6 +806,14 @@ class PlatformService:
             "assigned_staff": c.assigned_staff,
             "contact_consent": c.contact_consent,
             "notes": c.notes,
+            "job_title": getattr(c, "job_title", None),
+            "company_name": getattr(c, "company_name", None),
+            "company_address": getattr(c, "company_address", None),
+            "company_phone": getattr(c, "company_phone", None),
+            "email": getattr(c, "email", None),
+            "source": getattr(c, "source", "DIRECT"),
+            "source_image_url": getattr(c, "source_image_url", None),
+            "ai_confidence": getattr(c, "ai_confidence", None),
             "consultations": consultations,
             "created_at": c.created_at.strftime("%Y-%m-%d %H:%M"),
         }
@@ -815,6 +834,14 @@ class PlatformService:
             assigned_staff=req.assigned_staff or "차마트 상담팀",
             contact_consent=req.contact_consent,
             notes=req.notes,
+            job_title=req.job_title,
+            company_name=req.company_name,
+            company_address=req.company_address,
+            company_phone=req.company_phone,
+            email=req.email,
+            source=req.source or "DIRECT",
+            source_image_url=req.source_image_url,
+            ai_confidence=req.ai_confidence,
         )
         db.add(c)
         db.commit()
@@ -981,6 +1008,7 @@ class PlatformService:
             file_size=len(file_bytes),
             extracted_data_json=json.dumps(extracted_mock, ensure_ascii=False),
             review_status="PENDING",
+            status="UPLOADED",
         )
         db.add(doc)
         db.commit()
@@ -992,6 +1020,229 @@ class PlatformService:
             "filename": filename,
             "sha256": sha256_hash,
             "review_status": "PENDING",
+        }
+
+    # ==========================================
+    # 6. DIRECTIVE 050-C 명함 CRM 및 거래 초안 파이프라인
+    # ==========================================
+    @staticmethod
+    def check_customer_duplicate(db: Session, phone: str, email: Optional[str] = None) -> dict[str, Any]:
+        """고객 전화번호 및 이메일 중복 검사 (DIRECTIVE 050-C)."""
+        clean_phone = normalize_phone_number(phone)
+        
+        # 1. 전화번호 일치 검사
+        matched = db.query(Customer).filter(Customer.phone == clean_phone).first()
+        
+        # 2. 이메일 일치 검사 (전화번호 불일치 시)
+        if not matched and email and email.strip():
+            matched = db.query(Customer).filter(Customer.email == email.strip()).first()
+            
+        if matched:
+            return {
+                "is_duplicate": True,
+                "customer_id": matched.id,
+                "name": matched.name,
+                "phone": matched.phone,
+                "company_name": getattr(matched, "company_name", None),
+                "job_title": getattr(matched, "job_title", None),
+                "status": matched.status,
+                "notes": matched.notes,
+                "created_at": matched.created_at.strftime("%Y-%m-%d %H:%M"),
+            }
+        return {"is_duplicate": False, "customer_id": None}
+
+    @staticmethod
+    def create_customer_from_business_card(db: Session, req: CustomerFromCardRequest) -> dict[str, Any]:
+        """AI 인식 명함 데이터로부터 정식 CRM 고객 생성 (DIRECTIVE 050-C)."""
+        clean_phone = normalize_phone_number(req.phone)
+        
+        branch_id = req.branch_id
+        if not branch_id:
+            jh = db.query(Branch).filter(Branch.name.contains("장한평")).first()
+            branch_id = jh.id if jh else db.query(Branch).first().id
+
+        clean_budget = parse_currency_amount(req.budget_max) if req.budget_max is not None else None
+
+        customer = Customer(
+            branch_id=branch_id,
+            name=req.name.strip(),
+            phone=clean_phone,
+            status=req.status or "NEW",
+            job_title=req.job_title,
+            company_name=req.company_name,
+            company_address=req.company_address,
+            company_phone=req.company_phone,
+            email=req.email,
+            source="BUSINESS_CARD_AI",
+            source_image_url=req.source_image_url,
+            ai_confidence=req.ai_confidence or 0.95,
+            target_vehicle_model=req.target_vehicle_model,
+            budget_max=clean_budget,
+            assigned_staff="차마트 상담팀",
+            contact_consent=True,
+            notes=req.notes,
+        )
+        db.add(customer)
+        db.flush()
+
+        # 명함 유입 최초 상담 메모 등록
+        cons_content = f"[AI 명함 등록] {req.company_name or '회사 미상'} {req.job_title or ''} - 명함 자동 인식 완료"
+        if req.notes:
+            cons_content += f" (메모: {req.notes})"
+        cons = Consultation(
+            customer_id=customer.id,
+            channel="매장방문",
+            content=cons_content,
+            staff_name="AI 비전 비서",
+            inquiry_source="BUSINESS_CARD_AI",
+        )
+        db.add(cons)
+        db.commit()
+        db.refresh(customer)
+        return PlatformService.get_customer(db, customer.id)
+
+    @staticmethod
+    def match_vehicle_for_document(
+        db: Session,
+        plate_number: Optional[str] = None,
+        vin: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
+        """거래서류에 기재된 차량번호 또는 VIN으로 플랫폼 보유 매물 자동 매칭."""
+        if plate_number and plate_number.strip():
+            clean_plate = re.sub(r"\s+", "", plate_number.strip())
+            vehicles = db.query(Vehicle).all()
+            for v in vehicles:
+                v_clean = re.sub(r"\s+", "", v.plate_number)
+                if clean_plate in v_clean or v_clean in clean_plate:
+                    return {
+                        "id": v.id,
+                        "plate_number": v.plate_number,
+                        "model_name": v.model_name,
+                        "year": v.year,
+                        "target_price": v.target_price,
+                        "status": v.status,
+                        "ownership_type": v.ownership_type,
+                    }
+
+        if vin and vin.strip():
+            clean_vin = vin.strip().upper()
+            v = db.query(Vehicle).filter(Vehicle.vin == clean_vin).first()
+            if v:
+                return {
+                    "id": v.id,
+                    "plate_number": v.plate_number,
+                    "model_name": v.model_name,
+                    "year": v.year,
+                    "target_price": v.target_price,
+                    "status": v.status,
+                    "ownership_type": v.ownership_type,
+                }
+        return None
+
+    @staticmethod
+    def match_party_for_document(
+        db: Session,
+        name: Optional[str] = None,
+        contact: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """서류에 기재된 상대방 성명/연락처로 CRM 고객 또는 제휴 딜러 자동 매칭."""
+        matched_customer = None
+        matched_dealer = None
+
+        if contact:
+            clean_contact = normalize_phone_number(contact)
+            matched_customer = db.query(Customer).filter(Customer.phone == clean_contact).first()
+            matched_dealer = db.query(Dealer).filter(Dealer.phone == clean_contact).first()
+
+        if not matched_customer and name:
+            matched_customer = db.query(Customer).filter(Customer.name == name.strip()).first()
+        if not matched_dealer and name:
+            matched_dealer = db.query(Dealer).filter(Dealer.name == name.strip()).first()
+
+        return {
+            "customer": {
+                "id": matched_customer.id,
+                "name": matched_customer.name,
+                "phone": matched_customer.phone,
+            } if matched_customer else None,
+            "dealer": {
+                "id": matched_dealer.id,
+                "name": matched_dealer.name,
+                "dealership": matched_dealer.dealership_name,
+            } if matched_dealer else None,
+        }
+
+    @staticmethod
+    def create_transaction_from_draft(
+        db: Session,
+        req: TransactionDraftConfirmRequest,
+    ) -> dict[str, Any]:
+        """AI 거래 초안 확인 후 정식 거래 원장 등록 (엄격한 무결성 격리 보장).
+        
+        [무결성 원칙 준수]
+        - 관리자의 명시적 승인 전까지는 is_verified_sale=False 유지.
+        - 단순 입금 내역이나 미검증 서류로 실매출, ROI, RL Reward 오염 방지.
+        - settlement_status='PENDING'으로 격리 보관.
+        """
+        v = db.query(Vehicle).filter(Vehicle.id == req.vehicle_id).first()
+        if not v:
+            raise ValueError(f"연결할 차량이 존재하지 않습니다: {req.vehicle_id}")
+
+        tx = Transaction(
+            vehicle_id=req.vehicle_id,
+            transaction_type=req.transaction_type,
+            amount=req.amount,
+            party_name=req.party_name,
+            party_contact=req.party_contact,
+            transaction_date=req.transaction_date,
+            settlement_status=req.settlement_status or "PENDING",
+            dealer_commission_amount=req.dealer_commission_amount,
+            chamart_net_profit=req.chamart_net_profit,
+            operating_cost=req.operating_cost,
+            attribution_type=req.attribution_type or "AI_VIDEO",
+            is_verified_sale=req.is_verified_sale,
+            is_test_record=req.is_test_record,
+            document_id=req.document_review_id,
+            notes=req.notes,
+        )
+        db.add(tx)
+        db.flush()
+
+        # 연결된 서류 검토가 있으면 상태 승인 전이
+        if req.document_review_id:
+            doc = db.query(DocumentReview).filter(DocumentReview.id == req.document_review_id).first()
+            if doc:
+                doc.status = "APPROVED"
+                doc.review_status = "APPROVED"
+                doc.approved_by = "차마트 관리자"
+                doc.created_transaction_id = tx.id
+                doc.matched_vehicle_id = v.id
+
+        # 차량 타임라인 기록 (검증된 판매 시에만 상태를 CONTRACTED로 변경)
+        timeline = json.loads(v.timeline_json) if v.timeline_json else []
+        if req.is_verified_sale and req.transaction_type == "SALE":
+            v.status = "CONTRACTING"
+            timeline.append({
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "event": f"AI 거래서류 정식 승인: {req.party_name} / {req.amount}만원 (원장 ID: {tx.id[:8]})",
+            })
+        else:
+            timeline.append({
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "event": f"AI 거래서류 초안 보관 (미승인 격리): {req.party_name} / {req.amount}만원",
+            })
+        v.timeline_json = json.dumps(timeline, ensure_ascii=False)
+
+        db.commit()
+        db.refresh(tx)
+        return {
+            "ok": True,
+            "transaction_id": tx.id,
+            "vehicle_plate": v.plate_number,
+            "amount": tx.amount,
+            "settlement_status": tx.settlement_status,
+            "is_verified_sale": tx.is_verified_sale,
+            "message": "거래 초안이 성공적으로 등록되었습니다.",
         }
 
     @staticmethod

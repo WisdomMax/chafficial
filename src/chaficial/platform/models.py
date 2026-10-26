@@ -53,6 +53,14 @@ class CustomerCreateRequest(BaseModel):
     assigned_staff: Optional[str] = "차마트 상담팀"
     contact_consent: bool = True
     notes: Optional[str] = None
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    company_address: Optional[str] = None
+    company_phone: Optional[str] = None
+    email: Optional[str] = None
+    source: Optional[str] = "DIRECT"
+    source_image_url: Optional[str] = None
+    ai_confidence: Optional[float] = None
 
 
 class CustomerUpdateRequest(BaseModel):
@@ -64,6 +72,14 @@ class CustomerUpdateRequest(BaseModel):
     assigned_staff: Optional[str] = None
     contact_consent: Optional[bool] = None
     notes: Optional[str] = None
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    company_address: Optional[str] = None
+    company_phone: Optional[str] = None
+    email: Optional[str] = None
+    source: Optional[str] = None
+    source_image_url: Optional[str] = None
+    ai_confidence: Optional[float] = None
 
 
 class ConsultationCreateRequest(BaseModel):
@@ -194,3 +210,84 @@ class RLDecisionEvaluateRequest(BaseModel):
 class RLDecisionRewardUpdateRequest(BaseModel):
     transaction_id: str  # 실제 판매 계약 및 정산 원장 ID (Ground Truth 강제)
     notes: Optional[str] = None
+
+
+# ----------------------------------------------------
+# DIRECTIVE 050-C AI 명함 및 거래서류 인식 스키마
+# ----------------------------------------------------
+class CustomerCandidate(BaseModel):
+    """명함 이미지 분석 결과 고객 후보 모델."""
+    name: str
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    phone: str
+    company_phone: Optional[str] = None
+    email: Optional[str] = None
+    company_address: Optional[str] = None
+    notes: Optional[str] = None
+    confidence: float = 0.95
+
+
+class CustomerFromCardRequest(BaseModel):
+    """명함 확인 후 CRM 정식 고객 등록 요청."""
+    branch_id: Optional[str] = None
+    name: str
+    phone: str
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    company_address: Optional[str] = None
+    company_phone: Optional[str] = None
+    email: Optional[str] = None
+    target_vehicle_model: Optional[str] = None
+    budget_max: Optional[int] = None
+    notes: Optional[str] = None
+    source_image_url: Optional[str] = None
+    ai_confidence: Optional[float] = 0.95
+    status: str = "NEW"
+
+
+class TransactionDocumentExtract(BaseModel):
+    """거래서류(매매계약서, 정산서, 입출금내역 등) 분석 결과 모델."""
+    document_type: str = "CONTRACT"  # CONTRACT, SETTLEMENT, EXPENSE, BANK_TRANSFER
+    transaction_type: str = "SALE"  # PURCHASE, SALE, EXPENSE, DEPOSIT
+    transaction_date: str = ""      # YYYY-MM-DD
+    vehicle_plate_number: Optional[str] = None
+    vin: Optional[str] = None
+    party_name: str = ""
+    party_contact: Optional[str] = None
+    dealership_name: Optional[str] = None
+    total_amount: int = 0           # 만원 단위
+    supply_amount: Optional[int] = 0
+    vat_amount: Optional[int] = 0
+    registration_fee: Optional[int] = 0
+    brokerage_fee: Optional[int] = 0
+    refurbishment_cost: Optional[int] = 0
+    has_official_seal: bool = False
+    confidence: float = 0.90
+    summary: Optional[str] = None
+
+
+class TransactionDraftConfirmRequest(BaseModel):
+    """거래 초안 확인 및 관리자 승인 요청 (무결성 보장)."""
+    document_review_id: Optional[str] = None
+    vehicle_id: str
+    transaction_type: str = "SALE"  # PURCHASE, SALE, EXPENSE, DEPOSIT
+    amount: int  # 만원
+    party_name: str
+    party_contact: Optional[str] = None
+    transaction_date: str
+    settlement_status: str = "PENDING"  # 기본값 PENDING
+    dealer_commission_amount: int = 0
+    chamart_net_profit: int = 0
+    operating_cost: int = 0
+    attribution_type: str = "AI_VIDEO"
+    is_verified_sale: bool = False      # 실제 증빙 승인 전까지 False 유지
+    is_test_record: bool = False
+    notes: Optional[str] = None
+
+
+class GeminiKeySaveRequest(BaseModel):
+    """관리자 화면 Gemini API 키 등록 및 모델 설정."""
+    api_key: str
+    model: Optional[str] = "gemini-flash-latest"
+    fallback_model: Optional[str] = "gemini-flash-lite"

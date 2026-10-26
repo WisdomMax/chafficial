@@ -263,7 +263,7 @@ class VehiclePhoto(Base):
 
 
 class Customer(Base):
-    """고객 CRM 모델."""
+    """고객 CRM 모델 (DIRECTIVE 050-C 명함 인식 확장)."""
     __tablename__ = "customers"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -278,6 +278,16 @@ class Customer(Base):
     contact_consent: Mapped[bool] = mapped_column(Boolean, default=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # DIRECTIVE 050-C 명함 OCR 및 추가 정보 필드
+    job_title: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    company_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    company_address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    company_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    source: Mapped[str] = mapped_column(String(50), default="DIRECT")  # DIRECT, BUSINESS_CARD_AI, WEB_INQUIRY, TELEGRAM
+    source_image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    ai_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
     branch = relationship("Branch", back_populates="customers")
@@ -334,11 +344,11 @@ class Transaction(Base):
 
 
 class DocumentReview(Base):
-    """AI 서류 인식 대기열 모델."""
+    """AI 서류 인식 대기열 및 거래서류 검토 모델 (DIRECTIVE 050-C 확장)."""
     __tablename__ = "document_reviews"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    doc_type: Mapped[str] = mapped_column(String(50), nullable=False)  # TRANSFER_CERTIFICATE, SALE_CONTRACT, INSPECTION_RECORD, SETTLEMENT_SHEET
+    doc_type: Mapped[str] = mapped_column(String(50), nullable=False)  # TRANSFER_CERTIFICATE, SALE_CONTRACT, INSPECTION_RECORD, SETTLEMENT_SHEET, BANK_TRANSFER, EXPENSE_REPORT
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     file_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -347,6 +357,34 @@ class DocumentReview(Base):
     review_status: Mapped[str] = mapped_column(String(20), default="PENDING")  # PENDING, APPROVED, REJECTED
     approved_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # DIRECTIVE 050-C 7대 라이프사이클 및 거래 초안 연결
+    # 상태: UPLOADED -> PROCESSING -> EXTRACTED -> NEEDS_REVIEW -> APPROVED / REJECTED / FAILED
+    status: Mapped[str] = mapped_column(String(30), default="NEEDS_REVIEW")
+    document_type: Mapped[str] = mapped_column(String(50), default="CONTRACT")  # CONTRACT, SETTLEMENT, EXPENSE, BANK_TRANSFER
+    matched_vehicle_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    matched_customer_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    extracted_amount: Mapped[int] = mapped_column(Integer, default=0)
+    has_official_seal: Mapped[bool] = mapped_column(Boolean, default=False)
+    ai_confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    processing_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_transaction_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+
+class GeminiUsageLog(Base):
+    """Gemini Vision AI 호출 감사 및 비용/통계 추적 모델 (DIRECTIVE 050-C)."""
+    __tablename__ = "gemini_usage_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    task_type: Mapped[str] = mapped_column(String(50))  # BUSINESS_CARD, TRANSACTION_DOC, TEST_CONNECTION, GENERAL
+    model_used: Mapped[str] = mapped_column(String(50))
+    prompt_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    candidate_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    estimated_cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    success: Mapped[bool] = mapped_column(Boolean, default=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    execution_time_ms: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
 
@@ -584,6 +622,61 @@ def migrate_db_schema() -> None:
                 created_at DATETIME,
                 updated_at DATETIME,
                 FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE
+            )
+        """)
+
+        # 8. customers 테이블 마이그레이션 (DIRECTIVE 050-C 명함 OCR 및 추가 정보)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='customers'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(customers)")
+            c_cols = {row[1] for row in cursor.fetchall()}
+            c_columns = [
+                ("job_title", "VARCHAR(50)"),
+                ("company_name", "VARCHAR(100)"),
+                ("company_address", "VARCHAR(255)"),
+                ("company_phone", "VARCHAR(30)"),
+                ("email", "VARCHAR(100)"),
+                ("source", "VARCHAR(50) DEFAULT 'DIRECT'"),
+                ("source_image_url", "VARCHAR(500)"),
+                ("ai_confidence", "FLOAT"),
+            ]
+            for col_name, col_type in c_columns:
+                if col_name not in c_cols:
+                    cursor.execute(f"ALTER TABLE customers ADD COLUMN {col_name} {col_type}")
+
+        # 9. document_reviews 테이블 마이그레이션 (DIRECTIVE 050-C 거래서류 검토 및 7대 라이프사이클)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='document_reviews'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(document_reviews)")
+            doc_cols = {row[1] for row in cursor.fetchall()}
+            doc_columns = [
+                ("status", "VARCHAR(30) DEFAULT 'NEEDS_REVIEW'"),
+                ("document_type", "VARCHAR(50) DEFAULT 'CONTRACT'"),
+                ("matched_vehicle_id", "VARCHAR(36)"),
+                ("matched_customer_id", "VARCHAR(36)"),
+                ("extracted_amount", "INTEGER DEFAULT 0"),
+                ("has_official_seal", "BOOLEAN DEFAULT 0"),
+                ("ai_confidence", "FLOAT DEFAULT 0.0"),
+                ("processing_error", "TEXT"),
+                ("created_transaction_id", "VARCHAR(36)"),
+            ]
+            for col_name, col_type in doc_columns:
+                if col_name not in doc_cols:
+                    cursor.execute(f"ALTER TABLE document_reviews ADD COLUMN {col_name} {col_type}")
+
+        # 10. gemini_usage_logs 테이블 생성 (DIRECTIVE 050-C 사용량 및 비용 감사)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS gemini_usage_logs (
+                id VARCHAR(36) PRIMARY KEY,
+                task_type VARCHAR(50) NOT NULL,
+                model_used VARCHAR(50) NOT NULL,
+                prompt_tokens INTEGER DEFAULT 0,
+                candidate_tokens INTEGER DEFAULT 0,
+                estimated_cost_usd FLOAT DEFAULT 0.0,
+                success BOOLEAN DEFAULT 1,
+                error_message TEXT,
+                execution_time_ms INTEGER DEFAULT 0,
+                created_at DATETIME
             )
         """)
 

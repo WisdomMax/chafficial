@@ -286,12 +286,19 @@ def test_11_rl_reward_update_and_uncensor(decision_id: str):
     from chaficial.platform.db import SessionLocal, Transaction
     db = SessionLocal()
     try:
-        tx = db.query(Transaction).filter(
+        from chaficial.platform.db import RLDecisionLog
+        used_tx_ids = {r.verified_transaction_id for r in db.query(RLDecisionLog).filter(RLDecisionLog.verified_transaction_id != None).all()}
+
+        query = db.query(Transaction).filter(
             Transaction.vehicle_id == vehicle_id,
             Transaction.transaction_type == "SALE",
             Transaction.settlement_status == "SETTLED",
             Transaction.is_demo == False,
-        ).first()
+        )
+        if used_tx_ids:
+            query = query.filter(Transaction.id.notin_(used_tx_ids))
+        tx = query.first()
+
         if not tx:
             tx = Transaction(
                 transaction_date="2026-10-25",

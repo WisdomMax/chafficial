@@ -10,9 +10,12 @@ DIRECTIVE 045 명세 준수:
 from __future__ import annotations
 
 import datetime
+import hashlib
+import json
 import os
 import secrets
 import time
+import traceback
 from pathlib import Path
 from typing import Any, Optional
 
@@ -35,11 +38,14 @@ from chaficial.platform.db import (
 )
 from chaficial.platform.models import (
     ConsultationCreateRequest,
+    CustomerCandidate,
     CustomerCreateRequest,
+    CustomerFromCardRequest,
     CustomerUpdateRequest,
     DealerRightsGrantRequest,
     DealerRightsRevokeRequest,
     DocumentApprovalRequest,
+    GeminiKeySaveRequest,
     LoginRequest,
     MediaProjectCreateRequest,
     MediaProjectStatusUpdateRequest,
@@ -48,6 +54,8 @@ from chaficial.platform.models import (
     RLDecisionEvaluateRequest,
     RLDecisionRewardUpdateRequest,
     TransactionCreateRequest,
+    TransactionDocumentExtract,
+    TransactionDraftConfirmRequest,
     VehicleCreateRequest,
     VehicleDefectCreateRequest,
     VehicleDefectUpdateRequest,
@@ -57,6 +65,7 @@ from chaficial.platform.models import (
     VehicleUpdateRequest,
     VehicleVideoProjectCreateRequest,
 )
+from chaficial.platform.ai.vision import GeminiVisionService
 from chaficial.platform.search import (
     format_currency_display,
     format_phone_display,
@@ -99,7 +108,25 @@ app.add_middleware(
 UI_INDEX_FILE = Path(__file__).parent / "ui" / "index.html"
 UPLOAD_DIR = Path("data/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+DOC_UPLOAD_DIR = Path("data/uploads/documents")
+DOC_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """처리되지 않은 500 서버 에러 로깅 및 정형화된 JSON 에러 응답."""
+    tb = traceback.format_exc()
+    print(f"[SERVER ERROR 500] {request.method} {request.url.path} 실패:\n{tb}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "ok": False,
+            "status": "SERVER_ERROR",
+            "detail": f"서버 내부 처리 중 오류가 발생했습니다: {str(exc)}",
+            "path": request.url.path,
+        },
+    )
 
 
 @app.on_event("startup")
@@ -687,6 +714,219 @@ def approve_document(
         return PlatformService.approve_document(db, doc_id, req)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+# ----------------------------------------------------
+# DIRECTIVE 050-C AI 비전(Gemini Vision) & CRM/거래 파이프라인 API
+# ----------------------------------------------------
+def _validate_document_file(content: bytes, filename: str) -> None:
+    """서류 파일 15MB 한도, 확장자 및 매직바이트 보안 검증 (PHASE E)."""
+    if len(content) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="파일 크기가 15MB를 초과할 수 없습니다.")
+
+    allowed_exts = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+    ext = Path(filename).suffix.lower()
+    if ext not in allowed_exts:
+        raise HTTPException(status_code=400, detail=f"허용되지 않은 파일 형식입니다: {ext} (허용: JPG, PNG, WEBP, PDF)")
+
+    is_pdf = content.startswith(b"%PDF-")
+    is_png = content.startswith(b"\x89PNG\r\n\x1a\n")
+    is_jpg = content.startswith(b"\xff\xd8\xff")
+    is_webp = (len(content) > 12 and content[8:12] == b"WEBP")
+    if not (is_pdf or is_png or is_jpg or is_webp):
+        raise HTTPException(status_code=400, detail="파일 바이너리가 선언된 이미지/PDF 규격과 일치하지 않습니다.")
+
+
+@app.get("/api/ai/vision/config")
+def get_ai_vision_config(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """Gemini Vision 연동 상태, 마스킹된 키 및 사용량 통계 조회."""
+    return GeminiVisionService.get_stats(db)
+
+
+@app.post("/api/ai/vision/save-key")
+def save_ai_vision_key(
+    req: GeminiKeySaveRequest,
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """관리자 화면에서 Gemini API 키 및 모델 동적 등록 및 저장."""
+    if not req.api_key or not req.api_key.strip():
+        raise HTTPException(status_code=400, detail="API 키는 비어있을 수 없습니다.")
+    return GeminiVisionService.save_settings(
+        api_key=req.api_key,
+        primary_model=req.model,
+        fallback_model=req.fallback_model,
+    )
+
+
+@app.post("/api/ai/vision/test-connection")
+def test_ai_vision_connection(
+    req: Optional[dict[str, Any]] = None,
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """Gemini Vision AI 연결 테스트 (API 키 등록 여부 및 핑 테스트)."""
+    custom_key = req.get("api_key") if req else None
+    custom_model = req.get("model") if req else None
+    return GeminiVisionService.test_connection(api_key=custom_key, model=custom_model)
+
+
+@app.post("/api/crm/business-card/analyze")
+async def analyze_business_card(
+    file: UploadFile = File(...),
+    is_mock: bool = False,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """명함 이미지 분석 -> CustomerCandidate 추출 및 기존 고객 중복 검사 (PHASE C)."""
+    content = await file.read()
+    _validate_document_file(content, file.filename or "business_card.jpg")
+
+    mime = file.content_type or "image/jpeg"
+    result = GeminiVisionService.analyze_business_card(content, mime_type=mime, is_mock=is_mock)
+    if not result.get("ok"):
+        return result
+
+    # 파일 저장 (격리된 디렉토리)
+    ym = datetime.date.today().strftime("%Y/%m")
+    save_dir = DOC_UPLOAD_DIR / ym
+    save_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"card_{secrets.token_hex(6)}_{file.filename or 'card.jpg'}"
+    save_path = save_dir / filename
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    image_url = f"/uploads/documents/{ym}/{filename}"
+    candidate = result["candidate"]
+
+    # 중복 고객 검사
+    dup_info = PlatformService.check_customer_duplicate(
+        db,
+        phone=candidate.get("phone", ""),
+        email=candidate.get("email"),
+    )
+
+    return {
+        "ok": True,
+        "status": "EXTRACTED",
+        "candidate": candidate,
+        "duplicate_check": dup_info,
+        "source_image_url": image_url,
+        "message": result.get("message", "명함이 성공적으로 분석되었습니다."),
+    }
+
+
+@app.post("/api/crm/customers/from-card", status_code=status.HTTP_201_CREATED)
+def create_customer_from_card(
+    req: CustomerFromCardRequest,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """명함 분석 결과 검토 후 정식 CRM 고객으로 등록 (PHASE C)."""
+    return PlatformService.create_customer_from_business_card(db, req)
+
+
+@app.get("/api/crm/customers/check-duplicate")
+def check_customer_duplicate(
+    phone: str,
+    email: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """전화번호 및 이메일 기준 고객 중복 여부 확인."""
+    return PlatformService.check_customer_duplicate(db, phone=phone, email=email)
+
+
+@app.post("/api/transactions/document/analyze")
+async def analyze_transaction_document(
+    file: UploadFile = File(...),
+    is_mock: bool = False,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """거래서류(매매계약서, 정산서, 입출금내역) 분석 -> 차량/고객 자동 매칭 및 초안 생성 (PHASE D)."""
+    content = await file.read()
+    _validate_document_file(content, file.filename or "transaction_doc.jpg")
+
+    sha256_hash = hashlib.sha256(content).hexdigest()
+    mime = file.content_type or "image/jpeg"
+
+    result = GeminiVisionService.analyze_transaction_document(content, mime_type=mime, is_mock=is_mock)
+    if not result.get("ok"):
+        return result
+
+    # 파일 저장
+    ym = datetime.date.today().strftime("%Y/%m")
+    save_dir = DOC_UPLOAD_DIR / ym
+    save_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"tx_{secrets.token_hex(6)}_{file.filename or 'doc.jpg'}"
+    save_path = save_dir / filename
+    with open(save_path, "wb") as f:
+        f.write(content)
+
+    image_url = f"/uploads/documents/{ym}/{filename}"
+    extract = result["extract"]
+
+    # 1. 차량 자동 매칭
+    matched_vehicle = PlatformService.match_vehicle_for_document(
+        db,
+        plate_number=extract.get("vehicle_plate_number"),
+        vin=extract.get("vin"),
+    )
+
+    # 2. 거래 상대방(고객/딜러) 자동 매칭
+    matched_party = PlatformService.match_party_for_document(
+        db,
+        name=extract.get("party_name"),
+        contact=extract.get("party_contact"),
+    )
+
+    # 3. DocumentReview 대기열 생성 (status: NEEDS_REVIEW)
+    doc_review = DocumentReview(
+        doc_type=extract.get("document_type", "CONTRACT"),
+        document_type=extract.get("document_type", "CONTRACT"),
+        filename=file.filename or "transaction_document",
+        file_path=str(save_path),
+        file_sha256=sha256_hash,
+        file_size=len(content),
+        extracted_data_json=json.dumps(extract, ensure_ascii=False),
+        review_status="PENDING",
+        status="NEEDS_REVIEW",
+        extracted_amount=extract.get("total_amount", 0),
+        has_official_seal=extract.get("has_official_seal", False),
+        ai_confidence=extract.get("confidence", 0.90),
+        matched_vehicle_id=matched_vehicle["id"] if matched_vehicle else None,
+        matched_customer_id=matched_party["customer"]["id"] if matched_party.get("customer") else None,
+    )
+    db.add(doc_review)
+    db.commit()
+    db.refresh(doc_review)
+
+    return {
+        "ok": True,
+        "status": "NEEDS_REVIEW",
+        "document_review_id": doc_review.id,
+        "extract": extract,
+        "matched_vehicle": matched_vehicle,
+        "matched_party": matched_party,
+        "source_image_url": image_url,
+        "sha256": sha256_hash,
+        "message": "거래 서류 분석 완료: 초안 검토 후 확정하십시오.",
+    }
+
+
+@app.post("/api/transactions/draft/confirm", status_code=status.HTTP_201_CREATED)
+def confirm_transaction_draft(
+    req: TransactionDraftConfirmRequest,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """거래 초안 확인 및 관리자 승인 (원장 정식 반영 및 무결성 격리 보장)."""
+    try:
+        return PlatformService.create_transaction_from_draft(db, req)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ----------------------------------------------------

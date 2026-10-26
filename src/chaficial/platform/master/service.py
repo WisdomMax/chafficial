@@ -68,8 +68,11 @@ class MasterVehicleService:
         condition_detail = data.get("condition_detail") or {}
         accident_history = data.get("accident_history") or {
             "accident_state": condition_detail.get("accident_state", "UNCHECKED"),
-            "frame_damage": condition_detail.get("frame_damage", "미확인"),
+            "frame_damage": condition_detail.get("frame_damage", "미확인 (성능점검표 미등록)"),
             "outer_damage": condition_detail.get("outer_damage", "미확인"),
+            "outer_panel_exchange": condition_detail.get("outer_panel_exchange", "미확인 (성능점검표 미등록)"),
+            "insurance_accident_count": condition_detail.get("insurance_accident_count", "전산 조회 대기"),
+            "special_accident": condition_detail.get("special_accident", "미확인"),
         }
 
         vehicle = Vehicle(
