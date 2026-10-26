@@ -236,8 +236,8 @@ def test_09_vehicle_attribution_trail():
     """TEST 9: 차량별 발굴->승인->영상->문의->계약->정산 전 주기 타임라인 검증."""
     print_step("TEST 9: 차량별 전 주기 이력 타임라인(Attribution Trail) 검증")
     status, v_list = http_request("/api/vehicles")
-    spt = next((v for v in v_list if "스포티지" in v.get("model_name", "")), None)
-    assert spt is not None, "스포티지 차량을 찾을 수 없습니다."
+    spt = next((v for v in v_list if "스포티지" in v.get("model_name", "") and v.get("ownership_type") != "MARKET_OBSERVED"), None)
+    assert spt is not None, "제휴/운영 스포티지 차량을 찾을 수 없습니다."
 
     status, trail = http_request(f"/api/vehicles/{spt['id']}/attribution-trail")
     assert status == 200, f"타임라인 조회 실패: {trail}"
@@ -305,6 +305,7 @@ def test_11_rl_reward_update_and_uncensor(decision_id: str):
                 settlement_status="SETTLED",
                 is_demo=False,
                 is_verified_sale=True,
+                is_test_record=True,
                 attribution_type="AI_VIDEO",
             )
             db.add(tx)

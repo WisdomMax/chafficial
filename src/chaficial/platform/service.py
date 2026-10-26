@@ -1293,10 +1293,11 @@ class PlatformService:
         """DIRECTIVE 048 P0-4: 실전 성과와 데모 시뮬레이션의 완전 분리 집계 및 ROI 공식 교정."""
         all_sales = db.query(Transaction).filter(Transaction.transaction_type == "SALE").all()
         
-        # 1. 실제 계약 및 실거래 집계 (is_demo == False 엄격 필터)
+        # 1. 실제 계약 및 실거래 집계 (is_demo == False 및 is_test_record == False 엄격 필터: DIRECTIVE 049)
         real_sales = [
             s for s in all_sales
             if not getattr(s, "is_demo", True)
+            and not getattr(s, "is_test_record", False)
             and getattr(s, "is_verified_sale", False)
             and getattr(s, "settlement_status", "") == "SETTLED"
         ]

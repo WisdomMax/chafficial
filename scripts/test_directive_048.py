@@ -307,6 +307,7 @@ def test_05_ground_truth_reward_and_anti_duplication():
             settlement_status="SETTLED",   # 정산 완료!
             is_demo=False,                 # 실전 거래!
             is_verified_sale=True,
+            is_test_record=True,          # 테스트용 레코드 격리
             attribution_type="AI_VIDEO",   # 기여도 보너스 대상
         )
         db.add(settled_real_tx)
@@ -435,6 +436,18 @@ def test_09_truth_in_advertising_script():
     assert "사고이력 직접 검증" not in script, f"미검증 차량 대본에 허위 '사고이력 직접 검증' 문구가 포함됨: {script}"
     assert "완전 무사고" not in script, f"미검증 차량 대본에 허위 '완전 무사고' 문구가 포함됨: {script}"
     assert "성능점검 진행 중" in script, f"미검증 차량 대본에 정직한 '성능점검 진행 중' 안내 문구가 누락됨: {script}"
+
+    # 테스트 후 원래 소유 구분 복원 (격리 보존)
+    from chaficial.platform.db import SessionLocal, Vehicle
+    db = SessionLocal()
+    try:
+        v_entity = db.query(Vehicle).filter(Vehicle.id == target_v["id"]).first()
+        if v_entity:
+            v_entity.ownership_type = target_v.get("ownership_type", "MARKET_OBSERVED")
+            db.commit()
+    finally:
+        db.close()
+
     print(f"  -> [성공] 미검증 차량 홍보 대본 정직성 확인 완료:")
     print(f"     대본 발췌: {script[:120]}...")
 

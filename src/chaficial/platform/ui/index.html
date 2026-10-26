@@ -150,6 +150,11 @@
             장한평 시장 분석
             <span class="ml-auto text-[10px] font-semibold bg-cyan-500/20 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/30">실전</span>
           </a>
+          <a href="#sourcing" onclick="switchNav('sourcing')" id="nav-sourcing" class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:bg-[#1B293E] hover:text-white">
+            <i data-lucide="radar" class="w-4 h-4 mr-3 text-amber-400"></i>
+            엔카 실매물 소싱
+            <span class="ml-auto text-[10px] font-semibold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30">P0</span>
+          </a>
           <a href="#attribution" onclick="switchNav('attribution')" id="nav-attribution" class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:bg-[#1B293E] hover:text-white">
             <i data-lucide="trending-up" class="w-4 h-4 mr-3 text-emerald-400"></i>
             마케팅·판매 성과
@@ -791,6 +796,122 @@
               </thead>
               <tbody id="marketTableBody" class="divide-y divide-slate-100">
                 <tr><td colspan="9" class="py-12 text-center text-slate-400">시장 매물을 불러오는 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- DIRECTIVE 049: 엔카 서울 실매물 자동 소싱 뷰 -->
+      <!-- ======================================================== -->
+      <section id="view-sourcing" class="space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-xl font-bold text-[#172337]">엔카 서울 실매물 자동 소싱 센터</h2>
+              <span class="text-xs font-semibold bg-amber-500/20 text-amber-700 px-2 py-0.5 rounded border border-amber-500/30">장한평 우선 선별 P0</span>
+            </div>
+            <p class="text-xs text-[#64748B]">엔카 공식 모바일 공개 검색 채널을 통해 서울 전역 매물을 자동 수집하고 장한평 소재지를 정밀 선별합니다.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-slate-500 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200">
+              <i data-lucide="shield" class="w-3.5 h-3.5 inline text-emerald-600 mr-1"></i>
+              출처: <b class="text-slate-800">엔카 공식 채널</b>
+            </span>
+            <button onclick="runEncarSourcing()" id="btnRunSourcing" class="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#247D7C] hover:bg-[#1f6b6a] rounded-lg shadow-sm flex items-center transition-all">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 mr-1.5" id="sourcingSpinIcon"></i>실매물 즉시 수집
+            </button>
+          </div>
+        </div>
+
+        <!-- 5대 KPI 카드 -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+          <div class="bg-white border border-[#D8E2EA] rounded-xl p-4 shadow-sm">
+            <div class="text-xs text-[#64748B] font-medium">서울 수집 매물</div>
+            <div class="text-2xl font-bold text-[#172337] mt-1" id="sourcingTotalCountDisplay">-</div>
+            <div class="text-[11px] text-slate-400 mt-1">시장 관측(MARKET_OBSERVED)</div>
+          </div>
+          <div class="bg-white border border-[#D8E2EA] rounded-xl p-4 shadow-sm border-l-4 border-l-emerald-500">
+            <div class="text-xs text-emerald-700 font-semibold flex items-center">
+              <i data-lucide="map-pin" class="w-3 h-3 mr-1"></i>장한평 확정
+            </div>
+            <div class="text-2xl font-bold text-emerald-700 mt-1" id="sourcingConfirmedCountDisplay">-</div>
+            <div class="text-[11px] text-slate-400 mt-1">매매단지·전시장 확인</div>
+          </div>
+          <div class="bg-white border border-[#D8E2EA] rounded-xl p-4 shadow-sm border-l-4 border-l-cyan-500">
+            <div class="text-xs text-cyan-700 font-semibold flex items-center">
+              <i data-lucide="compass" class="w-3 h-3 mr-1"></i>장한평 후보
+            </div>
+            <div class="text-2xl font-bold text-cyan-700 mt-1" id="sourcingCandidateCountDisplay">-</div>
+            <div class="text-[11px] text-slate-400 mt-1">동대문·성동구 인접 상사</div>
+          </div>
+          <div class="bg-white border border-[#D8E2EA] rounded-xl p-4 shadow-sm">
+            <div class="text-xs text-blue-600 font-semibold">24시간 신규 매물</div>
+            <div class="text-2xl font-bold text-blue-700 mt-1" id="sourcingNewCountDisplay">-</div>
+            <div class="text-[11px] text-slate-400 mt-1">오늘 신규 유입</div>
+          </div>
+          <div class="bg-white border border-[#D8E2EA] rounded-xl p-4 shadow-sm border-l-4 border-l-purple-500">
+            <div class="text-xs text-purple-700 font-semibold flex items-center">
+              <i data-lucide="trending-down" class="w-3 h-3 mr-1"></i>가격 인하 매물
+            </div>
+            <div class="text-2xl font-bold text-purple-700 mt-1" id="sourcingPriceDropCountDisplay">-</div>
+            <div class="text-[11px] text-slate-400 mt-1">최초 관측 대비 인하</div>
+          </div>
+        </div>
+
+        <!-- 필터 및 검색 컨트롤 바 -->
+        <div class="bg-white border border-[#D8E2EA] rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-semibold text-slate-600">지역 선별:</span>
+            <button onclick="setSourcingFilter('ALL')" id="filter-btn-ALL" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-[#1B293E] text-white">전체 서울</button>
+            <button onclick="setSourcingFilter('JANGANPYEONG_ALL')" id="filter-btn-JANGANPYEONG_ALL" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">장한평 중심(확정+후보)</button>
+            <button onclick="setSourcingFilter('JANGANPYEONG_CONFIRMED')" id="filter-btn-JANGANPYEONG_CONFIRMED" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">장한평 확정만</button>
+            <button onclick="setSourcingFilter('SEOUL_OTHER')" id="filter-btn-SEOUL_OTHER" class="px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">기타 서울 단지</button>
+
+            <label class="ml-2 flex items-center space-x-1.5 text-xs text-slate-600 cursor-pointer">
+              <input type="checkbox" id="chkPriceDropOnly" onchange="applySourcingFilters()" class="rounded border-slate-300 text-[#247D7C] focus:ring-[#247D7C]">
+              <span>가격 인하 매물만</span>
+            </label>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <div class="relative w-64">
+              <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400"></i>
+              <input type="text" id="sourcingSearchInput" onkeyup="if(event.key==='Enter') applySourcingFilters()" placeholder="모델명, 번호판, 상사명..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#247D7C]">
+            </div>
+            <button onclick="applySourcingFilters()" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg">검색</button>
+          </div>
+        </div>
+
+        <!-- 실매물 테이블 -->
+        <div class="bg-white border border-[#D8E2EA] rounded-xl shadow-sm overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-[#D8E2EA] flex items-center justify-between bg-slate-50">
+            <div class="text-xs font-bold text-[#172337] flex items-center">
+              <i data-lucide="layers" class="w-4 h-4 mr-1.5 text-[#247D7C]"></i>
+              엔카 수집 실매물 원장 목록 (<span id="sourcingTableCount">0</span>건)
+            </div>
+            <div class="text-[11px] text-slate-400">
+              * 원본 엔카 웹페이지에서 실매물 여부를 직접 대조 검증할 수 있습니다.
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-600 uppercase tracking-wider text-[11px] border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-3">사진</th>
+                  <th class="py-3 px-3">매물번호</th>
+                  <th class="py-3 px-4">차량 모델 / 등록번호</th>
+                  <th class="py-3 px-3">연식 / 주행</th>
+                  <th class="py-3 px-4 text-right">광고가격</th>
+                  <th class="py-3 px-4">지역 및 장한평 선별 판정</th>
+                  <th class="py-3 px-4">판매 상사 / 위치</th>
+                  <th class="py-3 px-3">최근 관측</th>
+                  <th class="py-3 px-3 text-center">엔카 원본</th>
+                </tr>
+              </thead>
+              <tbody id="sourcingTableBody" class="divide-y divide-slate-100">
+                <tr><td colspan="9" class="py-12 text-center text-slate-400">엔카 실매물을 불러오는 중...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1698,7 +1819,7 @@
     // ----------------------------------------------------
     // 3. 네비게이션 탭 전환 (DIRECTIVE 046-A / 047 확장)
     // ----------------------------------------------------
-    const NAV_ITEMS = ['dashboard', 'vehicles', 'customers', 'transactions', 'documents', 'media', 'market', 'attribution', 'rl', 'settings'];
+    const NAV_ITEMS = ['dashboard', 'vehicles', 'customers', 'transactions', 'documents', 'media', 'market', 'sourcing', 'attribution', 'rl', 'settings'];
     const TITLE_MAP = {
       dashboard: { title: '대시보드', desc: '차마트 본사 및 거점의 실시간 운영 현황을 통합 관리합니다.' },
       vehicles: { title: '차량 관리', desc: '차마트 보유 매물의 가격, 재고 상태, 거점 정보를 관리합니다.' },
@@ -1707,6 +1828,7 @@
       documents: { title: 'AI 서류 인식', desc: '자동차양도증명서 및 등록증 사진을 업로드하여 무결성을 검증합니다.' },
       media: { title: 'AI 영상 스튜디오', desc: '차마트 실매물을 유튜브 쇼츠, 릴스용 고효율 홍보 영상으로 제작합니다.' },
       market: { title: '장한평 시장 분석', desc: '장한평 및 전국 주요 플랫폼(엔카·KB차차차) 매물을 통합 관측하고 가성비 기회 매물을 발굴합니다.' },
+      sourcing: { title: '엔카 실매물 소싱', desc: '엔카 서울 공개 매물을 자동 수집하고 장한평 단지 확인 및 가격 변동 이력을 추적합니다.' },
       attribution: { title: '마케팅 성과 및 정산', desc: 'AI 영상 콘텐츠의 유입 기여도, 실제 판매 계약 성과 및 공헌이익을 정산 추적합니다.' },
       rl: { title: '강화학습(RL) 연구원장', desc: '미래 정보 누출이 차단된 오프라인 의사결정 로그와 모델 학습 적합성 진단을 제공합니다.' },
       settings: { title: '조직 및 설정', desc: '차마트 본사 및 거점 지점, 보안 정책, 데이터베이스 격리 상태를 확인합니다.' }
@@ -1734,6 +1856,7 @@
       }
 
       if (targetId === 'market') loadMarketData();
+      if (targetId === 'sourcing') loadSourcingData();
       if (targetId === 'attribution') loadAttributionData();
       if (targetId === 'rl') loadRLData();
 
@@ -1900,6 +2023,10 @@
       }
     }
 
+    function getCarPlaceholderHtml(sizeClass = "w-10 h-10", iconSize = "w-5 h-5") {
+      return `<div class="${sizeClass} rounded-lg bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400 shadow-2xs shrink-0" title="차량 사진 없음"><svg class="${iconSize} text-slate-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg></div>`;
+    }
+
     function renderVehicleTable() {
       const tbody = document.getElementById('vehicleTableBody');
       let filtered = allVehicles.filter(v => {
@@ -1935,8 +2062,8 @@
         const formattedMileage = v.mileage ? `${Number(v.mileage).toLocaleString('ko-KR')}km` : '-';
 
         const thumbImg = v.primary_photo_url 
-          ? `<img src="${v.primary_photo_url}" class="w-10 h-10 object-cover rounded-lg border border-slate-200" alt="사진" />`
-          : `<div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xs font-bold border border-slate-200">차</div>`;
+          ? `<img src="${v.primary_photo_url}" class="w-10 h-10 object-cover rounded-lg border border-slate-200" alt="차량" onerror="this.onerror=null; this.parentElement.innerHTML=getCarPlaceholderHtml();" />`
+          : getCarPlaceholderHtml();
 
         return `
           <tr ondblclick="openVehicleDetailModal('${v.id}')" class="hover:bg-teal-50/40 cursor-pointer transition-colors group">
@@ -1991,6 +2118,10 @@
 
         const photoEl = document.getElementById('vd_primary_photo');
         const fallbackEl = document.getElementById('vd_primary_photo_fallback');
+        photoEl.onerror = () => {
+          photoEl.classList.add('hidden');
+          fallbackEl.classList.remove('hidden');
+        };
         if (d.primary_photo_url) {
           photoEl.src = d.primary_photo_url;
           photoEl.classList.remove('hidden');
@@ -2173,8 +2304,8 @@
 
       grid.innerHTML = photos.map(p => `
         <div class="relative group bg-slate-100 rounded-xl overflow-hidden border border-[#D8E2EA] flex flex-col justify-between">
-          <div class="relative aspect-4/3 bg-slate-200 overflow-hidden">
-            <img src="${p.photo_url}" class="w-full h-full object-cover" alt="사진" />
+          <div class="relative aspect-4/3 bg-slate-200 overflow-hidden flex items-center justify-center">
+            <img src="${p.photo_url}" class="w-full h-full object-cover" alt="사진" onerror="this.onerror=null; this.outerHTML=getCarPlaceholderHtml('w-full h-full', 'w-8 h-8');" />
             ${p.is_primary ? '<span class="absolute top-2 left-2 bg-[#101A2A] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">대표사진</span>' : ''}
             ${p.allow_video_use ? '<span class="absolute top-2 right-2 bg-teal-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">영상사용</span>' : ''}
           </div>
@@ -3001,6 +3132,178 @@
       } else if (type === 'HIGH_OPP') {
         document.getElementById('mfilter-opp').className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#247D7C] text-white";
         renderMarketTable(allMarketListings.filter(l => l.opportunity_score >= 80.0));
+      }
+    }
+
+    // ====================================================
+    // DIRECTIVE 049: 엔카 실매물 자동 소싱 & 장한평 선별 로직
+    // ====================================================
+    let allSourcingListings = [];
+    let currentSourcingFilter = 'ALL';
+
+    async function loadSourcingData() {
+      try {
+        // 1. 소싱 5대 KPI 통계 요약
+        const sumRes = await fetch('/api/market/sourcing/summary');
+        if (sumRes.ok) {
+          const s = await sumRes.json();
+          document.getElementById('sourcingTotalCountDisplay').innerText = `${s.total_encar_seoul_count}건`;
+          document.getElementById('sourcingConfirmedCountDisplay').innerText = `${s.janganpyeong_confirmed_count}건`;
+          document.getElementById('sourcingCandidateCountDisplay').innerText = `${s.janganpyeong_candidate_count}건`;
+          document.getElementById('sourcingNewCountDisplay').innerText = `${s.new_registered_today_count}건`;
+          document.getElementById('sourcingPriceDropCountDisplay').innerText = `${s.price_dropped_count}건`;
+        }
+
+        // 2. 실매물 목록 조회
+        const listRes = await fetch('/api/market/sourcing/listings?limit=100');
+        if (listRes.ok) {
+          allSourcingListings = await listRes.json();
+          applySourcingFilters();
+        }
+      } catch (e) {
+        console.error('소싱 데이터 로드 오류', e);
+      }
+    }
+
+    function setSourcingFilter(filterType) {
+      currentSourcingFilter = filterType;
+      ['ALL', 'JANGANPYEONG_ALL', 'JANGANPYEONG_CONFIRMED', 'SEOUL_OTHER'].forEach(k => {
+        const btn = document.getElementById(`filter-btn-${k}`);
+        if (btn) {
+          if (k === filterType) {
+            btn.className = "px-2.5 py-1 text-xs rounded-lg font-medium bg-[#1B293E] text-white";
+          } else {
+            btn.className = "px-2.5 py-1 text-xs rounded-lg font-medium bg-slate-100 text-slate-600 hover:bg-slate-200";
+          }
+        }
+      });
+      applySourcingFilters();
+    }
+
+    function applySourcingFilters() {
+      const searchKw = (document.getElementById('sourcingSearchInput')?.value || '').toLowerCase().trim();
+      const priceDropOnly = document.getElementById('chkPriceDropOnly')?.checked || false;
+
+      let filtered = allSourcingListings.filter(item => {
+        // 지역 필터
+        if (currentSourcingFilter === 'JANGANPYEONG_ALL') {
+          if (!['JANGANPYEONG_CONFIRMED', 'JANGANPYEONG_CANDIDATE'].includes(item.location_category)) return false;
+        } else if (currentSourcingFilter === 'JANGANPYEONG_CONFIRMED') {
+          if (item.location_category !== 'JANGANPYEONG_CONFIRMED') return false;
+        } else if (currentSourcingFilter === 'SEOUL_OTHER') {
+          if (item.location_category !== 'SEOUL_OTHER') return false;
+        }
+
+        // 가격 인하 필터
+        if (priceDropOnly && (item.price_drop_amount || 0) <= 0) {
+          return false;
+        }
+
+        // 키워드 검색
+        if (searchKw) {
+          const targetStr = `${item.model_name} ${item.plate_number} ${item.raw_seller_name || ''} ${item.raw_seller_location || ''}`.toLowerCase();
+          if (!targetStr.includes(searchKw)) return false;
+        }
+
+        return true;
+      });
+
+      renderSourcingTable(filtered);
+    }
+
+    function renderSourcingTable(listings) {
+      const tbody = document.getElementById('sourcingTableBody');
+      const countEl = document.getElementById('sourcingTableCount');
+      if (countEl) countEl.innerText = listings.length;
+      if (!tbody) return;
+
+      if (listings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="py-12 text-center text-slate-400">조건에 일치하는 엔카 실매물이 없습니다.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = listings.map(item => {
+        // 지역 판정 배지
+        let catBadge = '';
+        if (item.location_category === 'JANGANPYEONG_CONFIRMED') {
+          catBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">장한평 확정</span>';
+        } else if (item.location_category === 'JANGANPYEONG_CANDIDATE') {
+          catBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-300">장한평 후보</span>';
+        } else if (item.location_category === 'SEOUL_OTHER') {
+          catBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">기타 서울</span>';
+        } else {
+          catBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-500">서울 미지정</span>';
+        }
+
+        // 가격 및 인하 배지
+        let priceHtml = `<div class="font-bold text-slate-900">${(item.advertised_price || 0).toLocaleString()}만원</div>`;
+        if (item.price_drop_amount > 0) {
+          priceHtml += `<div class="text-[10px] font-semibold text-purple-600">▼ ${item.price_drop_amount}만 인하</div>`;
+        }
+
+        const photoImg = item.primary_photo_url
+          ? `<img src="${item.primary_photo_url}" class="w-12 h-9 object-cover rounded border border-slate-200" onerror="this.src='/uploads/vehicles/demo_car_front.jpg'">`
+          : '<div class="w-12 h-9 bg-slate-100 rounded flex items-center justify-center text-[9px] text-slate-400">사진없음</div>';
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-3">${photoImg}</td>
+            <td class="py-2.5 px-3">
+              <span class="font-mono text-[11px] text-slate-600 font-semibold">${item.listing_id}</span>
+            </td>
+            <td class="py-2.5 px-4">
+              <div class="font-bold text-slate-800 text-xs">${item.model_name}</div>
+              <div class="text-[11px] font-mono text-slate-500">${item.plate_number}</div>
+            </td>
+            <td class="py-2.5 px-3 text-slate-600">
+              <div>${item.year}년식</div>
+              <div class="text-[11px] text-slate-400">${(item.mileage || 0).toLocaleString()}km</div>
+            </td>
+            <td class="py-2.5 px-4 text-right">
+              ${priceHtml}
+            </td>
+            <td class="py-2.5 px-4">
+              <div class="flex items-center space-x-1">${catBadge}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5 truncate max-w-[180px]" title="${item.identification_reason || ''}">${item.identification_reason || '-'}</div>
+            </td>
+            <td class="py-2.5 px-4 text-slate-600">
+              <div class="font-medium text-xs text-slate-800">${item.raw_seller_name || '상사 미기재'}</div>
+              <div class="text-[11px] text-slate-400">${item.raw_seller_location || '위치 미기재'}</div>
+            </td>
+            <td class="py-2.5 px-3 text-[11px] text-slate-500 font-mono">
+              ${item.last_observed_at || '-'}
+            </td>
+            <td class="py-2.5 px-3 text-center">
+              <a href="${item.source_url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-2 py-1 text-[11px] font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded border border-red-200 transition-colors">
+                <i data-lucide="external-link" class="w-3 h-3 mr-1"></i>엔카
+              </a>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    async function runEncarSourcing() {
+      const btn = document.getElementById('btnRunSourcing');
+      const icon = document.getElementById('sourcingSpinIcon');
+      if (btn) btn.disabled = true;
+      if (icon) icon.classList.add('animate-spin');
+
+      try {
+        const res = await fetch('/api/market/sourcing/encar/run?limit=10&page=1', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          alert(`엔카 서울 실매물 수집 완료!\n- 수집 매물: ${data.total_fetched}건\n- 신규 등록: ${data.new_registered_count}건\n- 가격 인하: ${data.price_drop_count}건\n- 장한평 확인: ${data.janganpyeong_confirmed_count}건`);
+          await loadSourcingData();
+        } else {
+          alert('엔카 매물 수집 중 오류가 발생했습니다.');
+        }
+      } catch (e) {
+        alert('서버 통신 실패: ' + e);
+      } finally {
+        if (btn) btn.disabled = false;
+        if (icon) icon.classList.remove('animate-spin');
       }
     }
 

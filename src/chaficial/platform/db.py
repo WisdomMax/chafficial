@@ -31,10 +31,17 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker, Session
 
-# 데이터 저장 디렉토리
+# 데이터 저장 디렉토리 및 DB 경로 (환경변수 CHAMART_DB_PATH 지원: DIRECTIVE 049 테스트 격리)
 DB_DIR = Path("data/chamart")
 DB_DIR.mkdir(parents=True, exist_ok=True)
-DEMO_DB_PATH = DB_DIR / "chamart_platform_demo.db"
+_CUSTOM_DB_PATH = os.environ.get("CHAMART_DB_PATH")
+if _CUSTOM_DB_PATH:
+    DEMO_DB_PATH = Path(_CUSTOM_DB_PATH)
+    if not DEMO_DB_PATH.parent.exists():
+        DEMO_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+else:
+    DEMO_DB_PATH = DB_DIR / "chamart_platform_demo.db"
+
 DEMO_DB_URL = f"sqlite:///{DEMO_DB_PATH.absolute()}"
 
 
@@ -110,6 +117,8 @@ class Vehicle(Base):
     primary_photo_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
     video_status: Mapped[str] = mapped_column(String(30), default="NONE")
     # 영상 상태: NONE, REQUESTED, IN_PRODUCTION, COMPLETED, PUBLISHED
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
     is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
     timeline_json: Mapped[str] = mapped_column(Text, default="[]")  # 상태 변경 이력 리스트 JSON
@@ -166,6 +175,17 @@ class VehicleListing(Base):
     market_avg_price: Mapped[int] = mapped_column(Integer, default=0)   # 동일 스펙 시장 평균가 (만원)
     opportunity_score: Mapped[float] = mapped_column(Float, default=0.0) # 0.0 ~ 100.0 기회·가성비 점수
     observation_notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # DIRECTIVE 049 엔카 실매물 자동 소싱 및 가격 추적 필드
+    initial_price: Mapped[int] = mapped_column(Integer, default=0)       # 최초 관측 가격 (만원)
+    price_history_json: Mapped[str] = mapped_column(Text, default="[]")  # 가격 변경 이력 스냅샷 ([{"observed_at": "...", "price": 2500}, ...])
+    location_category: Mapped[str] = mapped_column(String(50), default="LOCATION_UNKNOWN") # JANGANPYEONG_CONFIRMED, JANGANPYEONG_CANDIDATE, SEOUL_OTHER, SEOUL_UNSPECIFIED, LOCATION_UNKNOWN
+    identification_reason: Mapped[str | None] = mapped_column(String(255), nullable=True) # 판정 근거
+    raw_seller_location: Mapped[str | None] = mapped_column(String(255), nullable=True)   # 원본 판매자/단지 위치
+    raw_seller_name: Mapped[str | None] = mapped_column(String(100), nullable=True)       # 원본 판매자/상사명
+    source_confidence: Mapped[float] = mapped_column(Float, default=0.90)                 # 신뢰도 점수 (0.0~1.0)
+    ingested_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow) # 최초 DB 적재 시각
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False)                         # 데모 매물 여부 (실제 소싱 매물은 False)
 
     vehicle = relationship("Vehicle", back_populates="listings")
 
@@ -270,7 +290,8 @@ class Transaction(Base):
     operating_cost: Mapped[int] = mapped_column(Integer, default=0)           # 콘텐츠 제작/운영비 (만원)
     attribution_type: Mapped[str] = mapped_column(String(30), default="ORGANIC_WALKIN") # AI_VIDEO, ORGANIC_WALKIN, DEALER_DIRECT
     media_project_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
-    is_verified_sale: Mapped[bool] = mapped_column(Boolean, default=True)     # 검증된 실제 계약 여부
+    is_verified_sale: Mapped[bool] = mapped_column(Boolean, default=False)    # DIRECTIVE 049: 검증된 실제 계약 여부 (기본값 False)
+    is_test_record: Mapped[bool] = mapped_column(Boolean, default=False)      # DIRECTIVE 049: 테스트 가상 거래 격리 플래그
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
     vehicle = relationship("Vehicle", back_populates="transactions")
@@ -410,7 +431,7 @@ def migrate_db_schema() -> None:
             if col_name not in existing_cols:
                 cursor.execute(f"ALTER TABLE vehicles ADD COLUMN {col_name} {col_type}")
 
-        # 2. vehicle_listings 테이블 마이그레이션 (DIRECTIVE 047 장한평 시장 분석)
+        # 2. vehicle_listings 테이블 마이그레이션 (DIRECTIVE 047 / DIRECTIVE 049 엔카 소싱)
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vehicle_listings'")
         if cursor.fetchone():
             cursor.execute("PRAGMA table_info(vehicle_listings)")
@@ -423,12 +444,21 @@ def migrate_db_schema() -> None:
                 ("market_avg_price", "INTEGER DEFAULT 0"),
                 ("opportunity_score", "FLOAT DEFAULT 0.0"),
                 ("observation_notes", "VARCHAR(255)"),
+                ("initial_price", "INTEGER DEFAULT 0"),
+                ("price_history_json", "TEXT DEFAULT '[]'"),
+                ("location_category", "VARCHAR(50) DEFAULT 'LOCATION_UNKNOWN'"),
+                ("identification_reason", "VARCHAR(255)"),
+                ("raw_seller_location", "VARCHAR(255)"),
+                ("raw_seller_name", "VARCHAR(100)"),
+                ("source_confidence", "FLOAT DEFAULT 0.90"),
+                ("ingested_at", "DATETIME"),
+                ("is_demo", "BOOLEAN DEFAULT 0"),
             ]
             for col_name, col_type in listing_columns:
                 if col_name not in listing_cols:
                     cursor.execute(f"ALTER TABLE vehicle_listings ADD COLUMN {col_name} {col_type}")
 
-        # 3. transactions 테이블 마이그레이션 (DIRECTIVE 047 정산 및 공헌이익)
+        # 3. transactions 테이블 마이그레이션 (DIRECTIVE 047 정산 및 DIRECTIVE 049 테스트 격리)
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'")
         if cursor.fetchone():
             cursor.execute("PRAGMA table_info(transactions)")
@@ -439,11 +469,20 @@ def migrate_db_schema() -> None:
                 ("operating_cost", "INTEGER DEFAULT 0"),
                 ("attribution_type", "VARCHAR(30) DEFAULT 'ORGANIC_WALKIN'"),
                 ("media_project_id", "VARCHAR(36)"),
-                ("is_verified_sale", "BOOLEAN DEFAULT 1"),
+                ("is_verified_sale", "BOOLEAN DEFAULT 0"),
+                ("is_test_record", "BOOLEAN DEFAULT 0"),
             ]
             for col_name, col_type in tx_columns:
                 if col_name not in tx_cols:
                     cursor.execute(f"ALTER TABLE transactions ADD COLUMN {col_name} {col_type}")
+
+        # 4. vehicles 테이블 마이그레이션 (DIRECTIVE 049 is_demo)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vehicles'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(vehicles)")
+            v_cols = {row[1] for row in cursor.fetchall()}
+            if "is_demo" not in v_cols:
+                cursor.execute("ALTER TABLE vehicles ADD COLUMN is_demo BOOLEAN DEFAULT 0")
 
         # 4. consultations 테이블 마이그레이션 (DIRECTIVE 047 유입 경로 및 중복 문의 식별)
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='consultations'")
@@ -540,19 +579,12 @@ def init_demo_db() -> None:
             dealer_woori = session.query(Dealer).filter(Dealer.dealership_name.contains("우리")).first()
             dealer_independent = session.query(Dealer).filter(Dealer.dealership_name.contains("제일")).first()
 
-        # 3. 기존 차량들 마스터 데이터 보강 및 4대 구분 지정
+        # 3. 기존 차량들 마스터 데이터 보강 (미확인 정보 자동 주입 차단: DIRECTIVE 049)
         vehicles = session.query(Vehicle).all()
         for v in vehicles:
             if not v.ownership_type:
                 v.ownership_type = "CHAMART_OWNED"
-            if not v.vin:
-                v.vin = f"KNAGE41BBP{abs(hash(v.plate_number)) % 1000000:07d}"
-            if not v.displacement_cc:
-                v.displacement_cc = 1999
-            if not v.drive_type:
-                v.drive_type = "2WD"
-            if not v.options_json or v.options_json == "[]":
-                v.options_json = json.dumps(["스마트 크루즈 컨트롤", "통풍시트", "열선 스티어링 휠", "어라운드 뷰", "헤드업 디스플레이"], ensure_ascii=False)
+            # DIRECTIVE 049: 미확인 VIN, 배기량, 구동방식, 옵션 등을 가상으로 자동 생성하지 않음 (NULL / 빈값 엄격 보존)
             if not v.accident_history_json or v.accident_history_json == "{}":
                 # DIRECTIVE 048 P0-1: 증빙 없는 차량의 임의 무사고 위조 원천 방지
                 v.accident_history_json = json.dumps({
@@ -666,6 +698,7 @@ def init_demo_db() -> None:
                 listing_url="https://www.encar.com/dc/dc_cardetailview.do?carid=39821092",
                 advertised_price=2950,
                 listing_status="ACTIVE",
+                is_demo=True,
             )
             # 동일 차량 KB차차차 매물도 연계 (다중 플랫폼 관측)
             listing2 = VehicleListing(
@@ -682,6 +715,7 @@ def init_demo_db() -> None:
                 market_avg_price=3150,
                 opportunity_score=87.5,
                 observation_notes="장한평 단지 내 KB차차차 실매물 확인",
+                is_demo=True,
             )
             session.add_all([listing1, listing2])
 
@@ -726,8 +760,14 @@ def init_demo_db() -> None:
                 market_avg_price=3150,
                 opportunity_score=74.0,
                 observation_notes="수원 도이치오토월드 매물 (전국 시세 기준점)",
+                is_demo=True,
             )
             session.add(listing_sw)
+
+        # 기존 데모 리스팅에 is_demo=True 보정
+        demo_listing_ids = ["encar_39821092", "kb_88291039", "encar_sw_102938"]
+        for dl in session.query(VehicleListing).filter(VehicleListing.listing_id.in_(demo_listing_ids)).all():
+            dl.is_demo = True
 
         # 4-2. 기존 관측 리스팅의 DIRECTIVE 047 기회 점수 및 시세 보정 (Backfill)
         existing_listings = session.query(VehicleListing).all()
@@ -854,12 +894,16 @@ def init_demo_db() -> None:
             )
             session.add(rights_spt)
 
-        # 8. 거래 기여도 및 상담 유입 경로 보강 (DIRECTIVE 047 / DIRECTIVE 048)
-        # 모든 기존 데모 거래에 is_demo=True 명시
+        # 8. 거래 기여도 및 상담 유입 경로 보강 (DIRECTIVE 047 / DIRECTIVE 048 / DIRECTIVE 049)
+        # 모든 기존 데모 거래에 is_demo=True 명시 및 테스트 가상 거래 격리
         all_txs = session.query(Transaction).all()
         for t in all_txs:
             if t.is_demo is None:
                 t.is_demo = True
+            # DIRECTIVE 049: 테스트에서 생성된 가상 거래 격리 (실제 매출 오염 방지)
+            if t.party_name in ["실구매자", "계약진행고객", "실거래고객", "데모고객"]:
+                t.is_test_record = True
+                t.is_verified_sale = False
 
         tx_sample = session.query(Transaction).filter(Transaction.transaction_type == "SALE").first()
         if tx_sample:

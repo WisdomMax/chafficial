@@ -65,6 +65,7 @@ from chaficial.platform.search import (
     universal_search,
 )
 from chaficial.platform.service import PlatformService
+from chaficial.platform.sourcing.service import SourcingService
 
 # 앱 초기화
 app = FastAPI(
@@ -775,6 +776,51 @@ def get_marketing_performance() -> dict[str, Any]:
             {"title": "첫차 아반떼 CN7 인스퍼레이션", "views": 6100, "inquiries": 18},
         ],
     }
+
+
+# ----------------------------------------------------
+# 8-1. DIRECTIVE 049: 엔카 서울 실매물 자동 소싱 및 장한평 선별 엔드포인트
+# ----------------------------------------------------
+@app.post("/api/market/sourcing/encar/run")
+def run_encar_sourcing(
+    limit: int = 20,
+    page: int = 1,
+    fetch_detail: bool = True,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """엔카 서울 실매물 자동 수집 및 동기화 실행 (DIRECTIVE 049)."""
+    return SourcingService.sync_encar_seoul(db, limit=limit, page=page, fetch_detail=fetch_detail)
+
+
+@app.get("/api/market/sourcing/summary")
+def get_sourcing_summary(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """엔카 서울 매물 소싱 관리 5대 KPI 통계 요약 (DIRECTIVE 049)."""
+    return SourcingService.get_sourcing_summary(db)
+
+
+@app.get("/api/market/sourcing/listings")
+def list_sourcing_listings(
+    location_filter: Optional[str] = None,
+    price_drop_only: bool = False,
+    search: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> list[dict[str, Any]]:
+    """소싱된 엔카 실매물 목록 조회 및 필터링 (DIRECTIVE 049)."""
+    return SourcingService.list_sourcing_listings(
+        db,
+        location_filter=location_filter,
+        price_drop_only=price_drop_only,
+        search=search,
+        limit=limit,
+        offset=offset,
+    )
 
 
 # ----------------------------------------------------
