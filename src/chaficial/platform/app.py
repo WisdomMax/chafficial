@@ -66,6 +66,10 @@ from chaficial.platform.search import (
 )
 from chaficial.platform.service import PlatformService
 from chaficial.platform.sourcing.service import SourcingService
+from chaficial.platform.catalog.hierarchy import VehicleCatalogService
+from chaficial.platform.catalog.options import StandardOptionCatalog
+from chaficial.platform.master.service import MasterVehicleService
+from chaficial.platform.publishing.validator import PublishingReadinessValidator
 
 # 앱 초기화
 app = FastAPI(
@@ -963,6 +967,134 @@ def get_rl_readiness(
 ) -> dict[str, Any]:
     """강화학습 데이터 파이프라인 준비도 및 모델 도입 적합성 감사 (DIRECTIVE 047)."""
     return PlatformService.get_rl_readiness_audit(db)
+
+
+# ====================================================
+# 10. DIRECTIVE 050: 차량 마스터 등록 및 다중 플랫폼 연동 API
+# ====================================================
+@app.get("/api/vehicles/catalog/hierarchy")
+def get_catalog_hierarchy(_auth: dict = Depends(require_auth)) -> dict[str, Any]:
+    """제조사 -> 모델 -> 세대 -> 트림 계층 카탈로그 트리 (DIRECTIVE 050 3항)."""
+    return VehicleCatalogService.get_full_catalog_tree()
+
+
+@app.get("/api/vehicles/catalog/options")
+def get_standard_options(
+    category: Optional[str] = None,
+    _auth: dict = Depends(require_auth),
+) -> list[dict[str, Any]]:
+    """표준 옵션 마스터 목록 및 플랫폼 매핑 코드 (DIRECTIVE 050 1항)."""
+    return StandardOptionCatalog.list_options(category=category)
+
+
+@app.post("/api/vehicles/master/create")
+def create_vehicle_master(
+    data: dict[str, Any],
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """8대 영역을 포괄하는 신규 차량 마스터 통합 등록 (DIRECTIVE 050 1항)."""
+    try:
+        return MasterVehicleService.create_vehicle_master(db, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/vehicles/{vehicle_id}/master")
+def get_vehicle_master(
+    vehicle_id: str,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """8대 영역 표준 구조로 차량 마스터 데이터 통합 조회 (DIRECTIVE 050 1항)."""
+    try:
+        return MasterVehicleService.get_vehicle_master(db, vehicle_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.put("/api/vehicles/{vehicle_id}/master")
+def update_vehicle_master(
+    vehicle_id: str,
+    data: dict[str, Any],
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """차량 마스터 정보 수정 및 플랫폼 게시 준비 데이터 자동 동기화 (DIRECTIVE 050 6항)."""
+    try:
+        return MasterVehicleService.update_vehicle_master(db, vehicle_id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/vehicles/{vehicle_id}/publishing-readiness")
+def get_publishing_readiness(
+    vehicle_id: str,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """3대 플랫폼별(ENCAR, KB, CAR_MANAGER) 등록 준비도 종합 검사 (DIRECTIVE 050 4항)."""
+    vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail=f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
+    validator = PublishingReadinessValidator()
+    return validator.evaluate_vehicle_readiness(db, vehicle, sync_db=True)
+
+
+@app.post("/api/vehicles/{vehicle_id}/publishing/preview/{platform}")
+def get_publishing_preview(
+    vehicle_id: str,
+    platform: str,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """특정 플랫폼 게시용 JSON 페이로드 미리보기 및 내보내기 (DIRECTIVE 050 5항)."""
+    platform_upper = platform.upper().strip()
+    validator = PublishingReadinessValidator()
+    if platform_upper not in validator.mappers:
+        raise HTTPException(
+            status_code=400,
+            detail=f"지원하지 않는 플랫폼입니다: '{platform}'. 허용: {list(validator.mappers.keys())}",
+        )
+    vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail=f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
+
+    mapper = validator.mappers[platform_upper]
+    rep = mapper.validate_readiness(vehicle)
+    payload = mapper.build_export_payload(vehicle)
+
+    return {
+        "vehicle_id": vehicle.id,
+        "platform": platform_upper,
+        "is_ready": rep.is_ready,
+        "missing_fields": rep.missing_fields,
+        "warnings": rep.warnings,
+        "errors": rep.errors,
+        "mapped_payload": payload,
+        "exported_at": datetime.datetime.utcnow().isoformat(),
+    }
+
+
+@app.post("/api/vehicles/{vehicle_id}/publishing/transition")
+def transition_publishing_status(
+    vehicle_id: str,
+    req: dict[str, Any],
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """차량 플랫폼 게시 라이프사이클 상태 전이 (DIRECTIVE 050 5항)."""
+    vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail=f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
+
+    target_status = req.get("target_status", "")
+    notes = req.get("notes", "")
+    validator = PublishingReadinessValidator()
+    try:
+        return validator.transition_publishing_status(db, vehicle, target_status, notes=notes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ----------------------------------------------------

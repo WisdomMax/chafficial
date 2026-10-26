@@ -216,20 +216,21 @@ def test_07_market_observed_unauthorized_video_guard():
 
 
 def test_08_marketing_attribution_summary():
-    """TEST 8: AI 영상 판매 기여도, 자연 판매 구분 및 공헌이익/ROI 검증."""
+    """TEST 8: AI 영상 판매 기여도, 자연 판매 구분 및 공헌이익/ROI 검증 (048/049 격리 규격)."""
     print_step("TEST 8: AI 영상 판매 기여도 vs 자연 판매 구분 및 공헌이익/ROI 검증")
     status, attr = http_request("/api/attribution/summary")
     assert status == 200, f"성과 기여도 조회 실패: {attr}"
-    
-    assert attr.get("total_sales_count", 0) >= 1, "판매 건수 누락"
-    assert attr.get("ai_video_attributed_sales", 0) >= 1, "AI 영상 기여 판매 누락"
-    assert attr.get("total_chamart_net_profit_million_krw", 0) > 0, "차마트 순수익 누락"
-    assert attr.get("ai_video_roi_pct", 0) > 0, "AI 영상 ROI 누락"
-    
+
+    demo_sim = attr.get("demo_simulation", {})
+    assert demo_sim.get("simulation_sales_count", 0) >= 1, "데모 판매 건수 누락"
+    assert demo_sim.get("simulation_ai_sales", 0) >= 1, "데모 AI 영상 기여 판매 누락"
+    assert demo_sim.get("simulation_net_profit_million_krw", 0) > 0, "데모 순수익 누락"
+    assert demo_sim.get("simulation_roi_pct", 0) > 0, "데모 AI 영상 ROI 누락"
+
     leads = attr.get("lead_metrics", {})
     assert "total_valid_leads" in leads, "유효 리드 수 누락"
     assert "duplicate_leads_quarantined" in leads, "중복 문의 격리 수 누락"
-    print(f"  -> PASS: 총 판매 {attr['total_sales_count']}건 중 AI영상 기여 {attr['ai_video_attributed_sales']}건, 순익 {attr['total_chamart_net_profit_million_krw']}만원, ROI {attr['ai_video_roi_pct']}%, 중복격리 {leads['duplicate_leads_quarantined']}건")
+    print(f"  -> PASS: 데모 총 판매 {demo_sim['simulation_sales_count']}건 중 AI영상 기여 {demo_sim['simulation_ai_sales']}건, 순익 {demo_sim['simulation_net_profit_million_krw']}만원, ROI {demo_sim['simulation_roi_pct']}%, 중복격리 {leads['duplicate_leads_quarantined']}건")
 
 
 def test_09_vehicle_attribution_trail():

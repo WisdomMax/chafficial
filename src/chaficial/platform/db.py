@@ -118,12 +118,24 @@ class Vehicle(Base):
     video_status: Mapped[str] = mapped_column(String(30), default="NONE")
     # 영상 상태: NONE, REQUESTED, IN_PRODUCTION, COMPLETED, PUBLISHED
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
-
-    is_demo: Mapped[bool] = mapped_column(Boolean, default=True)
     timeline_json: Mapped[str] = mapped_column(Text, default="[]")  # 상태 변경 이력 리스트 JSON
+
+    # DIRECTIVE 050 확장 필드: 마스터 상세 제원 및 다중 플랫폼 연동
+    manufacturer: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 제조사 (현대, 기아 등)
+    trim: Mapped[str | None] = mapped_column(String(100), nullable=True)          # 세부 등급/트림
+    body_type: Mapped[str | None] = mapped_column(String(30), default="세단")     # 차체 유형 (세단, SUV 등)
+    recon_cost: Mapped[int] = mapped_column(Integer, default=0)                   # 상품화 비용 (만원)
+    sales_conditions: Mapped[str | None] = mapped_column(String(255), nullable=True) # 판매 조건
+    ad_description: Mapped[str | None] = mapped_column(Text, nullable=True)      # 광고 상세 설명
+    ad_highlights: Mapped[str | None] = mapped_column(Text, nullable=True)       # 특장점 요약
+    ad_notices: Mapped[str | None] = mapped_column(Text, nullable=True)          # 고지사항
+    platform_ad_copies_json: Mapped[str] = mapped_column(Text, default="{}")     # 플랫폼별 광고 문구 JSON
+    options_structured_json: Mapped[str] = mapped_column(Text, default="[]")     # 표준 옵션 코드/순정/확인상태
+    condition_detail_json: Mapped[str] = mapped_column(Text, default="{}")       # 프레임/외판/누유/침수 상세
+    publishing_status: Mapped[str] = mapped_column(String(30), default="DRAFT") # DRAFT, DATA_VERIFIED, READY_TO_PUBLISH, APPROVED, PUBLISHED, UPDATED, SOLD, UNPUBLISHED
+    platform_readiness_json: Mapped[str] = mapped_column(Text, default="{}")    # 플랫폼별 등록 준비도 검사 결과
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
-    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     branch = relationship("Branch", back_populates="vehicles")
     dealer = relationship("Dealer", back_populates="vehicles")
@@ -134,6 +146,7 @@ class Vehicle(Base):
     media_projects = relationship("MediaProject", back_populates="vehicle")
     rights_ledgers = relationship("DealerRightsLedger", back_populates="vehicle", cascade="all, delete-orphan")
     rl_decisions = relationship("RLDecisionLog", back_populates="vehicle")
+    publishing_records = relationship("PlatformPublishingRecord", back_populates="vehicle", cascade="all, delete-orphan")
 
 
 class Dealer(Base):
@@ -188,6 +201,29 @@ class VehicleListing(Base):
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False)                         # 데모 매물 여부 (실제 소싱 매물은 False)
 
     vehicle = relationship("Vehicle", back_populates="listings")
+
+
+class PlatformPublishingRecord(Base):
+    """외부 중고차 플랫폼 다중 등록 및 검증 원장 모델 (DIRECTIVE 050)."""
+    __tablename__ = "platform_publishing_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    vehicle_id: Mapped[str] = mapped_column(String(36), ForeignKey("vehicles.id"), nullable=False, index=True)
+    platform: Mapped[str] = mapped_column(String(30), nullable=False, index=True)  # ENCAR, KB_CHACHACHA, CAR_MANAGER
+    publishing_status: Mapped[str] = mapped_column(String(30), default="DRAFT")
+    # 상태: DRAFT, DATA_VERIFIED, READY_TO_PUBLISH, APPROVED, EXPORTED, PUBLISHED, ERROR, UNPUBLISHED
+    is_ready: Mapped[bool] = mapped_column(Boolean, default=False)
+    missing_fields_json: Mapped[str] = mapped_column(Text, default="[]")
+    warnings_json: Mapped[str] = mapped_column(Text, default="[]")
+    mapped_payload_json: Mapped[str] = mapped_column(Text, default="{}")
+    external_listing_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    last_validated_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    last_exported_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    vehicle = relationship("Vehicle", back_populates="publishing_records")
 
 
 class VehicleDefect(Base):
@@ -505,6 +541,51 @@ def migrate_db_schema() -> None:
             rl_cols = {row[1] for row in cursor.fetchall()}
             if "verified_transaction_id" not in rl_cols:
                 cursor.execute("ALTER TABLE rl_decision_logs ADD COLUMN verified_transaction_id VARCHAR(36)")
+
+        # 6. vehicles 테이블 마이그레이션 (DIRECTIVE 050 마스터 제원 및 다중 플랫폼 연동)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vehicles'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(vehicles)")
+            v_cols = {row[1] for row in cursor.fetchall()}
+            v_columns = [
+                ("manufacturer", "VARCHAR(50)"),
+                ("trim", "VARCHAR(100)"),
+                ("body_type", "VARCHAR(30) DEFAULT '세단'"),
+                ("recon_cost", "INTEGER DEFAULT 0"),
+                ("sales_conditions", "VARCHAR(255)"),
+                ("ad_description", "TEXT"),
+                ("ad_highlights", "TEXT"),
+                ("ad_notices", "TEXT"),
+                ("platform_ad_copies_json", "TEXT DEFAULT '{}'"),
+                ("options_structured_json", "TEXT DEFAULT '[]'"),
+                ("condition_detail_json", "TEXT DEFAULT '{}'"),
+                ("publishing_status", "VARCHAR(30) DEFAULT 'DRAFT'"),
+                ("platform_readiness_json", "TEXT DEFAULT '{}'"),
+            ]
+            for col_name, col_type in v_columns:
+                if col_name not in v_cols:
+                    cursor.execute(f"ALTER TABLE vehicles ADD COLUMN {col_name} {col_type}")
+
+        # 7. platform_publishing_records 테이블 생성 (DIRECTIVE 050)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS platform_publishing_records (
+                id VARCHAR(36) PRIMARY KEY,
+                vehicle_id VARCHAR(36) NOT NULL,
+                platform VARCHAR(30) NOT NULL,
+                publishing_status VARCHAR(30) DEFAULT 'DRAFT',
+                is_ready BOOLEAN DEFAULT 0,
+                missing_fields_json TEXT DEFAULT '[]',
+                warnings_json TEXT DEFAULT '[]',
+                mapped_payload_json TEXT DEFAULT '{}',
+                external_listing_id VARCHAR(50),
+                last_validated_at DATETIME,
+                last_exported_at DATETIME,
+                error_message TEXT,
+                created_at DATETIME,
+                updated_at DATETIME,
+                FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE CASCADE
+            )
+        """)
 
         conn.commit()
     finally:

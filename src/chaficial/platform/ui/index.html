@@ -1409,85 +1409,426 @@
       </div>
     </div>
   </div>
-  <div id="vehicleModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <h3 class="text-lg font-bold text-[#172337]">신규 차량 등록</h3>
-        <button onclick="closeVehicleModal()" class="text-slate-400 hover:text-slate-600 p-1">
+  <!-- ======================================================== -->
+  <!-- DIRECTIVE 050: 전문 통합 차량 마스터 등록 & 다중 플랫폼 연동 모달 -->
+  <!-- ======================================================== -->
+  <div id="vehicleModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- 상단 헤더 -->
+      <div class="px-6 py-4 border-b border-[#D8E2EA] flex items-center justify-between bg-slate-50/80 rounded-t-2xl">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2 py-0.5 bg-[#247D7C]/10 text-[#247D7C] text-[11px] font-bold rounded">DIRECTIVE 050</span>
+            <h3 id="master_modal_title" class="text-base font-bold text-[#172337]">통합 차량 마스터 전문 등록 시스템</h3>
+          </div>
+          <p class="text-xs text-[#64748B] mt-0.5">8대 핵심 사실 데이터 정밀 등록 및 3대 중고차 플랫폼(엔카·KB차차차·카매니저) 자동 연동</p>
+        </div>
+        <button onclick="closeVehicleModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <form id="vehicleForm" onsubmit="handleCreateVehicle(event)" class="space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">소속 거점</label>
-            <select id="v_branch_id" required class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white focus:outline-none focus:border-[#247D7C]">
-              <option value="seoul_main">장한평 본사</option>
-              <option value="suwon_hub">수원 지점 (DEMO)</option>
-            </select>
+      <!-- 8대 탭 네비게이션 바 -->
+      <div class="flex border-b border-[#D8E2EA] bg-white px-6 overflow-x-auto text-xs font-semibold scrollbar-none">
+        <button type="button" onclick="switchMasterTab('basic')" id="mtab-btn-basic" class="py-3 px-3.5 border-b-2 border-[#247D7C] text-[#247D7C] whitespace-nowrap flex items-center gap-1.5">
+          <i data-lucide="car" class="w-4 h-4"></i> 1. 기본 제원
+        </button>
+        <button type="button" onclick="switchMasterTab('options')" id="mtab-btn-options" class="py-3 px-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-1.5">
+          <i data-lucide="sliders" class="w-4 h-4"></i> 2. 옵션 체크
+        </button>
+        <button type="button" onclick="switchMasterTab('condition')" id="mtab-btn-condition" class="py-3 px-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="w-4 h-4"></i> 3. 사고·성능
+        </button>
+        <button type="button" onclick="switchMasterTab('media')" id="mtab-btn-media" class="py-3 px-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-1.5">
+          <i data-lucide="camera" class="w-4 h-4"></i> 4. 사진 자산
+        </button>
+        <button type="button" onclick="switchMasterTab('sales')" id="mtab-btn-sales" class="py-3 px-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-1.5">
+          <i data-lucide="tag" class="w-4 h-4"></i> 5. 가격·판매
+        </button>
+        <button type="button" onclick="switchMasterTab('ad')" id="mtab-btn-ad" class="py-3 px-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-1.5">
+          <i data-lucide="file-text" class="w-4 h-4"></i> 6. 광고 설명
+        </button>
+        <button type="button" onclick="switchMasterTab('rights')" id="mtab-btn-rights" class="py-3 px-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-1.5">
+          <i data-lucide="award" class="w-4 h-4"></i> 7. 권한·승인
+        </button>
+        <button type="button" onclick="switchMasterTab('publishing')" id="mtab-btn-publishing" class="py-3 px-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-1.5">
+          <i data-lucide="share-2" class="w-4 h-4"></i> 8. 플랫폼 연동
+        </button>
+      </div>
+
+      <!-- 모달 폼 본체 -->
+      <form id="vehicleMasterForm" onsubmit="handleMasterFormSubmit(event)" class="flex-1 overflow-y-auto p-6 space-y-5">
+        <input type="hidden" id="mv_edit_vehicle_id" value="" />
+
+        <!-- 탭 1: 기본 제원 -->
+        <div id="mtab-panel-basic" class="space-y-4">
+          <!-- 단계별 카탈로그 선택기 (제조사 -> 차종 -> 세대 -> 트림) -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-[#D8E2EA] space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <i data-lucide="compass" class="w-4 h-4 text-[#247D7C]"></i> 카탈로그 단계별 정확한 차종·트림 선택 (DIRECTIVE 050 3항)
+              </span>
+              <span class="text-[11px] text-slate-400">선택 시 배기량, 연료, 변속기, 구동방식이 정밀하게 연동됩니다.</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">1. 제조사</label>
+                <select id="cat_manufacturer" onchange="onCatalogManufacturerChange()" class="w-full px-2.5 py-1.5 border border-[#D8E2EA] rounded-lg text-xs bg-white focus:outline-none focus:border-[#247D7C]">
+                  <option value="">선택 (현대, 기아 등)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">2. 대표 차종</label>
+                <select id="cat_model" onchange="onCatalogModelChange()" class="w-full px-2.5 py-1.5 border border-[#D8E2EA] rounded-lg text-xs bg-white focus:outline-none focus:border-[#247D7C]">
+                  <option value="">제조사를 먼저 선택하세요</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">3. 세대 구분</label>
+                <select id="cat_generation" onchange="onCatalogGenerationChange()" class="w-full px-2.5 py-1.5 border border-[#D8E2EA] rounded-lg text-xs bg-white focus:outline-none focus:border-[#247D7C]">
+                  <option value="">차종을 먼저 선택하세요</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">4. 세부 등급/트림</label>
+                <select id="cat_trim" onchange="onCatalogTrimChange()" class="w-full px-2.5 py-1.5 border border-[#D8E2EA] rounded-lg text-xs bg-white focus:outline-none focus:border-[#247D7C]">
+                  <option value="">세대를 먼저 선택하세요</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">차량 번호</label>
-            <input type="text" id="v_plate_number" required placeholder="예: 12가 3456" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+
+          <!-- 기본 팩트 입력 필드 -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">차량 번호 <span class="text-rose-500">*</span></label>
+              <input type="text" id="mv_plate_number" required placeholder="예: 12가 3456" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">차대번호 (VIN, 17자리) <span class="text-rose-500">*</span></label>
+              <input type="text" id="mv_vin" maxlength="17" placeholder="예: KMHEC41UBKA000000" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm uppercase focus:outline-none focus:border-[#247D7C]" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">최초등록일자</label>
+              <input type="date" id="mv_first_registration_date" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white focus:outline-none focus:border-[#247D7C]" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">공식 모델명 <span class="text-rose-500">*</span></label>
+              <input type="text" id="mv_model_name" required placeholder="예: 현대 디 올 뉴 그랜저 (GN7)" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">연식 (년형) <span class="text-rose-500">*</span></label>
+              <input type="number" id="mv_year" required min="2000" max="2027" value="2023" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">주행거리 (km) <span class="text-rose-500">*</span></label>
+              <input type="text" id="mv_mileage" required placeholder="예: 35,000" oninput="formatNumberInput(this)" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">배기량 (cc)</label>
+              <input type="number" id="mv_displacement_cc" placeholder="예: 2497" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">연료</label>
+              <select id="mv_fuel_type" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
+                <option value="가솔린">가솔린</option>
+                <option value="하이브리드">하이브리드</option>
+                <option value="디젤">디젤</option>
+                <option value="LPG">LPG</option>
+                <option value="전기">전기</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">변속기</label>
+              <select id="mv_transmission" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
+                <option value="오토">오토</option>
+                <option value="수동">수동</option>
+                <option value="CVT">CVT</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">구동방식</label>
+              <select id="mv_drive_type" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
+                <option value="2WD">2WD</option>
+                <option value="4WD">4WD</option>
+                <option value="AWD">AWD</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">차체 유형</label>
+              <input type="text" id="mv_body_type" placeholder="세단, SUV 등" value="세단" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">외장 색상</label>
+              <input type="text" id="mv_color" placeholder="화이트" value="화이트" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+            </div>
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">모델명</label>
-          <input type="text" id="v_model_name" required placeholder="예: 현대 아반떼 (CN7) 1.6 가솔린" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">연식 (년)</label>
-            <input type="number" id="v_year" required min="2000" max="2027" value="2023" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+        <!-- 탭 2: 옵션 체크 -->
+        <div id="mtab-panel-options" class="hidden space-y-4">
+          <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-[#D8E2EA]">
+            <span class="text-xs font-bold text-slate-800">표준 옵션 체크리스트 (순정 및 추가 장착 구분)</span>
+            <span class="text-[11px] text-slate-500">선택된 옵션은 엔카·KB·카매니저 전산 코드로 자동 매핑됩니다.</span>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">주행거리 (km)</label>
-            <input type="text" id="v_mileage" required placeholder="예: 35,000" oninput="formatNumberInput(this)" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+          <div id="master_options_container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
+            <!-- 자바스크립트로 표준 옵션 체크박스 동적 렌더링 -->
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">
-              매입 금액 (원)
-              <span class="text-[11px] font-normal text-slate-400">자동 쉼표</span>
-            </label>
-            <input type="text" id="v_purchase_price" placeholder="예: 15,000,000" oninput="formatCurrencyInput(this)" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">
-              광고 가격 (원)
-              <span class="text-[11px] font-normal text-slate-400">자동 쉼표</span>
-            </label>
-            <input type="text" id="v_target_price" required placeholder="예: 18,500,000" oninput="formatCurrencyInput(this)" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+        <!-- 탭 3: 사고·성능 -->
+        <div id="mtab-panel-condition" class="hidden space-y-4">
+          <div class="bg-slate-50 p-4 rounded-xl border border-[#D8E2EA] space-y-3">
+            <span class="text-xs font-bold text-slate-800">공식 성능·상태 점검 및 무사고 무결성 보존 (DIRECTIVE 048 규격)</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">사고 상태 판정</label>
+                <select id="mv_accident_state" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
+                  <option value="NO_ACCIDENT">완전 무사고 (교환/판금 없음)</option>
+                  <option value="SIMPLE_REPAIR">단순 수리 (외판 단순 교환/도색)</option>
+                  <option value="FRAME_ACCIDENT">유사고 (주요 골격 부위 손상)</option>
+                  <option value="UNCHECKED" selected>미확인 (성능점검 진행 중)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">주요 골격(프레임) 손상</label>
+                <input type="text" id="mv_frame_damage" placeholder="이상 없음 / 인사이드패널 등" value="이상 없음" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">외판 교환 부위</label>
+                <input type="text" id="mv_outer_damage" placeholder="무교환 / 프론트휀더 1개 등" value="무교환" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">침수 이력</label>
+                <select id="mv_flood_history" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
+                  <option value="NONE" selected>없음</option>
+                  <option value="FLOODED">침수 이력 있음</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">엔진/변속기 미세누유</label>
+                <select id="mv_leak_state" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
+                  <option value="NONE" selected>누유 없음 (양호)</option>
+                  <option value="MICRO_LEAK">미세 누유 확인</option>
+                  <option value="LEAK">정비 요망 누유</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">공식 성능점검 기록부 서류 ID</label>
+                <input type="text" id="mv_inspection_doc_id" placeholder="보안 서류 ID (선택)" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm" />
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">연료</label>
-            <select id="v_fuel_type" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
-              <option value="가솔린">가솔린</option>
-              <option value="디젤">디젤</option>
-              <option value="하이브리드">하이브리드</option>
-              <option value="전기">전기</option>
-            </select>
+        <!-- 탭 4: 사진 자산 -->
+        <div id="mtab-panel-media" class="hidden space-y-4">
+          <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-[#D8E2EA]">
+            <div>
+              <span class="text-xs font-bold text-slate-800">실제 차량 사진 등록 및 카테고리 관리</span>
+              <p class="text-[11px] text-slate-500">엔카(최소 10장), KB차차차(최소 8장), 카매니저(최소 6장) 요건을 충족해야 합니다.</p>
+            </div>
+            <button type="button" onclick="addPhotoRow()" class="px-3 py-1.5 bg-slate-800 text-white rounded text-xs font-semibold hover:bg-slate-700">
+              + 사진 URL 추가
+            </button>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">재고 상태</label>
-            <select id="v_status" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
-              <option value="FOR_SALE">판매 중</option>
-              <option value="DETAILING">상품화 중</option>
-              <option value="CONTRACTING">계약 진행</option>
-            </select>
+          <div id="master_photos_list" class="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+            <!-- 사진 목록 행 동적 추가 -->
           </div>
         </div>
 
-        <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
-          <button type="button" onclick="closeVehicleModal()" class="px-4 py-2 border border-[#D8E2EA] rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">취소</button>
+        <!-- 탭 5: 가격 및 판매 -->
+        <div id="mtab-panel-sales" class="hidden space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">소비자 광고가격 (원) <span class="text-rose-500">*</span></label>
+              <input type="text" id="mv_target_price" required placeholder="예: 25,500,000" oninput="formatCurrencyInput(this)" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm font-bold text-[#247D7C] focus:outline-none focus:border-[#247D7C]" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">원가/매입가격 (원)</label>
+              <input type="text" id="mv_purchase_price" placeholder="예: 22,000,000" oninput="formatCurrencyInput(this)" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">상품화 비용 (원)</label>
+              <input type="text" id="mv_recon_cost" placeholder="예: 500,000" oninput="formatCurrencyInput(this)" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">차량 소유 구분</label>
+              <select id="mv_ownership_type" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
+                <option value="CHAMART_OWNED" selected>차마트 직접 보유 (직영 재고)</option>
+                <option value="PARTNER_APPROVED">장한평 제휴 승인 매물 (마케팅 위탁)</option>
+                <option value="PARTNER_CANDIDATE">장한평 제휴 협의 중 (후보)</option>
+                <option value="MARKET_OBSERVED">시장 관측 매물 (엔카 관측)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">판매 상태</label>
+              <select id="mv_status" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
+                <option value="FOR_SALE" selected>판매 중</option>
+                <option value="DETAILING">상품화 작업 중</option>
+                <option value="CONTRACTING">계약 진행 중</option>
+                <option value="SOLD">판매 완료</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">판매 조건</label>
+              <input type="text" id="mv_sales_conditions" placeholder="현금 / 할부 / 리스 / 세금계산서 100%" value="현금/할부 가능, 세금계산서 100% 발행" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 6: 광고 설명 -->
+        <div id="mtab-panel-ad" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">차량 특장점 요약 (Highlights)</label>
+            <input type="text" id="mv_ad_highlights" placeholder="예: 1인신조, 완전무사고, 풀옵션 캘리그래피, 최저 실주행거리" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">고지사항 (Notices)</label>
+            <input type="text" id="mv_ad_notices" placeholder="예: 용도변경이력 없음, 비흡연, 타이어 4본 신품 교환" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">차량 상세 소개문 (소비자 노출 설명)</label>
+            <textarea id="mv_ad_description" rows="4" placeholder="차량 상태, 옵션 내역, 전 차주 관리 상태 등 고객 대상 소개문구를 입력하십시오." class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm"></textarea>
+          </div>
+        </div>
+
+        <!-- 탭 7: 권한·승인 -->
+        <div id="mtab-panel-rights" class="hidden space-y-4">
+          <div class="bg-slate-50 p-4 rounded-xl border border-[#D8E2EA] space-y-3">
+            <span class="text-xs font-bold text-slate-800">제휴 딜러 권한 원장 (Dealer Rights Ledger) 설정</span>
+            <p class="text-[11px] text-slate-500">원 소유 딜러의 사전 동의 및 외부 광고 권한을 부여하지 않은 차량은 외부 다중 플랫폼 등록이 원천 차단됩니다.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">승인자 / 딜러명</label>
+                <input type="text" id="mv_rights_approved_by" placeholder="예: 장한평 가온모터스 김민우 대표" value="장한평 제휴 협력 딜러" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">권한 범위</label>
+                <select id="mv_rights_scope" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-white">
+                  <option value="FULL_MARKETING" selected>전체 마케팅 (다중 플랫폼 광고 + AI 영상)</option>
+                  <option value="PLATFORM_ONLY">플랫폼 광고 전산 등록만 허용</option>
+                  <option value="VIDEO_ONLY">AI 영상 마케팅만 허용</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex items-center space-x-6 pt-2 text-xs">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="mv_rights_video_allowed" checked class="rounded border-slate-300 text-[#247D7C] focus:ring-[#247D7C]" />
+                <span class="font-medium text-slate-700">AI 홍보 영상 제작 허용</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="mv_rights_photo_allowed" checked class="rounded border-slate-300 text-[#247D7C] focus:ring-[#247D7C]" />
+                <span class="font-medium text-slate-700">실차 사진 외부 전송 허용</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="mv_rights_external_ad_allowed" checked class="rounded border-slate-300 text-[#247D7C] focus:ring-[#247D7C]" />
+                <span class="font-medium text-slate-700">엔카·KB·카매니저 등록 승인</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 8: 플랫폼 연동 & 등록 준비도 검사 -->
+        <div id="mtab-panel-publishing" class="hidden space-y-4">
+          <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-[#D8E2EA]">
+            <div>
+              <span class="text-xs font-bold text-slate-800">3대 외부 중고차 플랫폼 등록 준비도 검사 (Publishing Readiness)</span>
+              <p class="text-[11px] text-slate-500">플랫폼별 필수 필드 및 사진, 성능, 딜러 권한 요건을 실시간 검증합니다.</p>
+            </div>
+            <button type="button" onclick="runLiveReadinessCheck()" class="px-3 py-1.5 bg-[#247D7C] text-white rounded text-xs font-semibold hover:bg-[#1D6665]">
+              실시간 준비도 검사
+            </button>
+          </div>
+
+          <!-- 3대 플랫폼 신호등 카드 그리드 -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- 엔카 카드 -->
+            <div id="card_readiness_encar" class="border border-[#D8E2EA] rounded-xl p-4 bg-white space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-[#172337] flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500" id="badge_dot_encar"></span> ENCAR (엔카)
+                </span>
+                <span id="badge_status_encar" class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700">미비</span>
+              </div>
+              <p id="msg_encar" class="text-xs text-slate-600">필수 제원 및 사진 10장 검증 대기</p>
+              <div id="issues_encar" class="text-[11px] text-rose-600 space-y-1"></div>
+              <button type="button" onclick="previewPlatformPayload('ENCAR')" class="w-full mt-2 py-1.5 border border-[#D8E2EA] hover:bg-slate-50 rounded text-xs text-slate-700 font-medium">
+                엔카 전산 페이로드 보기
+              </button>
+            </div>
+
+            <!-- KB차차차 카드 -->
+            <div id="card_readiness_kb" class="border border-[#D8E2EA] rounded-xl p-4 bg-white space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-[#172337] flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500" id="badge_dot_kb"></span> KB차차차
+                </span>
+                <span id="badge_status_kb" class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700">미비</span>
+              </div>
+              <p id="msg_kb" class="text-xs text-slate-600">안심매물 및 사진 8장 검증 대기</p>
+              <div id="issues_kb" class="text-[11px] text-rose-600 space-y-1"></div>
+              <button type="button" onclick="previewPlatformPayload('KB_CHACHACHA')" class="w-full mt-2 py-1.5 border border-[#D8E2EA] hover:bg-slate-50 rounded text-xs text-slate-700 font-medium">
+                KB차차차 페이로드 보기
+              </button>
+            </div>
+
+            <!-- 카매니저 카드 -->
+            <div id="card_readiness_cm" class="border border-[#D8E2EA] rounded-xl p-4 bg-white space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-[#172337] flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500" id="badge_dot_cm"></span> 카매니저 전산
+                </span>
+                <span id="badge_status_cm" class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700">미비</span>
+              </div>
+              <p id="msg_cm" class="text-xs text-slate-600">상사 전산 및 사진 6장 검증 대기</p>
+              <div id="issues_cm" class="text-[11px] text-rose-600 space-y-1"></div>
+              <button type="button" onclick="previewPlatformPayload('CAR_MANAGER')" class="w-full mt-2 py-1.5 border border-[#D8E2EA] hover:bg-slate-50 rounded text-xs text-slate-700 font-medium">
+                카매니저 페이로드 보기
+              </button>
+            </div>
+          </div>
+
+          <!-- JSON 페이로드 모달 뷰어 영역 -->
+          <div id="platform_preview_box" class="hidden bg-slate-900 text-slate-100 p-3 rounded-lg text-xs font-mono max-h-48 overflow-y-auto space-y-2">
+            <div class="flex items-center justify-between text-slate-400">
+              <span id="platform_preview_title">PLATFORM PAYLOAD PREVIEW</span>
+              <button type="button" onclick="document.getElementById('platform_preview_box').classList.add('hidden')" class="hover:text-white">닫기</button>
+            </div>
+            <pre id="platform_preview_content" class="whitespace-pre-wrap"></pre>
+          </div>
+        </div>
+
+        <!-- 하단 액션 버튼 -->
+        <div class="pt-4 border-t border-[#D8E2EA] flex items-center justify-between bg-white">
+          <div class="text-xs text-slate-500">
+            <span class="font-semibold text-slate-700">라이프사이클:</span> DRAFT → DATA_VERIFIED → READY_TO_PUBLISH → APPROVED
+          </div>
+          <div class="flex items-center space-x-2">
+            <button type="button" onclick="closeVehicleModal()" class="px-4 py-2 border border-[#D8E2EA] rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50">
+              닫기
+            </button>
+            <button type="submit" id="btn_save_master" class="px-5 py-2 bg-[#247D7C] hover:bg-[#1D6665] text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
+              <i data-lucide="check" class="w-4 h-4"></i> 차량 마스터 저장 및 검증
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
           <button type="submit" class="px-5 py-2 bg-[#247D7C] hover:bg-[#1D6665] text-white rounded-lg text-sm font-semibold shadow-sm">차량 저장</button>
         </div>
       </form>
@@ -2086,6 +2427,9 @@
               <div class="flex items-center justify-center space-x-1" onclick="event.stopPropagation()">
                 <button onclick="openVehicleDetailModal('${v.id}')" class="px-2 py-1 text-xs bg-[#247D7C] hover:bg-[#1D6665] text-white rounded font-medium shadow-xs">
                   상세보기
+                </button>
+                <button onclick="openVehicleModal('${v.id}')" class="px-2 py-1 text-xs border border-teal-600 text-teal-700 bg-teal-50/50 hover:bg-teal-100/60 rounded font-medium shadow-xs">
+                  마스터 수정
                 </button>
                 <button onclick="changeVehicleStatusPrompt('${v.id}', '${v.status}')" class="px-2 py-1 text-xs border border-[#D8E2EA] rounded hover:bg-slate-100 text-slate-600 font-medium">
                   상태
@@ -2826,42 +3170,444 @@
     }
 
     // ----------------------------------------------------
-    // 8. 모달 제어 및 폼 제출 핸들러 (3단계 완결 원칙)
+    // 8. DIRECTIVE 050: 통합 차량 마스터 등록 & 다중 플랫폼 연동 핸들러
     // ----------------------------------------------------
-    function openVehicleModal() { document.getElementById('vehicleModal').classList.remove('hidden'); }
-    function closeVehicleModal() { document.getElementById('vehicleModal').classList.add('hidden'); }
+    let currentCatalogData = null;
+    let standardOptionsList = [];
+    let masterPhotosData = [];
 
-    async function handleCreateVehicle(e) {
-      e.preventDefault();
-      const payload = {
-        branch_id: document.getElementById('v_branch_id').value,
-        plate_number: document.getElementById('v_plate_number').value,
-        model_name: document.getElementById('v_model_name').value,
-        year: parseInt(document.getElementById('v_year').value, 10),
-        mileage: unformatNumber(document.getElementById('v_mileage').value) || 0,
-        fuel_type: document.getElementById('v_fuel_type').value,
-        purchase_price: unformatNumber(document.getElementById('v_purchase_price').value),
-        target_price: unformatNumber(document.getElementById('v_target_price').value) || 0,
-        status: document.getElementById('v_status').value
-      };
-
-      try {
-        const res = await fetch('/api/vehicles', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error('등록 실패');
-        closeVehicleModal();
-        document.getElementById('vehicleForm').reset();
-        await loadVehicles();
-        await loadDashboardStats();
-        alert('차량이 정상 등록되었습니다.');
-      } catch (err) {
-        alert('차량 등록 중 오류가 발생했습니다.');
+    // 8대 탭 전환 핸들러
+    function switchMasterTab(tabName) {
+      const tabs = ['basic', 'options', 'condition', 'media', 'sales', 'ad', 'rights', 'publishing'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`mtab-btn-${t}`);
+        const panel = document.getElementById(`mtab-panel-${t}`);
+        if (btn && panel) {
+          if (t === tabName) {
+            btn.className = "py-3 px-3.5 border-b-2 border-[#247D7C] text-[#247D7C] whitespace-nowrap flex items-center gap-1.5 font-bold";
+            panel.classList.remove('hidden');
+          } else {
+            btn.className = "py-3 px-3.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 whitespace-nowrap flex items-center gap-1.5 font-semibold";
+            panel.classList.add('hidden');
+          }
+        }
+      });
+      if (tabName === 'publishing') {
+        runLiveReadinessCheck();
       }
     }
 
+    async function loadCatalogHierarchy() {
+      if (currentCatalogData) return currentCatalogData;
+      try {
+        const res = await fetch('/api/vehicles/catalog/hierarchy');
+        if (res.ok) {
+          currentCatalogData = await res.json();
+          populateCatalogManufacturers();
+        }
+      } catch (e) {
+        console.error('카탈로그 로드 실패:', e);
+      }
+      return currentCatalogData;
+    }
+
+    function populateCatalogManufacturers() {
+      const select = document.getElementById('cat_manufacturer');
+      if (!select || !currentCatalogData) return;
+      select.innerHTML = '<option value="">선택 (현대, 기아 등)</option>';
+      Object.keys(currentCatalogData).forEach(m => {
+        select.innerHTML += `<option value="${m}">${m}</option>`;
+      });
+    }
+
+    function onCatalogManufacturerChange() {
+      const m = document.getElementById('cat_manufacturer').value;
+      const modelSelect = document.getElementById('cat_model');
+      const genSelect = document.getElementById('cat_generation');
+      const trimSelect = document.getElementById('cat_trim');
+      
+      modelSelect.innerHTML = '<option value="">선택</option>';
+      genSelect.innerHTML = '<option value="">차종을 먼저 선택하세요</option>';
+      trimSelect.innerHTML = '<option value="">세대를 먼저 선택하세요</option>';
+
+      if (!m || !currentCatalogData[m]) return;
+      Object.keys(currentCatalogData[m]).forEach(mod => {
+        modelSelect.innerHTML += `<option value="${mod}">${mod}</option>`;
+      });
+    }
+
+    function onCatalogModelChange() {
+      const m = document.getElementById('cat_manufacturer').value;
+      const mod = document.getElementById('cat_model').value;
+      const genSelect = document.getElementById('cat_generation');
+      const trimSelect = document.getElementById('cat_trim');
+
+      genSelect.innerHTML = '<option value="">선택</option>';
+      trimSelect.innerHTML = '<option value="">세대를 먼저 선택하세요</option>';
+
+      if (!m || !mod || !currentCatalogData[m]?.[mod]) return;
+      const gens = currentCatalogData[m][mod].generations || {};
+      Object.keys(gens).forEach(g => {
+        genSelect.innerHTML += `<option value="${g}">${g}</option>`;
+      });
+    }
+
+    function onCatalogGenerationChange() {
+      const m = document.getElementById('cat_manufacturer').value;
+      const mod = document.getElementById('cat_model').value;
+      const gen = document.getElementById('cat_generation').value;
+      const trimSelect = document.getElementById('cat_trim');
+
+      trimSelect.innerHTML = '<option value="">선택</option>';
+      if (!m || !mod || !gen || !currentCatalogData[m]?.[mod]?.generations?.[gen]) return;
+      const trims = currentCatalogData[m][mod].generations[gen].trims || {};
+      Object.keys(trims).forEach(t => {
+        trimSelect.innerHTML += `<option value="${t}">${t}</option>`;
+      });
+    }
+
+    function onCatalogTrimChange() {
+      const m = document.getElementById('cat_manufacturer').value;
+      const mod = document.getElementById('cat_model').value;
+      const gen = document.getElementById('cat_generation').value;
+      const trim = document.getElementById('cat_trim').value;
+
+      if (!m || !mod || !gen || !trim) return;
+      const mData = currentCatalogData[m]?.[mod];
+      const trimData = mData?.generations?.[gen]?.trims?.[trim];
+      if (!trimData) return;
+
+      document.getElementById('mv_model_name').value = `${m} ${mod} ${gen} ${trim}`.trim();
+      if (trimData.displacement_cc) document.getElementById('mv_displacement_cc').value = trimData.displacement_cc;
+      if (trimData.fuel_type) document.getElementById('mv_fuel_type').value = trimData.fuel_type;
+      if (trimData.transmission) document.getElementById('mv_transmission').value = trimData.transmission;
+      if (trimData.drive_type) document.getElementById('mv_drive_type').value = trimData.drive_type;
+      if (mData.body_type) document.getElementById('mv_body_type').value = mData.body_type;
+    }
+
+    async function loadStandardOptions() {
+      if (standardOptionsList.length > 0) return standardOptionsList;
+      try {
+        const res = await fetch('/api/vehicles/catalog/options');
+        if (res.ok) {
+          standardOptionsList = await res.json();
+          renderStandardOptionsUI();
+        }
+      } catch (e) {
+        console.error('표준 옵션 로드 실패:', e);
+      }
+      return standardOptionsList;
+    }
+
+    function renderStandardOptionsUI(selectedCodes = []) {
+      const container = document.getElementById('master_options_container');
+      if (!container || standardOptionsList.length === 0) return;
+
+      container.innerHTML = standardOptionsList.map(opt => {
+        const isChecked = selectedCodes.includes(opt.code);
+        return `
+          <div class="flex items-start justify-between p-2.5 rounded-lg border border-slate-200 hover:border-[#247D7C]/50 bg-white transition-colors">
+            <label class="flex items-start space-x-2.5 cursor-pointer text-xs">
+              <input type="checkbox" name="opt_check" value="${opt.code}" data-name="${opt.name}" ${isChecked ? 'checked' : ''} class="mt-0.5 rounded border-slate-300 text-[#247D7C] focus:ring-[#247D7C]" />
+              <div>
+                <span class="font-bold text-slate-800">${opt.name}</span>
+                <span class="text-[10px] text-slate-400 block">${opt.category} | ${opt.description}</span>
+              </div>
+            </label>
+            <span class="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">순정</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addPhotoRow(url = '', category = 'EXTERIOR', isPrimary = false, caption = '') {
+      const list = document.getElementById('master_photos_list');
+      if (!list) return;
+      const idx = list.children.length;
+      const row = document.createElement('div');
+      row.className = "flex items-center space-x-2 bg-slate-50 p-2.5 rounded-lg border border-[#D8E2EA] text-xs";
+      row.innerHTML = `
+        <span class="font-bold text-slate-400 w-6 text-center">#${idx + 1}</span>
+        <input type="text" placeholder="사진 URL (https://...)" value="${url}" class="photo-url flex-1 px-2.5 py-1.5 border border-slate-300 rounded text-xs bg-white" />
+        <select class="photo-category px-2 py-1.5 border border-slate-300 rounded text-xs bg-white">
+          <option value="EXTERIOR" ${category === 'EXTERIOR' ? 'selected' : ''}>외관</option>
+          <option value="INTERIOR" ${category === 'INTERIOR' ? 'selected' : ''}>실내/계기판</option>
+          <option value="ENGINE" ${category === 'ENGINE' ? 'selected' : ''}>엔진룸</option>
+          <option value="DEFECT" ${category === 'DEFECT' ? 'selected' : ''}>하자부위</option>
+          <option value="DOCUMENT" ${category === 'DOCUMENT' ? 'selected' : ''}>서류/등록증</option>
+        </select>
+        <label class="flex items-center space-x-1 cursor-pointer text-slate-600 font-semibold px-2">
+          <input type="radio" name="primary_photo_radio" ${isPrimary || idx === 0 ? 'checked' : ''} class="text-[#247D7C]" />
+          <span>대표</span>
+        </label>
+        <button type="button" onclick="this.parentElement.remove()" class="text-rose-500 hover:text-rose-700 p-1">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      `;
+      list.appendChild(row);
+      lucide.createIcons();
+    }
+
+    // 전문 모달 열기 (신규 등록 또는 기존 차량 마스터 수정)
+    async function openVehicleModal(editVehicleId = null) {
+      await loadCatalogHierarchy();
+      await loadStandardOptions();
+
+      const modal = document.getElementById('vehicleModal');
+      const title = document.getElementById('master_modal_title');
+      const editInput = document.getElementById('mv_edit_vehicle_id');
+      const form = document.getElementById('vehicleMasterForm');
+      form.reset();
+      document.getElementById('master_photos_list').innerHTML = '';
+      editInput.value = editVehicleId || '';
+
+      switchMasterTab('basic');
+
+      if (editVehicleId) {
+        title.innerText = '차량 마스터 정보 수정 및 다중 플랫폼 연동';
+        try {
+          const res = await fetch(`/api/vehicles/${editVehicleId}/master`);
+          if (res.ok) {
+            const data = await res.json();
+            fillMasterFormWithData(data);
+          }
+        } catch (e) {
+          console.error('차량 마스터 조회 실패:', e);
+        }
+      } else {
+        title.innerText = '통합 차량 마스터 전문 등록 시스템';
+        // 기본 사진 행 10개 예시 템플릿 추가
+        const defaultCategories = ['EXTERIOR', 'EXTERIOR', 'EXTERIOR', 'EXTERIOR', 'INTERIOR', 'INTERIOR', 'ENGINE', 'EXTERIOR', 'EXTERIOR', 'EXTERIOR'];
+        defaultCategories.forEach((cat, idx) => {
+          addPhotoRow(`https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80`, cat, idx === 0, `${cat} 사진`);
+        });
+      }
+
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeVehicleModal() {
+      document.getElementById('vehicleModal').classList.add('hidden');
+    }
+
+    function fillMasterFormWithData(m) {
+      const b = m.basic_specs || {};
+      const s = m.sales_profile || {};
+      const ad = m.ad_content || {};
+      const c = m.condition || {};
+      const acc = c.accident_history || {};
+      const cd = c.condition_detail || {};
+
+      document.getElementById('mv_plate_number').value = b.plate_number || '';
+      document.getElementById('mv_vin').value = b.vin || '';
+      document.getElementById('mv_first_registration_date').value = b.first_registration_date || '';
+      document.getElementById('mv_model_name').value = b.model_name || '';
+      document.getElementById('mv_year').value = b.year || 2023;
+      document.getElementById('mv_mileage').value = formatNumber(b.mileage || 0);
+      document.getElementById('mv_displacement_cc').value = b.displacement_cc || '';
+      document.getElementById('mv_fuel_type').value = b.fuel_type || '가솔린';
+      document.getElementById('mv_transmission').value = b.transmission || '오토';
+      document.getElementById('mv_drive_type').value = b.drive_type || '2WD';
+      document.getElementById('mv_body_type').value = b.body_type || '세단';
+      document.getElementById('mv_color').value = b.color || '화이트';
+
+      // 가격
+      document.getElementById('mv_target_price').value = formatCurrency(s.target_price * 10000);
+      document.getElementById('mv_purchase_price').value = formatCurrency((s.purchase_price || 0) * 10000);
+      document.getElementById('mv_recon_cost').value = formatCurrency((s.recon_cost || 0) * 10000);
+      document.getElementById('mv_ownership_type').value = s.ownership_type || 'CHAMART_OWNED';
+      document.getElementById('mv_status').value = s.status || 'FOR_SALE';
+      document.getElementById('mv_sales_conditions').value = s.sales_conditions || '현금/할부 가능';
+
+      // 옵션
+      const selectedCodes = (m.options || []).map(o => o.code);
+      renderStandardOptionsUI(selectedCodes);
+
+      // 사고/상태
+      document.getElementById('mv_accident_state').value = acc.accident_state || 'UNCHECKED';
+      document.getElementById('mv_frame_damage').value = acc.frame_damage || '이상 없음';
+      document.getElementById('mv_outer_damage').value = acc.outer_damage || '무교환';
+      document.getElementById('mv_flood_history').value = cd.flood_history || 'NONE';
+      document.getElementById('mv_leak_state').value = cd.leak_state || 'NONE';
+      document.getElementById('mv_inspection_doc_id').value = cd.inspection_doc_id || '';
+
+      // 광고설명
+      document.getElementById('mv_ad_highlights').value = ad.ad_highlights || '';
+      document.getElementById('mv_ad_notices').value = ad.ad_notices || '';
+      document.getElementById('mv_ad_description').value = ad.ad_description || '';
+
+      // 사진
+      const list = document.getElementById('master_photos_list');
+      list.innerHTML = '';
+      const photos = (m.media?.photos || []);
+      photos.forEach(p => {
+        addPhotoRow(p.photo_url, p.category, p.is_primary, p.caption || '');
+      });
+    }
+
+    // 마스터 폼 전송 핸들러
+    async function handleMasterFormSubmit(e) {
+      e.preventDefault();
+      const editId = document.getElementById('mv_edit_vehicle_id').value;
+
+      // 옵션 수집
+      const checkedBoxes = Array.from(document.querySelectorAll('input[name="opt_check"]:checked'));
+      const optionsStructured = checkedBoxes.map(cb => ({
+        code: cb.value,
+        name: cb.getAttribute('data-name'),
+        is_installed: true,
+        is_factory: true,
+        verification_state: "VERIFIED"
+      }));
+
+      // 사진 수집
+      const photoRows = Array.from(document.querySelectorAll('#master_photos_list > div'));
+      const photos = photoRows.map((r, idx) => {
+        const url = r.querySelector('.photo-url').value.trim();
+        const cat = r.querySelector('.photo-category').value;
+        const isPri = r.querySelector('input[type="radio"]').checked;
+        return { photo_url: url, category: cat, sort_order: idx, is_primary: isPri };
+      }).filter(p => p.photo_url.length > 0);
+
+      const payload = {
+        plate_number: document.getElementById('mv_plate_number').value.trim(),
+        vin: document.getElementById('mv_vin').value.trim() || null,
+        manufacturer: document.getElementById('cat_manufacturer').value.trim() || null,
+        model_name: document.getElementById('mv_model_name').value.trim(),
+        trim: document.getElementById('cat_trim').value.trim() || null,
+        year: parseInt(document.getElementById('mv_year').value, 10),
+        first_registration_date: document.getElementById('mv_first_registration_date').value || null,
+        mileage: unformatNumber(document.getElementById('mv_mileage').value) || 0,
+        displacement_cc: parseInt(document.getElementById('mv_displacement_cc').value, 10) || null,
+        fuel_type: document.getElementById('mv_fuel_type').value,
+        transmission: document.getElementById('mv_transmission').value,
+        drive_type: document.getElementById('mv_drive_type').value,
+        body_type: document.getElementById('mv_body_type').value,
+        color: document.getElementById('mv_color').value,
+        target_price: Math.floor(unformatNumber(document.getElementById('mv_target_price').value) / 10000) || 0,
+        purchase_price: Math.floor(unformatNumber(document.getElementById('mv_purchase_price').value) / 10000) || 0,
+        recon_cost: Math.floor(unformatNumber(document.getElementById('mv_recon_cost').value) / 10000) || 0,
+        ownership_type: document.getElementById('mv_ownership_type').value,
+        status: document.getElementById('mv_status').value,
+        sales_conditions: document.getElementById('mv_sales_conditions').value,
+        ad_highlights: document.getElementById('mv_ad_highlights').value,
+        ad_notices: document.getElementById('mv_ad_notices').value,
+        ad_description: document.getElementById('mv_ad_description').value,
+        options_structured: optionsStructured,
+        photos: photos,
+        condition_detail: {
+          accident_state: document.getElementById('mv_accident_state').value,
+          frame_damage: document.getElementById('mv_frame_damage').value,
+          outer_damage: document.getElementById('mv_outer_damage').value,
+          flood_history: document.getElementById('mv_flood_history').value,
+          leak_state: document.getElementById('mv_leak_state').value,
+          inspection_doc_id: document.getElementById('mv_inspection_doc_id').value,
+        },
+        accident_history: {
+          accident_state: document.getElementById('mv_accident_state').value,
+          frame_damage: document.getElementById('mv_frame_damage').value,
+          outer_damage: document.getElementById('mv_outer_damage').value,
+        },
+        marketing_auth: {
+          approved_by: document.getElementById('mv_rights_approved_by').value,
+          rights_scope: document.getElementById('mv_rights_scope').value,
+          video_allowed: document.getElementById('mv_rights_video_allowed').checked,
+          photo_allowed: document.getElementById('mv_rights_photo_allowed').checked,
+          external_ad_allowed: document.getElementById('mv_rights_external_ad_allowed').checked,
+        }
+      };
+
+      try {
+        const url = editId ? `/api/vehicles/${editId}/master` : '/api/vehicles/master/create';
+        const method = editId ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || '저장 실패');
+
+        alert(`차량 마스터가 성공적으로 저장되었습니다.\n(플랫폼 준비도 자동 검사 완료)`);
+        closeVehicleModal();
+        await loadVehicles();
+        await loadDashboardStats();
+      } catch (err) {
+        alert(`저장 중 오류: ${err.message}`);
+      }
+    }
+
+    // 실시간 준비도 검사 실행
+    async function runLiveReadinessCheck() {
+      const editId = document.getElementById('mv_edit_vehicle_id').value;
+      if (!editId) {
+        // 신규 등록 중일 때는 임시 알림
+        document.getElementById('msg_encar').innerText = "신규 차량 저장 시 자동 정밀 검사 진행";
+        document.getElementById('msg_kb').innerText = "신규 차량 저장 시 자동 정밀 검사 진행";
+        document.getElementById('msg_cm').innerText = "신규 차량 저장 시 자동 정밀 검사 진행";
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/vehicles/${editId}/publishing-readiness`);
+        if (res.ok) {
+          const rep = await res.json();
+          updateReadinessCard('encar', rep.platforms?.ENCAR);
+          updateReadinessCard('kb', rep.platforms?.KB_CHACHACHA);
+          updateReadinessCard('cm', rep.platforms?.CAR_MANAGER);
+        }
+      } catch (e) {
+        console.error('준비도 검사 실패:', e);
+      }
+    }
+
+    function updateReadinessCard(prefix, pRep) {
+      if (!pRep) return;
+      const dot = document.getElementById(`badge_dot_${prefix}`);
+      const badge = document.getElementById(`badge_status_${prefix}`);
+      const msg = document.getElementById(`msg_${prefix}`);
+      const issues = document.getElementById(`issues_${prefix}`);
+
+      if (pRep.is_ready) {
+        dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700";
+        badge.innerText = "준비 완료";
+        msg.innerText = pRep.summary_message || "등록 요건 100% 충족";
+        issues.innerHTML = "";
+      } else {
+        dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+        badge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700";
+        badge.innerText = "등록 미비";
+        msg.innerText = pRep.summary_message || "필수 요건 보완 필요";
+        issues.innerHTML = (pRep.missing_fields || []).slice(0, 3).map(f => `• ${f} 누락`).join('<br>');
+      }
+    }
+
+    // 플랫폼별 내보내기/게시 페이로드 미리보기
+    async function previewPlatformPayload(platform) {
+      const editId = document.getElementById('mv_edit_vehicle_id').value;
+      if (!editId) {
+        alert('차량을 먼저 저장한 후 페이로드를 생성할 수 있습니다.');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/vehicles/${editId}/publishing/preview/${platform}`, { method: 'POST' });
+        const data = await res.json();
+        const box = document.getElementById('platform_preview_box');
+        const title = document.getElementById('platform_preview_title');
+        const content = document.getElementById('platform_preview_content');
+
+        title.innerText = `[${platform}] EXPORT PAYLOAD (준비 여부: ${data.is_ready ? 'READY (준비완료)' : 'NOT READY (미비)'})`;
+        content.innerText = JSON.stringify(data, null, 2);
+        box.classList.remove('hidden');
+      } catch (e) {
+        alert('페이로드 미리보기 실패');
+      }
+    }
+
+    // 레거시 호환 및 상태 변경
     async function changeVehicleStatusPrompt(vehicleId, currentStatus) {
       const nextStatus = prompt(`새 상태를 입력하세요 (FOR_SALE, DETAILING, CONTRACTING, SOLD):`, currentStatus);
       if (!nextStatus || nextStatus === currentStatus) return;
