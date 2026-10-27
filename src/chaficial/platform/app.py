@@ -13,6 +13,7 @@ import datetime
 import hashlib
 import json
 import os
+import re
 import secrets
 import time
 import traceback
@@ -107,6 +108,7 @@ app.add_middleware(
 )
 
 UI_INDEX_FILE = Path(__file__).parent / "ui" / "index.html"
+UI_CHAMART_FILE = Path(__file__).parent / "ui" / "chamart.html"
 UPLOAD_DIR = Path("data/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 DOC_UPLOAD_DIR = Path("data/uploads/documents")
@@ -142,6 +144,7 @@ def on_startup() -> None:
 # 세션 저장소: {token: {"username": str, "role": str, "created_at": float}}
 ACTIVE_SESSIONS: dict[str, dict[str, Any]] = {}
 LOGIN_FAILURES: dict[str, list[float]] = {}  # {client_ip: [timestamps]}
+CONSULTATION_REQUEST_LOGS: dict[str, float] = {}  # {ip_or_phone: last_request_time}
 
 # 환경변수에서 관리자 비밀번호 로드 (Fail-safe: 미설정 시 기동 중단)
 ENV_ADMIN_PW = os.environ.get("CHAMART_ADMIN_PASSWORD")
@@ -323,32 +326,43 @@ def search_all(
 
 
 # ----------------------------------------------------
-# 2. 대시보드 KPI (P0)
+# 2. 대시보드 KPI (P0 보안 인증 필수)
 # ----------------------------------------------------
 @app.get("/api/overview")
-def get_overview(db: Session = Depends(get_db)) -> dict[str, Any]:
+def get_overview(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
     return PlatformService.get_overview_kpis(db)
 
 
 @app.get("/api/branches")
-def list_branches(db: Session = Depends(get_db)) -> list[dict[str, Any]]:
+def list_branches(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> list[dict[str, Any]]:
     return PlatformService.list_branches(db)
 
 
 # ----------------------------------------------------
-# 3. 차량 관리 (P0 실작동)
+# 3. 차량 관리 (P0 실작동, 내부 원가 보호를 위해 보안 인증 필수)
 # ----------------------------------------------------
 @app.get("/api/vehicles")
 def list_vehicles(
     branch_id: Optional[str] = None,
     status: Optional[str] = None,
     db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
 ) -> list[dict[str, Any]]:
     return PlatformService.list_vehicles(db, branch_id=branch_id, status=status)
 
 
 @app.get("/api/vehicles/{vehicle_id}")
-def get_vehicle(vehicle_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
+def get_vehicle(
+    vehicle_id: str,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
     v = PlatformService.get_vehicle(db, vehicle_id)
     if not v:
         raise HTTPException(status_code=404, detail="차량을 찾을 수 없습니다.")
@@ -964,10 +978,10 @@ def update_media_project_status(
 
 
 # ----------------------------------------------------
-# 8. P1 미래 연동 영역 (텔레그램, SMS, 카매니저, 마케팅)
+# 8. P1 미래 연동 영역 (텔레그램, SMS, 카매니저, 마케팅, 인증 필수)
 # ----------------------------------------------------
 @app.get("/api/integrations/telegram")
-def get_telegram_status() -> dict[str, Any]:
+def get_telegram_status(_auth: dict = Depends(require_auth)) -> dict[str, Any]:
     """텔레그램 고객 커뮤니티 연동 상태 (P1)."""
     return {
         "status": "READY_FOR_INTEGRATION",
@@ -980,7 +994,7 @@ def get_telegram_status() -> dict[str, Any]:
 
 
 @app.get("/api/integrations/sms")
-def get_sms_status() -> dict[str, Any]:
+def get_sms_status(_auth: dict = Depends(require_auth)) -> dict[str, Any]:
     """안드로이드 SMS 발송 센터 연동 상태 (P1)."""
     return {
         "status": "GATEWAY_PENDING",
@@ -993,7 +1007,7 @@ def get_sms_status() -> dict[str, Any]:
 
 
 @app.get("/api/integrations/carmanager")
-def get_carmanager_status() -> dict[str, Any]:
+def get_carmanager_status(_auth: dict = Depends(require_auth)) -> dict[str, Any]:
     """카매니저 외부 매물 연동 상태 (P1)."""
     return {
         "status": "SPECIFICATION_AUDIT",
@@ -1005,7 +1019,7 @@ def get_carmanager_status() -> dict[str, Any]:
 
 
 @app.get("/api/marketing/performance")
-def get_marketing_performance() -> dict[str, Any]:
+def get_marketing_performance(_auth: dict = Depends(require_auth)) -> dict[str, Any]:
     """마케팅 전환 퍼널 데이터 (P1)."""
     return {
         "status": "DATA_STRUCTURE_READY",
@@ -1358,10 +1372,35 @@ def get_chamart_public_vehicle_detail(vehicle_id: str, db: Session = Depends(get
 
 
 @app.post("/api/chamart/consultations")
-def create_chamart_public_consultation(req: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any]:
-    """차마트 웹사이트 고객 문의 및 방문 예약 신청."""
+def create_chamart_public_consultation(
+    req: dict[str, Any],
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """차마트 웹사이트 고객 문의 및 방문 예약 신청 (스팸 방어 및 개인정보 동의 검증)."""
+    client_ip = get_client_ip(request)
+    phone_raw = (req.get("phone") or "").strip()
+    phone_key = re.sub(r"[^0-9]", "", phone_raw)
+    now = time.time()
+
+    # 스팸 방어: 동일 IP 또는 동일 전화번호로 60초 내 중복 신청 시 429 차단
+    if client_ip in CONSULTATION_REQUEST_LOGS and (now - CONSULTATION_REQUEST_LOGS[client_ip]) < 60:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="상담 신청이 이미 접수되었습니다. 잠시 후(1분 뒤) 다시 시도해 주십시오.",
+        )
+    if phone_key and phone_key in CONSULTATION_REQUEST_LOGS and (now - CONSULTATION_REQUEST_LOGS[phone_key]) < 60:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="동일한 연락처로 접수된 상담 신청이 있습니다. 1분 후 다시 시도해 주십시오.",
+        )
+
     try:
-        return PlatformService.create_chamart_public_consultation(db, req)
+        res = PlatformService.create_chamart_public_consultation(db, req)
+        CONSULTATION_REQUEST_LOGS[client_ip] = now
+        if phone_key:
+            CONSULTATION_REQUEST_LOGS[phone_key] = now
+        return res
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -1373,12 +1412,15 @@ def toggle_admin_vehicle_publish(
     db: Session = Depends(get_db),
     _auth: dict = Depends(require_auth),
 ) -> dict[str, Any]:
-    """관리자 전용 차량 차마트 공개 상태 토글 (인증 필수)."""
+    """관리자 전용 차량 차마트 공개 상태 토글 (인증 필수, 5대 검증 가드 통과 필요)."""
     is_public = req.get("is_public") if req else None
     try:
         return PlatformService.toggle_vehicle_public_status(db, vehicle_id, is_public=is_public)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        err_msg = str(e)
+        if "찾을 수 없습니다" in err_msg:
+            raise HTTPException(status_code=404, detail=err_msg)
+        raise HTTPException(status_code=400, detail=err_msg)
 
 
 # -----------------------------------------------------------------------------
@@ -1392,6 +1434,15 @@ def get_content_lab_session(
 ) -> dict[str, Any]:
     """AI 콘텐츠 연구소 현재 세션 상태, 쿼터 사용량, 카운터 요약 조회."""
     return ContentLabService.get_session_status(db)
+
+
+@app.get("/api/content-lab/learning-readiness")
+def get_content_lab_learning_readiness(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """AI 콘텐츠 연구소 4단계 학습 및 자율화 준비도 정직 표기 (DIRECTIVE 052 P1-4)."""
+    return ContentLabService.get_learning_readiness(db)
 
 
 @app.post("/api/content-lab/session/start")
@@ -1540,11 +1591,23 @@ def generate_script_prompts(
 
 
 # ----------------------------------------------------
-# 9. UI 서빙
+# 9. UI 서빙 (차피셜 관리자 & 차마트 독립 고객 쇼룸)
 # ----------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 def serve_index() -> HTMLResponse:
+    """차피셜(CHA-FICIAL) 내부 운영 관리자 포털 UI."""
     if UI_INDEX_FILE.exists():
         content = UI_INDEX_FILE.read_text(encoding="utf-8")
         return HTMLResponse(content=content)
     return HTMLResponse("<h1>UI File Not Found</h1>", status_code=404)
+
+
+@app.get("/chamart", response_class=HTMLResponse)
+@app.get("/cars", response_class=HTMLResponse)
+@app.get("/cars/{vehicle_id}", response_class=HTMLResponse)
+def serve_chamart(vehicle_id: Optional[str] = None) -> HTMLResponse:
+    """차마트(CHAMART) 일반 고객 전용 실차 쇼룸 독립 웹페이지 (DIRECTIVE 052 P0-4)."""
+    if UI_CHAMART_FILE.exists():
+        content = UI_CHAMART_FILE.read_text(encoding="utf-8")
+        return HTMLResponse(content=content)
+    return HTMLResponse("<h1>Chamart UI File Not Found</h1>", status_code=404)

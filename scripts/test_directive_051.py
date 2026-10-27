@@ -24,6 +24,7 @@ import http.cookiejar
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -129,13 +130,15 @@ def main():
     # -------------------------------------------------------------------------
     # TEST 3. 차마트 웹 고객 상담 및 전시장 방문 예약 신청
     # -------------------------------------------------------------------------
+    # DIRECTIVE 052 P0-4 개인정보 수집/이용 동의 반영
     consult_payload = {
         "name": "051고객테스터",
-        "phone": "010-9988-7766",
+        "phone": f"010-8888-{int(time.time()) % 10000:04d}",
         "vehicle_id": target_vehicle_id,
         "vehicle_title": "제네시스 G80 051 테스트",
         "preferred_date": "2026-10-30T14:00",
         "content": "DIRECTIVE 051 전시장 방문 예약 테스트",
+        "privacy_agreed": True,
     }
     st, c_res = http_req("/api/chamart/consultations", method="POST", data=consult_payload, auth=False)
     if st == 200 and isinstance(c_res, dict):

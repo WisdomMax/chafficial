@@ -22,6 +22,8 @@ from chaficial.platform.db import (
     DealerRightsLedger,
     DocumentReview,
     MediaProject,
+    OwnershipType,
+    PublishingStatus,
     RLDecisionLog,
     Transaction,
     User,
@@ -315,13 +317,14 @@ class PlatformService:
 
     @staticmethod
     def get_chamart_public_vehicles(db: Session) -> list[dict[str, Any]]:
-        """차마트 고객 공개 차량 목록 조회 (시장 관측 매물 배제, 민감 원가/마진 비노출)."""
+        """차마트 고객 공개 차량 목록 조회 (시장 관측 매물 배제, 민감 원가/마진 비노출, DIRECTIVE 052 정직 필터)."""
         query = (
             db.query(Vehicle)
             .filter(
-                Vehicle.ownership_type != "MARKET_OBSERVATION",
+                Vehicle.ownership_type.in_([OwnershipType.CHAMART_OWNED.value, OwnershipType.PARTNER_APPROVED.value]),
                 Vehicle.status.in_(["FOR_SALE", "AVAILABLE"]),
                 Vehicle.is_public == True,
+                Vehicle.is_demo == False,
             )
             .order_by(desc(Vehicle.updated_at))
         )
@@ -340,15 +343,15 @@ class PlatformService:
             results.append({
                 "id": v.id,
                 "plate_number": v.plate_number,
-                "manufacturer": v.manufacturer or "국산/수입",
+                "manufacturer": v.manufacturer or "미확인",
                 "model_name": v.model_name,
                 "trim": v.trim or "",
                 "year": v.year,
                 "mileage": v.mileage,
-                "fuel_type": v.fuel_type,
-                "transmission": v.transmission,
+                "fuel_type": v.fuel_type or "미확인",
+                "transmission": v.transmission or "미확인",
                 "body_type": v.body_type or "세단",
-                "color": v.color or "화이트",
+                "color": v.color or "미확인",
                 "target_price": v.target_price,
                 "monthly_payment_estimate": monthly_est,
                 "primary_photo_url": v.primary_photo_url or "/static/img/car_placeholder.jpg",
@@ -360,13 +363,14 @@ class PlatformService:
 
     @staticmethod
     def get_chamart_public_vehicle_detail(db: Session, vehicle_id: str) -> Optional[dict[str, Any]]:
-        """차마트 고객 공개 차량 상세 조회 (8대 필수영역 완비, 원가/수익 엄격 배제)."""
+        """차마트 고객 공개 차량 상세 조회 (8대 필수영역 완비, 원가/수익 엄격 배제, 허위 기본값 전면 제거)."""
         v = (
             db.query(Vehicle)
             .filter(
                 Vehicle.id == vehicle_id,
-                Vehicle.ownership_type != "MARKET_OBSERVATION",
+                Vehicle.ownership_type.in_([OwnershipType.CHAMART_OWNED.value, OwnershipType.PARTNER_APPROVED.value]),
                 Vehicle.is_public == True,
+                Vehicle.is_demo == False,
             )
             .first()
         )
@@ -405,17 +409,19 @@ class PlatformService:
                     "is_verified": opt.get("is_verified", True),
                 })
         else:
-            # fallback: options_json
-            simple_opts = json.loads(v.options_json or "[]")
+            try:
+                simple_opts = json.loads(v.options_json or "[]")
+            except Exception:
+                simple_opts = []
             for o in simple_opts:
                 categorized_options["편의/멀티미디어"].append({
                     "code": "OPT",
                     "name": o,
                     "is_genuine": True,
-                    "is_verified": True,
+                    "is_verified": False,
                 })
 
-        # 3. 사고 및 성능 상태 요약
+        # 3. 사고 및 성능 상태 요약 (P0-3: 허위 기본값 제거, 미등록 시 UNKNOWN / 미확인 표기)
         try:
             cond_detail = json.loads(v.condition_detail_json or "{}")
         except Exception:
@@ -425,15 +431,24 @@ class PlatformService:
         except Exception:
             accident_hist = {}
 
-        is_accident_free = accident_hist.get("accident_state") in ["NONE", "NO_ACCIDENT", "무사고"]
+        has_inspection = bool(cond_detail or accident_hist)
+        accident_state_raw = accident_hist.get("accident_state")
+        is_accident_free = accident_state_raw in ["NONE", "NO_ACCIDENT", "무사고"] if accident_state_raw else None
+
+        if accident_state_raw:
+            accident_label = "완전 무사고 (단순교환 없음)" if is_accident_free else "단순교환 / 수리이력 있음"
+        else:
+            accident_label = "미확인 (성능점검표 미등록)"
+
         accident_summary = {
+            "has_inspection": has_inspection,
             "is_accident_free": is_accident_free,
-            "accident_state_label": "완전 무사고 (단순교환 없음)" if is_accident_free else "단순교환 / 수리이력 있음",
-            "frame_damage": cond_detail.get("frame_damage") or accident_hist.get("frame_damage") or "골격 손상 없음 (정상)",
-            "outer_damage": cond_detail.get("outer_damage") or accident_hist.get("outer_damage") or "미세 스크래치 없음",
-            "oil_leak_status": cond_detail.get("oil_leak_status", "누유 없음 (정상)"),
-            "special_accident": cond_detail.get("special_accident") or accident_hist.get("special_accident") or "침수/화재/도난 이력 없음",
-            "inspection_date": cond_detail.get("inspection_date") or (v.created_at.strftime("%Y-%m-%d")),
+            "accident_state_label": accident_label,
+            "frame_damage": cond_detail.get("frame_damage") or accident_hist.get("frame_damage") or ("골격 정상" if has_inspection else "미확인 (성능점검표 미등록)"),
+            "outer_damage": cond_detail.get("outer_damage") or accident_hist.get("outer_damage") or ("외판 정상" if has_inspection else "미확인"),
+            "oil_leak_status": cond_detail.get("oil_leak_status") or ("누유 없음 (정상)" if has_inspection else "미확인 (성능점검표 미등록)"),
+            "special_accident": cond_detail.get("special_accident") or accident_hist.get("special_accident") or ("침수/화재 이력 없음" if has_inspection else "미확인"),
+            "inspection_date": cond_detail.get("inspection_date") or accident_hist.get("inspection_date") or "미확인",
         }
 
         # 4. 사진 갤러리 (공개 정렬)
@@ -458,24 +473,23 @@ class PlatformService:
                 "caption": v.model_name,
             })
 
-        # 5. 판매자 및 전시장 정보
+        # 5. 판매자 및 전시장 정보 (허위 개인 연락처 날조 제거)
         dealer_info = {
-            "name": v.dealer.name if v.dealer else "차마트 인증 전문딜러",
+            "name": v.dealer.name if v.dealer else "차마트 공용 상담팀",
             "dealership_name": v.dealer.dealership_name if v.dealer else "차마트 장한평 본사",
-            "phone": v.dealer.phone if v.dealer else "02-2244-8899",
+            "phone": v.dealer.phone if v.dealer else "1544-0000",
             "showroom_location": v.branch.address if v.branch else "서울특별시 동대문구 천호대로 329 (장한평 매매단지)",
             "showroom_detail": "장한평 중고차 매매시장 가온모터스 전시장",
         }
 
-        # 6. 시세 비교 및 부대비용 가이드
-        market_avg = int(v.target_price * 1.05) if v.target_price else 0
-        diff_won = market_avg - v.target_price if market_avg > v.target_price else 0
+        # 6. 시세 비교 및 부대비용 가이드 (P0-3: 1.05배 가짜 평균 시세 전면 제거)
+        # 실제 시세 데이터가 없으면 임의 날조하지 않고 정직하게 안내
         price_comparison = {
             "target_price": v.target_price,
-            "market_avg_price": market_avg,
-            "savings_amount": diff_won,
-            "competition_analysis": f"동급 엔카/KB 평균 시세 대비 약 {diff_won}만원 합리적인 착한 가격",
-            "registration_tax_est": int(v.target_price * 0.07),  # 취등록세 약 7%
+            "market_avg_price": None,
+            "savings_amount": 0,
+            "competition_analysis": "동급 실거래 시세 정밀 비교 분석 중",
+            "registration_tax_est": int(v.target_price * 0.07) if v.target_price else 0,  # 취등록세 약 7%
             "service_fee": 30,  # 법정 매도비 약 30만원
         }
 
@@ -495,26 +509,26 @@ class PlatformService:
         return {
             "id": v.id,
             "plate_number": v.plate_number,
-            "vin": v.vin or "조회 완료",
-            "manufacturer": v.manufacturer or "현대",
+            "vin": v.vin or "미확인 (차대번호 미등록)",
+            "manufacturer": v.manufacturer or "미확인",
             "model_name": v.model_name,
-            "trim": v.trim or "기본 트림",
+            "trim": v.trim or "미확인",
             "year": v.year,
-            "first_registration_date": v.first_registration_date or f"{v.year}-01-01",
+            "first_registration_date": v.first_registration_date or "미확인",
             "mileage": v.mileage,
-            "displacement_cc": v.displacement_cc or 1999,
-            "fuel_type": v.fuel_type,
-            "transmission": v.transmission,
-            "drive_type": v.drive_type or "2WD",
+            "displacement_cc": v.displacement_cc,
+            "fuel_type": v.fuel_type or "미확인",
+            "transmission": v.transmission or "미확인",
+            "drive_type": v.drive_type or "미확인",
             "body_type": v.body_type or "세단",
-            "color": v.color,
-            "interior_color": v.interior_color or "블랙",
+            "color": v.color or "미확인",
+            "interior_color": v.interior_color or "미확인",
             "target_price": v.target_price,
             "monthly_payment_estimate": monthly_est,
-            "sales_conditions": v.sales_conditions or "현금 / 1금융 저금리 할부 / 세금계산서 100% 발행",
-            "ad_description": v.ad_description or f"장한평 차마트에서 직접 성능검사를 완료하고 보증하는 특A급 {v.model_name} 차량입니다.",
-            "ad_highlights": v.ad_highlights or "1인신조, 완전무사고, 비흡연, 타이어 및 브레이크 패드 신품급 교체",
-            "ad_notices": v.ad_notices or "침수 및 주행거리 조작 시 100% 환불 및 200만원 보상 계약서 명기",
+            "sales_conditions": v.sales_conditions or "상담 시 안내",
+            "ad_description": v.ad_description or f"차마트 인증 매물 {v.model_name} 차량입니다.",
+            "ad_highlights": v.ad_highlights or "",
+            "ad_notices": v.ad_notices or "",
             "photos": photos,
             "options_categorized": categorized_options,
             "accident_summary": accident_summary,
@@ -528,7 +542,10 @@ class PlatformService:
 
     @staticmethod
     def create_chamart_public_consultation(db: Session, data: dict[str, Any]) -> dict[str, Any]:
-        """차마트 웹사이트 고객 문의 및 방문 예약 접수."""
+        """차마트 웹사이트 고객 문의 및 방문 예약 접수 (개인정보 수집 동의 필수 검증)."""
+        if not data.get("privacy_agreed"):
+            raise ValueError("개인정보 수집 및 이용에 동의해야 상담 예약이 가능합니다.")
+
         name = (data.get("name") or "").strip()
         phone = (data.get("phone") or "").strip()
         if not name or not phone:
@@ -578,25 +595,63 @@ class PlatformService:
 
     @staticmethod
     def toggle_vehicle_public_status(db: Session, vehicle_id: str, is_public: bool | None = None) -> dict[str, Any]:
-        """관리자 전용 차량 차마트 공개 상태 토글."""
+        """관리자 전용 차량 차마트 공개 상태 토글 (DIRECTIVE 052 5대 서버 검증 가드 강제)."""
         v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
         if not v:
             raise ValueError(f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
 
-        if is_public is not None:
-            v.is_public = is_public
-        else:
-            v.is_public = not v.is_public
+        target_public = is_public if is_public is not None else not v.is_public
 
-        v.publishing_status = "PUBLISHED" if v.is_public else "UNPUBLISHED"
+        # 공개(True)로 전환 시 5대 서버 검증 가드 실행
+        if target_public:
+            # 가드 1: 시장 관측 매물 및 미승인 제휴 후보 차단
+            if v.ownership_type not in [OwnershipType.CHAMART_OWNED.value, OwnershipType.PARTNER_APPROVED.value]:
+                raise ValueError(
+                    f"차마트 공개 승인 실패: 관측/미승인 매물(소유유형: {v.ownership_type})은 고객에게 판매 매물로 공개할 수 없습니다."
+                )
+
+            # 가드 2: 테스트 및 데모 차량 공개 차단
+            if getattr(v, "is_demo", False):
+                raise ValueError("차마트 공개 승인 실패: 내부 테스트 및 데모 차량은 공개할 수 없습니다.")
+
+            # 가드 3: 판매 상태 검증 (FOR_SALE, AVAILABLE만 허용)
+            if v.status not in ["FOR_SALE", "AVAILABLE"]:
+                raise ValueError(
+                    f"차마트 공개 승인 실패: 실제 판매 가능한 상태(FOR_SALE, AVAILABLE)의 차량만 공개 가능합니다. (현재: {v.status})"
+                )
+
+            # 가드 4: 실차 사진 최소 1장 이상 등록 필수
+            has_photo = bool(v.photos) or bool(v.primary_photo_url)
+            if not has_photo:
+                raise ValueError("차마트 공개 승인 실패: 검증된 실차 사진이 최소 1장 이상 등록되어 있어야 합니다.")
+
+            # 가드 5: 소유·판매 권한 검증
+            if v.ownership_type == OwnershipType.PARTNER_APPROVED.value:
+                try:
+                    auth_json = json.loads(v.marketing_auth_json or "{}")
+                except Exception:
+                    auth_json = {}
+                if not auth_json.get("sale_auth", True):
+                    raise ValueError("차마트 공개 승인 실패: 제휴 판매 권한이 확인되지 않았습니다.")
+
+        v.is_public = target_public
+        # 차마트 공개 상태와 플랫폼 등록 상태 반영
+        if v.is_public:
+            if v.publishing_status not in ["APPROVED", "PUBLISHED"]:
+                v.publishing_status = "PUBLISHED"
+        else:
+            v.publishing_status = "UNPUBLISHED"
+
         v.updated_at = datetime.datetime.utcnow()
         db.commit()
         db.refresh(v)
 
         return {
             "vehicle_id": v.id,
+            "plate_number": v.plate_number,
             "is_public": v.is_public,
             "publishing_status": v.publishing_status,
+            "message": "차마트 공개 상태가 성공적으로 변경되었습니다." if v.is_public else "차량이 차마트 비공개로 격리되었습니다.",
         }
 
     @staticmethod

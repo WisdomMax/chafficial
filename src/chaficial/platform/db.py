@@ -10,6 +10,7 @@ DIRECTIVE 045 명세 준수:
 from __future__ import annotations
 
 import datetime
+import enum
 import json
 import os
 import uuid
@@ -43,6 +44,26 @@ else:
     DEMO_DB_PATH = DB_DIR / "chamart_platform_demo.db"
 
 DEMO_DB_URL = f"sqlite:///{DEMO_DB_PATH.absolute()}"
+
+
+class OwnershipType(str, enum.Enum):
+    """차량 소유 및 관리 권한 유형 (DIRECTIVE 046-D / 052)."""
+    CHAMART_OWNED = "CHAMART_OWNED"        # 차마트 직영 차량 (완전 소유 및 판매 권한 보유)
+    PARTNER_APPROVED = "PARTNER_APPROVED"  # 제휴 승인 매물 (서류/사진/광고권한 확인 완료)
+    PARTNER_CANDIDATE = "PARTNER_CANDIDATE" # 제휴 후보 매물 (미승인, 광고 금지)
+    MARKET_OBSERVED = "MARKET_OBSERVED"    # 시장 관측 매물 (엔카/KB 등 모니터링용, 공개 절대 금지)
+
+
+class PublishingStatus(str, enum.Enum):
+    """차량 플랫폼 게시 준비 및 승인 상태 (DIRECTIVE 050 / 052)."""
+    DRAFT = "DRAFT"
+    DATA_VERIFIED = "DATA_VERIFIED"
+    READY_TO_PUBLISH = "READY_TO_PUBLISH"
+    APPROVED = "APPROVED"
+    PUBLISHED = "PUBLISHED"
+    UPDATED = "UPDATED"
+    SOLD = "SOLD"
+    UNPUBLISHED = "UNPUBLISHED"
 
 
 class Base(DeclarativeBase):
@@ -133,7 +154,7 @@ class Vehicle(Base):
     options_structured_json: Mapped[str] = mapped_column(Text, default="[]")     # 표준 옵션 코드/순정/확인상태
     condition_detail_json: Mapped[str] = mapped_column(Text, default="{}")       # 프레임/외판/누유/침수 상세
     publishing_status: Mapped[str] = mapped_column(String(30), default="DRAFT") # DRAFT, DATA_VERIFIED, READY_TO_PUBLISH, APPROVED, PUBLISHED, UPDATED, SOLD, UNPUBLISHED
-    is_public: Mapped[bool] = mapped_column(Boolean, default=True)               # 차마트 고객 공개 여부 (DIRECTIVE 051)
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False)              # 차마트 고객 공개 여부 (DIRECTIVE 052: 기본값 False 격리)
     platform_readiness_json: Mapped[str] = mapped_column(Text, default="{}")    # 플랫폼별 등록 준비도 검사 결과
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
     updated_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
@@ -612,7 +633,7 @@ def migrate_db_schema() -> None:
             ("marketing_auth_json", "TEXT DEFAULT '{}'"),
             ("primary_photo_url", "VARCHAR(255)"),
             ("video_status", "VARCHAR(30) DEFAULT 'NONE'"),
-            ("is_public", "BOOLEAN DEFAULT 1"),
+            ("is_public", "BOOLEAN DEFAULT 0"),
         ]
         for col_name, col_type in vehicle_columns:
             if col_name not in existing_cols:

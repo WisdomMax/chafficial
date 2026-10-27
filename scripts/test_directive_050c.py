@@ -88,6 +88,7 @@ def http_request(url: str, method: str = "GET", data: dict = None, headers: dict
 
 def run_all_tests():
     global PASSED_COUNT
+    ts_now = int(time.time())
     print(f"[*] DIRECTIVE 050-C 검증 스위트 가동 (대상 서버: {BASE_URL})")
 
     # ----------------------------------------------------
@@ -131,8 +132,8 @@ def run_all_tests():
     # 4. 로그인 세션으로 기존 차량 10건 연속 상세조회 100% 정상
     # ----------------------------------------------------
     print_step(4, "로그인 세션으로 기존 차량 10건 연속 상세조회 100% 정상 (200 OK)")
-    # 차량 목록 조회
-    code, _, body = http_request(f"{BASE_URL}/api/vehicles")
+    # 차량 목록 조회 (P0-1 인증 필수 반영)
+    code, _, body = http_request(f"{BASE_URL}/api/vehicles", cookie=session_token)
     vehicles = json.loads(body)
     target_existing = vehicles[:10]
     assert_test(len(target_existing) >= 5, f"기존 등록 차량 최소 5건 이상 확보 (현재: {len(target_existing)}건)")
@@ -158,12 +159,12 @@ def run_all_tests():
     # ----------------------------------------------------
     print_step(5, "신규 차량 10건 생성 및 상세조회 100% 정상 (200 OK)")
     new_vehicle_ids = []
-    ts_now = int(time.time())
+    import uuid
     for i in range(1, 11):
-        plate_no = f"99다 {ts_now % 8000 + i:04d}"
+        plate_no = f"99다 {uuid.uuid4().int % 9000 + 1000:04d}"
         payload = {
             "plate_number": plate_no,
-            "vin": f"KMH050C{ts_now % 100000}{i:02d}",
+            "vin": f"KMH050C{uuid.uuid4().hex[:8].upper()}{i:02d}",
             "manufacturer": "기아",
             "model_name": "기아 쏘렌토 4세대",
             "trim": "2.5 가솔린 터보 노블레스",
