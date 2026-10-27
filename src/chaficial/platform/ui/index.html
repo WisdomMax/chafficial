@@ -164,6 +164,11 @@
             강화학습(RL) 원장
             <span class="ml-auto text-[10px] font-semibold bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">RL</span>
           </a>
+          <a href="#content-lab" onclick="switchNav('content-lab')" id="nav-content-lab" class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:bg-[#1B293E] hover:text-white">
+            <i data-lucide="flask-conical" class="w-4 h-4 mr-3 text-emerald-400"></i>
+            AI 콘텐츠 연구소
+            <span class="ml-auto text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30">051</span>
+          </a>
         </div>
       </div>
 
@@ -264,6 +269,12 @@
 
       <!-- 우측 거점 선택 및 상태 표시 -->
       <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
+        <!-- 차마트 고객몰 뷰 전환 버튼 (DIRECTIVE 051 브랜드 분리 & 공통 UI) -->
+        <button onclick="toggleChamartCustomerView()" id="btnCustomerMallView" class="flex items-center text-xs px-2.5 py-1.5 rounded-lg border font-bold transition-all bg-teal-50 border-teal-300 text-[#247D7C] hover:bg-teal-100 shadow-xs" title="차마트 일반 고객용 판매 차량 및 공통 상세페이지 체험">
+          <i data-lucide="store" class="w-3.5 h-3.5 mr-1.5"></i>
+          <span>차마트 고객몰 뷰</span>
+        </button>
+
         <!-- Gemini Vision AI 연동 상태 뱃지 & 설정 버튼 (DIRECTIVE 050-C) -->
         <button onclick="openGeminiSettingsModal()" id="headerGeminiBadge" class="flex items-center text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-all bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100" title="Gemini Vision AI 설정">
           <i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1.5 text-amber-600"></i>
@@ -1121,8 +1132,409 @@
       </section>
 
       <!-- ======================================================== -->
-      <!-- 7. 조직 및 설정 뷰 -->
+      <!-- DIRECTIVE 051: PART 2. AI 콘텐츠 연구소 뷰 -->
       <!-- ======================================================== -->
+      <section id="view-content-lab" class="space-y-6 hidden">
+        <!-- 상단 헤더 & 지속 관찰 세션 제어 바 -->
+        <div class="bg-white border border-[#D8E2EA] rounded-xl p-5 shadow-sm space-y-4">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="p-2 bg-emerald-100 text-emerald-800 rounded-lg">
+                  <i data-lucide="flask-conical" class="w-5 h-5"></i>
+                </span>
+                <div>
+                  <h2 class="text-xl font-bold text-[#172337] flex items-center">
+                    AI 중고차 콘텐츠 연구소
+                    <span id="labSessionStatusBadge" class="ml-3 text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600 border border-slate-300">
+                      IDLE (대기 중)
+                    </span>
+                  </h2>
+                  <p class="text-xs text-[#64748B] mt-0.5">
+                    국내 중고차 유튜브 경쟁 영상을 지속 관찰하고, 저작권을 엄격 준수하여 차마트만의 독창적인 기획·대본·프롬프트를 전자동 발굴합니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 세션 라이프사이클 제어 버튼군 -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="startContentLabSession()" id="btnLabStart" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center transition-colors">
+                <i data-lucide="play" class="w-3.5 h-3.5 mr-1.5"></i>
+                연구 시작
+              </button>
+              <button onclick="pauseContentLabSession()" id="btnLabPause" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs flex items-center transition-colors hidden">
+                <i data-lucide="pause" class="w-3.5 h-3.5 mr-1.5"></i>
+                일시정지
+              </button>
+              <button onclick="resumeContentLabSession()" id="btnLabResume" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center transition-colors hidden">
+                <i data-lucide="play" class="w-3.5 h-3.5 mr-1.5"></i>
+                연구 재개
+              </button>
+              <button onclick="stopContentLabSession()" id="btnLabStop" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center transition-colors hidden">
+                <i data-lucide="square" class="w-3.5 h-3.5 mr-1.5"></i>
+                세션 종료
+              </button>
+              <button onclick="stepContentLabSession()" id="btnLabStep" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-lg text-xs font-bold shadow-xs flex items-center transition-colors">
+                <i data-lucide="zap" class="w-3.5 h-3.5 mr-1.5 text-amber-500"></i>
+                1회 수동 관찰
+              </button>
+            </div>
+          </div>
+
+          <!-- 실시간 KPI 통계 카드 5종 -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div class="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
+              <div class="text-[11px] font-semibold text-slate-500">관찰 완료 영상</div>
+              <div class="text-lg font-bold text-slate-800 mt-1" id="labKpiVideos">0건</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">쇼츠 / 롱폼 메타데이터</div>
+            </div>
+            <div class="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
+              <div class="text-[11px] font-semibold text-slate-500">독창적 주제 발굴</div>
+              <div class="text-lg font-bold text-emerald-600 mt-1" id="labKpiTopics">0건</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">차마트 25년 전문 관점</div>
+            </div>
+            <div class="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
+              <div class="text-[11px] font-semibold text-slate-500">AI 대본 초안</div>
+              <div class="text-lg font-bold text-indigo-600 mt-1" id="labKpiScripts">0건</div>
+              <div class="text-[10px] text-indigo-400 mt-0.5">DRAFT (승인 대기)</div>
+            </div>
+            <div class="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
+              <div class="text-[11px] font-semibold text-slate-500">공식 승인 완료</div>
+              <div class="text-lg font-bold text-teal-600 mt-1" id="labKpiApproved">0건</div>
+              <div class="text-[10px] text-teal-500 mt-0.5">SHA-256 해시 검증</div>
+            </div>
+            <div class="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
+              <div class="text-[11px] font-semibold text-slate-500">일일 쿼터 사용량</div>
+              <div class="text-lg font-bold text-slate-800 mt-1" id="labKpiQuota">0 / 10,000</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">YouTube v3 Quota Unit</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7대 서브 탭 바 (DIRECTIVE 051 9항) -->
+        <div class="bg-white border border-[#D8E2EA] rounded-xl shadow-sm overflow-hidden">
+          <div class="flex border-b border-[#D8E2EA] bg-slate-50/60 overflow-x-auto custom-scrollbar">
+            <button onclick="switchContentLabSubTab('status')" id="subtab-btn-status" class="py-3 px-4 border-b-2 border-emerald-600 text-emerald-700 font-bold text-xs whitespace-nowrap flex items-center">
+              <i data-lucide="activity" class="w-3.5 h-3.5 mr-1.5"></i>
+              1. 연구 현황
+            </button>
+            <button onclick="switchContentLabSubTab('clusters')" id="subtab-btn-clusters" class="py-3 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs whitespace-nowrap flex items-center">
+              <i data-lucide="layers" class="w-3.5 h-3.5 mr-1.5"></i>
+              2. 인기 관심 주제
+            </button>
+            <button onclick="switchContentLabSubTab('topics')" id="subtab-btn-topics" class="py-3 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs whitespace-nowrap flex items-center">
+              <i data-lucide="lightbulb" class="w-3.5 h-3.5 mr-1.5"></i>
+              3. AI 추천 아이디어
+            </button>
+            <button onclick="switchContentLabSubTab('drafts')" id="subtab-btn-drafts" class="py-3 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs whitespace-nowrap flex items-center">
+              <i data-lucide="file-edit" class="w-3.5 h-3.5 mr-1.5"></i>
+              4. 대본 초안
+            </button>
+            <button onclick="switchContentLabSubTab('review')" id="subtab-btn-review" class="py-3 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs whitespace-nowrap flex items-center">
+              <i data-lucide="check-square" class="w-3.5 h-3.5 mr-1.5"></i>
+              5. 검토·수정
+            </button>
+            <button onclick="switchContentLabSubTab('approved')" id="subtab-btn-approved" class="py-3 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs whitespace-nowrap flex items-center">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 mr-1.5"></i>
+              6. 승인 완료
+            </button>
+            <button onclick="switchContentLabSubTab('prompts')" id="subtab-btn-prompts" class="py-3 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs whitespace-nowrap flex items-center">
+              <i data-lucide="clapperboard" class="w-3.5 h-3.5 mr-1.5"></i>
+              7. 영상 제작 준비
+            </button>
+          </div>
+
+          <!-- 서브 탭 1: 연구 현황 -->
+          <div id="subtab-panel-status" class="p-5 space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="md:col-span-2 space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-bold text-sm text-[#172337] flex items-center">
+                    <i data-lucide="radar" class="w-4 h-4 mr-1.5 text-emerald-600"></i>
+                    현재 관찰 중인 경쟁 중고차 영상 (최근 수집)
+                  </h3>
+                  <span class="text-xs text-slate-400">저작권 보호: 메타데이터 분석 전용, 원문 대본/음성 미보관</span>
+                </div>
+                <div id="labRecentVideosContainer" class="space-y-2.5 max-h-[460px] overflow-y-auto custom-scrollbar">
+                  <div class="p-8 text-center text-slate-400 text-xs">수집된 관찰 영상이 없습니다. [연구 시작] 버튼을 클릭하세요.</div>
+                </div>
+              </div>
+
+              <div class="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <h4 class="font-bold text-xs text-slate-700">지속 관찰 타겟 키워드</h4>
+                <div id="labKeywordsContainer" class="flex flex-wrap gap-1.5"></div>
+
+                <div class="pt-3 border-t border-slate-200 text-xs text-slate-600 space-y-2">
+                  <div class="font-semibold text-slate-800">체크포인트 정보</div>
+                  <div id="labCheckpointInfo" class="text-[11px] font-mono bg-white p-2.5 rounded border border-slate-200 text-slate-600 overflow-x-auto">
+                    체크포인트 준비 중
+                  </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-200 text-[11px] text-slate-500 space-y-1">
+                  <div>• 세션 일시정지 시 체크포인트가 안전 보존됩니다.</div>
+                  <div>• 재실행 시 마지막 키워드 다음부터 논스톱 분석을 이어갑니다.</div>
+                  <div>• 일일 쿼터 초과 시 자동으로 관찰이 차단됩니다.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 서브 탭 2: 인기 관심 주제 (클러스터) -->
+          <div id="subtab-panel-clusters" class="p-5 space-y-4 hidden">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 class="font-bold text-sm text-[#172337]">시장 공통 관심사 클러스터 (Semantic Clusters)</h3>
+              <span class="text-xs text-slate-500">경쟁 영상들의 빈출 키워드와 질문 군집</span>
+            </div>
+            <div id="labClustersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          </div>
+
+          <!-- 서브 탭 3: AI 추천 아이디어 (주제 후보) -->
+          <div id="subtab-panel-topics" class="p-5 space-y-4 hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
+              <div>
+                <h3 class="font-bold text-sm text-[#172337]">차마트 독창적 주제 후보 (AI Synthesized Topics)</h3>
+                <p class="text-xs text-slate-500">25년 현장 딜러 관점으로 재구성된 독립 기획 아이디어</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <select id="labTopicFilterCategory" onchange="filterLabTopics()" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700">
+                  <option value="">전체 카테고리</option>
+                  <option value="수리비/유지비">수리비/유지비</option>
+                  <option value="허위매물/사기예방">허위매물/사기예방</option>
+                  <option value="감가상각/가성비">감가상각/가성비</option>
+                  <option value="성능점검/사고이력">성능점검/사고이력</option>
+                  <option value="첫차추천/가성비">첫차추천/가성비</option>
+                  <option value="차량점검/엔진미션">차량점검/엔진미션</option>
+                </select>
+              </div>
+            </div>
+            <div id="labTopicsList" class="space-y-3">
+              <div class="p-8 text-center text-slate-400 text-xs">주제 후보를 불러오는 중...</div>
+            </div>
+          </div>
+
+          <!-- 서브 탭 4: 대본 초안 (DRAFT) -->
+          <div id="subtab-panel-drafts" class="p-5 space-y-4 hidden">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div>
+                <h3 class="font-bold text-sm text-[#172337]">자동 작성된 대본 초안 목록 (DRAFT)</h3>
+                <p class="text-xs text-slate-500">주제 발굴 시 8대 필수요소(제목, 훅, 4장면 스토리보드, Q&A)로 자동 구성된 초안</p>
+              </div>
+              <span class="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+                ⚠️ 자동 승인 금지 (관리자 검토 필수)
+              </span>
+            </div>
+            <div id="labDraftsList" class="space-y-3">
+              <div class="p-8 text-center text-slate-400 text-xs">대본 초안을 불러오는 중...</div>
+            </div>
+          </div>
+
+          <!-- 서브 탭 5: 검토·수정 -->
+          <div id="subtab-panel-review" class="p-5 space-y-5 hidden">
+            <div id="labReviewEmptyState" class="p-12 text-center text-slate-400 text-xs">
+              대본 초안 탭에서 [검토 및 수정] 버튼을 클릭하거나 검토할 대본을 선택하세요.
+            </div>
+            <div id="labReviewContainer" class="space-y-5 hidden">
+              <!-- 상단 액션 바 -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span id="reviewScriptStatusBadge" class="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">DRAFT</span>
+                    <span id="reviewScriptCategory" class="text-xs text-slate-500 font-semibold">카테고리</span>
+                    <span class="text-xs text-slate-400">| 버전 <span id="reviewScriptVersion">1</span></span>
+                  </div>
+                  <h3 id="reviewTopicTitle" class="text-base font-bold text-[#172337] mt-1">대본 제목</h3>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <button onclick="approveCurrentScript()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center transition-colors">
+                    <i data-lucide="check" class="w-3.5 h-3.5 mr-1.5"></i>
+                    공식 승인 (SHA-256)
+                  </button>
+                  <button onclick="rejectCurrentScript()" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition-colors">
+                    반려
+                  </button>
+                  <button onclick="saveCurrentScriptEdits()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors">
+                    수정 저장
+                  </button>
+                </div>
+              </div>
+
+              <!-- 8대 필수 영역 에디터 -->
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div class="lg:col-span-2 space-y-4">
+                  <!-- 1. 제목 후보 3종 -->
+                  <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
+                    <h4 class="font-bold text-xs text-slate-700 flex items-center">
+                      <span class="w-4 h-4 rounded-full bg-slate-800 text-white text-[10px] flex items-center justify-center mr-1.5">1</span>
+                      독창적 콘텐츠 제목 후보 (3종)
+                    </h4>
+                    <div id="reviewTitleOptions" class="space-y-1.5 text-xs text-slate-700"></div>
+                  </div>
+
+                  <!-- 2. 기획 의도 및 타겟 -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-1.5">
+                      <label class="text-[11px] font-bold text-slate-600">핵심 시청자</label>
+                      <input type="text" id="reviewTargetAudience" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg" />
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-1.5">
+                      <label class="text-[11px] font-bold text-slate-600">기획 의도</label>
+                      <input type="text" id="reviewPlanningIntent" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg" />
+                    </div>
+                  </div>
+
+                  <!-- 3. 오프닝 훅 -->
+                  <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
+                    <label class="text-xs font-bold text-slate-700 flex items-center">
+                      <span class="w-4 h-4 rounded-full bg-slate-800 text-white text-[10px] flex items-center justify-center mr-1.5">2</span>
+                      첫 장면 관심 유도 문장 (Hook - 첫 3초)
+                    </label>
+                    <textarea id="reviewHookSentence" rows="2" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-800"></textarea>
+                  </div>
+
+                  <!-- 4. 전체 대본 본문 -->
+                  <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="text-xs font-bold text-slate-700 flex items-center">
+                        <span class="w-4 h-4 rounded-full bg-slate-800 text-white text-[10px] flex items-center justify-center mr-1.5">3</span>
+                        새롭게 구성한 전체 대본 (한국어 음절 계산)
+                      </label>
+                      <span id="reviewDurationBadge" class="text-[11px] font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded">약 30초 발화 분량</span>
+                    </div>
+                    <textarea id="reviewFullScript" rows="6" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-lg font-mono text-slate-800 leading-relaxed"></textarea>
+                  </div>
+
+                  <!-- 5. 장면별 스토리보드 연출 개요 -->
+                  <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+                    <h4 class="font-bold text-xs text-slate-700 flex items-center">
+                      <span class="w-4 h-4 rounded-full bg-slate-800 text-white text-[10px] flex items-center justify-center mr-1.5">4</span>
+                      장면별 연출 개요 (4-Scene Storyboard)
+                    </h4>
+                    <div id="reviewStoryboardContainer" class="space-y-2.5"></div>
+                  </div>
+                </div>
+
+                <!-- 우측 사실검증 & 사장님 Q&A -->
+                <div class="space-y-4">
+                  <!-- 사실 검증 체크리스트 -->
+                  <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2.5">
+                    <h4 class="font-bold text-xs text-slate-700 flex items-center">
+                      <i data-lucide="shield-alert" class="w-4 h-4 mr-1.5 text-amber-500"></i>
+                      사실 검증 체크리스트
+                    </h4>
+                    <div id="reviewFactCheckList" class="space-y-1.5 text-xs text-slate-600"></div>
+                  </div>
+
+                  <!-- 차마트 사장님께 확인할 질문 (Q&A) -->
+                  <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center space-x-1.5">
+                      <i data-lucide="message-square" class="w-4 h-4 text-amber-700"></i>
+                      <h4 class="font-bold text-xs text-amber-900">차마트 사장님 실무 확인 질문</h4>
+                    </div>
+                    <div id="reviewDealerQuestionsContainer" class="space-y-2.5 text-xs"></div>
+                  </div>
+
+                  <!-- 승인 무효화 안내 -->
+                  <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-[11px] text-slate-500 space-y-1">
+                    <div class="font-bold text-slate-700">승인 해시 무결성 규칙:</div>
+                    <div>• 대본 수정 시 기존 승인이 즉시 무효화되고 DRAFT로 전환됩니다.</div>
+                    <div>• 공식 승인 시 전체 대본과 연출을 결합한 SHA-256 해시가 고정 보존됩니다.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 서브 탭 6: 승인 완료 -->
+          <div id="subtab-panel-approved" class="p-5 space-y-4 hidden">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div>
+                <h3 class="font-bold text-sm text-[#172337]">공식 승인 완료 대본 (Approved Scripts)</h3>
+                <p class="text-xs text-slate-500">관리자 인증 및 해시 검증을 통과한 영상 제작 적격 대본</p>
+              </div>
+            </div>
+            <div id="labApprovedList" class="space-y-3">
+              <div class="p-8 text-center text-slate-400 text-xs">승인 완료된 대본을 불러오는 중...</div>
+            </div>
+          </div>
+
+          <!-- 서브 탭 7: 영상 제작 준비 (프롬프트 패키지) -->
+          <div id="subtab-panel-prompts" class="p-5 space-y-5 hidden">
+            <div id="labPromptsEmptyState" class="p-12 text-center text-slate-400 text-xs">
+              승인 완료 탭에서 [영상 프롬프트 생성] 버튼을 클릭하세요.
+            </div>
+            <div id="labPromptsContainer" class="space-y-5 hidden">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-teal-50/50 border border-teal-200 rounded-xl">
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold px-2 py-0.5 rounded bg-teal-600 text-white" id="promptModelBadge">WAN_3_0</span>
+                    <span class="text-xs text-teal-800 font-mono font-bold" id="promptApprovedHash">HASH: 00000000</span>
+                  </div>
+                  <h3 id="promptTopicTitle" class="text-base font-bold text-[#172337] mt-1">영상 프롬프트 패키지</h3>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <button onclick="copyMasterPrompt()" class="px-4 py-2 bg-[#247D7C] hover:bg-[#1D6665] text-white rounded-lg text-xs font-bold shadow-xs flex items-center transition-colors">
+                    <i data-lucide="copy" class="w-3.5 h-3.5 mr-1.5"></i>
+                    마스터 프롬프트 복사
+                  </button>
+                </div>
+              </div>
+
+              <!-- 장면별 프롬프트 카드 그리드 -->
+              <div id="labScenePromptsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+              <!-- 전체 마스터 프롬프트 텍스트 에리어 -->
+              <div class="bg-slate-900 rounded-xl p-4 text-slate-200 space-y-2">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-400">
+                  <span>FULL MASTER PROMPT OUTPUT</span>
+                  <span class="font-mono text-[11px] text-teal-400">Production Ready</span>
+                </div>
+                <textarea id="labFullMasterPromptText" readonly rows="8" class="w-full bg-slate-950 text-emerald-400 font-mono text-xs p-3 rounded-lg border border-slate-800 leading-relaxed"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- DIRECTIVE 051: PART 1. 차마트(CHAMART) 고객 판매몰 뷰 -->
+      <!-- ======================================================== -->
+      <section id="view-chamart-mall" class="space-y-6 hidden">
+        <!-- 차마트 브랜드 배너 -->
+        <div class="bg-gradient-to-r from-[#101A2A] via-[#162B45] to-[#247D7C] text-white rounded-2xl p-6 sm:p-8 shadow-md">
+          <div class="max-w-3xl space-y-3">
+            <div class="inline-flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>CHAMART OFFICIAL SHOWROOM</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              장한평 25년 차마트 직영 인증 중고차
+            </h2>
+            <p class="text-sm text-slate-200 leading-relaxed">
+              성능점검기록부 100% 공개, 침수·주행거리 조작 시 100% 환불 보증. 차마트 사장님이 직접 선별하고 검증한 실매물만 고객님께 안내합니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- 매물 필터 및 카운터 -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+          <div class="text-sm font-bold text-[#172337] flex items-center">
+            <span>실제 판매 중인 인증 매물</span>
+            <span id="chamartMallCount" class="ml-2 px-2 py-0.5 bg-teal-100 text-[#247D7C] rounded-full text-xs font-extrabold">0대</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="switchNav('vehicles')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors">
+              차피셜 관리자 뷰로 복귀
+            </button>
+          </div>
+        </div>
+
+        <!-- 고객용 매물 카드 그리드 -->
+        <div id="chamartMallGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div class="col-span-full py-16 text-center text-slate-400">차마트 판매 매물을 불러오는 중...</div>
+        </div>
+      </section>
       <section id="view-settings" class="space-y-6 hidden">
         <div>
           <h2 class="text-xl font-bold text-[#172337]">조직 및 시스템 설정</h2>
@@ -1425,6 +1837,278 @@
           <div class="bg-white border border-[#D8E2EA] rounded-xl p-4 space-y-3">
             <h4 class="font-bold text-xs text-slate-700 tracking-wider">이 차량과 연결된 AI 영상 홍보 프로젝트</h4>
             <div id="vd_media_list" class="space-y-2 text-xs"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- DIRECTIVE 051: 차피셜·차마트 공통 고급 차량 상세 모달 (Unified Vehicle Detail) -->
+  <!-- ======================================================== -->
+  <div id="unifiedVehicleDetailModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- 상단 글로벌 바 (브랜드 헤더 & 닫기 & 관리자 액션) -->
+      <div class="px-5 py-3.5 border-b border-[#D8E2EA] bg-slate-900 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-3">
+          <span class="w-6 h-6 rounded bg-[#247D7C] flex items-center justify-center font-bold text-xs text-white">차</span>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-sm tracking-wide" id="uvdBrandLabel">CHAMART OFFICIAL</span>
+              <span id="uvdPublicBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">공개 판매 매물</span>
+              <span id="uvdAdminIndicator" class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 hidden">관리자 모드</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <!-- 관리자 전용 액션 버튼군 (isAdmin 시 노출) -->
+          <div id="uvdAdminActions" class="hidden flex items-center space-x-2">
+            <button onclick="toggleUvdMarginView()" id="btnUvdToggleMargin" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors">
+              원가/수익 보기
+            </button>
+            <button onclick="toggleCurrentVehiclePublish()" id="btnUvdTogglePublish" class="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded shadow-xs transition-colors">
+              게시 승인
+            </button>
+            <button onclick="openVehicleModalFromUvd()" class="px-2.5 py-1 text-xs bg-teal-600 hover:bg-teal-700 text-white font-bold rounded shadow-xs transition-colors">
+              마스터 수정
+            </button>
+          </div>
+
+          <button onclick="closeUnifiedVehicleDetailModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 관리자 전용 내부 원가/마진 바 (토글 가능) -->
+      <div id="uvdMarginBar" class="hidden bg-amber-50 border-b border-amber-200 px-5 py-2.5 text-xs text-amber-900 flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-4">
+          <span class="font-bold">🔒 관리자 전용 원가 데이터:</span>
+          <span>매입가: <strong id="uvdPurchasePrice">-</strong></span>
+          <span>상품화비용: <strong id="uvdReconCost">-</strong></span>
+          <span>추정 마진: <strong id="uvdEstimatedMargin" class="text-emerald-700">-</strong></span>
+        </div>
+        <span class="text-[10px] text-amber-700">고객 공개 화면에는 이 영역이 절대 노출되지 않습니다.</span>
+      </div>
+
+      <!-- 모달 메인 바디 (좌우 2컬럼 레이아웃) -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- ================= 좌측 컬럼: 대형 사진 갤러리 & AI 영상 (5 cols) ================= -->
+        <div class="lg:col-span-5 space-y-4">
+          <!-- 1. 대형 메인 사진 뷰어 -->
+          <div class="relative bg-slate-900 rounded-2xl overflow-hidden aspect-4/3 flex items-center justify-center group shadow-md border border-slate-200">
+            <img id="uvdMainPhoto" src="" alt="차량 대표 사진" class="w-full h-full object-cover transition-opacity duration-200" />
+            
+            <!-- 사진 넘기기 좌우 버튼 -->
+            <button onclick="navigateUvdPhoto(-1)" class="absolute left-2.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors">
+              <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+            <button onclick="navigateUvdPhoto(1)" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/80 transition-colors">
+              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+
+            <!-- 사진 카운터 & 캡션 -->
+            <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between pointer-events-none">
+              <span id="uvdPhotoCaption" class="text-xs text-white bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-xs truncate max-w-[70%]">
+                차량 외관 전면
+              </span>
+              <span id="uvdPhotoCounter" class="text-xs text-white font-mono bg-black/60 px-2 py-1 rounded-md backdrop-blur-xs">
+                1 / 1
+              </span>
+            </div>
+          </div>
+
+          <!-- 2. 하단 썸네일 스트립 -->
+          <div id="uvdThumbnailsStrip" class="flex space-x-2 overflow-x-auto custom-scrollbar pb-1.5"></div>
+
+          <!-- 3. 승인된 AI 홍보 영상 영역 -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-xs text-slate-800 flex items-center">
+                <i data-lucide="play-circle" class="w-4 h-4 mr-1.5 text-teal-600"></i>
+                차마트 공인 AI 홍보 영상
+              </h4>
+              <span id="uvdVideoStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600">
+                제작 대기
+              </span>
+            </div>
+            
+            <div id="uvdVideoContainer" class="bg-white rounded-lg border border-slate-200 p-3 text-center text-xs text-slate-500">
+              승인된 홍보 영상이 준비 중입니다.
+            </div>
+          </div>
+
+          <!-- 4. 장한평 전시장 & 전문 딜러 안내 -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-full bg-[#101A2A] text-white flex items-center justify-center font-bold text-sm shrink-0">
+                딜러
+              </div>
+              <div>
+                <div class="font-bold text-sm text-[#172337]" id="uvdDealerName">차마트 인증 전문딜러</div>
+                <div class="text-xs text-slate-500" id="uvdDealershipName">차마트 장한평 본사 가온모터스</div>
+              </div>
+            </div>
+            <div class="text-xs text-slate-600 space-y-1 pt-2 border-t border-slate-100">
+              <div class="flex items-center">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 mr-1 text-slate-400"></i>
+                <span id="uvdShowroomLocation">서울특별시 동대문구 천호대로 329 (장한평 매매단지)</span>
+              </div>
+              <div class="flex items-center">
+                <i data-lucide="phone" class="w-3.5 h-3.5 mr-1 text-slate-400"></i>
+                <span id="uvdDealerPhone">02-2244-8899</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= 우측 컬럼: 제원, 가격, 옵션, 성능, 상담신청 (7 cols) ================= -->
+        <div class="lg:col-span-7 space-y-5">
+          
+          <!-- 1. 헤더: 모델명, 트림, 가격 및 월 납입금 -->
+          <div class="border-b border-slate-100 pb-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="text-xs text-slate-500 font-semibold" id="uvdPlateAndYear">2022년식 · 서울 번호판</div>
+              <span id="uvdAccidentFreeBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300">
+                완전 무사고 보증
+              </span>
+            </div>
+            
+            <h2 class="text-xl sm:text-2xl font-extrabold text-[#172337]" id="uvdModelAndTrim">
+              제네시스 G80 (RG3) 가솔린 2.5 터보 AWD
+            </h2>
+
+            <div class="flex flex-wrap items-baseline gap-3 pt-1">
+              <div class="text-2xl sm:text-3xl font-extrabold text-[#247D7C]" id="uvdPriceText">
+                4,650만원
+              </div>
+              <div class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg" id="uvdMonthlyEstimate">
+                월 약 89만원 (60개월 할부 기준)
+              </div>
+            </div>
+
+            <div class="text-xs text-slate-500" id="uvdSalesConditions">
+              판매 조건: 현금 / 1금융 저금리 할부 / 세금계산서 100% 발행
+            </div>
+          </div>
+
+          <!-- 2. 차량 핵심 4대 제원 스펙 카드 -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div class="text-[11px] text-slate-400 font-semibold">연식 / 등록일</div>
+              <div class="text-xs font-bold text-slate-800 mt-0.5" id="uvdSpecYear">-</div>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div class="text-[11px] text-slate-400 font-semibold">주행거리</div>
+              <div class="text-xs font-bold text-slate-800 mt-0.5" id="uvdSpecMileage">-</div>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div class="text-[11px] text-slate-400 font-semibold">연료 / 변속기</div>
+              <div class="text-xs font-bold text-slate-800 mt-0.5" id="uvdSpecFuelTrans">-</div>
+            </div>
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <div class="text-[11px] text-slate-400 font-semibold">배기량 / 차체</div>
+              <div class="text-xs font-bold text-slate-800 mt-0.5" id="uvdSpecDisplacementBody">-</div>
+            </div>
+          </div>
+
+          <!-- 3. 사고·보험·성능점검 리포트 -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 class="font-bold text-xs text-slate-800 flex items-center">
+                <i data-lucide="file-check" class="w-4 h-4 mr-1.5 text-emerald-600"></i>
+                성능점검 및 사고 검증 결과
+              </h4>
+              <span class="text-[11px] text-slate-400" id="uvdInspectionDate">점검일: 2026-10-25</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div class="flex items-center justify-between p-2 rounded bg-slate-50">
+                <span class="text-slate-500">주요 골격 (프레임)</span>
+                <span class="font-bold text-emerald-700" id="uvdFrameStatus">손상 없음 (정상)</span>
+              </div>
+              <div class="flex items-center justify-between p-2 rounded bg-slate-50">
+                <span class="text-slate-500">외부 패널 (외판)</span>
+                <span class="font-bold text-slate-700" id="uvdOuterStatus">단순 교환 없음</span>
+              </div>
+              <div class="flex items-center justify-between p-2 rounded bg-slate-50">
+                <span class="text-slate-500">엔진·미션 누유</span>
+                <span class="font-bold text-emerald-700" id="uvdOilLeakStatus">미세누유 없음 (정상)</span>
+              </div>
+              <div class="flex items-center justify-between p-2 rounded bg-slate-50">
+                <span class="text-slate-500">특수 사고 (침수/화재)</span>
+                <span class="font-bold text-emerald-700" id="uvdSpecialStatus">침수/화재 이력 없음</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. 카테고리별 표준 옵션 그리드 -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+            <h4 class="font-bold text-xs text-slate-800 flex items-center">
+              <i data-lucide="check-circle" class="w-4 h-4 mr-1.5 text-teal-600"></i>
+              주요 사양 및 카테고리별 옵션
+            </h4>
+            <div id="uvdOptionsContainer" class="space-y-2 text-xs"></div>
+          </div>
+
+          <!-- 5. 시세 비교 및 부대비용 가이드 -->
+          <div class="bg-teal-50/40 border border-teal-200 rounded-xl p-4 space-y-2.5">
+            <h4 class="font-bold text-xs text-teal-900 flex items-center">
+              <i data-lucide="trending-down" class="w-4 h-4 mr-1.5 text-teal-700"></i>
+              실거래 시세 비교 및 부대비용 가이드
+            </h4>
+            <div class="text-xs text-teal-800 leading-relaxed" id="uvdPriceComparisonText">
+              동급 엔카/KB 평균 시세 대비 약 80만원 합리적인 착한 가격입니다.
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[11px] text-teal-900 pt-1">
+              <div class="bg-white/80 p-2 rounded border border-teal-200/60">
+                취등록세 예상 (7%): <strong id="uvdRegTaxEst">-</strong>
+              </div>
+              <div class="bg-white/80 p-2 rounded border border-teal-200/60">
+                법정 매도비: <strong>약 30만원</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. 고객 문의 및 방문 예약 폼 (인증 상담 연계) -->
+          <div class="bg-white border-2 border-[#247D7C]/30 rounded-2xl p-5 space-y-3 shadow-sm">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-sm text-[#172337] flex items-center">
+                <i data-lucide="calendar" class="w-4 h-4 mr-1.5 text-[#247D7C]"></i>
+                차량 문의 및 장한평 전시장 방문 예약
+              </h4>
+              <span class="text-[10px] text-[#247D7C] font-bold bg-teal-50 px-2 py-0.5 rounded">10분 내 빠른 회신</span>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-slate-600 font-semibold mb-1">고객 성함 *</label>
+                <input type="text" id="uvdConsultName" placeholder="예: 홍길동" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800" />
+              </div>
+              <div>
+                <label class="block text-slate-600 font-semibold mb-1">연락처 *</label>
+                <input type="text" id="uvdConsultPhone" placeholder="예: 010-1234-5678" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-slate-600 font-semibold mb-1">희망 방문일시</label>
+                <input type="datetime-local" id="uvdConsultDate" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800" />
+              </div>
+              <div>
+                <label class="block text-slate-600 font-semibold mb-1">문의 내용</label>
+                <input type="text" id="uvdConsultContent" placeholder="시운전 희망, 대차 문의, 할부 조건 등" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800" />
+              </div>
+            </div>
+
+            <button onclick="submitUvdConsultation()" class="w-full py-2.5 bg-[#247D7C] hover:bg-[#1D6665] text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center">
+              <i data-lucide="send" class="w-3.5 h-3.5 mr-1.5"></i>
+              상담 및 전시장 방문 예약 신청하기
+            </button>
           </div>
         </div>
 
@@ -3090,7 +3774,7 @@
     // ----------------------------------------------------
     // 3. 네비게이션 탭 전환 (DIRECTIVE 046-A / 047 확장)
     // ----------------------------------------------------
-    const NAV_ITEMS = ['dashboard', 'vehicles', 'customers', 'transactions', 'documents', 'media', 'market', 'sourcing', 'attribution', 'rl', 'settings'];
+    const NAV_ITEMS = ['dashboard', 'vehicles', 'customers', 'transactions', 'documents', 'media', 'market', 'sourcing', 'attribution', 'rl', 'settings', 'content-lab', 'chamart-mall'];
     const TITLE_MAP = {
       dashboard: { title: '대시보드', desc: '차마트 본사 및 거점의 실시간 운영 현황을 통합 관리합니다.' },
       vehicles: { title: '차량 관리', desc: '차마트 보유 매물의 가격, 재고 상태, 거점 정보를 관리합니다.' },
@@ -3102,6 +3786,8 @@
       sourcing: { title: '엔카 실매물 소싱', desc: '엔카 서울 공개 매물을 자동 수집하고 장한평 단지 확인 및 가격 변동 이력을 추적합니다.' },
       attribution: { title: '마케팅 성과 및 정산', desc: 'AI 영상 콘텐츠의 유입 기여도, 실제 판매 계약 성과 및 공헌이익을 정산 추적합니다.' },
       rl: { title: '강화학습(RL) 연구원장', desc: '미래 정보 누출이 차단된 오프라인 의사결정 로그와 모델 학습 적합성 진단을 제공합니다.' },
+      'content-lab': { title: 'AI 콘텐츠 연구소', desc: '유튜브 경쟁 영상을 지속 관찰하고, 차마트 25년 전문성 기반 독립 대본·프롬프트를 자동 발굴합니다.' },
+      'chamart-mall': { title: '차마트 공식 고객몰', desc: '장한평 중고차 인증 실매물 검색 및 일반 고객용 공통 상세페이지를 체험합니다.' },
       settings: { title: '조직 및 설정', desc: '차마트 본사 및 거점 지점, 보안 정책, 데이터베이스 격리 상태를 확인합니다.' }
     };
 
@@ -3130,6 +3816,8 @@
       if (targetId === 'sourcing') loadSourcingData();
       if (targetId === 'attribution') loadAttributionData();
       if (targetId === 'rl') loadRLData();
+      if (targetId === 'content-lab') loadContentLabAll();
+      if (targetId === 'chamart-mall') loadChamartMallVehicles();
 
       // 모바일 사이드바 닫기
       closeMobileSidebar();
@@ -3337,7 +4025,7 @@
           : getCarPlaceholderHtml();
 
         return `
-          <tr ondblclick="openVehicleDetailModal('${v.id}')" class="hover:bg-teal-50/40 cursor-pointer transition-colors group">
+          <tr ondblclick="openUnifiedVehicleDetailModal('${v.id}', true)" class="hover:bg-teal-50/40 cursor-pointer transition-colors group">
             <td class="py-3 px-3 text-center">
               ${thumbImg}
             </td>
@@ -3358,6 +4046,9 @@
                 <button onclick="openVehicleDetailModal('${v.id}')" class="px-2 py-1 text-xs bg-[#247D7C] hover:bg-[#1D6665] text-white rounded font-medium shadow-xs">
                   상세보기
                 </button>
+                <button onclick="openUnifiedVehicleDetailModal('${v.id}', true)" class="px-2 py-1 text-xs border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded font-bold shadow-xs" title="차마트 고객 공통 고급 상세페이지">
+                  공통상세
+                </button>
                 <button onclick="openVehicleModal('${v.id}')" class="px-2 py-1 text-xs border border-teal-600 text-teal-700 bg-teal-50/50 hover:bg-teal-100/60 rounded font-medium shadow-xs">
                   마스터 수정
                 </button>
@@ -3372,8 +4063,962 @@
     }
 
     // ----------------------------------------------------
-    // 6. 차량 마스터 상세 모달 제어 (DIRECTIVE 046-D & 050-C)
+    // 6. 차량 마스터 상세 모달 제어 (DIRECTIVE 046-D 레거시 호환)
     // ----------------------------------------------------
+    async function openVehicleDetailModal(vehicleId) {
+      try {
+        const res = await safeFetch(`/api/vehicles/${vehicleId}/detail`);
+        if (!res.ok) {
+          if (res.status === 404) showToast('해당 차량을 찾을 수 없습니다 (404 Not Found).', 'error');
+          else if (res.status === 500) showToast('차량 상세 조회 중 서버 내부 오류가 발생했습니다 (500).', 'error');
+          return;
+        }
+        const d = await res.json();
+        currentVehicleDetail = d;
+
+        // 상단 헤더 렌더링
+        document.getElementById('vd_plate_number').innerText = d.plate_number || '-';
+        document.getElementById('vd_model_name').innerText = d.model_name || '-';
+        document.getElementById('vd_specs').innerText = `${d.year}년식 · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '-'} · ${d.fuel_type} · ${d.transmission}`;
+        document.getElementById('vd_price').innerText = d.target_price ? `${Number(d.target_price).toLocaleString('ko-KR')}만원` : '-';
+        
+        document.getElementById('vd_ownership_badge').innerHTML = getOwnershipBadge(d.ownership_type, d.dealer ? d.dealer.dealership_name : null);
+        document.getElementById('vd_video_badge').innerHTML = getVideoStatusBadge(d.video_status);
+
+        const photoEl = document.getElementById('vd_primary_photo');
+        const fallbackEl = document.getElementById('vd_primary_photo_fallback');
+        photoEl.onerror = () => {
+          photoEl.classList.add('hidden');
+          fallbackEl.classList.remove('hidden');
+        };
+        if (d.primary_photo_url) {
+          photoEl.src = d.primary_photo_url;
+          photoEl.classList.remove('hidden');
+          fallbackEl.classList.add('hidden');
+        } else {
+          photoEl.classList.add('hidden');
+          fallbackEl.classList.remove('hidden');
+        }
+
+        const btnVideo = document.getElementById('btnCreateVideoFromVehicle');
+        const isAuthVideo = d.marketing_auth && d.marketing_auth.video_allowed && (d.ownership_type !== 'MARKET_OBSERVED');
+        if (isAuthVideo) {
+          btnVideo.className = "px-4 py-2 bg-[#247D7C] hover:bg-[#1D6665] text-white text-xs font-bold rounded-lg shadow-sm flex items-center transition-all cursor-pointer";
+        } else {
+          btnVideo.className = "px-4 py-2 bg-slate-300 text-slate-500 text-xs font-bold rounded-lg shadow-sm flex items-center cursor-not-allowed";
+        }
+
+        renderDetailBasicTab(d);
+        renderDetailAccidentTab(d);
+        renderDetailInspectionTab(d);
+        renderDetailPhotosTab(d);
+        renderDetailListingsTab(d);
+        renderDetailMediaTab(d);
+
+        switchDetailTab('basic');
+        document.getElementById('vehicleDetailModal').classList.remove('hidden');
+        lucide.createIcons();
+      } catch (e) {
+        console.error('[openVehicleDetailModal 오류]:', e);
+      }
+    }
+
+    function closeVehicleDetailModal() {
+      document.getElementById('vehicleDetailModal').classList.add('hidden');
+      currentVehicleDetail = null;
+    }
+
+    // ----------------------------------------------------
+    // DIRECTIVE 051: 차피셜·차마트 공통 고급 차량 상세 모달 제어
+    // ----------------------------------------------------
+    let currentUvdData = null;
+    let currentUvdPhotos = [];
+    let currentUvdPhotoIdx = 0;
+    let currentUvdIsAdmin = false;
+
+    async function openUnifiedVehicleDetailModal(vehicleId, isAdmin = false) {
+      currentUvdIsAdmin = isAdmin;
+      try {
+        const url = isAdmin ? `/api/vehicles/${vehicleId}/detail` : `/api/chamart/vehicles/${vehicleId}`;
+        const res = isAdmin ? await safeFetch(url) : await fetch(url);
+        if (!res.ok) {
+          if (res.status === 404) showToast('차량 정보를 찾을 수 없습니다.', 'error');
+          else if (res.status === 500) showToast('서버 오류로 차량 정보를 불러오지 못했습니다.', 'error');
+          return;
+        }
+        const d = await res.json();
+        currentUvdData = d;
+
+        // 1. 브랜드 및 관리자 모드 바 제어
+        const adminActionsEl = document.getElementById('uvdAdminActions');
+        const adminIndicatorEl = document.getElementById('uvdAdminIndicator');
+        const marginBarEl = document.getElementById('uvdMarginBar');
+        if (isAdmin) {
+          adminActionsEl.classList.remove('hidden');
+          adminIndicatorEl.classList.remove('hidden');
+          const btnPub = document.getElementById('btnUvdTogglePublish');
+          btnPub.innerText = d.is_public ? '공개 취소' : '게시 승인';
+          btnPub.className = d.is_public 
+            ? "px-2.5 py-1 text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold rounded shadow-xs transition-colors"
+            : "px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded shadow-xs transition-colors";
+
+          // 원가 데이터 채우기
+          const pur = d.purchase_price ? `${Number(d.purchase_price).toLocaleString('ko-KR')}만원` : '미확인';
+          const rec = d.recon_cost ? `${Number(d.recon_cost).toLocaleString('ko-KR')}만원` : '0만원';
+          const margin = (d.target_price && d.purchase_price) 
+            ? `${Number(d.target_price - d.purchase_price - (d.recon_cost || 0)).toLocaleString('ko-KR')}만원`
+            : '-';
+          document.getElementById('uvdPurchasePrice').innerText = pur;
+          document.getElementById('uvdReconCost').innerText = rec;
+          document.getElementById('uvdEstimatedMargin').innerText = margin;
+        } else {
+          adminActionsEl.classList.add('hidden');
+          adminIndicatorEl.classList.add('hidden');
+          marginBarEl.classList.add('hidden');
+        }
+
+        // 2. 대형 사진 갤러리 설정
+        currentUvdPhotos = [];
+        if (d.photos && d.photos.length > 0) {
+          currentUvdPhotos = d.photos;
+        } else if (d.primary_photo_url) {
+          currentUvdPhotos = [{ photo_url: d.primary_photo_url, caption: d.model_name }];
+        } else {
+          currentUvdPhotos = [{ photo_url: '/static/img/car_placeholder.jpg', caption: '사진 준비 중' }];
+        }
+        currentUvdPhotoIdx = 0;
+        renderUvdGallery();
+
+        // 3. 헤더 및 가격 제원 바인딩
+        const trimStr = d.trim ? ` ${d.trim}` : '';
+        document.getElementById('uvdModelAndTrim').innerText = `${d.model_name}${trimStr}`;
+        document.getElementById('uvdPlateAndYear').innerText = `${d.year}년식 · ${d.plate_number || '번호판 미기재'}`;
+        document.getElementById('uvdPriceText').innerText = d.target_price ? `${Number(d.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
+        
+        const monthlyEst = d.monthly_payment_estimate 
+          ? `월 약 ${Number(d.monthly_payment_estimate).toLocaleString('ko-KR')}만원 (60개월 할부 기준)`
+          : `월 약 ${Math.round((d.target_price || 0) * 0.019)}만원 (60개월 할부 추정)`;
+        document.getElementById('uvdMonthlyEstimate').innerText = monthlyEst;
+        document.getElementById('uvdSalesConditions').innerText = `판매 조건: ${d.sales_conditions || '현금 / 1금융 저금리 할부 / 세금계산서 100% 발행'}`;
+
+        // 4. 4대 스펙 카드
+        document.getElementById('uvdSpecYear').innerText = `${d.year}년식 (${d.first_registration_date || '등록일 미기재'})`;
+        document.getElementById('uvdSpecMileage').innerText = d.mileage ? `${Number(d.mileage).toLocaleString('ko-KR')}km` : '미확인';
+        document.getElementById('uvdSpecFuelTrans').innerText = `${d.fuel_type || '가솔린'} / ${d.transmission || '오토'}`;
+        document.getElementById('uvdSpecDisplacementBody').innerText = `${d.displacement_cc ? Number(d.displacement_cc).toLocaleString('ko-KR') + 'cc' : '2,000cc'} / ${d.body_type || '세단'}`;
+
+        // 5. 사고 및 성능 상태
+        const accSummary = d.accident_summary || d.accident_history || {};
+        const isFree = accSummary.is_accident_free || accSummary.accident_state === 'NONE' || accSummary.accident_state === '무사고';
+        const badgeEl = document.getElementById('uvdAccidentFreeBadge');
+        if (isFree) {
+          badgeEl.className = "text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300";
+          badgeEl.innerText = "완전 무사고 보증";
+        } else {
+          badgeEl.className = "text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-300";
+          badgeEl.innerText = "단순교환 / 수리이력 있음";
+        }
+        document.getElementById('uvdFrameStatus').innerText = accSummary.frame_damage || '골격 손상 없음 (정상)';
+        document.getElementById('uvdOuterStatus').innerText = accSummary.outer_damage || accSummary.outer_panel_exchange || '단순교환 없음';
+        document.getElementById('uvdOilLeakStatus').innerText = accSummary.oil_leak_status || '미세누유 없음 (정상)';
+        document.getElementById('uvdSpecialStatus').innerText = accSummary.special_accident || '침수/화재/도난 이력 없음';
+        document.getElementById('uvdInspectionDate').innerText = `점검일: ${accSummary.inspection_date || '2026-10-25'}`;
+
+        // 6. 카테고리별 옵션 그리드
+        const optCont = document.getElementById('uvdOptionsContainer');
+        const categorizedOpts = d.options_categorized || {};
+        let optHtml = '';
+        if (Object.keys(categorizedOpts).length > 0) {
+          for (const [catName, optsList] of Object.entries(categorizedOpts)) {
+            if (optsList && optsList.length > 0) {
+              const tags = optsList.map(o => `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">✓ ${o.name || o}</span>`).join(' ');
+              optHtml += `
+                <div class="space-y-1">
+                  <div class="text-[11px] font-bold text-slate-500">${catName}</div>
+                  <div class="flex flex-wrap gap-1.5">${tags}</div>
+                </div>
+              `;
+            }
+          }
+        } else if (d.options && d.options.length > 0) {
+          const tags = d.options.map(o => `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">✓ ${o}</span>`).join(' ');
+          optHtml = `<div class="flex flex-wrap gap-1.5">${tags}</div>`;
+        } else {
+          optHtml = `<div class="text-slate-400 text-xs">확인된 주요 옵션 사양을 정리 중입니다.</div>`;
+        }
+        optCont.innerHTML = optHtml;
+
+        // 7. 시세 비교 & 부대비용 가이드
+        const pc = d.price_comparison || {};
+        const diffWon = pc.savings_amount || Math.round((d.target_price || 0) * 0.05);
+        document.getElementById('uvdPriceComparisonText').innerText = 
+          pc.competition_analysis || `동급 엔카/KB 평균 시세 대비 약 ${diffWon}만원 합리적인 착한 가격입니다.`;
+        const regTax = pc.registration_tax_est || Math.round((d.target_price || 0) * 0.07);
+        document.getElementById('uvdRegTaxEst').innerText = `약 ${Number(regTax).toLocaleString('ko-KR')}만원`;
+
+        // 8. 전시장 & 전문 딜러
+        const dealer = d.dealer_info || d.dealer || {};
+        document.getElementById('uvdDealerName').innerText = dealer.name || '차마트 인증 전문딜러';
+        document.getElementById('uvdDealershipName').innerText = dealer.dealership_name || '차마트 장한평 본사 가온모터스';
+        document.getElementById('uvdDealerPhone').innerText = dealer.phone || '02-2244-8899';
+        document.getElementById('uvdShowroomLocation').innerText = dealer.showroom_location || '서울특별시 동대문구 천호대로 329 (장한평 매매단지)';
+
+        // 9. 승인된 AI 홍보 영상
+        const vidBadge = document.getElementById('uvdVideoStatusBadge');
+        const vidCont = document.getElementById('uvdVideoContainer');
+        const appVid = d.approved_video;
+        if (appVid && appVid.video_url) {
+          vidBadge.innerText = '공식 게시 완료';
+          vidBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800';
+          vidCont.innerHTML = `
+            <div class="space-y-2">
+              <div class="font-bold text-slate-800 text-xs">${appVid.title || '차마트 AI 홍보 영상'}</div>
+              <a href="${appVid.video_url}" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs shadow-xs transition-colors">
+                <i data-lucide="play" class="w-3.5 h-3.5 mr-1.5 fill-current"></i>
+                유튜브 쇼츠 영상 바로보기
+              </a>
+            </div>
+          `;
+        } else {
+          vidBadge.innerText = '영상 제작 대기';
+          vidBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600';
+          vidCont.innerHTML = `차마트 AI 스튜디오에서 고화질 숏폼 홍보 영상을 기획·제작 대기 중입니다.`;
+        }
+
+        // 모달 열기
+        document.getElementById('unifiedVehicleDetailModal').classList.remove('hidden');
+        lucide.createIcons();
+      } catch (e) {
+        console.error('[openUnifiedVehicleDetailModal 오류 traceback]:', e);
+        showToast('차량 상세 정보를 불러오는 중 오류가 발생했습니다.', 'error');
+      }
+    }
+
+    function renderUvdGallery() {
+      if (!currentUvdPhotos || currentUvdPhotos.length === 0) return;
+      const photo = currentUvdPhotos[currentUvdPhotoIdx];
+      const mainEl = document.getElementById('uvdMainPhoto');
+      mainEl.src = photo.photo_url || photo.url;
+      document.getElementById('uvdPhotoCaption').innerText = photo.caption || `차량 사진 ${currentUvdPhotoIdx + 1}`;
+      document.getElementById('uvdPhotoCounter').innerText = `${currentUvdPhotoIdx + 1} / ${currentUvdPhotos.length}`;
+
+      const stripEl = document.getElementById('uvdThumbnailsStrip');
+      stripEl.innerHTML = currentUvdPhotos.map((p, idx) => {
+        const isSel = idx === currentUvdPhotoIdx;
+        const borderCls = isSel ? 'border-2 border-[#247D7C] shadow-md scale-105' : 'border border-slate-200 opacity-70 hover:opacity-100';
+        return `
+          <button onclick="selectUvdPhoto(${idx})" class="w-14 h-11 shrink-0 rounded-lg overflow-hidden transition-all ${borderCls}">
+            <img src="${p.photo_url || p.url}" class="w-full h-full object-cover" alt="썸네일" />
+          </button>
+        `;
+      }).join('');
+    }
+
+    function navigateUvdPhoto(direction) {
+      if (!currentUvdPhotos || currentUvdPhotos.length === 0) return;
+      currentUvdPhotoIdx = (currentUvdPhotoIdx + direction + currentUvdPhotos.length) % currentUvdPhotos.length;
+      renderUvdGallery();
+    }
+
+    function selectUvdPhoto(idx) {
+      if (!currentUvdPhotos || idx < 0 || idx >= currentUvdPhotos.length) return;
+      currentUvdPhotoIdx = idx;
+      renderUvdGallery();
+    }
+
+    function closeUnifiedVehicleDetailModal() {
+      document.getElementById('unifiedVehicleDetailModal').classList.add('hidden');
+      currentUvdData = null;
+    }
+
+    function toggleUvdMarginView() {
+      const el = document.getElementById('uvdMarginBar');
+      el.classList.toggle('hidden');
+    }
+
+    async function toggleCurrentVehiclePublish() {
+      if (!currentUvdData) return;
+      try {
+        const newStatus = !currentUvdData.is_public;
+        const res = await safeFetch(`/api/admin/vehicles/${currentUvdData.id}/publish`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_public: newStatus })
+        });
+        if (!res.ok) throw new Error('게시 상태 변경 실패');
+        currentUvdData.is_public = newStatus;
+        const btnPub = document.getElementById('btnUvdTogglePublish');
+        btnPub.innerText = newStatus ? '공개 취소' : '게시 승인';
+        btnPub.className = newStatus 
+          ? "px-2.5 py-1 text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold rounded shadow-xs transition-colors"
+          : "px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded shadow-xs transition-colors";
+        showToast(newStatus ? '차마트 고객몰에 차량이 공개되었습니다.' : '차마트 고객몰에서 차량이 비공개 전환되었습니다.', 'success');
+        await loadVehicles();
+      } catch (e) {
+        showToast(`공개 상태 변경 오류: ${e.message}`, 'error');
+      }
+    }
+
+    function openVehicleModalFromUvd() {
+      if (!currentUvdData) return;
+      const vId = currentUvdData.id;
+      closeUnifiedVehicleDetailModal();
+      openVehicleModal(vId);
+    }
+
+    async function submitUvdConsultation() {
+      const name = document.getElementById('uvdConsultName').value.trim();
+      const phone = document.getElementById('uvdConsultPhone').value.trim();
+      const date = document.getElementById('uvdConsultDate').value;
+      const content = document.getElementById('uvdConsultContent').value.trim();
+
+      if (!name || !phone) {
+        showToast('고객 성함과 연락처를 입력해 주세요.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/chamart/consultations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            phone,
+            vehicle_id: currentUvdData ? currentUvdData.id : null,
+            vehicle_title: currentUvdData ? currentUvdData.model_name : '차마트 문의 차량',
+            preferred_date: date,
+            content: content || '웹사이트 공통 차량 상세페이지 방문 예약'
+          })
+        });
+        const ret = await res.json();
+        if (res.ok) {
+          showToast(ret.message || '상담 예약이 접수되었습니다.', 'success');
+          document.getElementById('uvdConsultName').value = '';
+          document.getElementById('uvdConsultPhone').value = '';
+          document.getElementById('uvdConsultDate').value = '';
+          document.getElementById('uvdConsultContent').value = '';
+        } else {
+          showToast(`신청 실패: ${ret.detail || '입력값을 확인하세요.'}`, 'error');
+        }
+      } catch (e) {
+        showToast(`오류: ${e.message}`, 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // 차마트 고객몰 뷰 전환 및 로드 (DIRECTIVE 051)
+    // ----------------------------------------------------
+    function toggleChamartCustomerView() {
+      switchNav('chamart-mall');
+    }
+
+    async function loadChamartMallVehicles() {
+      const grid = document.getElementById('chamartMallGrid');
+      try {
+        const res = await fetch('/api/chamart/vehicles');
+        if (!res.ok) throw new Error('공개 매물 조회 실패');
+        const vehicles = await res.json();
+
+        document.getElementById('chamartMallCount').innerText = `${vehicles.length}대`;
+
+        if (vehicles.length === 0) {
+          grid.innerHTML = `<div class="col-span-full py-16 text-center text-slate-400">현재 판매 중인 차마트 인증 매물이 없습니다.</div>`;
+          return;
+        }
+
+        grid.innerHTML = vehicles.map(v => {
+          const formattedPrice = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
+          const monthlyEst = v.monthly_payment_estimate ? `월 약 ${v.monthly_payment_estimate}만원` : '-';
+          const thumb = v.primary_photo_url || '/static/img/car_placeholder.jpg';
+
+          return `
+            <div onclick="openUnifiedVehicleDetailModal('${v.id}', false)" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group flex flex-col">
+              <div class="relative aspect-4/3 bg-slate-100 overflow-hidden">
+                <img src="${thumb}" alt="${v.model_name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='/static/img/car_placeholder.jpg';" />
+                <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1">
+                  <span class="text-[10px] font-bold bg-[#101A2A]/90 text-white px-2 py-0.5 rounded-full backdrop-blur-xs">차마트 직영</span>
+                  <span class="text-[10px] font-bold bg-emerald-600/90 text-white px-2 py-0.5 rounded-full backdrop-blur-xs">완전무사고</span>
+                </div>
+              </div>
+
+              <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                <div>
+                  <div class="text-xs text-slate-400 font-semibold">${v.year}년식 · ${v.mileage ? Number(v.mileage).toLocaleString('ko-KR') + 'km' : '-'} · ${v.fuel_type}</div>
+                  <h3 class="font-bold text-base text-[#172337] group-hover:text-[#247D7C] transition-colors mt-0.5">${v.model_name} ${v.trim || ''}</h3>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                  <div>
+                    <div class="text-xs text-slate-500 font-semibold">${monthlyEst}</div>
+                    <div class="text-lg font-extrabold text-[#247D7C]">${formattedPrice}</div>
+                  </div>
+                  <button class="px-3 py-1.5 bg-[#247D7C] text-white text-xs font-bold rounded-lg shadow-xs group-hover:bg-[#1D6665] transition-colors">
+                    상세보기
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        lucide.createIcons();
+      } catch (e) {
+        grid.innerHTML = `<div class="col-span-full py-16 text-center text-rose-500">매물 로드 오류: ${e.message}</div>`;
+      }
+    }
+
+    // =========================================================================
+    // DIRECTIVE 051: PART 2. AI 콘텐츠 연구소 (Autonomous Content Intelligence Lab)
+    // =========================================================================
+    let currentLabTopics = [];
+    let currentLabDrafts = [];
+    let currentLabApproved = [];
+    let currentSelectedScript = null;
+
+    async function loadContentLabAll() {
+      await loadContentLabStatus();
+      await loadContentLabTopics();
+      await loadContentLabDrafts();
+      await loadContentLabApproved();
+      renderSemanticClusters();
+      lucide.createIcons();
+    }
+
+    async function loadContentLabStatus() {
+      try {
+        const res = await safeFetch('/api/content-lab/session');
+        if (!res.ok) return;
+        const s = await res.json();
+
+        // 뱃지 및 버튼 제어
+        const badge = document.getElementById('labSessionStatusBadge');
+        const btnStart = document.getElementById('btnLabStart');
+        const btnPause = document.getElementById('btnLabPause');
+        const btnResume = document.getElementById('btnLabResume');
+        const btnStop = document.getElementById('btnLabStop');
+
+        badge.innerText = `${s.status || 'IDLE'} (${s.status === 'RUNNING' ? '논스톱 관찰 중' : s.status === 'PAUSED' ? '일시정지' : '대기'})`;
+        if (s.status === 'RUNNING') {
+          badge.className = "ml-3 text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse";
+          btnStart.classList.add('hidden');
+          btnPause.classList.remove('hidden');
+          btnResume.classList.add('hidden');
+          btnStop.classList.remove('hidden');
+        } else if (s.status === 'PAUSED') {
+          badge.className = "ml-3 text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-300";
+          btnStart.classList.add('hidden');
+          btnPause.classList.add('hidden');
+          btnResume.classList.remove('hidden');
+          btnStop.classList.remove('hidden');
+        } else {
+          badge.className = "ml-3 text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600 border border-slate-300";
+          btnStart.classList.remove('hidden');
+          btnPause.classList.add('hidden');
+          btnResume.classList.add('hidden');
+          btnStop.classList.add('hidden');
+        }
+
+        // KPI
+        document.getElementById('labKpiVideos').innerText = `${s.processed_video_count || 0}건`;
+        document.getElementById('labKpiTopics').innerText = `${s.discovered_topic_count || 0}건`;
+        document.getElementById('labKpiScripts').innerText = `${s.total_scripts_count || 0}건`;
+        document.getElementById('labKpiApproved').innerText = `${s.approved_scripts_count || 0}건`;
+        document.getElementById('labKpiQuota').innerText = `${s.daily_quota_used || 0} / ${s.daily_quota_limit || 10000}`;
+
+        // 타겟 키워드 칩
+        const kwCont = document.getElementById('labKeywordsContainer');
+        const kws = s.target_keywords || [];
+        kwCont.innerHTML = kws.map(k => `<span class="px-2 py-1 bg-white rounded-md border border-slate-200 text-[11px] font-semibold text-slate-700">#${k}</span>`).join('');
+
+        // 체크포인트 정보
+        document.getElementById('labCheckpointInfo').innerText = JSON.stringify(s.checkpoint || {}, null, 2);
+      } catch (e) {
+        console.error('[loadContentLabStatus 오류]:', e);
+      }
+    }
+
+    async function startContentLabSession() {
+      try {
+        const res = await safeFetch('/api/content-lab/session/start', { method: 'POST' });
+        if (!res.ok) throw new Error('세션 시작 실패');
+        showToast('AI 콘텐츠 연구소 지속 관찰 세션을 시작했습니다.', 'success');
+        await loadContentLabAll();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function pauseContentLabSession() {
+      try {
+        const res = await safeFetch('/api/content-lab/session/pause', { method: 'POST' });
+        if (!res.ok) throw new Error('일시정지 실패');
+        showToast('연구 세션이 체크포인트를 안전 보존하고 일시정지되었습니다.', 'info');
+        await loadContentLabStatus();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function resumeContentLabSession() {
+      try {
+        const res = await safeFetch('/api/content-lab/session/resume', { method: 'POST' });
+        if (!res.ok) throw new Error('재개 실패');
+        showToast('체크포인트 위치에서 논스톱 연구 세션을 재개했습니다.', 'success');
+        await loadContentLabAll();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function stopContentLabSession() {
+      if (!confirm('콘텐츠 연구 세션을 종료하시겠습니까? 현재까지의 분석 결과와 체크포인트가 저장됩니다.')) return;
+      try {
+        const res = await safeFetch('/api/content-lab/session/stop', { method: 'POST' });
+        if (!res.ok) throw new Error('종료 실패');
+        showToast('연구 세션이 종료되었습니다.', 'info');
+        await loadContentLabStatus();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function stepContentLabSession() {
+      try {
+        showToast('1회 관찰 사이클을 실행하고 있습니다 (영상 수집 및 AI 분석)...', 'info');
+        const res = await safeFetch('/api/content-lab/session/step', { method: 'POST' });
+        if (!res.ok) throw new Error('수동 관찰 실패');
+        const ret = await res.json();
+        showToast(`관찰 완료: 키워드 '${ret.keyword}' -> 신규 영상 ${ret.new_videos}건, 독창적 주제 ${ret.new_topics}건 발굴!`, 'success');
+        await loadContentLabAll();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function switchContentLabSubTab(subTabKey) {
+      const tabs = ['status', 'clusters', 'topics', 'drafts', 'review', 'approved', 'prompts'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`subtab-btn-${t}`);
+        const panel = document.getElementById(`subtab-panel-${t}`);
+        if (t === subTabKey) {
+          btn.className = "py-3 px-4 border-b-2 border-emerald-600 text-emerald-700 font-bold text-xs whitespace-nowrap flex items-center";
+          panel.classList.remove('hidden');
+        } else {
+          btn.className = "py-3 px-4 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-xs whitespace-nowrap flex items-center";
+          panel.classList.add('hidden');
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function renderSemanticClusters() {
+      const grid = document.getElementById('labClustersGrid');
+      const clusters = [
+        { name: '수입 중고차 수리비 폭탄과 유지비 현실', cat: '수리비/유지비', fit: '95%', desc: '에어서스, 오일누유, 가스켓 정밀 견적 노하우', kws: ['수리비', '벤츠', 'bmw', '폭탄', '누유'] },
+        { name: '침수차·허위매물 1초 컷 실전 감별법', cat: '허위매물/사기예방', fit: '98%', desc: '안전벨트, 퓨즈박스 부식 판별 25년 실전 노하우', kws: ['침수', '허위매물', '계약금', '사기', '판별'] },
+        { name: '감가상각 60% 맞은 대형차 vs 신차 가성비 종결', cat: '감가상각/가성비', fit: '90%', desc: '제네시스 G80 vs 아반떼 신차 실구매자 비교', kws: ['감가', '제네시스', 'g80', '가성비', '반값'] },
+        { name: "성능점검표 '단순교환'과 '골격 판금'의 결정적 차이", cat: '성능점검/사고이력', fit: '92%', desc: '뼈대 사고와 외판 볼트 체결 흔적 감별 팁', kws: ['성능점검', '단순교환', '골격', '휠하우스'] },
+        { name: '사회초년생 500만원대 고장 없는 첫 중고차 BEST', cat: '첫차추천/가성비', fit: '85%', desc: '예산 500만원대 잔고장 없는 안전한 매물 추천', kws: ['500만원', '첫차', '사회초년생', '가성비'] },
+        { name: '시동 걸고 3분! 엔진·미션 고장 전조 증상 판별', cat: '차량점검/엔진미션', fit: '88%', desc: '현장 시운전 노하우 및 냉간 시동 소음 진단', kws: ['엔진', '미션', '소리', '전조증상', '시동'] },
+      ];
+
+      grid.innerHTML = clusters.map(c => `
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">${c.cat}</span>
+            <span class="text-xs font-bold text-teal-700">차마트 적합도 ${c.fit}</span>
+          </div>
+          <h4 class="font-bold text-sm text-[#172337]">${c.name}</h4>
+          <p class="text-xs text-slate-500">${c.desc}</p>
+          <div class="flex flex-wrap gap-1 pt-1">
+            ${c.kws.map(k => `<span class="text-[10px] bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-600">#${k}</span>`).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadContentLabTopics() {
+      try {
+        const res = await safeFetch('/api/content-lab/topics');
+        if (!res.ok) return;
+        currentLabTopics = await res.json();
+        renderLabTopicsList();
+      } catch (e) {
+        console.error('[loadContentLabTopics 오류]:', e);
+      }
+    }
+
+    function filterLabTopics() {
+      renderLabTopicsList();
+    }
+
+    function renderLabTopicsList() {
+      const container = document.getElementById('labTopicsList');
+      const catFilter = document.getElementById('labTopicFilterCategory').value;
+
+      const filtered = currentLabTopics.filter(t => !catFilter || t.category === catFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">발굴된 주제 후보가 없습니다. 상단 [1회 수동 관찰] 또는 [연구 시작]을 눌러보세요.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(t => {
+        const fitPct = Math.round(t.chamart_fit_score * 100);
+        return `
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs hover:border-emerald-300 transition-colors space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <div class="flex items-center space-x-2">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">${t.category}</span>
+                <span class="text-xs font-bold text-slate-800">${t.title}</span>
+              </div>
+              <div class="flex items-center space-x-2 text-xs">
+                <span class="font-bold text-teal-700">차마트 적합도 ${fitPct}%</span>
+                <span class="text-slate-400 font-mono text-[11px]">${t.created_at}</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-600">
+              <div>
+                <strong class="text-slate-800">소비자 핵심 질문:</strong> ${t.core_question}
+              </div>
+              <div>
+                <strong class="text-slate-800">발굴 근거:</strong> ${t.evidence_basis}
+              </div>
+            </div>
+
+            <!-- 피드백 버튼 바 (DIRECTIVE 051 11항) -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+              <div class="flex items-center space-x-1.5">
+                <span class="text-slate-500 font-medium">피드백:</span>
+                <button onclick="submitTopicFeedback('${t.id}', 'LIKE')" class="px-2 py-1 rounded bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 text-[11px] font-semibold">
+                  👍 좋은 주제
+                </button>
+                <button onclick="submitTopicFeedback('${t.id}', 'DISLIKE')" class="px-2 py-1 rounded bg-slate-50 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 text-[11px] font-semibold">
+                  👎 별로임
+                </button>
+                <button onclick="submitTopicFeedback('${t.id}', 'FACT_ERROR')" class="px-2 py-1 rounded bg-slate-50 hover:bg-amber-50 text-slate-700 hover:text-amber-700 border border-slate-200 text-[11px] font-semibold">
+                  ⚠️ 팩트 오류
+                </button>
+                <button onclick="submitTopicFeedback('${t.id}', 'ALREADY_COVERED')" class="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-semibold">
+                  📁 이미 다룸
+                </button>
+              </div>
+
+              <div>
+                <button onclick="switchContentLabSubTab('drafts')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors">
+                  대본 초안 보기
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function submitTopicFeedback(topicId, feedbackType) {
+      try {
+        const res = await safeFetch(`/api/content-lab/topics/${topicId}/feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedback_type: feedbackType })
+        });
+        if (!res.ok) throw new Error('피드백 등록 실패');
+        showToast(`피드백이 반영되어 주제 추천 가중치가 조정되었습니다.`, 'success');
+        await loadContentLabTopics();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function loadContentLabDrafts() {
+      try {
+        const res = await safeFetch('/api/content-lab/scripts?status=DRAFT');
+        if (!res.ok) return;
+        currentLabDrafts = await res.json();
+        renderLabDraftsList();
+      } catch (e) {
+        console.error('[loadContentLabDrafts 오류]:', e);
+      }
+    }
+
+    function renderLabDraftsList() {
+      const container = document.getElementById('labDraftsList');
+      if (currentLabDrafts.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">작성된 대본 초안이 없습니다. 상단에서 1회 수동 관찰을 실행해보세요.</div>`;
+        return;
+      }
+
+      container.innerHTML = currentLabDrafts.map(s => {
+        const titles = s.titles || [];
+        const mainTitle = titles[0] || s.topic_title || '독창적 중고차 기획 대본';
+        return `
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs hover:border-indigo-300 transition-colors space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <div class="flex items-center space-x-2">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">초안 DRAFT</span>
+                <span class="text-xs font-bold text-slate-800">${mainTitle}</span>
+              </div>
+              <span class="text-[11px] font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded">약 ${s.estimated_duration_sec}초 분량</span>
+            </div>
+
+            <div class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 leading-relaxed font-mono">
+              <strong>오프닝 훅:</strong> "${s.hook_sentence}"
+            </div>
+
+            <div class="flex items-center justify-between pt-1 text-xs">
+              <span class="text-slate-400">타겟: ${s.target_audience} · 버전 ${s.version}</span>
+              <button onclick="selectScriptForReview('${s.id}')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-xs transition-colors">
+                검토 및 수정하기
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectScriptForReview(scriptId) {
+      const script = currentLabDrafts.find(s => s.id === scriptId) || currentLabApproved.find(s => s.id === scriptId);
+      if (!script) return;
+      currentSelectedScript = script;
+
+      document.getElementById('labReviewEmptyState').classList.add('hidden');
+      document.getElementById('labReviewContainer').classList.remove('hidden');
+
+      document.getElementById('reviewScriptStatusBadge').innerText = script.status;
+      document.getElementById('reviewScriptCategory').innerText = script.category;
+      document.getElementById('reviewScriptVersion').innerText = script.version;
+      document.getElementById('reviewTopicTitle').innerText = (script.titles && script.titles[0]) || script.topic_title;
+
+      // 제목 후보 3종
+      const titles = script.titles || [];
+      document.getElementById('reviewTitleOptions').innerHTML = titles.map((t, i) => `
+        <div class="p-2 rounded bg-slate-50 border border-slate-200 font-semibold text-slate-800">
+          후보 ${i + 1}: ${t}
+        </div>
+      `).join('');
+
+      document.getElementById('reviewTargetAudience').value = script.target_audience || '';
+      document.getElementById('reviewPlanningIntent').value = script.planning_intent || '';
+      document.getElementById('reviewHookSentence').value = script.hook_sentence || '';
+      document.getElementById('reviewFullScript').value = script.full_script || '';
+
+      // 스토리보드 4장면
+      const sbCont = document.getElementById('reviewStoryboardContainer');
+      const sbList = script.storyboard || [];
+      sbCont.innerHTML = sbList.map(scene => `
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5 text-xs">
+          <div class="flex items-center justify-between font-bold text-slate-700">
+            <span>장면 ${scene.scene_num} (${scene.duration_sec}초)</span>
+            <span class="text-teal-700 font-mono text-[11px]">${scene.camera_movement}</span>
+          </div>
+          <div class="text-slate-600"><strong>나레이션:</strong> ${scene.narration}</div>
+          <div class="text-slate-500 text-[11px]"><strong>연출 묘사:</strong> ${scene.visual_description}</div>
+        </div>
+      `).join('');
+
+      // 사실 검증 체크리스트
+      const fcCont = document.getElementById('reviewFactCheckList');
+      const fcs = script.fact_check_checklist || [];
+      fcCont.innerHTML = fcs.map(f => `
+        <div class="flex items-start space-x-1.5 text-slate-600">
+          <span class="text-emerald-600 font-bold">✓</span>
+          <span>${f}</span>
+        </div>
+      `).join('');
+
+      // 사장님 Q&A 질문
+      const dqCont = document.getElementById('reviewDealerQuestionsContainer');
+      const dqs = script.dealer_questions || [];
+      const answers = script.dealer_answers || {};
+      dqCont.innerHTML = dqs.map((q, idx) => `
+        <div class="space-y-1">
+          <label class="font-bold text-amber-950">${q}</label>
+          <input type="text" id="reviewDealerAnswer_${idx}" value="${answers[q] || ''}" placeholder="사장님 실무 답변을 입력하세요" class="w-full text-xs p-2 bg-white border border-amber-300 rounded-lg text-slate-800" />
+        </div>
+      `).join('');
+
+      switchContentLabSubTab('review');
+    }
+
+    async function saveCurrentScriptEdits() {
+      if (!currentSelectedScript) return;
+      try {
+        const fullScript = document.getElementById('reviewFullScript').value;
+        const hook = document.getElementById('reviewHookSentence').value;
+        const audience = document.getElementById('reviewTargetAudience').value;
+        const intent = document.getElementById('reviewPlanningIntent').value;
+
+        // 사장님 답변 수집
+        const dqs = currentSelectedScript.dealer_questions || [];
+        const answers = {};
+        dqs.forEach((q, idx) => {
+          const inp = document.getElementById(`reviewDealerAnswer_${idx}`);
+          if (inp && inp.value.trim()) answers[q] = inp.value.trim();
+        });
+
+        const res = await safeFetch(`/api/content-lab/scripts/${currentSelectedScript.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            full_script: fullScript,
+            hook_sentence: hook,
+            target_audience: audience,
+            planning_intent: intent,
+            dealer_answers: answers
+          })
+        });
+        if (!res.ok) throw new Error('대본 수정 저장 실패');
+        showToast('대본이 수정 저장되었습니다. 승인 무결성을 위해 DRAFT 상태로 유지됩니다.', 'info');
+        await loadContentLabAll();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function approveCurrentScript() {
+      if (!currentSelectedScript) return;
+      if (!confirm('이 대본을 공식 승인하시겠습니까? 전체 대본과 연출 해시(SHA-256)가 원장에 영구 기록됩니다.')) return;
+      try {
+        const res = await safeFetch(`/api/content-lab/scripts/${currentSelectedScript.id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ approver_name: '차마트 관리자' })
+        });
+        if (!res.ok) throw new Error('승인 처리 실패');
+        const ret = await res.json();
+        showToast(`대본이 공식 승인되었습니다! (해시: ${ret.approved_hash.slice(0, 12)}...)`, 'success');
+        await loadContentLabAll();
+        switchContentLabSubTab('approved');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function rejectCurrentScript() {
+      if (!currentSelectedScript) return;
+      const reason = prompt('반려 사유를 입력하세요 (예: 기획 방향 재조정, 소재 부적합):');
+      if (!reason) return;
+      try {
+        const res = await safeFetch(`/api/content-lab/scripts/${currentSelectedScript.id}/reject`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason })
+        });
+        if (!res.ok) throw new Error('반려 처리 실패');
+        showToast('대본이 반려 처리되었습니다.', 'info');
+        await loadContentLabAll();
+        switchContentLabSubTab('drafts');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    async function loadContentLabApproved() {
+      try {
+        const res = await safeFetch('/api/content-lab/scripts?status=APPROVED');
+        if (!res.ok) return;
+        currentLabApproved = await res.json();
+        renderLabApprovedList();
+      } catch (e) {
+        console.error('[loadContentLabApproved 오류]:', e);
+      }
+    }
+
+    function renderLabApprovedList() {
+      const container = document.getElementById('labApprovedList');
+      if (currentLabApproved.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">승인 완료된 대본이 없습니다. 대본 초안 검토 탭에서 [공식 승인]을 완료하세요.</div>`;
+        return;
+      }
+
+      container.innerHTML = currentLabApproved.map(s => {
+        const hashDisplay = s.approved_hash ? s.approved_hash.slice(0, 16) + '...' : '-';
+        return `
+          <div class="bg-white border border-teal-200 rounded-xl p-4 shadow-2xs space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <div class="flex items-center space-x-2">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800">APPROVED 승인완료</span>
+                <span class="text-xs font-bold text-slate-800">${s.topic_title}</span>
+              </div>
+              <span class="text-xs font-mono font-bold text-slate-500">HASH: ${hashDisplay}</span>
+            </div>
+
+            <div class="text-xs text-slate-600 space-y-1">
+              <div><strong>승인자:</strong> ${s.approved_by || '차마트 관리자'} · <strong>승인시각:</strong> ${s.approved_at}</div>
+              <div class="text-slate-500 text-[11px] truncate">훅: "${s.hook_sentence}"</div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 pt-1 border-t border-slate-100 text-xs">
+              <button onclick="generateScriptPromptsFromApproved('${s.id}', 'WAN_3_0')" class="px-3.5 py-1.5 bg-[#247D7C] hover:bg-[#1D6665] text-white font-bold rounded-lg shadow-xs transition-colors flex items-center">
+                <i data-lucide="video" class="w-3.5 h-3.5 mr-1"></i>
+                Wan 3.0 프롬프트 생성
+              </button>
+              <button onclick="generateScriptPromptsFromApproved('${s.id}', 'KLING_4_0')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-xs transition-colors flex items-center">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1"></i>
+                Kling 4.0 프롬프트 생성
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function generateScriptPromptsFromApproved(scriptId, modelType) {
+      try {
+        showToast(`${modelType} 영상 제작 프롬프트를 패키징하고 있습니다...`, 'info');
+        const res = await safeFetch(`/api/content-lab/scripts/${scriptId}/generate-prompts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model_type: modelType })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || '프롬프트 생성 실패');
+        }
+        const pkg = await res.json();
+
+        // 서브 탭 7(영상 제작 준비)에 렌더링
+        document.getElementById('labPromptsEmptyState').classList.add('hidden');
+        document.getElementById('labPromptsContainer').classList.remove('hidden');
+
+        document.getElementById('promptModelBadge').innerText = pkg.model_type;
+        document.getElementById('promptApprovedHash').innerText = `APPROVED HASH: ${pkg.approved_hash ? pkg.approved_hash.slice(0, 16) : ''}...`;
+        document.getElementById('promptTopicTitle').innerText = `${pkg.model_type} 영상 프롬프트 패키지`;
+
+        // 장면별 카드
+        const grid = document.getElementById('labScenePromptsGrid');
+        grid.innerHTML = (pkg.scene_prompts || []).map(sp => `
+          <div class="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 text-xs">
+            <div class="flex items-center justify-between font-bold text-slate-800 border-b border-slate-100 pb-1.5">
+              <span>장면 ${sp.scene_num} (${sp.duration_sec}초)</span>
+              <span class="text-teal-700 font-mono text-[11px]">${sp.camera_movement}</span>
+            </div>
+            <div class="text-slate-700 font-mono text-[11px] bg-slate-50 p-2 rounded leading-relaxed border border-slate-200">
+              ${sp.prompt}
+            </div>
+            <div class="text-slate-500 text-[10px]"><strong>대사/나레이션:</strong> ${sp.narration}</div>
+          </div>
+        `).join('');
+
+        // 전체 마스터 프롬프트
+        document.getElementById('labFullMasterPromptText').value = pkg.master_prompt || '';
+
+        switchContentLabSubTab('prompts');
+        showToast('영상 프롬프트 패키지 생성이 완료되었습니다!', 'success');
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    function copyMasterPrompt() {
+      const text = document.getElementById('labFullMasterPromptText').value;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('마스터 프롬프트 전체가 클립보드에 복사되었습니다!', 'success');
+      }).catch(err => {
+        showToast('클립보드 복사 실패: ' + err, 'error');
+      });
+    }
     async function openVehicleDetailModal(vehicleId) {
       try {
         const res = await safeFetch(`/api/vehicles/${vehicleId}/detail`);

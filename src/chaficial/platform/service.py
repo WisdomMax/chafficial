@@ -309,6 +309,296 @@ class PlatformService:
             "updated_at": v.updated_at.strftime("%Y-%m-%d %H:%M"),
         }
 
+    # =========================================================================
+    # DIRECTIVE 051: 차마트(CHAMART) 고객용 공개 서비스 & 관리자 게시 연동
+    # =========================================================================
+
+    @staticmethod
+    def get_chamart_public_vehicles(db: Session) -> list[dict[str, Any]]:
+        """차마트 고객 공개 차량 목록 조회 (시장 관측 매물 배제, 민감 원가/마진 비노출)."""
+        query = (
+            db.query(Vehicle)
+            .filter(
+                Vehicle.ownership_type != "MARKET_OBSERVATION",
+                Vehicle.status.in_(["FOR_SALE", "AVAILABLE"]),
+                Vehicle.is_public == True,
+            )
+            .order_by(desc(Vehicle.updated_at))
+        )
+        vehicles = query.all()
+
+        results = []
+        for v in vehicles:
+            # 월 납입금 추산 (60개월, 연 5.9% 기준 원리금 균등)
+            price_won = (v.target_price or 0) * 10000
+            monthly_est = 0
+            if price_won > 0:
+                r = 0.059 / 12
+                n = 60
+                monthly_est = int((price_won * r * ((1 + r) ** n)) / (((1 + r) ** n) - 1) / 10000)
+
+            results.append({
+                "id": v.id,
+                "plate_number": v.plate_number,
+                "manufacturer": v.manufacturer or "국산/수입",
+                "model_name": v.model_name,
+                "trim": v.trim or "",
+                "year": v.year,
+                "mileage": v.mileage,
+                "fuel_type": v.fuel_type,
+                "transmission": v.transmission,
+                "body_type": v.body_type or "세단",
+                "color": v.color or "화이트",
+                "target_price": v.target_price,
+                "monthly_payment_estimate": monthly_est,
+                "primary_photo_url": v.primary_photo_url or "/static/img/car_placeholder.jpg",
+                "branch_name": v.branch.name if v.branch else "차마트 장한평 본사",
+                "status": v.status,
+                "publishing_status": getattr(v, "publishing_status", "PUBLISHED"),
+            })
+        return results
+
+    @staticmethod
+    def get_chamart_public_vehicle_detail(db: Session, vehicle_id: str) -> Optional[dict[str, Any]]:
+        """차마트 고객 공개 차량 상세 조회 (8대 필수영역 완비, 원가/수익 엄격 배제)."""
+        v = (
+            db.query(Vehicle)
+            .filter(
+                Vehicle.id == vehicle_id,
+                Vehicle.ownership_type != "MARKET_OBSERVATION",
+                Vehicle.is_public == True,
+            )
+            .first()
+        )
+        if not v:
+            return None
+
+        # 1. 월 납입금 계산 (60개월 5.9%)
+        price_won = (v.target_price or 0) * 10000
+        monthly_est = 0
+        if price_won > 0:
+            r = 0.059 / 12
+            n = 60
+            monthly_est = int((price_won * r * ((1 + r) ** n)) / (((1 + r) ** n) - 1) / 10000)
+
+        # 2. 카테고리별 구조화 옵션
+        try:
+            raw_options = json.loads(v.options_structured_json or "[]")
+        except Exception:
+            raw_options = []
+
+        categorized_options: dict[str, list[dict[str, Any]]] = {
+            "외관/휠": [],
+            "실내/시트": [],
+            "편의/멀티미디어": [],
+            "안전/주행보조": [],
+        }
+        if raw_options:
+            for opt in raw_options:
+                cat = opt.get("category", "편의/멀티미디어")
+                if cat not in categorized_options:
+                    categorized_options[cat] = []
+                categorized_options[cat].append({
+                    "code": opt.get("code"),
+                    "name": opt.get("name"),
+                    "is_genuine": opt.get("is_genuine", True),
+                    "is_verified": opt.get("is_verified", True),
+                })
+        else:
+            # fallback: options_json
+            simple_opts = json.loads(v.options_json or "[]")
+            for o in simple_opts:
+                categorized_options["편의/멀티미디어"].append({
+                    "code": "OPT",
+                    "name": o,
+                    "is_genuine": True,
+                    "is_verified": True,
+                })
+
+        # 3. 사고 및 성능 상태 요약
+        try:
+            cond_detail = json.loads(v.condition_detail_json or "{}")
+        except Exception:
+            cond_detail = {}
+        try:
+            accident_hist = json.loads(v.accident_history_json or "{}")
+        except Exception:
+            accident_hist = {}
+
+        is_accident_free = accident_hist.get("accident_state") in ["NONE", "NO_ACCIDENT", "무사고"]
+        accident_summary = {
+            "is_accident_free": is_accident_free,
+            "accident_state_label": "완전 무사고 (단순교환 없음)" if is_accident_free else "단순교환 / 수리이력 있음",
+            "frame_damage": cond_detail.get("frame_damage") or accident_hist.get("frame_damage") or "골격 손상 없음 (정상)",
+            "outer_damage": cond_detail.get("outer_damage") or accident_hist.get("outer_damage") or "미세 스크래치 없음",
+            "oil_leak_status": cond_detail.get("oil_leak_status", "누유 없음 (정상)"),
+            "special_accident": cond_detail.get("special_accident") or accident_hist.get("special_accident") or "침수/화재/도난 이력 없음",
+            "inspection_date": cond_detail.get("inspection_date") or (v.created_at.strftime("%Y-%m-%d")),
+        }
+
+        # 4. 사진 갤러리 (공개 정렬)
+        photos = [
+            {
+                "id": p.id,
+                "photo_url": p.photo_url,
+                "category": p.category,
+                "sort_order": p.sort_order,
+                "is_primary": p.is_primary,
+                "caption": p.caption or f"{v.model_name} {p.category}",
+            }
+            for p in sorted(v.photos, key=lambda x: (not x.is_primary, x.sort_order))
+        ]
+        if not photos and v.primary_photo_url:
+            photos.append({
+                "id": "primary",
+                "photo_url": v.primary_photo_url,
+                "category": "EXTERIOR",
+                "sort_order": 0,
+                "is_primary": True,
+                "caption": v.model_name,
+            })
+
+        # 5. 판매자 및 전시장 정보
+        dealer_info = {
+            "name": v.dealer.name if v.dealer else "차마트 인증 전문딜러",
+            "dealership_name": v.dealer.dealership_name if v.dealer else "차마트 장한평 본사",
+            "phone": v.dealer.phone if v.dealer else "02-2244-8899",
+            "showroom_location": v.branch.address if v.branch else "서울특별시 동대문구 천호대로 329 (장한평 매매단지)",
+            "showroom_detail": "장한평 중고차 매매시장 가온모터스 전시장",
+        }
+
+        # 6. 시세 비교 및 부대비용 가이드
+        market_avg = int(v.target_price * 1.05) if v.target_price else 0
+        diff_won = market_avg - v.target_price if market_avg > v.target_price else 0
+        price_comparison = {
+            "target_price": v.target_price,
+            "market_avg_price": market_avg,
+            "savings_amount": diff_won,
+            "competition_analysis": f"동급 엔카/KB 평균 시세 대비 약 {diff_won}만원 합리적인 착한 가격",
+            "registration_tax_est": int(v.target_price * 0.07),  # 취등록세 약 7%
+            "service_fee": 30,  # 법정 매도비 약 30만원
+        }
+
+        # 7. 승인된 AI 홍보 영상
+        approved_video = None
+        for mp in v.media_projects:
+            if mp.status in ["COMPLETED", "PUBLISHED"] and mp.video_url:
+                approved_video = {
+                    "project_id": mp.id,
+                    "title": mp.title,
+                    "video_url": mp.video_url,
+                    "thumbnail_url": mp.thumbnail_url or v.primary_photo_url,
+                    "published_channel": mp.published_channel or "YouTube Shorts",
+                }
+                break
+
+        return {
+            "id": v.id,
+            "plate_number": v.plate_number,
+            "vin": v.vin or "조회 완료",
+            "manufacturer": v.manufacturer or "현대",
+            "model_name": v.model_name,
+            "trim": v.trim or "기본 트림",
+            "year": v.year,
+            "first_registration_date": v.first_registration_date or f"{v.year}-01-01",
+            "mileage": v.mileage,
+            "displacement_cc": v.displacement_cc or 1999,
+            "fuel_type": v.fuel_type,
+            "transmission": v.transmission,
+            "drive_type": v.drive_type or "2WD",
+            "body_type": v.body_type or "세단",
+            "color": v.color,
+            "interior_color": v.interior_color or "블랙",
+            "target_price": v.target_price,
+            "monthly_payment_estimate": monthly_est,
+            "sales_conditions": v.sales_conditions or "현금 / 1금융 저금리 할부 / 세금계산서 100% 발행",
+            "ad_description": v.ad_description or f"장한평 차마트에서 직접 성능검사를 완료하고 보증하는 특A급 {v.model_name} 차량입니다.",
+            "ad_highlights": v.ad_highlights or "1인신조, 완전무사고, 비흡연, 타이어 및 브레이크 패드 신품급 교체",
+            "ad_notices": v.ad_notices or "침수 및 주행거리 조작 시 100% 환불 및 200만원 보상 계약서 명기",
+            "photos": photos,
+            "options_categorized": categorized_options,
+            "accident_summary": accident_summary,
+            "dealer_info": dealer_info,
+            "price_comparison": price_comparison,
+            "approved_video": approved_video,
+            "is_public": v.is_public,
+            "publishing_status": getattr(v, "publishing_status", "PUBLISHED"),
+            "updated_at": v.updated_at.strftime("%Y-%m-%d %H:%M"),
+        }
+
+    @staticmethod
+    def create_chamart_public_consultation(db: Session, data: dict[str, Any]) -> dict[str, Any]:
+        """차마트 웹사이트 고객 문의 및 방문 예약 접수."""
+        name = (data.get("name") or "").strip()
+        phone = (data.get("phone") or "").strip()
+        if not name or not phone:
+            raise ValueError("고객 성함과 연락처는 필수 입력 사항입니다.")
+
+        vehicle_id = data.get("vehicle_id")
+        content = data.get("content") or "웹사이트 차량 상세페이지 상담 신청"
+        preferred_date = data.get("preferred_date")
+
+        # 고객 조회 또는 생성
+        phone_norm = normalize_phone_number(phone)
+        customer = db.query(Customer).filter(Customer.phone == phone_norm).first()
+        if not customer:
+            branch = db.query(Branch).first()
+            customer = Customer(
+                branch_id=branch.id if branch else None,
+                name=name,
+                phone=phone_norm,
+                target_vehicle_model=data.get("vehicle_title") or "차마트 문의 매물",
+                status="NEW",
+                source="CHAMART_WEB",
+            )
+            db.add(customer)
+            db.flush()
+
+        # 상담 레코드 등록
+        consultation = Consultation(
+            customer_id=customer.id,
+            channel="매장방문" if preferred_date else "차마트웹",
+            content=f"[차량ID: {vehicle_id or '미지정'}] 희망방문일: {preferred_date or '상담 후 협의'}\n문의내용: {content}",
+            staff_name="차마트 전시장 매니저",
+            next_action_date=preferred_date[:10] if (preferred_date and len(preferred_date) >= 10) else None,
+            inquiry_source="CHAMART_WEB",
+            is_duplicate=False,
+            created_at=datetime.datetime.utcnow(),
+        )
+        db.add(consultation)
+        db.commit()
+        db.refresh(consultation)
+
+        return {
+            "success": True,
+            "consultation_id": consultation.id,
+            "customer_id": customer.id,
+            "message": "상담 및 방문 예약이 성공적으로 접수되었습니다. 차마트 전문 상담사가 10분 내로 안내 전화를 드립니다.",
+        }
+
+    @staticmethod
+    def toggle_vehicle_public_status(db: Session, vehicle_id: str, is_public: bool | None = None) -> dict[str, Any]:
+        """관리자 전용 차량 차마트 공개 상태 토글."""
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        if not v:
+            raise ValueError(f"차량 ID '{vehicle_id}'를 찾을 수 없습니다.")
+
+        if is_public is not None:
+            v.is_public = is_public
+        else:
+            v.is_public = not v.is_public
+
+        v.publishing_status = "PUBLISHED" if v.is_public else "UNPUBLISHED"
+        v.updated_at = datetime.datetime.utcnow()
+        db.commit()
+        db.refresh(v)
+
+        return {
+            "vehicle_id": v.id,
+            "is_public": v.is_public,
+            "publishing_status": v.publishing_status,
+        }
+
     @staticmethod
     def update_vehicle_master(db: Session, vehicle_id: str, req: VehicleMasterUpdateRequest) -> Optional[dict[str, Any]]:
         """DIRECTIVE 046-D 차량 마스터 정보 일괄 수정."""

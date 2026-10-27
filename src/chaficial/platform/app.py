@@ -79,6 +79,7 @@ from chaficial.platform.catalog.hierarchy import VehicleCatalogService
 from chaficial.platform.catalog.options import StandardOptionCatalog
 from chaficial.platform.master.service import MasterVehicleService
 from chaficial.platform.publishing.validator import PublishingReadinessValidator
+from chaficial.platform.lab.service import ContentLabService
 
 # 앱 초기화
 app = FastAPI(
@@ -1333,6 +1334,207 @@ def transition_publishing_status(
     validator = PublishingReadinessValidator()
     try:
         return validator.transition_publishing_status(db, vehicle, target_status, notes=notes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# -----------------------------------------------------------------------------
+# DIRECTIVE 051: PART 1. 차마트(CHAMART) 일반 고객용 공개 API
+# -----------------------------------------------------------------------------
+
+@app.get("/api/chamart/vehicles")
+def get_chamart_public_vehicles(db: Session = Depends(get_db)) -> list[dict[str, Any]]:
+    """차마트 일반 고객 공개 차량 목록 (관측 매물 제외, 원가/수익 비노출)."""
+    return PlatformService.get_chamart_public_vehicles(db)
+
+
+@app.get("/api/chamart/vehicles/{vehicle_id}")
+def get_chamart_public_vehicle_detail(vehicle_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
+    """차마트 일반 고객 공개 차량 상세 조회 (대형갤러리, 제원, 옵션, 성능요약, 시세비교 등 8대 영역)."""
+    detail = PlatformService.get_chamart_public_vehicle_detail(db, vehicle_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="공개된 차량 정보를 찾을 수 없습니다.")
+    return detail
+
+
+@app.post("/api/chamart/consultations")
+def create_chamart_public_consultation(req: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any]:
+    """차마트 웹사이트 고객 문의 및 방문 예약 신청."""
+    try:
+        return PlatformService.create_chamart_public_consultation(db, req)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/admin/vehicles/{vehicle_id}/publish")
+def toggle_admin_vehicle_publish(
+    vehicle_id: str,
+    req: dict[str, Any] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """관리자 전용 차량 차마트 공개 상태 토글 (인증 필수)."""
+    is_public = req.get("is_public") if req else None
+    try:
+        return PlatformService.toggle_vehicle_public_status(db, vehicle_id, is_public=is_public)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+# -----------------------------------------------------------------------------
+# DIRECTIVE 051: PART 2. AI 콘텐츠 연구소 (Autonomous Content Intelligence Lab) API
+# -----------------------------------------------------------------------------
+
+@app.get("/api/content-lab/session")
+def get_content_lab_session(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """AI 콘텐츠 연구소 현재 세션 상태, 쿼터 사용량, 카운터 요약 조회."""
+    return ContentLabService.get_session_status(db)
+
+
+@app.post("/api/content-lab/session/start")
+def start_content_lab_session(
+    req: dict[str, Any] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """연구 세션 시작 (RUNNING 전환 및 관찰 1사이클 가동)."""
+    name = req.get("session_name") if req else None
+    kws = req.get("keywords") if req else None
+    return ContentLabService.start_session(db, session_name=name, keywords=kws)
+
+
+@app.post("/api/content-lab/session/pause")
+def pause_content_lab_session(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """연구 세션 일시정지 (체크포인트 보존)."""
+    return ContentLabService.pause_session(db)
+
+
+@app.post("/api/content-lab/session/resume")
+def resume_content_lab_session(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """연구 세션 재개 (체크포인트 복원 후 연속 관찰)."""
+    return ContentLabService.resume_session(db)
+
+
+@app.post("/api/content-lab/session/stop")
+def stop_content_lab_session(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """연구 세션 종료 및 체크포인트 최종 저장."""
+    return ContentLabService.stop_session(db)
+
+
+@app.post("/api/content-lab/session/step")
+def run_content_lab_step(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """단일 관찰 사이클 수동 실행 (신규 영상 검색 -> AI 분석 -> 독립주제 발굴 -> 대본초안 작성)."""
+    session = ContentLabService.get_active_or_latest_session(db)
+    return ContentLabService.run_observation_step(db, session.id)
+
+
+@app.get("/api/content-lab/topics")
+def list_content_lab_topics(
+    category: Optional[str] = None,
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> list[dict[str, Any]]:
+    """독창적 중고차 기획 주제 후보 목록 조회."""
+    return ContentLabService.list_topic_candidates(db, category=category, status=status)
+
+
+@app.post("/api/content-lab/topics/{topic_id}/feedback")
+def submit_topic_feedback(
+    topic_id: str,
+    req: dict[str, Any],
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """주제 후보에 대한 피드백(LIKE, DISLIKE, ALREADY_COVERED, FACT_ERROR 등) 기록."""
+    feedback_type = req.get("feedback_type", "LIKE")
+    reason = req.get("reason")
+    try:
+        return ContentLabService.record_topic_feedback(db, topic_id, feedback_type, reason=reason)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/api/content-lab/scripts")
+def list_content_lab_scripts(
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> list[dict[str, Any]]:
+    """AI 독립 대본 초안 및 승인 대본 목록 조회."""
+    return ContentLabService.list_script_drafts(db, status=status)
+
+
+@app.put("/api/content-lab/scripts/{script_id}")
+def update_content_lab_script(
+    script_id: str,
+    req: dict[str, Any],
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """대본 수정 (수정 시 기존 승인 무효화 -> DRAFT 리셋 및 해시 제거)."""
+    try:
+        return ContentLabService.update_script_draft(db, script_id, req)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/content-lab/scripts/{script_id}/approve")
+def approve_content_lab_script(
+    script_id: str,
+    req: dict[str, Any] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """관리자 대본 공식 승인 (SHA-256 해시 보존)."""
+    approver = (req.get("approver_name") if req else None) or _auth.get("username", "차마트 관리자")
+    try:
+        return ContentLabService.approve_script_draft(db, script_id, approver_name=approver)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/content-lab/scripts/{script_id}/reject")
+def reject_content_lab_script(
+    script_id: str,
+    req: dict[str, Any] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """대본 반려 처리."""
+    reason = (req.get("reason") if req else None) or "기획 방향 재조정"
+    try:
+        return ContentLabService.reject_script_draft(db, script_id, reason=reason)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.post("/api/content-lab/scripts/{script_id}/generate-prompts")
+def generate_script_prompts(
+    script_id: str,
+    req: dict[str, Any] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """승인된 대본에 한하여 Wan 3.0 / Kling 4.0 영상 제작 프롬프트 생성 (미승인 시 400 에러)."""
+    model_type = (req.get("model_type") if req else None) or "WAN_3_0"
+    try:
+        return ContentLabService.generate_video_prompts_for_approved_script(db, script_id, target_model=model_type)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

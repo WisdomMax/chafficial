@@ -133,6 +133,7 @@ class Vehicle(Base):
     options_structured_json: Mapped[str] = mapped_column(Text, default="[]")     # 표준 옵션 코드/순정/확인상태
     condition_detail_json: Mapped[str] = mapped_column(Text, default="{}")       # 프레임/외판/누유/침수 상세
     publishing_status: Mapped[str] = mapped_column(String(30), default="DRAFT") # DRAFT, DATA_VERIFIED, READY_TO_PUBLISH, APPROVED, PUBLISHED, UPDATED, SOLD, UNPUBLISHED
+    is_public: Mapped[bool] = mapped_column(Boolean, default=True)               # 차마트 고객 공개 여부 (DIRECTIVE 051)
     platform_readiness_json: Mapped[str] = mapped_column(Text, default="{}")    # 플랫폼별 등록 준비도 검사 결과
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
     updated_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
@@ -467,6 +468,117 @@ class RLDecisionLog(Base):
     vehicle = relationship("Vehicle", back_populates="rl_decisions")
 
 
+# =============================================================================
+# DIRECTIVE 051: AI 콘텐츠 연구소 (Autonomous Content Intelligence Lab) 모델
+# =============================================================================
+
+class ContentLabSession(Base):
+    """지속 관찰 및 콘텐츠 연구 세션 모델 (DIRECTIVE 051)."""
+    __tablename__ = "content_lab_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    session_name: Mapped[str] = mapped_column(String(100), default="중고차 트렌드 연구 세션")
+    status: Mapped[str] = mapped_column(String(20), default="IDLE")  # IDLE, RUNNING, PAUSED, STOPPED
+    target_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
+    processed_video_count: Mapped[int] = mapped_column(Integer, default=0)
+    discovered_topic_count: Mapped[int] = mapped_column(Integer, default=0)
+    daily_quota_used: Mapped[int] = mapped_column(Integer, default=0)
+    daily_quota_limit: Mapped[int] = mapped_column(Integer, default=10000)
+    last_checkpoint_json: Mapped[str] = mapped_column(Text, default="{}")
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    observed_videos = relationship("ObservedVideo", back_populates="session", cascade="all, delete-orphan")
+    topics = relationship("ContentTopicCandidate", back_populates="session", cascade="all, delete-orphan")
+
+
+class ObservedVideo(Base):
+    """관찰된 중고차 경쟁 콘텐츠 메타데이터 (저작권 보호: 원문 대본/영상 보관 금지)."""
+    __tablename__ = "observed_videos"
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)  # YouTube Video ID
+    session_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("content_lab_sessions.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    channel_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    published_at: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    view_count: Mapped[int] = mapped_column(Integer, default=0)
+    duration_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    is_shorts: Mapped[bool] = mapped_column(Boolean, default=False)
+    matched_keywords_json: Mapped[str] = mapped_column(Text, default="[]")
+    analysis_mode: Mapped[str] = mapped_column(String(30), default="METADATA_ONLY")  # METADATA_ONLY, DEEP_VIDEO_UNDERSTANDING
+    analysis_result_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+    session = relationship("ContentLabSession", back_populates="observed_videos")
+
+
+class ContentTopicCandidate(Base):
+    """독창적 중고차 기획 주제 후보 모델 (차마트 25년 전문성 기반 독립 기획)."""
+    __tablename__ = "content_topic_candidates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    session_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("content_lab_sessions.id"), nullable=True)
+    category: Mapped[str] = mapped_column(String(50), default="수리비/유지비")
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    core_question: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_basis: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=0.85)
+    source_reference: Mapped[str] = mapped_column(String(255), default="트렌드 관찰 분석")
+    chamart_fit_score: Mapped[float] = mapped_column(Float, default=0.90)  # 차마트 제작 적합도
+    fact_check_items_json: Mapped[str] = mapped_column(Text, default="[]")
+    is_duplicate: Mapped[bool] = mapped_column(Boolean, default=False)
+    recommendation_reason: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(30), default="DISCOVERED")  # DISCOVERED, RECOMMENDED, SCRIPTED, ARCHIVED
+    user_feedback: Mapped[str | None] = mapped_column(String(30), nullable=True)  # LIKE, DISLIKE, ALREADY_COVERED, FACT_ERROR, PRODUCED, LATER
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+    session = relationship("ContentLabSession", back_populates="topics")
+    scripts = relationship("ContentScriptDraft", back_populates="topic", cascade="all, delete-orphan")
+
+
+class ContentScriptDraft(Base):
+    """독자적인 차마트 숏폼 대본 초안 및 스토리보드 모델 (자동 승인 금지, 승인 해시 보존)."""
+    __tablename__ = "content_script_drafts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    topic_id: Mapped[str] = mapped_column(String(36), ForeignKey("content_topic_candidates.id"), nullable=False)
+    titles_json: Mapped[str] = mapped_column(Text, default="[]")  # 제목 후보 3종
+    target_audience: Mapped[str] = mapped_column(String(100), default="중고차 실구매자")
+    planning_intent: Mapped[str] = mapped_column(Text, default="")
+    hook_sentence: Mapped[str] = mapped_column(Text, default="")
+    full_script: Mapped[str] = mapped_column(Text, default="")
+    storyboard_json: Mapped[str] = mapped_column(Text, default="[]")
+    fact_check_checklist_json: Mapped[str] = mapped_column(Text, default="[]")
+    dealer_questions_json: Mapped[str] = mapped_column(Text, default="[]")
+    dealer_answers_json: Mapped[str] = mapped_column(Text, default="{}")
+    estimated_duration_sec: Mapped[int] = mapped_column(Integer, default=30)
+    status: Mapped[str] = mapped_column(String(30), default="DRAFT")  # DRAFT, REVIEWING, APPROVED, REJECTED
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    approved_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)  # SHA-256
+    approved_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    approved_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    expert_feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+    prompts_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # 비디오 생성 프롬프트 패키지
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    topic = relationship("ContentTopicCandidate", back_populates="scripts")
+
+
+class ContentTopicFeedback(Base):
+    """사용자 피드백 감사 모델 (지속적 추천 개선 및 성과 지표 로깅)."""
+    __tablename__ = "content_topic_feedbacks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    topic_id: Mapped[str] = mapped_column(String(36), ForeignKey("content_topic_candidates.id"), nullable=False)
+    feedback_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    feedback_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    view_count_recorded: Mapped[int] = mapped_column(Integer, default=0)
+    inquiry_count_recorded: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+
 # 엔진 및 세션 팩토리
 engine = create_engine(DEMO_DB_URL, echo=False, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -500,6 +612,7 @@ def migrate_db_schema() -> None:
             ("marketing_auth_json", "TEXT DEFAULT '{}'"),
             ("primary_photo_url", "VARCHAR(255)"),
             ("video_status", "VARCHAR(30) DEFAULT 'NONE'"),
+            ("is_public", "BOOLEAN DEFAULT 1"),
         ]
         for col_name, col_type in vehicle_columns:
             if col_name not in existing_cols:
@@ -676,6 +789,99 @@ def migrate_db_schema() -> None:
                 success BOOLEAN DEFAULT 1,
                 error_message TEXT,
                 execution_time_ms INTEGER DEFAULT 0,
+                created_at DATETIME
+            )
+        """)
+
+        # 11. DIRECTIVE 051 AI 콘텐츠 연구소 테이블들 생성
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS content_lab_sessions (
+                id VARCHAR(36) PRIMARY KEY,
+                session_name VARCHAR(100),
+                status VARCHAR(20) DEFAULT 'IDLE',
+                target_keywords_json TEXT DEFAULT '[]',
+                processed_video_count INTEGER DEFAULT 0,
+                discovered_topic_count INTEGER DEFAULT 0,
+                daily_quota_used INTEGER DEFAULT 0,
+                daily_quota_limit INTEGER DEFAULT 10000,
+                last_checkpoint_json TEXT DEFAULT '{}',
+                last_error TEXT,
+                created_at DATETIME,
+                updated_at DATETIME
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS observed_videos (
+                id VARCHAR(100) PRIMARY KEY,
+                session_id VARCHAR(36),
+                title VARCHAR(255) NOT NULL,
+                channel_name VARCHAR(100) NOT NULL,
+                published_at VARCHAR(50),
+                view_count INTEGER DEFAULT 0,
+                duration_seconds INTEGER DEFAULT 0,
+                is_shorts BOOLEAN DEFAULT 0,
+                matched_keywords_json TEXT DEFAULT '[]',
+                analysis_mode VARCHAR(30) DEFAULT 'METADATA_ONLY',
+                analysis_result_json TEXT DEFAULT '{}',
+                created_at DATETIME
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS content_topic_candidates (
+                id VARCHAR(36) PRIMARY KEY,
+                session_id VARCHAR(36),
+                category VARCHAR(50) DEFAULT '수리비/유지비',
+                title VARCHAR(200) NOT NULL,
+                core_question TEXT NOT NULL,
+                evidence_basis TEXT NOT NULL,
+                confidence FLOAT DEFAULT 0.85,
+                source_reference VARCHAR(255),
+                chamart_fit_score FLOAT DEFAULT 0.90,
+                fact_check_items_json TEXT DEFAULT '[]',
+                is_duplicate BOOLEAN DEFAULT 0,
+                recommendation_reason TEXT,
+                status VARCHAR(30) DEFAULT 'DISCOVERED',
+                user_feedback VARCHAR(30),
+                created_at DATETIME
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS content_script_drafts (
+                id VARCHAR(36) PRIMARY KEY,
+                topic_id VARCHAR(36) NOT NULL,
+                titles_json TEXT DEFAULT '[]',
+                target_audience VARCHAR(100),
+                planning_intent TEXT,
+                hook_sentence TEXT,
+                full_script TEXT,
+                storyboard_json TEXT DEFAULT '[]',
+                fact_check_checklist_json TEXT DEFAULT '[]',
+                dealer_questions_json TEXT DEFAULT '[]',
+                dealer_answers_json TEXT DEFAULT '{}',
+                estimated_duration_sec INTEGER DEFAULT 30,
+                status VARCHAR(30) DEFAULT 'DRAFT',
+                version INTEGER DEFAULT 1,
+                approved_hash VARCHAR(64),
+                approved_by VARCHAR(50),
+                approved_at DATETIME,
+                expert_feedback TEXT,
+                prompts_json TEXT,
+                created_at DATETIME,
+                updated_at DATETIME
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS content_topic_feedbacks (
+                id VARCHAR(36) PRIMARY KEY,
+                topic_id VARCHAR(36) NOT NULL,
+                feedback_type VARCHAR(30) NOT NULL,
+                feedback_reason TEXT,
+                view_count_recorded INTEGER DEFAULT 0,
+                inquiry_count_recorded INTEGER DEFAULT 0,
                 created_at DATETIME
             )
         """)
