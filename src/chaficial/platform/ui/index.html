@@ -245,8 +245,8 @@
         </div>
       </div>
 
-      <!-- 상단 전역 검색창 (Universal Search: DIRECTIVE 046-B) -->
-      <div class="flex-1 max-w-md mx-6 relative">
+      <!-- 상단 전역 검색창 (Universal Search: DIRECTIVE 046-B) - 모바일에서는 숨겨 오버플로 방지 -->
+      <div class="hidden md:block flex-1 max-w-md mx-6 relative">
         <div class="relative">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
           <input 
@@ -277,18 +277,18 @@
         </a>
 
         <!-- 차마트 고객몰 뷰 전환 버튼 (DIRECTIVE 051 브랜드 분리 & 공통 UI) -->
-        <button onclick="toggleChamartCustomerView()" id="btnCustomerMallView" class="flex items-center text-xs px-2.5 py-1.5 rounded-lg border font-bold transition-all bg-teal-50 border-teal-300 text-[#247D7C] hover:bg-teal-100 shadow-xs" title="차마트 일반 고객용 판매 차량 및 공통 상세페이지 체험">
+        <button onclick="toggleChamartCustomerView()" id="btnCustomerMallView" class="hidden sm:flex items-center text-xs px-2.5 py-1.5 rounded-lg border font-bold transition-all bg-teal-50 border-teal-300 text-[#247D7C] hover:bg-teal-100 shadow-xs" title="차마트 일반 고객용 판매 차량 및 공통 상세페이지 체험">
           <i data-lucide="store" class="w-3.5 h-3.5 mr-1.5"></i>
           <span>차마트 고객몰 뷰</span>
         </button>
 
         <!-- Gemini Vision AI 연동 상태 뱃지 & 설정 버튼 (DIRECTIVE 050-C) -->
-        <button onclick="openGeminiSettingsModal()" id="headerGeminiBadge" class="flex items-center text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-all bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100" title="Gemini Vision AI 설정">
+        <button onclick="openGeminiSettingsModal()" id="headerGeminiBadge" class="hidden md:flex items-center text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-all bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100" title="Gemini Vision AI 설정">
           <i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1.5 text-amber-600"></i>
           <span id="geminiBadgeText">AI 비전 설정</span>
         </button>
 
-        <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+        <div class="hidden sm:flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
           <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500 ml-1 mr-1"></i>
           <select id="branchSelect" onchange="changeBranch(this.value)" class="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none pr-1">
             <option value="all">전체 거점</option>
@@ -4232,15 +4232,21 @@
           onTogglePublish: async (id, currentStatus) => {
             await handleToggleVehiclePublish(id, currentStatus);
           },
-          onEditMaster: (id) => {
-            openVehicleModal(id);
+          onEditMaster: (idOrObj) => {
+            const realId = (typeof idOrObj === 'object' && idOrObj !== null) ? idOrObj.id : idOrObj;
+            openVehicleModal(realId);
           },
           onSubmitConsultation: async (formData) => {
             try {
-              const cRes = await fetch(`/api/chamart/vehicles/${vehicleId}/inquiry`, {
+              const payload = { 
+                ...formData, 
+                vehicle_id: vehicleId,
+                privacy_agreed: formData.privacy_agreed !== undefined ? formData.privacy_agreed : true 
+              };
+              const cRes = await fetch(`/api/chamart/consultations`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload)
               });
               const cJson = await cRes.json();
               if (cRes.ok && cJson.ok) {
@@ -4268,18 +4274,20 @@
     }
 
     async function handleToggleVehiclePublish(vehicleId, currentStatus) {
-      const willPublish = !currentStatus;
+      const realId = (typeof vehicleId === 'object' && vehicleId !== null) ? vehicleId.id : vehicleId;
+      const realStatus = (typeof vehicleId === 'object' && vehicleId !== null) ? Boolean(vehicleId.is_public) : Boolean(currentStatus);
+      const willPublish = !realStatus;
       const actionText = willPublish ? '게시 승인(공개)' : '공개 취소(비공개 격리)';
       if (!confirm(`해당 차량을 차마트에 [${actionText}] 하시겠습니까?`)) return;
 
       try {
-        const res = await safeFetch(`/api/vehicles/${vehicleId}/toggle-public`, {
+        const res = await safeFetch(`/api/vehicles/${realId}/toggle-public`, {
           method: 'POST'
         });
         const result = await res.json();
         if (res.ok && result.ok) {
           showToast(`차량 게시 상태가 [${result.vehicle.is_public ? '공개' : '비공개'}]로 변경되었습니다.`, 'success');
-          await openVehicleDetailFullView(vehicleId, true);
+          await openVehicleDetailFullView(realId, true);
           if (typeof loadVehicles === 'function') loadVehicles();
         } else {
           showToast(`게시 상태 변경 실패: ${result.detail || '검증 요건 미충족'}`, 'error');

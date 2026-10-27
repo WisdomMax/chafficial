@@ -28,15 +28,18 @@ async function run() {
   await sleep(1500);
 
   const res = await page.evaluate(() => {
+    // 모든 assistant 메시지 컨테이너 탐색
     const turns = Array.from(document.querySelectorAll('[data-message-author-role="assistant"]'));
     if (turns.length > 0) {
-      return { found: true, text: turns[turns.length - 1].innerText };
+      const lastTurn = turns[turns.length - 1];
+      return { found: true, text: lastTurn.innerText, html: lastTurn.innerHTML.slice(0, 1000) };
     }
     const articles = Array.from(document.querySelectorAll('article'));
     if (articles.length > 0) {
-      return { found: true, text: articles[articles.length - 1].innerText };
+      const lastArt = articles[articles.length - 1];
+      return { found: true, text: lastArt.innerText, html: lastArt.innerHTML.slice(0, 1000) };
     }
-    return { found: false, text: document.body.innerText.slice(-15000) };
+    return { found: false, text: document.body.innerText, html: '' };
   });
 
   console.log('RESULT_FOUND:' + res.found);

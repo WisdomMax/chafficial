@@ -187,18 +187,87 @@ class PlatformService:
         return PlatformService.get_vehicle_detail(db, vehicle_id)
 
     @staticmethod
+    def _normalize_accident_summary(v: Vehicle) -> dict[str, Any]:
+        """고객 및 관리자 공통 정규화 성능·사고 요약 (단일 진실 원천 SSOT, DIRECTIVE 054)."""
+        cond_detail = {}
+        if v.condition_detail_json:
+            try:
+                cond_detail = json.loads(v.condition_detail_json)
+            except Exception:
+                pass
+
+        accident_hist = {}
+        if v.accident_history_json:
+            try:
+                accident_hist = json.loads(v.accident_history_json)
+            except Exception:
+                pass
+
+        # 실제 성능점검 증빙 문서가 등록되어 있는지 검증
+        inspection_date = cond_detail.get("inspection_date") or accident_hist.get("inspection_date")
+        raw_state = (accident_hist.get("accident_state") or cond_detail.get("accident_state") or "").strip().upper()
+
+        # 정규화된 3단계 상태 판정
+        if raw_state in ["NO_ACCIDENT", "NONE", "CLEAN", "무사고"]:
+            normalized_code = "VERIFIED_CLEAN"
+            label = "완전 무사고 (단순교환 없음)"
+            is_accident_free = True
+            has_inspection = True
+        elif raw_state in ["ISSUE", "REPAIRED", "EXCHANGED", "단순교환", "수리이력"]:
+            normalized_code = "VERIFIED_ISSUE"
+            label = "단순교환 / 수리이력 있음"
+            is_accident_free = False
+            has_inspection = True
+        else:
+            normalized_code = "UNKNOWN"
+            label = "미확인 (성능점검표 미등록)"
+            is_accident_free = None
+            has_inspection = bool(inspection_date and inspection_date != "미확인")
+
+        # 각 부위별 정직 표기
+        frame_damage = cond_detail.get("frame_damage") or accident_hist.get("frame_damage")
+        outer_damage = cond_detail.get("outer_damage") or accident_hist.get("outer_damage")
+        oil_leak = cond_detail.get("oil_leak_status") or cond_detail.get("oil_leak")
+        special_acc = cond_detail.get("special_accident") or accident_hist.get("special_accident")
+
+        if normalized_code == "VERIFIED_CLEAN":
+            frame_str = frame_damage or "골격 손상 없음 (정상)"
+            outer_str = outer_damage or "외판 무교환 (정상)"
+            oil_str = oil_leak or "미세누유 없음 (정상)"
+            special_str = special_acc or "침수/화재 이력 없음 (정상)"
+        elif normalized_code == "VERIFIED_ISSUE":
+            frame_str = frame_damage or "골격 확인 요망"
+            outer_str = outer_damage or "외판 교환 이력 있음"
+            oil_str = oil_leak or "점검 요망"
+            special_str = special_acc or "침수/화재 이력 없음"
+        else:
+            frame_str = frame_damage or "미확인 (성능점검표 미등록)"
+            outer_str = outer_damage or "미확인 (성능점검표 미등록)"
+            oil_str = oil_leak or "미확인 (성능점검표 미등록)"
+            special_str = special_acc or "미확인 (성능점검표 미등록)"
+
+        return {
+            "status_code": normalized_code,
+            "has_inspection": has_inspection,
+            "is_accident_free": is_accident_free,
+            "accident_state_label": label,
+            "frame_damage": frame_str,
+            "outer_damage": outer_str,
+            "oil_leak_status": oil_str,
+            "special_accident": special_str,
+            "inspection_date": inspection_date or "미확인",
+        }
+
+    @staticmethod
     def get_vehicle_detail(db: Session, vehicle_id: str) -> Optional[dict[str, Any]]:
-        """DIRECTIVE 046-D 차량 마스터 종합 상세 정보 조회 (기본정보, 사고/보험, 성능/하자, 사진, 매물이력, 영상 연계)."""
+        """DIRECTIVE 046-D / 054 차량 마스터 종합 상세 정보 조회 (고객 화면과 동일한 공통 스펙 및 사고 요약 제공)."""
         v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
         if not v:
             return None
 
         timeline = json.loads(v.timeline_json) if v.timeline_json else []
         options = json.loads(v.options_json) if v.options_json else []
-        accident_history = json.loads(v.accident_history_json) if v.accident_history_json else {}
-        if accident_history.get("accident_state") == "UNCHECKED":
-            accident_history.setdefault("frame_damage", "미확인 (성능점검표 미등록)")
-            accident_history.setdefault("outer_panel_exchange", "미확인 (성능점검표 미등록)")
+        accident_summary = PlatformService._normalize_accident_summary(v)
         inspection_summary = json.loads(v.inspection_summary_json) if v.inspection_summary_json else {}
         marketing_auth = json.loads(v.marketing_auth_json) if v.marketing_auth_json else {}
 
@@ -297,11 +366,17 @@ class PlatformService:
             "drive_type": v.drive_type,
             "interior_color": v.interior_color,
             "options": options,
-            "accident_history": accident_history,
+            "accident_summary": accident_summary,
+            "accident_history": accident_summary,
             "inspection_summary": inspection_summary,
             "marketing_auth": marketing_auth,
             "primary_photo_url": v.primary_photo_url,
             "video_status": v.video_status or "NONE",
+            "is_public": bool(v.is_public),
+            "dealer_info": dealer_info,
+            "trim": v.trim or "",
+            "body_type": v.body_type or "세단",
+            "recon_cost": getattr(v, "recon_cost", 0) or 0,
             "defects": defects,
             "photos": photos,
             "listings": listings,
@@ -421,35 +496,8 @@ class PlatformService:
                     "is_verified": False,
                 })
 
-        # 3. 사고 및 성능 상태 요약 (P0-3: 허위 기본값 제거, 미등록 시 UNKNOWN / 미확인 표기)
-        try:
-            cond_detail = json.loads(v.condition_detail_json or "{}")
-        except Exception:
-            cond_detail = {}
-        try:
-            accident_hist = json.loads(v.accident_history_json or "{}")
-        except Exception:
-            accident_hist = {}
-
-        has_inspection = bool(cond_detail or accident_hist)
-        accident_state_raw = accident_hist.get("accident_state")
-        is_accident_free = accident_state_raw in ["NONE", "NO_ACCIDENT", "무사고"] if accident_state_raw else None
-
-        if accident_state_raw:
-            accident_label = "완전 무사고 (단순교환 없음)" if is_accident_free else "단순교환 / 수리이력 있음"
-        else:
-            accident_label = "미확인 (성능점검표 미등록)"
-
-        accident_summary = {
-            "has_inspection": has_inspection,
-            "is_accident_free": is_accident_free,
-            "accident_state_label": accident_label,
-            "frame_damage": cond_detail.get("frame_damage") or accident_hist.get("frame_damage") or ("골격 정상" if has_inspection else "미확인 (성능점검표 미등록)"),
-            "outer_damage": cond_detail.get("outer_damage") or accident_hist.get("outer_damage") or ("외판 정상" if has_inspection else "미확인"),
-            "oil_leak_status": cond_detail.get("oil_leak_status") or ("누유 없음 (정상)" if has_inspection else "미확인 (성능점검표 미등록)"),
-            "special_accident": cond_detail.get("special_accident") or accident_hist.get("special_accident") or ("침수/화재 이력 없음" if has_inspection else "미확인"),
-            "inspection_date": cond_detail.get("inspection_date") or accident_hist.get("inspection_date") or "미확인",
-        }
+        # 3. 사고 및 성능 상태 요약 (DIRECTIVE 054: 단일 SSOT 정규화 사용)
+        accident_summary = PlatformService._normalize_accident_summary(v)
 
         # 4. 사진 갤러리 (공개 정렬)
         photos = [

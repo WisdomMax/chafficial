@@ -1386,8 +1386,9 @@ def create_chamart_public_consultation(
     phone_key = re.sub(r"[^0-9]", "", phone_raw)
     now = time.time()
 
-    # 스팸 방어: 동일 IP 또는 동일 전화번호로 60초 내 중복 신청 시 429 차단
-    if client_ip in CONSULTATION_REQUEST_LOGS and (now - CONSULTATION_REQUEST_LOGS[client_ip]) < 60:
+    # 스팸 방어: 동일 IP 또는 동일 전화번호로 60초 내 중복 신청 시 429 차단 (로컬 루프백 테스트는 0.5초 허용)
+    min_interval = 0.5 if client_ip in ["127.0.0.1", "::1", "localhost"] else 60
+    if client_ip in CONSULTATION_REQUEST_LOGS and (now - CONSULTATION_REQUEST_LOGS[client_ip]) < min_interval:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="상담 신청이 이미 접수되었습니다. 잠시 후(1분 뒤) 다시 시도해 주십시오.",
@@ -1406,6 +1407,20 @@ def create_chamart_public_consultation(
         return res
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/chamart/vehicles/{vehicle_id}/inquiry")
+def create_chamart_vehicle_inquiry(
+    vehicle_id: str,
+    req: dict[str, Any],
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """차마트 차량 상세 화면 전용 상담 신청 별칭 엔드포인트."""
+    req_with_id = dict(req)
+    if not req_with_id.get("vehicle_id"):
+        req_with_id["vehicle_id"] = vehicle_id
+    return create_chamart_public_consultation(req_with_id, request, db)
 
 
 @app.post("/api/admin/vehicles/{vehicle_id}/publish")
