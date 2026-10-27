@@ -620,19 +620,41 @@ class PlatformService:
                     f"차마트 공개 승인 실패: 실제 판매 가능한 상태(FOR_SALE, AVAILABLE)의 차량만 공개 가능합니다. (현재: {v.status})"
                 )
 
-            # 가드 4: 실차 사진 최소 1장 이상 등록 필수
-            has_photo = bool(v.photos) or bool(v.primary_photo_url)
+            # 가드 4: 실차 사진 최소 1장 이상 등록 및 검증 필수
+            has_photo = False
+            if v.photos and len(v.photos) > 0:
+                has_photo = any(p.photo_url and not p.photo_url.endswith("car_placeholder.jpg") for p in v.photos)
+            elif v.primary_photo_url and not v.primary_photo_url.endswith("car_placeholder.jpg"):
+                has_photo = True
+
             if not has_photo:
                 raise ValueError("차마트 공개 승인 실패: 검증된 실차 사진이 최소 1장 이상 등록되어 있어야 합니다.")
 
-            # 가드 5: 소유·판매 권한 검증
+            # 가드 5: 소유·판매 권한 및 유효기간 엄격 검증 (DIRECTIVE 053 REVISED P0-3)
             if v.ownership_type == OwnershipType.PARTNER_APPROVED.value:
                 try:
                     auth_json = json.loads(v.marketing_auth_json or "{}")
                 except Exception:
                     auth_json = {}
-                if not auth_json.get("sale_auth", True):
-                    raise ValueError("차마트 공개 승인 실패: 제휴 판매 권한이 확인되지 않았습니다.")
+
+                # 1) sale_auth 누락 시 기본 승인(True) 취약점 완전 제거 -> 명시적 True 필수
+                if auth_json.get("sale_auth") is not True:
+                    raise ValueError("차마트 공개 승인 실패: 제휴 판매 권한(sale_auth)이 공식 승인되지 않았습니다.")
+
+                # 2) 권한 철회 여부 검증
+                if auth_json.get("is_revoked") is True:
+                    raise ValueError("차마트 공개 승인 실패: 제휴 판매 권한이 철회(Revoked)된 매물입니다.")
+
+                # 3) 권한 유효기간 만료 검증
+                expires_at_str = auth_json.get("expires_at")
+                if expires_at_str:
+                    try:
+                        exp_date = datetime.datetime.strptime(expires_at_str[:10], "%Y-%m-%d").date()
+                        if exp_date < datetime.date.today():
+                            raise ValueError(f"차마트 공개 승인 실패: 제휴 판매 권한 유효기간({expires_at_str})이 만료되었습니다.")
+                    except ValueError as ve:
+                        if "유효기간" in str(ve):
+                            raise ve
 
         v.is_public = target_public
         # 차마트 공개 상태와 플랫폼 등록 상태 반영

@@ -114,6 +114,9 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 DOC_UPLOAD_DIR = Path("data/uploads/documents")
 DOC_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+STATIC_DIR = Path(__file__).parent / "ui" / "static"
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 @app.exception_handler(Exception)
@@ -1406,6 +1409,7 @@ def create_chamart_public_consultation(
 
 
 @app.post("/api/admin/vehicles/{vehicle_id}/publish")
+@app.post("/api/vehicles/{vehicle_id}/toggle-public")
 def toggle_admin_vehicle_publish(
     vehicle_id: str,
     req: dict[str, Any] = None,
@@ -1594,7 +1598,8 @@ def generate_script_prompts(
 # 9. UI 서빙 (차피셜 관리자 & 차마트 독립 고객 쇼룸)
 # ----------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
-def serve_index() -> HTMLResponse:
+@app.get("/admin/vehicles/{vehicle_id}", response_class=HTMLResponse)
+def serve_index(vehicle_id: Optional[str] = None) -> HTMLResponse:
     """차피셜(CHA-FICIAL) 내부 운영 관리자 포털 UI."""
     if UI_INDEX_FILE.exists():
         content = UI_INDEX_FILE.read_text(encoding="utf-8")

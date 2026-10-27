@@ -8,6 +8,7 @@
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/static/js/vehicle_detail_renderer.js"></script>
 
   <script>
     tailwind.config = {
@@ -524,6 +525,11 @@
           </div>
         </div>
       </section>
+
+      <!-- ======================================================== -->
+      <!-- 2-1. 독립 전폭 차량 상세 뷰 (DIRECTIVE 053 REVISED 엔카급 공통 렌더러) -->
+      <!-- ======================================================== -->
+      <section id="view-vehicle-detail" class="hidden"></section>
 
       <!-- ======================================================== -->
       <!-- 2. 차량 관리 뷰 (데이터 테이블, 원클릭 정렬, 금액 자동 포맷) -->
@@ -2735,40 +2741,20 @@
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
-      <form onsubmit="handleLoginSubmit(event)" class="mt-4 space-y-3.5">
+      <form onsubmit="handleLoginSubmit(event)" autocomplete="on" class="mt-4 space-y-3.5">
         <div id="loginAlertBox" class="hidden p-2.5 rounded-lg text-xs bg-rose-50 border border-rose-200 text-rose-700"></div>
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">아이디</label>
-          <input type="text" id="loginUsername" value="admin" required class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-slate-50 text-slate-800 focus:outline-none focus:border-[#247D7C]" />
+          <input type="text" id="loginUsername" name="username" value="admin" autocomplete="username" required class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm bg-slate-50 text-slate-800 focus:outline-none focus:border-[#247D7C]" />
         </div>
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs font-semibold text-slate-700">비밀번호</label>
-            <button type="button" onclick="fillAdminPasswordQuick()" class="text-[11px] text-[#247D7C] hover:underline font-semibold flex items-center">
-              <i data-lucide="key" class="w-3 h-3 mr-0.5"></i>비번 자동완성
-            </button>
-          </div>
-          <input type="password" id="loginPassword" required placeholder="관리자 비밀번호를 입력하십시오" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
-        </div>
-
-        <!-- 원클릭 간편 로그인 안내 배너 -->
-        <div class="p-3 bg-teal-50/70 border border-teal-200 rounded-lg space-y-2 text-xs">
-          <div class="flex items-center justify-between text-[#247D7C] font-bold">
-            <span class="flex items-center"><i data-lucide="shield-check" class="w-3.5 h-3.5 mr-1"></i>로컬 관리자 인증 헬퍼</span>
-            <span class="text-[10px] bg-teal-200/60 px-1.5 py-0.5 rounded text-teal-900">P0 보안</span>
-          </div>
-          <p class="text-slate-600 text-[11px] leading-relaxed">
-            보안 비밀번호를 일일이 복사할 필요 없이 아래 버튼을 누르면 즉시 관리자로 자동 로그인됩니다.
-          </p>
-          <button type="button" onclick="autoLoginAsAdmin()" class="w-full py-1.5 bg-[#247D7C] hover:bg-[#1D6665] text-white rounded text-xs font-bold transition-all shadow-xs flex items-center justify-center">
-            <i data-lucide="zap" class="w-3.5 h-3.5 mr-1"></i>
-            원클릭 자동 채우기 & 로그인
-          </button>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">비밀번호</label>
+          <input type="password" id="loginPassword" name="password" autocomplete="current-password" required placeholder="관리자 비밀번호를 입력하십시오" class="w-full px-3 py-2 border border-[#D8E2EA] rounded-lg text-sm focus:outline-none focus:border-[#247D7C]" />
         </div>
 
         <div class="pt-2 flex space-x-2">
           <button type="button" onclick="closeAdminLoginModal()" class="flex-1 py-2 border border-[#D8E2EA] rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50">닫기</button>
-          <button type="submit" id="loginSubmitBtn" class="flex-1 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow-xs">직접 로그인</button>
+          <button type="submit" id="loginSubmitBtn" class="flex-1 py-2 bg-[#247D7C] hover:bg-[#1D6665] text-white rounded-lg text-xs font-bold shadow-xs">로그인</button>
         </div>
 
         <div class="pt-1 text-center">
@@ -3236,22 +3222,6 @@
     function closeAdminLoginModal() {
       const modal = document.getElementById('adminLoginModal');
       if (modal) modal.classList.add('hidden');
-    }
-
-    const LOCAL_ADMIN_KEY_PRESET = "wdgjpVb_uLU9grg4Cm-EyRqk65CTP_c878fRvUujYjY";
-
-    function fillAdminPasswordQuick() {
-      const pInput = document.getElementById('loginPassword');
-      if (pInput) {
-        pInput.value = LOCAL_ADMIN_KEY_PRESET;
-        showToast('관리자 비밀번호가 자동 입력되었습니다.', 'info');
-      }
-    }
-
-    async function autoLoginAsAdmin() {
-      fillAdminPasswordQuick();
-      const fakeEvent = { preventDefault: () => {} };
-      await handleLoginSubmit(fakeEvent);
     }
 
     async function handleLoginSubmit(e) {
@@ -3826,10 +3796,11 @@
     // ----------------------------------------------------
     // 3. 네비게이션 탭 전환 (DIRECTIVE 046-A / 047 확장)
     // ----------------------------------------------------
-    const NAV_ITEMS = ['dashboard', 'vehicles', 'customers', 'transactions', 'documents', 'media', 'market', 'sourcing', 'attribution', 'rl', 'settings', 'content-lab', 'chamart-mall'];
+    const NAV_ITEMS = ['dashboard', 'vehicles', 'vehicle-detail', 'customers', 'transactions', 'documents', 'media', 'market', 'sourcing', 'attribution', 'rl', 'settings', 'content-lab', 'chamart-mall'];
     const TITLE_MAP = {
       dashboard: { title: '대시보드', desc: '차마트 본사 및 거점의 실시간 운영 현황을 통합 관리합니다.' },
       vehicles: { title: '차량 관리', desc: '차마트 보유 매물의 가격, 재고 상태, 거점 정보를 관리합니다.' },
+      'vehicle-detail': { title: '차량 상세 마스터 (엔카급 프리미엄)', desc: '공통 렌더러 기반 엔카급 대형 실차 갤러리 및 관리자 원가/마진 분석 모드' },
       customers: { title: '고객 관리 (CRM)', desc: '고객 문의, 관심 차종, 예산 및 상담 히스토리를 관리합니다.' },
       transactions: { title: '거래·계약 관리', desc: '차량 매입, 고객 판매, 계약금 및 정산 내역을 관리합니다.' },
       documents: { title: 'AI 서류 인식', desc: '자동차양도증명서 및 등록증 사진을 업로드하여 무결성을 검증합니다.' },
@@ -3967,44 +3938,49 @@
           return;
         }
 
-        // 비로그인 (401 Unauthorized) 또는 접근 제한 상태: 공개 차마트 쇼룸 매물로 안전 폴백
+        // 비로그인 (401 Unauthorized) 상태: 가짜 데이터 주입 없이 정직한 관리자 로그인 필요 상태 표시
         if (res.status === 401) {
-          console.warn('[loadVehicles] 비로그인 상태 감지 - 차마트 공개 매물 API로 전환 로드');
-          const pubRes = await fetch('/api/chamart/vehicles');
-          if (pubRes.ok) {
-            const pubVehicles = await pubRes.json();
-            // 차마트 공개 매물 데이터 마스터 목록으로 임시 매핑
-            allVehicles = pubVehicles.map(v => ({
-              ...v,
-              is_public: true,
-              ownership_type: 'CHAMART_OWNED',
-              video_status: 'NOT_STARTED'
-            }));
-            renderVehicleTable(true); // 비로그인 안내 배너 모드로 렌더링
-            renderDashboardVehicles();
-            populateVehicleDropdowns();
-          } else {
-            const tbody = document.getElementById('vehicleTableBody');
-            if (tbody) {
-              tbody.innerHTML = `
-                <tr>
-                  <td colspan="8" class="py-12 text-center">
-                    <div class="space-y-3">
-                      <div class="text-slate-500 font-semibold text-sm">차량 관리자 세션 로그인이 필요합니다.</div>
-                      <p class="text-xs text-slate-400">보안 정책에 따라 관리자 인증 후 전체 차량 및 상세 조회가 가능합니다.</p>
-                      <button onclick="openAdminLoginModal()" class="px-4 py-2 bg-[#247D7C] hover:bg-[#1D6665] text-white rounded-lg text-xs font-bold shadow-xs">
-                        관리자 로그인 열기
+          allVehicles = [];
+          const countEl = document.getElementById('vehicleCountDisplay');
+          if (countEl) countEl.innerText = '-';
+          const tbody = document.getElementById('vehicleTableBody');
+          if (tbody) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="8" class="py-16 text-center bg-slate-50/50">
+                  <div class="max-w-md mx-auto space-y-3">
+                    <div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mb-2">
+                      <i data-lucide="lock" class="w-6 h-6"></i>
+                    </div>
+                    <div class="text-slate-800 font-bold text-base">차피셜 내부 관리자 로그인이 필요합니다.</div>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                      차피셜(CHA-FICIAL)은 차량 원가·마진·CRM·콘텐츠 제작 전용 내부 운영 플랫폼입니다.<br>
+                      실제 판매 차량 조회 및 방문 예약은 <strong class="text-blue-600">차마트(CHAMART) 고객 쇼룸</strong>을 이용해 주십시오.
+                    </p>
+                    <div class="pt-2 flex items-center justify-center space-x-3">
+                      <a href="/chamart" target="_blank" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs flex items-center">
+                        <i data-lucide="store" class="w-4 h-4 mr-1.5"></i>
+                        차마트 고객 쇼룸 바로가기 &rarr;
+                      </a>
+                      <button onclick="openAdminLoginModal()" class="px-4 py-2 bg-[#247D7C] hover:bg-[#1D6665] text-white rounded-lg text-xs font-bold shadow-xs flex items-center">
+                        <i data-lucide="log-in" class="w-4 h-4 mr-1.5"></i>
+                        관리자 로그인
                       </button>
                     </div>
-                  </td>
-                </tr>
-              `;
-            }
+                  </div>
+                </td>
+              </tr>
+            `;
+            lucide.createIcons();
           }
           return;
         }
+
+        if (res.status >= 500) {
+          showToast('차량 목록을 불러오는 중 서버 내부 오류가 발생했습니다 (HTTP 500).', 'error');
+        }
       } catch (e) {
-        console.error('차량 목록 로드 실패', e);
+        console.error('차량 목록 로드 실패 (네트워크 오류)', e);
       }
     }
 
@@ -4145,12 +4121,12 @@
           : getCarPlaceholderHtml();
 
         const rowDblClick = isGuest 
-          ? `openUnifiedVehicleDetailModal('${v.id}', false)` 
-          : `openUnifiedVehicleDetailModal('${v.id}', true)`;
+          ? `openVehicleDetailFullView('${v.id}', false)` 
+          : `openVehicleDetailFullView('${v.id}', true)`;
 
         const btnDetailClick = isGuest
-          ? `openUnifiedVehicleDetailModal('${v.id}', false)`
-          : `openVehicleDetailModal('${v.id}')`;
+          ? `openVehicleDetailFullView('${v.id}', false)`
+          : `openVehicleDetailFullView('${v.id}', true)`;
 
         return `
           <tr ondblclick="${rowDblClick}" class="hover:bg-teal-50/40 cursor-pointer transition-colors group">
@@ -4171,10 +4147,10 @@
             <td class="py-3 px-3 text-center">${videoBadge}</td>
             <td class="py-3 px-3 text-center">
               <div class="flex items-center justify-center space-x-1" onclick="event.stopPropagation()">
-                <button onclick="${btnDetailClick}" class="px-2 py-1 text-xs bg-[#247D7C] hover:bg-[#1D6665] text-white rounded font-medium shadow-xs">
+                <button onclick="${btnDetailClick}" class="px-2 py-1 text-xs bg-[#247D7C] hover:bg-[#1D6665] text-white rounded font-medium shadow-xs" title="엔카급 전폭 상세 화면">
                   상세보기
                 </button>
-                <button onclick="openUnifiedVehicleDetailModal('${v.id}', ${!isGuest})" class="px-2 py-1 text-xs border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded font-bold shadow-xs" title="차마트 고객 공통 고급 상세페이지">
+                <button onclick="openVehicleDetailFullView('${v.id}', ${!isGuest})" class="px-2 py-1 text-xs border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded font-bold shadow-xs" title="차마트 고객 공통 고급 상세페이지">
                   공통상세
                 </button>
                 ${!isGuest ? `
@@ -4196,114 +4172,44 @@
     }
 
     // ----------------------------------------------------
-    // 6. 차량 마스터 상세 모달 제어 (단일화 및 비로그인 안전 폴백)
+    // 6. 엔카급 공통 프리미엄 차량 상세 화면 제어 (DIRECTIVE 053 REVISED)
     // ----------------------------------------------------
-    async function openVehicleDetailModal(vehicleId) {
-      try {
-        let res;
-        try {
-          res = await safeFetch(`/api/vehicles/${vehicleId}/detail`);
-        } catch (authErr) {
-          if (authErr.message === '401_UNAUTHORIZED') {
-            // 비로그인 시 고객 공개 상세 조회로 자동 전환
-            console.log('[openVehicleDetailModal] 비로그인 감지 -> 공개 상세 모달로 폴백 전환');
-            return await openUnifiedVehicleDetailModal(vehicleId, false);
-          }
-          throw authErr;
-        }
+    let currentVehicleDetailRenderer = null;
 
-        if (!res || !res.ok) {
-          if (res && res.status === 404) showToast('해당 차량을 찾을 수 없습니다 (404 Not Found).', 'error');
-          else if (res && res.status === 500) showToast('차량 상세 조회 중 서버 내부 오류가 발생했습니다 (500).', 'error');
-          return;
-        }
-        const d = await res.json();
-        currentVehicleDetail = d;
-
-        // 상단 헤더 렌더링
-        document.getElementById('vd_plate_number').innerText = d.plate_number || '-';
-        document.getElementById('vd_model_name').innerText = d.model_name || '-';
-        document.getElementById('vd_specs').innerText = `${d.year}년식 · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '-'} · ${d.fuel_type} · ${d.transmission}`;
-        document.getElementById('vd_price').innerText = d.target_price ? `${Number(d.target_price).toLocaleString('ko-KR')}만원` : '-';
-        
-        document.getElementById('vd_ownership_badge').innerHTML = getOwnershipBadge(d.ownership_type, d.dealer ? d.dealer.dealership_name : null);
-        document.getElementById('vd_video_badge').innerHTML = getVideoStatusBadge(d.video_status);
-
-        const photoEl = document.getElementById('vd_primary_photo');
-        const fallbackEl = document.getElementById('vd_primary_photo_fallback');
-        photoEl.onerror = () => {
-          photoEl.classList.add('hidden');
-          fallbackEl.classList.remove('hidden');
-        };
-        if (d.primary_photo_url) {
-          photoEl.src = d.primary_photo_url;
-          photoEl.classList.remove('hidden');
-          fallbackEl.classList.add('hidden');
-        } else {
-          photoEl.classList.add('hidden');
-          fallbackEl.classList.remove('hidden');
-        }
-
-        const btnVideo = document.getElementById('btnCreateVideoFromVehicle');
-        const isAuthVideo = d.marketing_auth && d.marketing_auth.video_allowed && (d.ownership_type !== 'MARKET_OBSERVED');
-        if (isAuthVideo) {
-          btnVideo.className = "px-4 py-2 bg-[#247D7C] hover:bg-[#1D6665] text-white text-xs font-bold rounded-lg shadow-sm flex items-center transition-all cursor-pointer";
-        } else {
-          btnVideo.className = "px-4 py-2 bg-slate-300 text-slate-500 text-xs font-bold rounded-lg shadow-sm flex items-center cursor-not-allowed";
-        }
-
-        renderDetailBasicTab(d);
-        renderDetailAccidentTab(d);
-        renderDetailInspectionTab(d);
-        renderDetailPhotosTab(d);
-        renderDetailListingsTab(d);
-        renderDetailMediaTab(d);
-
-        switchDetailTab('basic');
-        document.getElementById('vehicleDetailModal').classList.remove('hidden');
-        lucide.createIcons();
-      } catch (e) {
-        console.error('[openVehicleDetailModal 오류]:', e);
-        if (e.message !== '401_UNAUTHORIZED') {
-          showToast(`차량 상세 정보를 불러올 수 없습니다: ${e.message}`, 'error');
-        }
-      }
-    }
-
-    function closeVehicleDetailModal() {
-      document.getElementById('vehicleDetailModal').classList.add('hidden');
-      currentVehicleDetail = null;
-    }
-
-    // ----------------------------------------------------
-    // DIRECTIVE 051: 차피셜·차마트 공통 고급 차량 상세 모달 제어
-    // ----------------------------------------------------
-    let currentUvdData = null;
-    let currentUvdPhotos = [];
-    let currentUvdPhotoIdx = 0;
-    let currentUvdIsAdmin = false;
-
-    async function openUnifiedVehicleDetailModal(vehicleId, isAdmin = false) {
-      currentUvdIsAdmin = isAdmin;
+    async function openVehicleDetailFullView(vehicleId, isAdmin = true) {
       try {
         let d = null;
-        if (isAdmin) {
+        let effectiveAdmin = isAdmin;
+
+        if (effectiveAdmin) {
           try {
             const res = await safeFetch(`/api/vehicles/${vehicleId}/detail`);
             if (res.ok) {
               d = await res.json();
+            } else if (res.status === 401) {
+              showToast('차피셜 관리자 로그인이 필요한 화면입니다.', 'warning');
+              openAdminLoginModal();
+              return;
+            } else if (res.status === 404) {
+              showToast('해당 차량을 찾을 수 없습니다 (404 Not Found).', 'error');
+              return;
+            } else {
+              showToast(`차량 상세 조회 실패 (HTTP ${res.status})`, 'error');
+              return;
             }
-          } catch (e) {
-            console.warn('[openUnifiedVehicleDetailModal] 관리자 API 호출 실패, 공개 API로 폴백 시도:', e);
+          } catch (authErr) {
+            if (authErr.message === '401_UNAUTHORIZED') {
+              showToast('차피셜 관리자 로그인이 필요한 화면입니다.', 'warning');
+              openAdminLoginModal();
+              return;
+            }
+            throw authErr;
           }
-        }
-
-        // 비관리자 모드이거나 관리자 API 실패 시 차마트 공개 API 시도
-        if (!d) {
+        } else {
           const pubRes = await fetch(`/api/chamart/vehicles/${vehicleId}`);
           if (pubRes.ok) {
             d = await pubRes.json();
-            currentUvdIsAdmin = false; // 고객 모드로 안전 강제
+            effectiveAdmin = false;
           } else {
             if (pubRes.status === 404) showToast('차량 정보를 찾을 수 없거나 비공개 격리된 매물입니다.', 'error');
             else showToast('서버 오류로 차량 정보를 불러오지 못했습니다.', 'error');
@@ -4311,262 +4217,93 @@
           }
         }
 
-        currentUvdData = d;
+        if (!d) return;
 
-        // 1. 브랜드 및 관리자 모드 바 제어
-        const adminActionsEl = document.getElementById('uvdAdminActions');
-        const adminIndicatorEl = document.getElementById('uvdAdminIndicator');
-        const marginBarEl = document.getElementById('uvdMarginBar');
-        if (currentUvdIsAdmin) {
-          adminActionsEl.classList.remove('hidden');
-          adminIndicatorEl.classList.remove('hidden');
-          const btnPub = document.getElementById('btnUvdTogglePublish');
-          btnPub.innerText = d.is_public ? '공개 취소' : '게시 승인';
-          btnPub.className = d.is_public 
-            ? "px-2.5 py-1 text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold rounded shadow-xs transition-colors"
-            : "px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded shadow-xs transition-colors";
+        // 메인 네비게이션을 차량 상세 전폭 화면으로 전환
+        switchNav('vehicle-detail');
+        const targetUrl = effectiveAdmin ? `/admin/vehicles/${vehicleId}` : `/cars/${vehicleId}`;
+        window.history.pushState({ vehicleId, isAdmin: effectiveAdmin }, '', targetUrl);
 
-          // 원가 데이터 채우기
-          const pur = d.purchase_price ? `${Number(d.purchase_price).toLocaleString('ko-KR')}만원` : '미확인';
-          const rec = d.recon_cost ? `${Number(d.recon_cost).toLocaleString('ko-KR')}만원` : '0만원';
-          const margin = (d.target_price && d.purchase_price) 
-            ? `${Number(d.target_price - d.purchase_price - (d.recon_cost || 0)).toLocaleString('ko-KR')}만원`
-            : '-';
-          document.getElementById('uvdPurchasePrice').innerText = pur;
-          document.getElementById('uvdReconCost').innerText = rec;
-          document.getElementById('uvdEstimatedMargin').innerText = margin;
-        } else {
-          adminActionsEl.classList.add('hidden');
-          adminIndicatorEl.classList.add('hidden');
-          marginBarEl.classList.add('hidden');
-        }
-
-        // 2. 대형 사진 갤러리 설정
-        currentUvdPhotos = [];
-        if (d.photos && d.photos.length > 0) {
-          currentUvdPhotos = d.photos;
-        } else if (d.primary_photo_url) {
-          currentUvdPhotos = [{ photo_url: d.primary_photo_url, caption: d.model_name }];
-        } else {
-          currentUvdPhotos = [{ photo_url: '/static/img/car_placeholder.jpg', caption: '사진 준비 중' }];
-        }
-        currentUvdPhotoIdx = 0;
-        renderUvdGallery();
-
-        // 3. 헤더 및 가격 제원 바인딩
-        const trimStr = d.trim ? ` ${d.trim}` : '';
-        document.getElementById('uvdModelAndTrim').innerText = `${d.model_name}${trimStr}`;
-        document.getElementById('uvdPlateAndYear').innerText = `${d.year}년식 · ${d.plate_number || '번호판 미기재'}`;
-        document.getElementById('uvdPriceText').innerText = d.target_price ? `${Number(d.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
-        
-        const monthlyEst = d.monthly_payment_estimate 
-          ? `월 약 ${Number(d.monthly_payment_estimate).toLocaleString('ko-KR')}만원 (60개월 할부 기준)`
-          : `월 약 ${Math.round((d.target_price || 0) * 0.019)}만원 (60개월 할부 추정)`;
-        document.getElementById('uvdMonthlyEstimate').innerText = monthlyEst;
-        document.getElementById('uvdSalesConditions').innerText = `판매 조건: ${d.sales_conditions || '현금 / 1금융 저금리 할부 / 세금계산서 100% 발행'}`;
-
-        // 4. 4대 스펙 카드
-        document.getElementById('uvdSpecYear').innerText = `${d.year}년식 (${d.first_registration_date || '등록일 미기재'})`;
-        document.getElementById('uvdSpecMileage').innerText = d.mileage ? `${Number(d.mileage).toLocaleString('ko-KR')}km` : '미확인';
-        document.getElementById('uvdSpecFuelTrans').innerText = `${d.fuel_type || '가솔린'} / ${d.transmission || '오토'}`;
-        document.getElementById('uvdSpecDisplacementBody').innerText = `${d.displacement_cc ? Number(d.displacement_cc).toLocaleString('ko-KR') + 'cc' : '2,000cc'} / ${d.body_type || '세단'}`;
-
-        // 5. 사고 및 성능 상태 (완전 무사고 / CLEAN 판정 포함)
-        const accSummary = d.accident_summary || d.accident_history || {};
-        const isFree = accSummary.is_accident_free || accSummary.accident_state === 'NONE' || accSummary.accident_state === '무사고' || accSummary.accident_state === 'CLEAN';
-        const badgeEl = document.getElementById('uvdAccidentFreeBadge');
-        if (isFree) {
-          badgeEl.className = "text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300";
-          badgeEl.innerText = "완전 무사고 보증";
-        } else {
-          badgeEl.className = "text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-300";
-          badgeEl.innerText = accSummary.accident_state_label || "단순교환 / 수리이력 있음";
-        }
-        document.getElementById('uvdFrameStatus').innerText = accSummary.frame_damage || '골격 손상 없음 (정상)';
-        document.getElementById('uvdOuterStatus').innerText = accSummary.outer_damage || accSummary.outer_panel_exchange || '단순교환 없음';
-        document.getElementById('uvdOilLeakStatus').innerText = accSummary.oil_leak_status || '미세누유 없음 (정상)';
-        document.getElementById('uvdSpecialStatus').innerText = accSummary.special_accident || '침수/화재/도난 이력 없음';
-        document.getElementById('uvdInspectionDate').innerText = `점검일: ${accSummary.inspection_date || '2026-10-25'}`;
-
-        // 6. 카테고리별 옵션 그리드
-        const optCont = document.getElementById('uvdOptionsContainer');
-        const categorizedOpts = d.options_categorized || {};
-        let optHtml = '';
-        if (Object.keys(categorizedOpts).length > 0) {
-          for (const [catName, optsList] of Object.entries(categorizedOpts)) {
-            if (optsList && optsList.length > 0) {
-              const tags = optsList.map(o => `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">✓ ${o.name || o}</span>`).join(' ');
-              optHtml += `
-                <div class="space-y-1">
-                  <div class="text-[11px] font-bold text-slate-500">${catName}</div>
-                  <div class="flex flex-wrap gap-1.5">${tags}</div>
-                </div>
-              `;
+        // 공통 렌더러 인스턴스 생성 및 마운트
+        const container = document.getElementById('view-vehicle-detail');
+        currentVehicleDetailRenderer = new VehicleDetailRenderer(container, {
+          isAdmin: effectiveAdmin,
+          onBack: () => backToVehicleList(),
+          onTogglePublish: async (id, currentStatus) => {
+            await handleToggleVehiclePublish(id, currentStatus);
+          },
+          onEditMaster: (id) => {
+            openVehicleModal(id);
+          },
+          onSubmitConsultation: async (formData) => {
+            try {
+              const cRes = await fetch(`/api/chamart/vehicles/${vehicleId}/inquiry`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+              });
+              const cJson = await cRes.json();
+              if (cRes.ok && cJson.ok) {
+                showToast('상담 및 시승 예약 신청이 정상 접수되었습니다.', 'success');
+              } else {
+                showToast(cJson.detail || '상담 신청 처리 중 오류가 발생했습니다.', 'error');
+              }
+            } catch (err) {
+              showToast('네트워크 오류로 상담 접수에 실패했습니다.', 'error');
             }
           }
-        } else if (d.options && d.options.length > 0) {
-          const tags = d.options.map(o => `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">✓ ${o}</span>`).join(' ');
-          optHtml = `<div class="flex flex-wrap gap-1.5">${tags}</div>`;
-        } else {
-          optHtml = `<div class="text-slate-400 text-xs">확인된 주요 옵션 사양을 정리 중입니다.</div>`;
-        }
-        optCont.innerHTML = optHtml;
+        });
 
-        // 7. 시세 비교 & 부대비용 가이드
-        const pc = d.price_comparison || {};
-        const diffWon = pc.savings_amount || Math.round((d.target_price || 0) * 0.05);
-        document.getElementById('uvdPriceComparisonText').innerText = 
-          pc.competition_analysis || `동급 엔카/KB 평균 시세 대비 약 ${diffWon}만원 합리적인 착한 가격입니다.`;
-        const regTax = pc.registration_tax_est || Math.round((d.target_price || 0) * 0.07);
-        document.getElementById('uvdRegTaxEst').innerText = `약 ${Number(regTax).toLocaleString('ko-KR')}만원`;
-
-        // 8. 전시장 & 전문 딜러
-        const dealer = d.dealer_info || d.dealer || {};
-        document.getElementById('uvdDealerName').innerText = dealer.name || '차마트 인증 전문딜러';
-        document.getElementById('uvdDealershipName').innerText = dealer.dealership_name || '차마트 장한평 본사 가온모터스';
-        document.getElementById('uvdDealerPhone').innerText = dealer.phone || '02-2244-8899';
-        document.getElementById('uvdShowroomLocation').innerText = dealer.showroom_location || '서울특별시 동대문구 천호대로 329 (장한평 매매단지)';
-
-        // 9. 승인된 AI 홍보 영상
-        const vidBadge = document.getElementById('uvdVideoStatusBadge');
-        const vidCont = document.getElementById('uvdVideoContainer');
-        const appVid = d.approved_video;
-        if (appVid && appVid.video_url) {
-          vidBadge.innerText = '공식 게시 완료';
-          vidBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800';
-          vidCont.innerHTML = `
-            <div class="space-y-2">
-              <div class="font-bold text-slate-800 text-xs">${appVid.title || '차마트 AI 홍보 영상'}</div>
-              <a href="${appVid.video_url}" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs shadow-xs transition-colors">
-                <i data-lucide="play" class="w-3.5 h-3.5 mr-1.5 fill-current"></i>
-                유튜브 쇼츠 영상 바로보기
-              </a>
-            </div>
-          `;
-        } else {
-          vidBadge.innerText = '영상 제작 대기';
-          vidBadge.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600';
-          vidCont.innerHTML = `차마트 AI 스튜디오에서 고화질 숏폼 홍보 영상을 기획·제작 대기 중입니다.`;
-        }
-
-        // 모달 열기
-        document.getElementById('unifiedVehicleDetailModal').classList.remove('hidden');
-        lucide.createIcons();
-      } catch (e) {
-        console.error('[openUnifiedVehicleDetailModal 오류 traceback]:', e);
-        showToast('차량 상세 정보를 불러오는 중 오류가 발생했습니다.', 'error');
+        currentVehicleDetailRenderer.render(d);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        console.error('[openVehicleDetailFullView] 오류:', err);
+        showToast(`차량 상세 화면 로드 오류: ${err.message}`, 'error');
       }
     }
 
-    function renderUvdGallery() {
-      if (!currentUvdPhotos || currentUvdPhotos.length === 0) return;
-      const photo = currentUvdPhotos[currentUvdPhotoIdx];
-      const mainEl = document.getElementById('uvdMainPhoto');
-      mainEl.src = photo.photo_url || photo.url;
-      document.getElementById('uvdPhotoCaption').innerText = photo.caption || `차량 사진 ${currentUvdPhotoIdx + 1}`;
-      document.getElementById('uvdPhotoCounter').innerText = `${currentUvdPhotoIdx + 1} / ${currentUvdPhotos.length}`;
-
-      const stripEl = document.getElementById('uvdThumbnailsStrip');
-      stripEl.innerHTML = currentUvdPhotos.map((p, idx) => {
-        const isSel = idx === currentUvdPhotoIdx;
-        const borderCls = isSel ? 'border-2 border-[#247D7C] shadow-md scale-105' : 'border border-slate-200 opacity-70 hover:opacity-100';
-        return `
-          <button onclick="selectUvdPhoto(${idx})" class="w-14 h-11 shrink-0 rounded-lg overflow-hidden transition-all ${borderCls}">
-            <img src="${p.photo_url || p.url}" class="w-full h-full object-cover" alt="썸네일" />
-          </button>
-        `;
-      }).join('');
+    function backToVehicleList() {
+      switchNav('vehicles');
+      window.history.pushState({}, '', '/');
     }
 
-    function navigateUvdPhoto(direction) {
-      if (!currentUvdPhotos || currentUvdPhotos.length === 0) return;
-      currentUvdPhotoIdx = (currentUvdPhotoIdx + direction + currentUvdPhotos.length) % currentUvdPhotos.length;
-      renderUvdGallery();
+    async function handleToggleVehiclePublish(vehicleId, currentStatus) {
+      const willPublish = !currentStatus;
+      const actionText = willPublish ? '게시 승인(공개)' : '공개 취소(비공개 격리)';
+      if (!confirm(`해당 차량을 차마트에 [${actionText}] 하시겠습니까?`)) return;
+
+      try {
+        const res = await safeFetch(`/api/vehicles/${vehicleId}/toggle-public`, {
+          method: 'POST'
+        });
+        const result = await res.json();
+        if (res.ok && result.ok) {
+          showToast(`차량 게시 상태가 [${result.vehicle.is_public ? '공개' : '비공개'}]로 변경되었습니다.`, 'success');
+          await openVehicleDetailFullView(vehicleId, true);
+          if (typeof loadVehicles === 'function') loadVehicles();
+        } else {
+          showToast(`게시 상태 변경 실패: ${result.detail || '검증 요건 미충족'}`, 'error');
+        }
+      } catch (e) {
+        showToast(`게시 상태 변경 오류: ${e.message}`, 'error');
+      }
     }
 
-    function selectUvdPhoto(idx) {
-      if (!currentUvdPhotos || idx < 0 || idx >= currentUvdPhotos.length) return;
-      currentUvdPhotoIdx = idx;
-      renderUvdGallery();
+    // 하위 호환 매핑 함수
+    function openVehicleDetailModal(vehicleId) {
+      return openVehicleDetailFullView(vehicleId, true);
+    }
+
+    function openUnifiedVehicleDetailModal(vehicleId, isAdmin = false) {
+      return openVehicleDetailFullView(vehicleId, isAdmin);
+    }
+
+    function closeVehicleDetailModal() {
+      backToVehicleList();
     }
 
     function closeUnifiedVehicleDetailModal() {
-      document.getElementById('unifiedVehicleDetailModal').classList.add('hidden');
-      currentUvdData = null;
-    }
-
-    function toggleUvdMarginView() {
-      const el = document.getElementById('uvdMarginBar');
-      el.classList.toggle('hidden');
-    }
-
-    async function toggleCurrentVehiclePublish() {
-      if (!currentUvdData) return;
-      try {
-        const newStatus = !currentUvdData.is_public;
-        const res = await safeFetch(`/api/admin/vehicles/${currentUvdData.id}/publish`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ is_public: newStatus })
-        });
-        if (!res.ok) throw new Error('게시 상태 변경 실패');
-        currentUvdData.is_public = newStatus;
-        const btnPub = document.getElementById('btnUvdTogglePublish');
-        btnPub.innerText = newStatus ? '공개 취소' : '게시 승인';
-        btnPub.className = newStatus 
-          ? "px-2.5 py-1 text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold rounded shadow-xs transition-colors"
-          : "px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded shadow-xs transition-colors";
-        showToast(newStatus ? '차마트 고객몰에 차량이 공개되었습니다.' : '차마트 고객몰에서 차량이 비공개 전환되었습니다.', 'success');
-        await loadVehicles();
-      } catch (e) {
-        showToast(`공개 상태 변경 오류: ${e.message}`, 'error');
-      }
-    }
-
-    function openVehicleModalFromUvd() {
-      if (!currentUvdData) return;
-      const vId = currentUvdData.id;
-      closeUnifiedVehicleDetailModal();
-      openVehicleModal(vId);
-    }
-
-    async function submitUvdConsultation() {
-      const name = document.getElementById('uvdConsultName').value.trim();
-      const phone = document.getElementById('uvdConsultPhone').value.trim();
-      const date = document.getElementById('uvdConsultDate').value;
-      const content = document.getElementById('uvdConsultContent').value.trim();
-
-      if (!name || !phone) {
-        showToast('고객 성함과 연락처를 입력해 주세요.', 'error');
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/chamart/consultations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name,
-            phone,
-            vehicle_id: currentUvdData ? currentUvdData.id : null,
-            vehicle_title: currentUvdData ? currentUvdData.model_name : '차마트 문의 차량',
-            preferred_date: date,
-            content: content || '웹사이트 공통 차량 상세페이지 방문 예약'
-          })
-        });
-        const ret = await res.json();
-        if (res.ok) {
-          showToast(ret.message || '상담 예약이 접수되었습니다.', 'success');
-          document.getElementById('uvdConsultName').value = '';
-          document.getElementById('uvdConsultPhone').value = '';
-          document.getElementById('uvdConsultDate').value = '';
-          document.getElementById('uvdConsultContent').value = '';
-        } else {
-          showToast(`신청 실패: ${ret.detail || '입력값을 확인하세요.'}`, 'error');
-        }
-      } catch (e) {
-        showToast(`오류: ${e.message}`, 'error');
-      }
+      backToVehicleList();
     }
 
     // ----------------------------------------------------
@@ -6952,12 +6689,42 @@
     }
 
     // ----------------------------------------------------
-    // 초기 기동 (DIRECTIVE 050-C)
+    // 초기 기동 및 클라이언트 라우팅 (DIRECTIVE 053 REVISED)
     // ----------------------------------------------------
+    window.addEventListener('popstate', (e) => {
+      const path = window.location.pathname;
+      if (path.startsWith('/admin/vehicles/')) {
+        const id = path.split('/admin/vehicles/')[1];
+        if (id) openVehicleDetailFullView(id, true);
+      } else if (path.startsWith('/cars/')) {
+        const id = path.split('/cars/')[1];
+        if (id) openVehicleDetailFullView(id, false);
+      } else if (path === '/' || path === '/admin') {
+        switchNav('vehicles');
+      }
+    });
+
     window.addEventListener('DOMContentLoaded', async () => {
       await checkAuthStatus();
       await loadGeminiConfig();
       await loadAllData();
+
+      // 초기 URL 감지 및 상세 화면 직행 지원
+      const path = window.location.pathname;
+      if (path.startsWith('/admin/vehicles/')) {
+        const id = path.split('/admin/vehicles/')[1];
+        if (id) {
+          console.log(`[라우터] 관리자 차량 상세 직행: ${id}`);
+          await openVehicleDetailFullView(id, true);
+        }
+      } else if (path.startsWith('/cars/')) {
+        const id = path.split('/cars/')[1];
+        if (id) {
+          console.log(`[라우터] 고객 차량 상세 직행: ${id}`);
+          await openVehicleDetailFullView(id, false);
+        }
+      }
+
       // 30초마다 자동 백그라운드 갱신
       setInterval(loadAllData, 30000);
     });
