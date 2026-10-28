@@ -754,9 +754,9 @@
                 <table class="w-full border-collapse text-xs text-left">
                     <thead>
                         <tr class="border-b border-slate-200">
-                            <th class="p-3 bg-slate-50 font-bold text-slate-700 w-28 shrink-0">비교 항목</th>
+                            <th class="p-3 bg-[#F5F6F4] font-bold text-slate-700 w-24 sm:w-28 shrink-0 sticky left-0 z-20 border-r border-slate-200 shadow-2xs">비교 항목</th>
                             ${vehicles.map(v => `
-                                <th class="p-3 text-center bg-white border-l border-slate-200">
+                                <th class="p-3 text-center bg-white border-l border-slate-200 min-w-[180px] sm:min-w-[220px]">
                                     <div class="flex justify-end mb-1">
                                         <button type="button" onclick="removeFromCompare('${v.id}')" class="text-slate-400 hover:text-rose-500 text-xs flex items-center font-normal cursor-pointer">
                                             <i data-lucide="x" class="w-3.5 h-3.5 mr-0.5"></i>제외
@@ -766,15 +766,15 @@
                                         <img src="${v.primary_photo_url || (v.photos && v.photos[0] ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/vehicles/neutral_car_placeholder.jpg')}" 
                                              alt="${v.model_name}" class="w-full h-full object-cover">
                                     </div>
-                                    <div class="font-bold text-slate-900 text-sm truncate max-w-[220px] mx-auto">${v.model_name}</div>
-                                    <div class="text-[11px] text-slate-500 truncate max-w-[220px] mx-auto">${v.trim || ''}</div>
+                                    <div class="font-bold text-slate-900 text-sm truncate max-w-[200px] mx-auto">${v.model_name}</div>
+                                    <div class="text-[11px] text-slate-500 truncate max-w-[200px] mx-auto">${v.trim || ''}</div>
                                 </th>
                             `).join('')}
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         <tr>
-                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">정찰 판매가</td>
+                            <td class="p-3 bg-[#F5F6F4] font-semibold text-slate-700 sticky left-0 z-10 border-r border-slate-200 shadow-2xs">정찰 판매가</td>
                             ${vehicles.map(v => {
                                 const price = v.target_price || 0;
                                 const diff = price - minPrice;
@@ -787,7 +787,7 @@
                             }).join('')}
                         </tr>
                         <tr>
-                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">연식</td>
+                            <td class="p-3 bg-[#F5F6F4] font-semibold text-slate-700 sticky left-0 z-10 border-r border-slate-200 shadow-2xs">연식</td>
                             ${vehicles.map(v => `
                                 <td class="p-3 text-center border-l border-slate-200 font-semibold text-slate-800">
                                     ${v.year ? v.year + '년식' : '미확인'}
@@ -795,7 +795,7 @@
                             `).join('')}
                         </tr>
                         <tr>
-                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">주행거리</td>
+                            <td class="p-3 bg-[#F5F6F4] font-semibold text-slate-700 sticky left-0 z-10 border-r border-slate-200 shadow-2xs">주행거리</td>
                             ${vehicles.map(v => {
                                 const mileage = v.mileage || 0;
                                 const diff = mileage - minMileage;
@@ -808,7 +808,7 @@
                             }).join('')}
                         </tr>
                         <tr>
-                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">변속기 / 구동</td>
+                            <td class="p-3 bg-[#F5F6F4] font-semibold text-slate-700 sticky left-0 z-10 border-r border-slate-200 shadow-2xs">변속기 / 구동</td>
                             ${vehicles.map(v => `
                                 <td class="p-3 text-center border-l border-slate-200 text-slate-700">
                                     ${v.transmission || '미확인'} / ${v.drive_type || '미확인'}
@@ -816,7 +816,7 @@
                             `).join('')}
                         </tr>
                         <tr>
-                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">연료 방식</td>
+                            <td class="p-3 bg-[#F5F6F4] font-semibold text-slate-700 sticky left-0 z-10 border-r border-slate-200 shadow-2xs">연료 방식</td>
                             ${vehicles.map(v => `
                                 <td class="p-3 text-center border-l border-slate-200 text-slate-700">
                                     ${v.fuel_type || '미확인'}
@@ -824,7 +824,7 @@
                             `).join('')}
                         </tr>
                         <tr>
-                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">사고 및 성능상태</td>
+                            <td class="p-3 bg-[#F5F6F4] font-semibold text-slate-700 sticky left-0 z-10 border-r border-slate-200 shadow-2xs">사고 및 성능상태</td>
                             ${vehicles.map(v => {
                                 const acc = v.accident_history || {};
                                 let badgeHtml = '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600">전산 확인 중</span>';
@@ -841,7 +841,7 @@
                             }).join('')}
                         </tr>
                         <tr>
-                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">전시장 위치</td>
+                            <td class="p-3 bg-[#F5F6F4] font-semibold text-slate-700 sticky left-0 z-10 border-r border-slate-200 shadow-2xs">전시장 위치</td>
                             ${vehicles.map(v => `
                                 <td class="p-3 text-center border-l border-slate-200 text-slate-600 text-[11px]">
                                     ${v.branch_location || '장한평 본사 전시장'}
@@ -849,7 +849,7 @@
                             `).join('')}
                         </tr>
                         <tr>
-                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">실차 확인</td>
+                            <td class="p-3 bg-[#F5F6F4] font-semibold text-slate-700 sticky left-0 z-10 border-r border-slate-200 shadow-2xs">실차 확인</td>
                             ${vehicles.map(v => `
                                 <td class="p-3 text-center border-l border-slate-200">
                                     <button type="button" onclick="closeCompareModal(); openVehicleDetail('${v.id}')" class="w-full max-w-[200px] mx-auto py-2 bg-[#171B1E] hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer transition-colors shadow-2xs">

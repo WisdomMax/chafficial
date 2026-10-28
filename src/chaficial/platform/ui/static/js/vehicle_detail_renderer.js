@@ -749,20 +749,26 @@ class VehicleDetailRenderer {
               </table>
             </div>
 
-            <!-- 시뮬레이션 할부 조건 요약 -->
+            <!-- 시뮬레이션 할부 조건 요약 (DIRECTIVE 063: 실시간 계산 수치 완전 반영) -->
             <div id="vdrEstimateLoanSummary" class="bg-slate-50 p-3.5 rounded-lg border border-[#E7E9E5] space-y-2 text-xs">
               <div class="font-bold text-slate-800 flex justify-between">
                 <span>금융 할부 시뮬레이션 예시</span>
                 <span class="text-amber-800 font-normal">※ 금융사 사전 심사에 따른 참고 예시</span>
               </div>
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-600">
-                <div>선수금: <strong id="vdrEstDownText" class="text-slate-800">-</strong></div>
-                <div>할부 개월: <strong id="vdrEstMonthsText" class="text-slate-800">-</strong></div>
-                <div>예시 금리: <strong id="vdrEstRateText" class="text-slate-800">-</strong></div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-600">
+                <div>선수금: <strong id="vdrEstDownText" class="text-slate-800 font-mono">-</strong></div>
+                <div>할부 원금: <strong id="vdrEstPrincipalText" class="text-slate-800 font-mono">-</strong></div>
+                <div>할부 기간: <strong id="vdrEstMonthsText" class="text-slate-800 font-mono">-</strong></div>
+                <div>예시 금리: <strong id="vdrEstRateText" class="text-slate-800 font-mono">-</strong></div>
               </div>
-              <div class="pt-2 border-t border-slate-200 flex justify-between items-center text-xs">
-                <span class="font-semibold text-slate-700">월 예상 납입금:</span>
-                <span id="vdrEstMonthlyText" class="font-bold text-[#171B1E] text-sm font-mono">-</span>
+              <div class="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
+                <div class="text-[11px] text-slate-500">
+                  총 예상 이자: <strong id="vdrEstInterestText" class="text-slate-700 font-mono">-</strong>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <span class="font-semibold text-slate-700">월 예상 납입금:</span>
+                  <span id="vdrEstMonthlyText" class="font-bold text-[#171B1E] text-sm sm:text-base font-mono">-</span>
+                </div>
               </div>
             </div>
 
@@ -804,15 +810,20 @@ class VehicleDetailRenderer {
           </div>
 
           <div class="space-y-3 text-xs text-slate-700">
-            <div class="bg-slate-50 p-3 rounded-lg border border-[#E7E9E5] space-y-1">
-              <div class="font-bold text-[#171B1E] text-sm">차마트 장한평 본사 전시장</div>
-              <div class="text-slate-600">${escapeHtml(showroomLoc)}</div>
-              <div class="text-[11px] text-slate-400 pt-0.5">※ 장한평역 5호선 인근, 고객 무료 주차 가능</div>
+            <!-- 공식 도로명 주소 및 실측 좌표 안내 (DIRECTIVE 063) -->
+            <div class="bg-slate-50 p-3.5 rounded-lg border border-[#E7E9E5] space-y-1.5 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-[#171B1E] text-sm">차마트 장한평 본사 전시장</span>
+                <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-200">공식 실측</span>
+              </div>
+              <div class="text-slate-800 font-medium">서울특별시 성동구 자동차시장1길 70 (용답동)</div>
+              <div class="text-[11px] text-slate-500 font-mono">공식 좌표: 37.56191°N, 127.06424°E</div>
+              <div class="text-[11px] text-slate-400 pt-0.5">※ 지하철 5호선 장한평역 5·6번 출구 도보 3분 / 고객 전용 무료 주차장</div>
             </div>
 
             <!-- 공식 지도 앱 바로가기 버튼들 -->
             <div class="space-y-2 pt-1">
-              <a href="https://map.kakao.com/link/to/차마트장한평본사,37.5619,127.0642" target="_blank" rel="noopener noreferrer" 
+              <a href="https://map.kakao.com/link/to/차마트장한평본사전시장,37.56191,127.06424" target="_blank" rel="noopener noreferrer" 
                  class="w-full py-2.5 px-4 bg-[#FEE500] hover:bg-[#FADA0A] text-[#191919] font-bold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors shadow-2xs">
                 <span class="flex items-center">
                   <i data-lucide="map-pin" class="w-4 h-4 mr-2 text-[#191919]"></i>
@@ -821,7 +832,7 @@ class VehicleDetailRenderer {
                 <i data-lucide="chevron-right" class="w-4 h-4"></i>
               </a>
 
-              <a href="https://map.naver.com/v5/directions/-/127.0642,37.5619,차마트장한평본사/-/car" target="_blank" rel="noopener noreferrer"
+              <a href="https://map.naver.com/v5/directions/-/127.06424,37.56191,차마트장한평본사전시장/-/car" target="_blank" rel="noopener noreferrer"
                  class="w-full py-2.5 px-4 bg-[#03C75A] hover:bg-[#02B351] text-white font-bold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors shadow-2xs">
                 <span class="flex items-center">
                   <i data-lucide="map" class="w-4 h-4 mr-2 text-white"></i>
@@ -830,7 +841,7 @@ class VehicleDetailRenderer {
                 <i data-lucide="chevron-right" class="w-4 h-4"></i>
               </a>
 
-              <a href="tmap://route?goalname=차마트장한평본사&goalx=127.0642&goaly=37.5619" 
+              <a href="tmap://route?goalname=차마트장한평본사전시장&goalx=127.06424&goaly=37.56191" 
                  class="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors">
                 <span class="flex items-center">
                   <i data-lucide="navigation-2" class="w-3.5 h-3.5 mr-2 text-slate-600"></i>
@@ -1306,8 +1317,44 @@ class VehicleDetailRenderer {
     img.style.transition = 'transform 0.25s ease';
   }
 
-  // DIRECTIVE 062: 견적서(실차 예상 구매비용 안내서) 모달 제어
+  // DIRECTIVE 063: 견적서(실차 예상 구매비용 안내서) 모달 제어 및 실시간 계산값 동기화
   openEstimateModal() {
+    const downSelect = document.getElementById('vdrCalcDownPayment');
+    const monthSelect = document.getElementById('vdrCalcMonths');
+    const rateSelect = document.getElementById('vdrCalcRate');
+    const targetPrice = this.data?.target_price || 0;
+
+    const downPercent = downSelect ? parseFloat(downSelect.value) / 100 : 0.1;
+    const downValWon = Math.round(targetPrice * downPercent);
+    const months = monthSelect ? parseInt(monthSelect.value, 10) : 60;
+    const annualRate = rateSelect ? parseFloat(rateSelect.value) : 0.059;
+    const monthlyRate = annualRate / 12;
+    const loanAmount = targetPrice * (1 - downPercent);
+
+    let monthlyPayment = 0;
+    let totalInterest = 0;
+    let totalRepay = targetPrice;
+
+    if (loanAmount > 0 && monthlyRate > 0) {
+      monthlyPayment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+      totalRepay = monthlyPayment * months;
+      totalInterest = totalRepay - loanAmount;
+    }
+
+    const estDown = document.getElementById('vdrEstDownText');
+    const estMonths = document.getElementById('vdrEstMonthsText');
+    const estRate = document.getElementById('vdrEstRateText');
+    const estMonthly = document.getElementById('vdrEstMonthlyText');
+    const estPrincipal = document.getElementById('vdrEstPrincipalText');
+    const estInterest = document.getElementById('vdrEstInterestText');
+
+    if (estDown) estDown.textContent = `${Math.round(downPercent * 100)}% (${downValWon.toLocaleString('ko-KR')}만원)`;
+    if (estPrincipal) estPrincipal.textContent = `${Math.round(loanAmount).toLocaleString('ko-KR')}만원`;
+    if (estMonths) estMonths.textContent = `${months}개월`;
+    if (estRate) estRate.textContent = `연 ${(annualRate * 100).toFixed(1)}%`;
+    if (estMonthly) estMonthly.textContent = `월 약 ${Math.round(monthlyPayment).toLocaleString('ko-KR')}만원`;
+    if (estInterest) estInterest.textContent = `약 ${Math.round(totalInterest).toLocaleString('ko-KR')}만원`;
+
     const modal = document.getElementById('vdrEstimatePrintModal');
     if (modal) {
       modal.classList.remove('hidden');
@@ -1342,9 +1389,9 @@ class VehicleDetailRenderer {
     }
   }
 
-  // DIRECTIVE 062: 전시장 주소 원클릭 클립보드 복사
+  // DIRECTIVE 063: 전시장 공식 도로명 주소 원클릭 클립보드 복사
   copyShowroomAddress() {
-    const addr = this.data?.branch_location || '서울특별시 성동구 용답동 234 장한평 자동차매매단지';
+    const addr = this.data?.branch_location || '서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지';
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(addr).then(() => {
         const textSpan = document.getElementById('vdrBtnCopyAddrText');

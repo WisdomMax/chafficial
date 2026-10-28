@@ -517,6 +517,15 @@ class PlatformService:
         if not v.is_public or v.is_demo:
             return False
 
+        # DIRECTIVE 063 P0: 테스트용 및 데모 모델명 배제 가드 강화
+        model_name_lower = (v.model_name or "").lower()
+        if any(keyword in model_name_lower for keyword in ["테스트", "test", "demo", "임시", "placeholder"]):
+            return False
+
+        # 판매 가격 유효성 검증 (0원 이하 배제)
+        if (v.target_price or 0) <= 0:
+            return False
+
         # DIRECTIVE 059 P0: 제휴 매물(PARTNER_APPROVED)인 경우 공식 판매권한 유효성(승인/철회/만료) 엄격 검증
         if v.ownership_type == OwnershipType.PARTNER_APPROVED.value:
             try:
@@ -542,14 +551,18 @@ class PlatformService:
                 except Exception:
                     return False
 
-        # 2. 실차 사진 검증 (DEMO_PLACEHOLDER 및 임시 placeholder 격리)
+        # 2. 실차 사진 엄격 검증 (DEMO_PLACEHOLDER, unsplash, neutral_car, 예시 전면 배제)
         photos = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).all()
         has_real_photo = False
         for p in photos:
-            if p.photo_url and "placeholder" not in p.photo_url and "neutral_car" not in p.photo_url:
-                if p.caption and "DEMO_PLACEHOLDER" not in p.caption and "예시" not in p.caption:
-                    has_real_photo = True
-                    break
+            url_lower = (p.photo_url or "").lower()
+            caption_lower = (p.caption or "").lower()
+            if not url_lower or any(ign in url_lower for ign in ["placeholder", "neutral_car", "unsplash", "demo"]):
+                continue
+            if any(ign in caption_lower for ign in ["demo", "placeholder", "예시", "샘플", "임시", "가상"]):
+                continue
+            has_real_photo = True
+            break
 
         return has_real_photo
 
