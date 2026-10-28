@@ -126,9 +126,9 @@
         </div>
     </aside>
 
-    <!-- 1. 상용급 차마트 전문 헤더 (고정 메뉴바: 스크롤 시에도 최상단에 항상 고정) -->
-    <header class="bg-white/95 backdrop-blur-md border-b border-[#E5E8EC] sticky top-0 z-50 transition-all duration-200">
-        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 h-[68px] flex items-center justify-between">
+    <!-- 1. 상용급 차마트 전문 헤더 (영구 고정 메뉴바: 스크롤 시에도 최상단 Y=0에 항상 고정) -->
+    <header class="bg-white/98 backdrop-blur-md border-b border-[#E5E8EC] fixed top-0 left-0 right-0 z-50 shadow-2xs">
+        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 h-[64px] flex items-center justify-between">
             <!-- 좌측: 차마트 공식 로고 + 장한평 직영점 정밀 정렬 타이포 -->
             <div class="flex items-center space-x-6 sm:space-x-8 shrink-0">
                 <a href="/chamart" onclick="navigateHome(event)" class="flex items-center shrink-0 group">
@@ -158,7 +158,7 @@
 
             <!-- 우측: 고객용 1:1 방문 예약 / 상담 버튼 (딥 차콜 + 라임 포인트) -->
             <div class="flex items-center space-x-2 sm:space-x-3">
-                <button onclick="scrollToConsultation()" class="inline-flex items-center text-xs sm:text-sm font-bold bg-[#171B1E] hover:bg-black text-white px-4 py-2.5 rounded-lg transition-colors cursor-pointer shadow-xs">
+                <button onclick="scrollToConsultation()" class="inline-flex items-center text-xs sm:text-sm font-bold bg-[#171B1E] hover:bg-black text-white px-4 py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
                     <span class="w-2 h-2 rounded-full bg-[#C8FF3D] mr-2"></span>
                     1:1 방문 예약 / 구매 상담
                 </button>
@@ -166,33 +166,30 @@
         </div>
     </header>
 
-    <!-- 고정 헤더 높이만큼 여백 확보 (Spacer) -->
-    <div class="h-[68px] w-full shrink-0"></div>
-
-    <!-- 2. 상단 간결한 검색 인터페이스 + 와디즈식 실시간 인기 검색어 -->
-    <div class="bg-white border-b border-[#E5E8EC]">
-        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-3.5 space-y-2">
+    <!-- 2. 상단 간결한 검색 인터페이스 + 와디즈식 실시간 인기 검색어 (헤더 높이 64px에 오차 없이 바짝 밀착) -->
+    <div class="bg-white border-b border-[#E5E8EC] mt-[64px]">
+        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-2 space-y-1.5">
             <div class="flex items-center gap-2">
                 <div class="relative flex-1">
-                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
                     <input type="text" id="homeSearchInput" onkeyup="handleHomeSearch(event)" placeholder="장한평 직영 실매물 검색 (예: 아반떼, 레이, 88오 5001)" 
-                           class="w-full h-12 pl-11 pr-4 bg-[#F8F9FA] border border-[#E5E7EB] rounded-lg text-sm text-[#171B1E] placeholder-slate-400 focus:outline-none focus:border-[#171B1E] focus:bg-white transition-colors">
+                           class="w-full h-10 pl-10 pr-4 bg-[#F8F9FA] border border-[#E5E7EB] rounded-lg text-xs sm:text-sm text-[#171B1E] placeholder-slate-400 focus:outline-none focus:border-[#171B1E] focus:bg-white transition-colors">
                 </div>
                 <!-- 모바일 전용 상세 필터 열기 버튼 -->
-                <button onclick="openMobileFilterBottomSheet()" class="md:hidden h-12 bg-white border border-[#E5E7EB] hover:bg-slate-50 text-[#171B1E] text-xs font-bold px-3.5 rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer shrink-0 shadow-2xs">
+                <button onclick="openMobileFilterBottomSheet()" class="md:hidden h-10 bg-white border border-[#E5E7EB] hover:bg-slate-50 text-[#171B1E] text-xs font-bold px-3 rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer shrink-0 shadow-2xs">
                     <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-[#171B1E]"></i>
                     <span>필터</span>
                     <span id="mobileFilterBadge" class="hidden w-2 h-2 rounded-full bg-[#C8FF3D]"></span>
                 </button>
-                <button onclick="renderVehiclesList()" class="h-12 bg-[#171B1E] hover:bg-black text-white text-sm font-bold px-6 rounded-lg transition-colors cursor-pointer shrink-0 shadow-xs">
+                <button onclick="renderVehiclesList()" class="h-10 bg-[#171B1E] hover:bg-black text-white text-xs sm:text-sm font-bold px-5 rounded-lg transition-colors cursor-pointer shrink-0 shadow-xs">
                     검색
                 </button>
             </div>
             <!-- 와디즈식 장한평 실시간 인기 검색 키워드 태그 바 -->
             <div class="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 overflow-x-auto pb-0.5">
-                <span class="font-bold text-[#171B1E] shrink-0 flex items-center">
+                <span class="font-bold text-[#171B1E] shrink-0 flex items-center text-[10.5px]">
                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5 animate-pulse"></span>
-                    장한평 실시간 핫매물:
+                    장한평 핫매물:
                 </span>
                 <button type="button" onclick="quickSearchKeyword('아반떼')" class="px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">#장한평_무사고_아반떼</button>
                 <button type="button" onclick="quickSearchKeyword('레이')" class="px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">#장한평_공간깡패_레이</button>
@@ -202,8 +199,8 @@
         </div>
     </div>
 
-    <!-- 3. 메인 콘텐츠 영역 (DIRECTIVE 069 Part B: cm-listing-layout) -->
-    <main class="flex-1 w-full pt-4">
+    <!-- 3. 메인 콘텐츠 영역 (상단 여백 콤팩트 다이어트: pt-2) -->
+    <main class="flex-1 w-full pt-2">
 
         <!-- [VIEW 1: 메인 쇼룸 뷰] (/chamart) -->
         <section id="view-home">
