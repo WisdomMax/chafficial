@@ -17,6 +17,62 @@
   padding: 0 16px 40px;
 }
 
+/* PC 환경: 2단 독립 스크롤 프레임 분할 (헤더/검색/좌측필터 고정 + 우측 배너/매물목록만 독립 스크롤) */
+@media (min-width: 768px) {
+  .cm-listing-layout {
+    height: calc(100vh - 126px);
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .cm-filter-panel {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 14px;
+    padding-bottom: 32px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .cm-listing-results {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+    padding-bottom: 48px;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f1f5f9;
+  }
+
+  .cm-listing-results::-webkit-scrollbar {
+    width: 6px;
+  }
+  .cm-listing-results::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+  }
+  .cm-listing-results::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+  }
+  .cm-listing-results::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+
+  .cm-filter-panel::-webkit-scrollbar {
+    width: 4px;
+  }
+  .cm-filter-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .cm-filter-panel::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+}
+
 /* 2. 좌측 필터 패널 (DIRECTIVE 069-R: 260px 확대 및 버튼/글자 가독성 강화) */
 .cm-filter-panel {
   align-self: start;
