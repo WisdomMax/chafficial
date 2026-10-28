@@ -1,7 +1,7 @@
 /**
  * CHA-FICIAL / CHAMART 공통 프리미엄 차량 상세 렌더러 (DIRECTIVE 057 FINAL)
  * 
- * 1. 디자인 시스템: 엔카·K Car 수준의 상용 웹사이트 디자인 리부트
+ * 1. 디자인 시스템: 차마트 공식 상용 웹사이트 프리미엄 디자인 시스템
  * 2. 타이포그래피: 차량명 26px(700), 가격 32px(700 차콜 #171C24), 섹션 22px(700), 본문 15~16px(400~500)
  * 3. 컬러/레이아웃: #F7F8FA 배경, #E5E8EC 보더, 절제된 radius(8~10px) 및 그림자, 평면적 화이트 패널
  * 4. 갤러리: 5:3 비율 대형 실차 사진(좌측 68%), 썸네일 스트립 및 Lightbox
@@ -221,7 +221,7 @@ class VehicleDetailRenderer {
       displayTrim = rawTrim.slice(rawModel.length).trim();
     }
 
-    // 5. 엔카·K Car 급 상용 레이아웃 마운트 (White 80% / Deep Charcoal 15% / Electric Lime 5%)
+    // 5. 차마트 직영 공식 상용 레이아웃 마운트 (White 80% / Deep Charcoal 15% / Electric Lime 5%)
     this.container.innerHTML = `
       <div class="w-full max-w-[1280px] mx-auto px-2 sm:px-4 py-3 sm:py-5 space-y-6">
         
@@ -275,7 +275,7 @@ class VehicleDetailRenderer {
           <!-- [좌측: 5:3 대형 갤러리 + 기본제원표 + 사고진단 + 소모품 + 옵션 + 구매비용] -->
           <div class="space-y-6 w-full min-w-0">
             
-            <!-- 1. 5:3 비율 대형 실차 사진 갤러리 (엔카 5:3 공식 규격 & DIRECTIVE 071 부위별 탐색) -->
+            <!-- 1. 5:3 비율 대형 실차 사진 갤러리 (차마트 5:3 공식 와이드 규격 & DIRECTIVE 071 부위별 탐색) -->
             <div class="bg-white rounded-lg border border-[#E5E8EC] overflow-hidden p-4 space-y-3">
               <!-- 부위별 카테고리 탭 (DIRECTIVE 071 TASK 6) -->
               <div class="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-100 text-xs font-semibold custom-scrollbar">
@@ -668,7 +668,7 @@ class VehicleDetailRenderer {
               </button>
               ` : ''}
 
-              <!-- 데스크톱 방문 예약 간편 폼 (엔카 스타일 차마트 딥 틸 CTA) -->
+              <!-- 데스크톱 방문 예약 간편 폼 (차마트 공식 딥 차콜 CTA) -->
               <form id="vdrConsultForm" onsubmit="window.__vdrInstance.handleSubmitConsult(event, false)" class="space-y-3 pt-1">
                 <div class="text-xs font-bold text-slate-800">방문 시승 및 실차 확인 신청</div>
                 <div>

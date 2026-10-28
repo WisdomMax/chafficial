@@ -48,6 +48,12 @@ chatgpt_*.txt
 directive_*.txt
 aside_*.txt
 gpt_*.txt
+
+# Cloudflare & Node caches
+.wrangler/
+.npm-cache/
+cloudflare/d1/batches/
+
 snap_*.txt
 chat_messages.json
 *.txt

@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>차마트 관리자 통합 ERP 포털 - CHAMART MANAGE</title>
+    <!-- Pretendard Webfont -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --brand-charcoal: #171B1E;
+            --brand-lime: #C8FF3D;
+            --brand-lime-hover: #b5ee26;
+            --surface-dark: #121517;
+            --surface-card: #1E2328;
+            --border-dark: #2A3138;
+        }
+        body {
+            font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background-color: #0F1214;
+            color: #E2E8F0;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #171B1E;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-[#C8FF3D] selection:text-black">
+
+    <!-- 1. 최상단 네비게이션 헤더 -->
+    <header class="bg-[#171B1E] border-b border-[#2A3138] fixed top-0 left-0 right-0 z-50 h-[64px] flex items-center justify-between px-6">
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
+                <span class="w-3 h-3 rounded-full bg-[#C8FF3D] shadow-[0_0_10px_#C8FF3D]"></span>
+                <span class="text-xl font-black tracking-tight text-white flex items-center gap-1.5">
+                    CHAMART <span class="text-[#C8FF3D] font-mono text-sm px-2 py-0.5 bg-[#C8FF3D]/10 rounded border border-[#C8FF3D]/30">MANAGE ERP</span>
+                </span>
+            </div>
+            <span class="text-xs text-slate-400 border-l border-slate-700 pl-3">장한평 직영 본사 통합 운영관제센터</span>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <a href="https://chamart.cc" target="_blank" class="inline-flex items-center text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 transition-colors">
+                <i data-lucide="external-link" class="w-3.5 h-3.5 mr-1.5 text-[#C8FF3D]"></i>
+                고객용 사이트 (chamart.cc)
+            </a>
+            <div class="flex items-center space-x-2 text-xs bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-lg">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-slate-200 font-bold" id="adminUserBadge">최고운영자 (admin)</span>
+            </div>
+            <button onclick="handleLogout()" class="text-xs text-slate-400 hover:text-rose-400 transition-colors">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- 2. 본문 레이아웃: 좌측 사이드바 + 우측 메인 콘텐츠 -->
+    <div class="flex pt-[64px] min-h-screen">
+        
+        <!-- 좌측 사이드바 -->
+        <aside class="w-[240px] bg-[#14171A] border-r border-[#2A3138] fixed top-[64px] bottom-0 left-0 p-4 space-y-6 flex flex-col justify-between">
+            <nav class="space-y-1">
+                <button onclick="switchTab('dashboard')" id="tabBtn-dashboard" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-bold bg-[#C8FF3D] text-black transition-all">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>종합 대시보드</span>
+                </button>
+                <button onclick="switchTab('vehicles')" id="tabBtn-vehicles" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800/70 hover:text-white transition-all">
+                    <i data-lucide="car" class="w-4 h-4"></i>
+                    <span>차량 재고 및 등록</span>
+                </button>
+                <button onclick="switchTab('photos')" id="tabBtn-photos" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800/70 hover:text-white transition-all">
+                    <i data-lucide="camera" class="w-4 h-4"></i>
+                    <span>45슬롯 부위별 사진</span>
+                </button>
+                <button onclick="switchTab('consultations')" id="tabBtn-consultations" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800/70 hover:text-white transition-all">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                    <span>고객 실시간 상담</span>
+                    <span id="sidebarInquiryBadge" class="ml-auto bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
+                </button>
+                <button onclick="switchTab('banners')" id="tabBtn-banners" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800/70 hover:text-white transition-all">
+                    <i data-lucide="images" class="w-4 h-4"></i>
+                    <span>홈 배너 관리</span>
+                </button>
+                <button onclick="switchTab('system')" id="tabBtn-system" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800/70 hover:text-white transition-all">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    <span>보안 및 인프라</span>
+                </button>
+            </nav>
+
+            <div class="p-3 bg-[#1A1F24] rounded-lg border border-[#2A3138] space-y-1.5 text-[11px] text-slate-400">
+                <div class="flex items-center justify-between">
+                    <span>Cloudflare D1:</span>
+                    <span class="text-emerald-400 font-mono font-bold">ONLINE (APAC)</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>도메인:</span>
+                    <span class="text-[#C8FF3D] font-mono">manage.chamart.cc</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span>월 비용:</span>
+                    <span class="text-slate-300 font-bold">₩0 (무료 플랜)</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 우측 메인 영역 -->
+        <main class="ml-[240px] flex-1 p-8 overflow-y-auto min-h-[calc(100vh-64px)]">
+            
+            <!-- [TAB 1: 종합 대시보드] -->
+            <section id="view-dashboard" class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-black text-white tracking-tight">장한평 본사 실시간 운영 대시보드</h1>
+                        <p class="text-sm text-slate-400 mt-1">차마트 클라우드 실매물 인프라 및 고객 인바운드 통합 관제</p>
+                    </div>
+                    <button onclick="loadDashboard()" class="inline-flex items-center text-xs font-bold bg-[#171B1E] hover:bg-slate-800 text-slate-300 px-3.5 py-2 rounded-lg border border-slate-700 transition-colors">
+                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5 mr-1.5 text-[#C8FF3D]"></i>
+                        새로고침
+                    </button>
+                </div>
+
+                <!-- 4대 핵심 지표 카드 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-[#171B1E] border border-[#2A3138] p-5 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between text-xs font-bold text-slate-400">
+                            <span>전체 등록 차량</span>
+                            <i data-lucide="car" class="w-4 h-4 text-slate-500"></i>
+                        </div>
+                        <div class="text-3xl font-black text-white" id="statTotalVehicles">-</div>
+                        <div class="text-[11px] text-slate-400">D1 데이터베이스 실시간 연동</div>
+                    </div>
+
+                    <div class="bg-[#171B1E] border border-[#2A3138] p-5 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between text-xs font-bold text-slate-400">
+                            <span>고객 공개 실차 (chamart.cc)</span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </div>
+                        <div class="text-3xl font-black text-[#C8FF3D]" id="statPublicVehicles">-</div>
+                        <div class="text-[11px] text-emerald-400/90 font-medium">정상 공개 승인 완료 매물</div>
+                    </div>
+
+                    <div class="bg-[#171B1E] border border-[#2A3138] p-5 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between text-xs font-bold text-slate-400">
+                            <span>차마트 직영 보유 (OWNED)</span>
+                            <i data-lucide="shield-check" class="w-4 h-4 text-[#C8FF3D]"></i>
+                        </div>
+                        <div class="text-3xl font-black text-white" id="statOwnedVehicles">-</div>
+                        <div class="text-[11px] text-slate-400">장한평 본사 100% 직접 보유</div>
+                    </div>
+
+                    <div class="bg-[#171B1E] border border-[#2A3138] p-5 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between text-xs font-bold text-slate-400">
+                            <span>추천 우선노출 매물</span>
+                            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                        </div>
+                        <div class="text-3xl font-black text-amber-400" id="statPriorityVehicles">-</div>
+                        <div class="text-[11px] text-slate-400">검색결과 최상단 자동 배치</div>
+                    </div>
+                </div>
+
+                <!-- 2단 그리드: 최근 상담 내역 & 최근 차량 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 최근 상담 신청 -->
+                    <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl p-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i data-lucide="message-square" class="w-4 h-4 text-[#C8FF3D]"></i>
+                                실시간 고객 상담 인바운드
+                            </h2>
+                            <button onclick="switchTab('consultations')" class="text-xs text-[#C8FF3D] hover:underline">전체 보기 ➔</button>
+                        </div>
+                        <div id="dashRecentConsultations" class="space-y-2.5 text-xs">
+                            <div class="text-slate-500 py-6 text-center">불러오는 중...</div>
+                        </div>
+                    </div>
+
+                    <!-- 최근 등록 차량 -->
+                    <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl p-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i data-lucide="car" class="w-4 h-4 text-[#C8FF3D]"></i>
+                                최근 등록 실차
+                            </h2>
+                            <button onclick="switchTab('vehicles')" class="text-xs text-[#C8FF3D] hover:underline">전체 보기 ➔</button>
+                        </div>
+                        <div id="dashRecentVehicles" class="space-y-2.5 text-xs">
+                            <div class="text-slate-500 py-6 text-center">불러오는 중...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- [TAB 2: 차량 재고 및 등록 관리] -->
+            <section id="view-vehicles" class="hidden space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-black text-white tracking-tight">차량 재고 및 공개 관리</h1>
+                        <p class="text-sm text-slate-400 mt-1">187대 전수 매물 관리, 신규 차량 등록, 공개 승인, 차마트 우선노출 원클릭 제어</p>
+                    </div>
+                    <button onclick="openVehicleCreateModal()" class="inline-flex items-center text-xs font-bold bg-[#C8FF3D] hover:bg-[#b5ee26] text-black px-4 py-2.5 rounded-lg shadow-sm transition-colors cursor-pointer">
+                        <i data-lucide="plus-circle" class="w-4 h-4 mr-1.5"></i>
+                        신규 실차 등록
+                    </button>
+                </div>
+
+                <!-- 필터 및 검색 바 -->
+                <div class="bg-[#171B1E] border border-[#2A3138] p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-2 flex-1 min-w-[280px]">
+                        <input type="text" id="vehicleSearchInput" onkeyup="if(event.key==='Enter') loadVehicles()" placeholder="차량명, 번호판 (예: 그랜저, 88오 5001)" class="w-full bg-[#121517] border border-[#2A3138] px-3.5 py-2 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#C8FF3D]">
+                        <button onclick="loadVehicles()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-bold">검색</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="vehicleStatusFilter" onchange="loadVehicles()" class="bg-[#121517] border border-[#2A3138] px-3 py-2 rounded-lg text-slate-300">
+                            <option value="">판매 상태: 전체</option>
+                            <option value="AVAILABLE">판매중 (AVAILABLE)</option>
+                            <option value="SOLD">판매완료 (SOLD)</option>
+                        </select>
+                        <select id="vehicleOwnershipFilter" onchange="loadVehicles()" class="bg-[#121517] border border-[#2A3138] px-3 py-2 rounded-lg text-slate-300">
+                            <option value="">보유 구분: 전체</option>
+                            <option value="OWNED">차마트 직접 보유 (OWNED)</option>
+                            <option value="PARTNER_CONFIRMED">파트너 확인 (PARTNER)</option>
+                        </select>
+                        <select id="vehiclePublicFilter" onchange="loadVehicles()" class="bg-[#121517] border border-[#2A3138] px-3 py-2 rounded-lg text-slate-300">
+                            <option value="">공개 여부: 전체</option>
+                            <option value="1">고객 공개 (PUBLIC)</option>
+                            <option value="0">비공개 초안 (DRAFT)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 차량 테이블 -->
+                <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl overflow-hidden">
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-[#14171A] text-slate-400 border-b border-[#2A3138] font-bold">
+                                    <th class="py-3 px-4">차량 정보</th>
+                                    <th class="py-3 px-4">번호판</th>
+                                    <th class="py-3 px-4">연식 / 주행</th>
+                                    <th class="py-3 px-4">판매가</th>
+                                    <th class="py-3 px-4">소유 구분</th>
+                                    <th class="py-3 px-4 text-center">우선노출</th>
+                                    <th class="py-3 px-4 text-center">공개 승인</th>
+                                    <th class="py-3 px-4 text-right">관리 작업</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vehicleTableBody" class="divide-y divide-[#2A3138]">
+                                <tr><td colspan="8" class="py-12 text-center text-slate-500">목록을 불러오는 중...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 페이지네이션 -->
+                    <div class="p-4 border-t border-[#2A3138] flex items-center justify-between text-xs text-slate-400">
+                        <span id="vehicleCountText">총 0대</span>
+                        <div class="flex items-center space-x-1" id="vehiclePagination"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- [TAB 3: 45슬롯 부위별 사진 관리] -->
+            <section id="view-photos" class="hidden space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-black text-white tracking-tight">45개 표준 촬영 부위별 사진 슬롯 관리</h1>
+                        <p class="text-sm text-slate-400 mt-1">외관 16개, 실내 14개, 주요장치 9개, 서류 6개 정밀 부위별 사진 등록 및 검증</p>
+                    </div>
+                </div>
+
+                <!-- 차량 선택 셀렉터 -->
+                <div class="bg-[#171B1E] border border-[#2A3138] p-4 rounded-xl flex items-center gap-4 text-xs">
+                    <span class="font-bold text-white shrink-0">대상 차량 선택:</span>
+                    <select id="matrixVehicleSelect" onchange="loadPhotoMatrixForSelected()" class="flex-1 bg-[#121517] border border-[#2A3138] px-3.5 py-2 rounded-lg text-slate-200">
+                        <option value="">차량을 선택해주세요</option>
+                    </select>
+                    <button onclick="loadPhotoMatrixForSelected()" class="bg-[#C8FF3D] hover:bg-[#b5ee26] text-black font-bold px-4 py-2 rounded-lg">
+                        슬롯 로드
+                    </button>
+                </div>
+
+                <!-- 45슬롯 그리드 렌더링 영역 -->
+                <div id="photoMatrixContainer" class="bg-[#171B1E] border border-[#2A3138] rounded-xl p-6 space-y-6">
+                    <div class="py-12 text-center text-slate-500 text-xs">차량을 선택하면 45개 슬롯 매트릭스가 표시됩니다.</div>
+                </div>
+            </section>
+
+            <!-- [TAB 4: 고객 실시간 상담 대장] -->
+            <section id="view-consultations" class="hidden space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-black text-white tracking-tight">고객 실시간 방문예약 / 구매상담 대장</h1>
+                        <p class="text-sm text-slate-400 mt-1">chamart.cc 고객 쇼룸에서 접수된 1:1 방문 예약 및 전화 상담 실시간 처리</p>
+                    </div>
+                    <button onclick="loadConsultations()" class="inline-flex items-center text-xs font-bold bg-[#171B1E] hover:bg-slate-800 text-slate-300 px-3.5 py-2 rounded-lg border border-slate-700 transition-colors">
+                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5 mr-1.5 text-[#C8FF3D]"></i>
+                        새로고침
+                    </button>
+                </div>
+
+                <!-- 상담 대장 테이블 -->
+                <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl overflow-hidden">
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-[#14171A] text-slate-400 border-b border-[#2A3138] font-bold">
+                                    <th class="py-3 px-4">접수 일시</th>
+                                    <th class="py-3 px-4">고객명</th>
+                                    <th class="py-3 px-4">연락처</th>
+                                    <th class="py-3 px-4">문의 차량</th>
+                                    <th class="py-3 px-4">상담 요청 내용</th>
+                                    <th class="py-3 px-4">처리 상태</th>
+                                    <th class="py-3 px-4 text-right">상태 변경</th>
+                                </tr>
+                            </thead>
+                            <tbody id="consultationTableBody" class="divide-y divide-[#2A3138]">
+                                <tr><td colspan="7" class="py-12 text-center text-slate-500">상담 내역을 불러오는 중...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- [TAB 5: 홈 배너 관리] -->
+            <section id="view-banners" class="hidden space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-black text-white tracking-tight">chamart.cc 16:9 브랜드 히어로 배너 관리</h1>
+                        <p class="text-sm text-slate-400 mt-1">고객 쇼룸 우측 상단 100% 꽉 채움 규격 5대 공식 프로모션 배너</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl overflow-hidden p-4 space-y-3">
+                        <span class="text-xs font-bold text-[#C8FF3D]">배너 1: 거리 극복 메시지</span>
+                        <div class="aspect-[16/9] rounded-lg overflow-hidden bg-white">
+                            <img src="/static/img/chamart_slide_01.jpg" class="w-full h-full object-cover">
+                        </div>
+                        <p class="text-xs text-slate-300 font-medium">"차 한 대 보려고, 수원·인천까지 가시나요?"</p>
+                        <span class="inline-block text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">실서비스 활성</span>
+                    </div>
+
+                    <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl overflow-hidden p-4 space-y-3">
+                        <span class="text-xs font-bold text-[#C8FF3D]">배너 2: 서울 둘러보기</span>
+                        <div class="aspect-[16/9] rounded-lg overflow-hidden bg-white">
+                            <img src="/static/img/chamart_slide_02.png" class="w-full h-full object-cover">
+                        </div>
+                        <p class="text-xs text-slate-300 font-medium">"잠깐! 서울은 다 둘러보셨나요?"</p>
+                        <span class="inline-block text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">실서비스 활성</span>
+                    </div>
+
+                    <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl overflow-hidden p-4 space-y-3">
+                        <span class="text-xs font-bold text-[#C8FF3D]">배너 3: 장한평의 역사</span>
+                        <div class="aspect-[16/9] rounded-lg overflow-hidden bg-white">
+                            <img src="/static/img/chamart_slide_03.png" class="w-full h-full object-cover">
+                        </div>
+                        <p class="text-xs text-slate-300 font-medium">"중고차의 중심, 서울 장한평."</p>
+                        <span class="inline-block text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">실서비스 활성</span>
+                    </div>
+
+                    <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl overflow-hidden p-4 space-y-3">
+                        <span class="text-xs font-bold text-[#C8FF3D]">배너 4: 25년 안심 전문성</span>
+                        <div class="aspect-[16/9] rounded-lg overflow-hidden bg-white">
+                            <img src="/static/img/chamart_slide_04.jpg" class="w-full h-full object-cover">
+                        </div>
+                        <p class="text-xs text-slate-300 font-medium">"차를 보는 기준은, 25년 경험에서 나옵니다."</p>
+                        <span class="inline-block text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">실서비스 활성</span>
+                    </div>
+
+                    <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl overflow-hidden p-4 space-y-3">
+                        <span class="text-xs font-bold text-[#C8FF3D]">배너 5: 오프라인 초대</span>
+                        <div class="aspect-[16/9] rounded-lg overflow-hidden bg-white">
+                            <img src="/static/img/chamart_slide_05.jpg" class="w-full h-full object-cover">
+                        </div>
+                        <p class="text-xs text-slate-300 font-medium">"멀리 가지 마세요. 서울 장한평에서 만나겠습니다."</p>
+                        <span class="inline-block text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">실서비스 활성</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- [TAB 6: 보안 및 인프라] -->
+            <section id="view-system" class="hidden space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-black text-white tracking-tight">클라우드 인프라 및 보안 관제</h1>
+                        <p class="text-sm text-slate-400 mt-1">Cloudflare 무료 플랜 기반 D1, R2, Pages 보안 및 도메인 바인딩 상태</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                    <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl p-5 space-y-3">
+                        <h2 class="font-bold text-white text-sm flex items-center gap-2">
+                            <i data-lucide="cloud" class="w-4 h-4 text-[#C8FF3D]"></i>
+                            Cloudflare Pages 프로젝트 바인딩
+                        </h2>
+                        <div class="space-y-2 text-slate-300">
+                            <div class="flex justify-between py-1 border-b border-slate-800">
+                                <span class="text-slate-400">고객용 쇼룸:</span>
+                                <span class="font-mono text-emerald-400">chamart.pages.dev / chamart.cc</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-800">
+                                <span class="text-slate-400">관리자 ERP:</span>
+                                <span class="font-mono text-[#C8FF3D]">chamart-manage.pages.dev / manage.chamart.cc</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-800">
+                                <span class="text-slate-400">D1 데이터베이스:</span>
+                                <span class="font-mono text-slate-200">chamart-db (b849a824-3e1a...)</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span class="text-slate-400">R2 버킷:</span>
+                                <span class="font-mono text-slate-200">chamart-media</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#171B1E] border border-[#2A3138] rounded-xl p-5 space-y-3">
+                        <h2 class="font-bold text-white text-sm flex items-center gap-2">
+                            <i data-lucide="shield" class="w-4 h-4 text-emerald-400"></i>
+                            관리자 보안 및 권한 체계
+                        </h2>
+                        <div class="space-y-2 text-slate-300">
+                            <div class="flex justify-between py-1 border-b border-slate-800">
+                                <span class="text-slate-400">접근 제어:</span>
+                                <span class="text-emerald-400 font-bold">Cloudflare Access & 토큰 세션 인증</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-800">
+                                <span class="text-slate-400">고객 개인정보 보호:</span>
+                                <span class="text-slate-200">고객 쇼룸 API에서 연락처 완전 격리</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-800">
+                                <span class="text-slate-400">비공개 차량 보호:</span>
+                                <span class="text-slate-200">is_public=0 매물 고객 노출 원천 차단</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span class="text-slate-400">월 운영 비용:</span>
+                                <span class="text-[#C8FF3D] font-bold">월 0원 (Cloudflare Free Tier)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- [MODAL 1: 신규 차량 등록 모달] -->
+    <div id="modalVehicleCreate" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#171B1E] border border-[#2A3138] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6 space-y-5 text-xs">
+            <div class="flex items-center justify-between border-b border-[#2A3138] pb-4">
+                <h3 class="text-lg font-black text-white flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#C8FF3D]"></span>
+                    신규 실차 등록 (Cloudflare D1)
+                </h3>
+                <button onclick="closeVehicleCreateModal()" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <form id="vehicleCreateForm" onsubmit="handleCreateVehicle(event)" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">차량 번호 (필수)</label>
+                        <input type="text" name="plate_number" required placeholder="예: 88오 5001" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">제조사</label>
+                        <select name="manufacturer" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                            <option value="현대">현대</option>
+                            <option value="기아">기아</option>
+                            <option value="제네시스">제네시스</option>
+                            <option value="쉐보레">쉐보레</option>
+                            <option value="르노코리아">르노코리아</option>
+                            <option value="KG모빌리티">KG모빌리티</option>
+                            <option value="BMW">BMW</option>
+                            <option value="벤츠">벤츠</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">차종 / 모델명 (필수)</label>
+                        <input type="text" name="model_name" required placeholder="예: 현대 디 올 뉴 그랜저" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">세부 등급 / 트림</label>
+                        <input type="text" name="trim" placeholder="예: 2.5 가솔린 르블랑" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">연식 (년)</label>
+                        <input type="number" name="year" value="2024" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">주행거리 (km)</label>
+                        <input type="number" name="mileage" value="25000" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">연료</label>
+                        <select name="fuel_type" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                            <option value="가솔린">가솔린</option>
+                            <option value="하이브리드">하이브리드</option>
+                            <option value="디젤">디젤</option>
+                            <option value="전기">전기</option>
+                            <option value="LPG">LPG</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">판매 희망가 (만원)</label>
+                        <input type="number" name="target_price" value="2650" required class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-[#C8FF3D] font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">매입 원가 (만원)</label>
+                        <input type="number" name="purchase_price" value="2350" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">외장 색상</label>
+                        <input type="text" name="color" value="스노우 화이트 펄" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">소유 / 보유 구분</label>
+                        <select name="listing_ownership_type" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                            <option value="OWNED">차마트 직접 보유 (OWNED)</option>
+                            <option value="PARTNER_CONFIRMED">파트너 확인 매물 (PARTNER)</option>
+                            <option value="BROKERAGE">알선 매물 (BROKERAGE)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1">대표 사진 URL</label>
+                        <input type="text" name="primary_photo_url" value="/static/img/sample_car.jpg" class="w-full bg-[#121517] border border-[#2A3138] p-2.5 rounded-lg text-white">
+                    </div>
+                </div>
+
+                <!-- 체크박스: 우선노출 & 고객 공개 -->
+                <div class="flex items-center space-x-6 pt-2">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" name="is_priority_exposure" value="1" class="w-4 h-4 accent-[#C8FF3D]">
+                        <span class="text-slate-200 font-bold">차마트 추천 우선노출 지정</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" name="is_public" value="1" checked class="w-4 h-4 accent-emerald-500">
+                        <span class="text-emerald-400 font-bold">즉시 고객 공개 승인 (chamart.cc 노출)</span>
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-[#2A3138]">
+                    <button type="button" onclick="closeVehicleCreateModal()" class="px-4 py-2.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">취소</button>
+                    <button type="submit" id="btnSubmitVehicle" class="px-6 py-2.5 rounded-lg bg-[#C8FF3D] hover:bg-[#b5ee26] text-black font-bold">D1에 차량 등록 완료</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- [MODAL 2: 부위별 슬롯 사진 업로드 모달] -->
+    <div id="modalSlotPhotoUpload" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[#171B1E] border border-[#2A3138] rounded-2xl w-full max-w-md p-6 space-y-4 text-xs">
+            <div class="flex items-center justify-between border-b border-[#2A3138] pb-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-[#C8FF3D]"></span>
+                    <span id="slotUploadTitle">부위별 사진 슬롯 등록</span>
+                </h3>
+                <button onclick="closeSlotPhotoModal()" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-slate-400 font-bold mb-1">슬롯 코드</label>
+                    <input type="text" id="slotModalCode" readonly class="w-full bg-[#121517] border border-[#2A3138] p-2 rounded text-slate-400 font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-bold mb-1">사진 URL (R2 또는 웹 경로)</label>
+                    <input type="text" id="slotModalUrl" placeholder="https://... 또는 /static/img/..." class="w-full bg-[#121517] border border-[#2A3138] p-2 rounded text-white">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-[#2A3138]">
+                <button onclick="closeSlotPhotoModal()" class="px-3 py-1.5 rounded bg-slate-800 text-slate-300">취소</button>
+                <button onclick="saveSlotPhoto()" class="px-4 py-1.5 rounded bg-[#C8FF3D] text-black font-bold">슬롯 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스크립트: D1 실시간 API 연동 및 상태 관리 -->
+    <script>
+        let currentTab = 'dashboard';
+        let currentVehicleList = [];
+        let activeMatrixVehicleId = null;
+        let activeSlotCode = null;
+
+        function switchTab(tab) {
+            currentTab = tab;
+            ['dashboard', 'vehicles', 'photos', 'consultations', 'banners', 'system'].forEach(t => {
+                const view = document.getElementById('view-' + t);
+                const btn = document.getElementById('tabBtn-' + t);
+                if (view) view.classList.toggle('hidden', t !== tab);
+                if (btn) {
+                    if (t === tab) {
+                        btn.className = 'w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-bold bg-[#C8FF3D] text-black transition-all';
+                    } else {
+                        btn.className = 'w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800/70 hover:text-white transition-all';
+                    }
+                }
+            });
+
+            if (tab === 'dashboard') loadDashboard();
+            if (tab === 'vehicles') loadVehicles();
+            if (tab === 'photos') preparePhotoMatrix();
+            if (tab === 'consultations') loadConsultations();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function loadDashboard() {
+            try {
+                const res = await fetch('/api/admin/dashboard');
+                if (!res.ok) throw new Error('대시보드 조회 실패');
+                const data = await res.json();
+
+                document.getElementById('statTotalVehicles').innerText = (data.metrics.total_vehicles || 0).toLocaleString() + '대';
+                document.getElementById('statPublicVehicles').innerText = (data.metrics.public_vehicles || 0).toLocaleString() + '대';
+                document.getElementById('statOwnedVehicles').innerText = (data.metrics.owned_vehicles || 0).toLocaleString() + '대';
+                document.getElementById('statPriorityVehicles').innerText = (data.metrics.priority_exposure_count || 0).toLocaleString() + '대';
+                document.getElementById('sidebarInquiryBadge').innerText = data.metrics.new_inquiries || 0;
+
+                // 최근 상담 목록
+                const consEl = document.getElementById('dashRecentConsultations');
+                if (data.recent_consultations && data.recent_consultations.length > 0) {
+                    consEl.innerHTML = data.recent_consultations.map(c => `
+                        <div class="flex items-center justify-between p-2.5 bg-[#121517] rounded-lg border border-[#2A3138]">
+                            <div>
+                                <div class="font-bold text-white">${c.customer_name || '익명'} (${c.phone || '-'})</div>
+                                <div class="text-[11px] text-slate-400 truncate max-w-[280px]">${c.content || '내용 없음'}</div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.status === 'NEW' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}">
+                                ${c.status || 'NEW'}
+                            </span>
+                        </div>
+                    `).join('');
+                } else {
+                    consEl.innerHTML = '<div class="py-6 text-center text-slate-500">최근 상담 내역이 없습니다.</div>';
+                }
+
+                // 최근 등록 차량
+                const vehEl = document.getElementById('dashRecentVehicles');
+                if (data.recent_vehicles && data.recent_vehicles.length > 0) {
+                    vehEl.innerHTML = data.recent_vehicles.map(v => `
+                        <div class="flex items-center justify-between p-2.5 bg-[#121517] rounded-lg border border-[#2A3138]">
+                            <div>
+                                <div class="font-bold text-white">${v.model_name} <span class="text-slate-400 font-mono text-[11px]">(${v.plate_number})</span></div>
+                                <div class="text-[11px] text-slate-400">${v.year}년 · ${v.mileage?.toLocaleString()}km · <b class="text-[#C8FF3D]">${v.target_price}만원</b></div>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                ${v.is_priority_exposure ? '<span class="px-1.5 py-0.2 bg-amber-400/20 text-amber-300 text-[10px] rounded font-bold">우선</span>' : ''}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${v.is_public ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'}">
+                                    ${v.is_public ? '공개' : '비공개'}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    vehEl.innerHTML = '<div class="py-6 text-center text-slate-500">최근 차량이 없습니다.</div>';
+                }
+
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function loadVehicles() {
+            const search = document.getElementById('vehicleSearchInput')?.value || '';
+            const status = document.getElementById('vehicleStatusFilter')?.value || '';
+            const ownership = document.getElementById('vehicleOwnershipFilter')?.value || '';
+            const isPublic = document.getElementById('vehiclePublicFilter')?.value || '';
+
+            const url = `/api/admin/vehicles?q=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&ownership=${encodeURIComponent(ownership)}&is_public=${encodeURIComponent(isPublic)}&limit=50`;
+
+            const tbody = document.getElementById('vehicleTableBody');
+            tbody.innerHTML = '<tr><td colspan="8" class="py-12 text-center text-slate-500">D1 데이터베이스 조회 중...</td></tr>';
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('차량 목록 로드 실패');
+                const data = await res.json();
+                currentVehicleList = data.items || [];
+
+                document.getElementById('vehicleCountText').innerText = `총 ${data.total || 0}대 (페이지 ${data.page}/${data.total_pages || 1})`;
+
+                if (currentVehicleList.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="py-12 text-center text-slate-500">조건에 맞는 차량이 없습니다.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = currentVehicleList.map(v => {
+                    const isPub = !!v.is_public;
+                    const isPrio = !!v.is_priority_exposure;
+                    const isSold = v.status === 'SOLD';
+                    return `
+                        <tr class="hover:bg-[#1A1F24] transition-colors">
+                            <td class="py-3 px-4">
+                                <div class="flex items-center space-x-3">
+                                    <img src="${v.primary_photo_url || '/static/img/sample_car.jpg'}" class="w-12 h-9 object-cover rounded bg-black shrink-0">
+                                    <div>
+                                        <div class="font-bold text-white">${v.model_name}</div>
+                                        <div class="text-[11px] text-slate-400">${v.trim || ''}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-4 font-mono font-semibold text-slate-200">${v.plate_number}</td>
+                            <td class="py-3 px-4 text-slate-300">${v.year}년 / ${v.mileage?.toLocaleString()}km / ${v.fuel_type}</td>
+                            <td class="py-3 px-4">
+                                <span class="font-bold text-[#C8FF3D]">${v.target_price}만원</span>
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${v.listing_ownership_type === 'OWNED' ? 'bg-[#C8FF3D]/20 text-[#C8FF3D]' : 'bg-slate-700 text-slate-300'}">
+                                    ${v.listing_ownership_type === 'OWNED' ? '차마트 직영' : '파트너 매물'}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-center">
+                                <button onclick="toggleVehiclePriority('${v.id}')" class="px-2.5 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${isPrio ? 'bg-amber-400 text-black shadow-[0_0_8px_rgba(251,191,36,0.5)]' : 'bg-slate-800 text-slate-400 hover:text-white'}">
+                                    ${isPrio ? '★ 우선노출' : '☆ 일반'}
+                                </button>
+                            </td>
+                            <td class="py-3 px-4 text-center">
+                                <button onclick="toggleVehiclePublish('${v.id}')" class="px-2.5 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${isPub ? 'bg-emerald-500 text-white shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white'}">
+                                    ${isPub ? '✓ 공개승인' : '✕ 비공개(초안)'}
+                                </button>
+                            </td>
+                            <td class="py-3 px-4 text-right space-x-1.5">
+                                <button onclick="openPhotoMatrixForVehicle('${v.id}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px] font-medium transition-colors">
+                                    사진 45슬롯
+                                </button>
+                                ${!isSold ? `
+                                    <button onclick="markVehicleSold('${v.id}')" class="px-2 py-1 bg-slate-800 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 rounded text-[11px] transition-colors" title="판매 완료 처리">
+                                        판매완료
+                                    </button>
+                                ` : '<span class="text-[11px] text-slate-500">완료됨</span>'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="8" class="py-12 text-center text-rose-400">오류 발생: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function toggleVehiclePublish(vid) {
+            try {
+                const res = await fetch(`/api/admin/vehicles/${vid}/toggle-publish`, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '상태 변경 실패');
+                alert(data.message);
+                loadVehicles();
+            } catch (e) {
+                alert('오류: ' + e.message);
+            }
+        }
+
+        async function toggleVehiclePriority(vid) {
+            try {
+                const res = await fetch(`/api/admin/vehicles/${vid}/toggle-priority`, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '상태 변경 실패');
+                alert(data.message);
+                loadVehicles();
+            } catch (e) {
+                alert('오류: ' + e.message);
+            }
+        }
+
+        async function markVehicleSold(vid) {
+            if (!confirm('이 차량을 판매 완료(SOLD) 처리하시겠습니까? 고객 사이트에서 자동으로 내려갑니다.')) return;
+            try {
+                const res = await fetch(`/api/admin/vehicles/${vid}/mark-sold`, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '처리 실패');
+                alert(data.message);
+                loadVehicles();
+            } catch (e) {
+                alert('오류: ' + e.message);
+            }
+        }
+
+        // [MODAL] 신규 차량 등록
+        function openVehicleCreateModal() {
+            document.getElementById('modalVehicleCreate').classList.remove('hidden');
+        }
+        function closeVehicleCreateModal() {
+            document.getElementById('modalVehicleCreate').classList.add('hidden');
+        }
+
+        async function handleCreateVehicle(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmitVehicle');
+            btn.disabled = true;
+            btn.innerText = '등록 중...';
+
+            const form = e.target;
+            const payload = {
+                plate_number: form.plate_number.value.trim(),
+                manufacturer: form.manufacturer.value,
+                model_name: form.model_name.value.trim(),
+                trim: form.trim.value.trim(),
+                year: parseInt(form.year.value, 10),
+                mileage: parseInt(form.mileage.value, 10),
+                fuel_type: form.fuel_type.value,
+                target_price: parseInt(form.target_price.value, 10),
+                purchase_price: parseInt(form.purchase_price.value, 10),
+                color: form.color.value.trim(),
+                listing_ownership_type: form.listing_ownership_type.value,
+                primary_photo_url: form.primary_photo_url.value.trim(),
+                is_priority_exposure: form.is_priority_exposure.checked,
+                is_public: form.is_public.checked
+            };
+
+            try {
+                const res = await fetch('/api/admin/vehicles/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '등록 실패');
+                alert('✅ ' + data.message + '\n차량 ID: ' + data.vehicle_id);
+                closeVehicleCreateModal();
+                form.reset();
+                loadVehicles();
+            } catch (err) {
+                alert('등록 오류: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'D1에 차량 등록 완료';
+            }
+        }
+
+        // [TAB 3] 45슬롯 사진 관리
+        async function preparePhotoMatrix() {
+            const select = document.getElementById('matrixVehicleSelect');
+            if (currentVehicleList.length === 0) {
+                await loadVehicles();
+            }
+            select.innerHTML = '<option value="">차량을 선택해주세요</option>' + currentVehicleList.map(v => `
+                <option value="${v.id}">${v.model_name} (${v.plate_number}) - ${v.year}년</option>
+            `).join('');
+        }
+
+        function openPhotoMatrixForVehicle(vid) {
+            switchTab('photos');
+            const select = document.getElementById('matrixVehicleSelect');
+            select.value = vid;
+            loadPhotoMatrixForSelected();
+        }
+
+        async function loadPhotoMatrixForSelected() {
+            const vid = document.getElementById('matrixVehicleSelect').value;
+            if (!vid) return;
+            activeMatrixVehicleId = vid;
+            const container = document.getElementById('photoMatrixContainer');
+            container.innerHTML = '<div class="py-12 text-center text-slate-500">45개 부위별 슬롯 로드 중...</div>';
+
+            try {
+                const res = await fetch(`/api/admin/vehicles/${vid}/photo-matrix`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '슬롯 로드 실패');
+
+                container.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-[#2A3138] pb-3 text-xs">
+                        <span class="text-slate-300 font-bold">등록 완료: <b class="text-[#C8FF3D]">${data.uploaded_count}</b> / 총 ${data.configured_slots}개 표준 슬롯</span>
+                        <span class="text-[11px] text-slate-500">차량 ID: ${vid}</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+                        ${data.slots.map(s => `
+                            <div class="bg-[#121517] border ${s.is_uploaded ? 'border-emerald-500/50' : 'border-[#2A3138]'} rounded-xl p-3 flex flex-col justify-between space-y-2 group hover:border-[#C8FF3D] transition-colors">
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span class="font-mono text-slate-400">${s.slot_code}</span>
+                                    <span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${s.is_uploaded ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500'}">
+                                        ${s.is_uploaded ? '등록완료' : '미등록'}
+                                    </span>
+                                </div>
+                                <div class="aspect-[5/3] bg-black/60 rounded overflow-hidden flex items-center justify-center">
+                                    ${s.is_uploaded && s.photo_url ? `
+                                        <img src="${s.photo_url}" class="w-full h-full object-cover">
+                                    ` : `
+                                        <i data-lucide="image" class="w-6 h-6 text-slate-700"></i>
+                                    `}
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-bold text-white text-xs">${s.display_label}</div>
+                                    <button onclick="openSlotUploadModal('${s.slot_code}', '${s.display_label}')" class="mt-2 w-full py-1 text-[11px] font-semibold bg-slate-800 hover:bg-[#C8FF3D] hover:text-black rounded transition-colors">
+                                        ${s.is_uploaded ? '사진 변경' : '+ 슬롯 등록'}
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                container.innerHTML = `<div class="py-12 text-center text-rose-400">오류: ${err.message}</div>`;
+            }
+        }
+
+        function openSlotUploadModal(slotCode, label) {
+            activeSlotCode = slotCode;
+            document.getElementById('slotUploadTitle').innerText = `${label} (${slotCode}) 사진 등록`;
+            document.getElementById('slotModalCode').value = slotCode;
+            document.getElementById('slotModalUrl').value = '';
+            document.getElementById('modalSlotPhotoUpload').classList.remove('hidden');
+        }
+
+        function closeSlotPhotoModal() {
+            document.getElementById('modalSlotPhotoUpload').classList.add('hidden');
+        }
+
+        async function saveSlotPhoto() {
+            const url = document.getElementById('slotModalUrl').value.trim();
+            if (!url) {
+                alert('사진 URL을 입력해주세요.');
+                return;
+            }
+            if (!activeMatrixVehicleId || !activeSlotCode) return;
+
+            try {
+                const res = await fetch(`/api/admin/vehicles/${activeMatrixVehicleId}/photo-matrix`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        slot_code: activeSlotCode,
+                        photo_url: url
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '저장 실패');
+                alert(data.message);
+                closeSlotPhotoModal();
+                loadPhotoMatrixForSelected();
+            } catch (err) {
+                alert('오류: ' + err.message);
+            }
+        }
+
+        // [TAB 4] 고객 상담 관리
+        async function loadConsultations() {
+            const tbody = document.getElementById('consultationTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" class="py-12 text-center text-slate-500">상담 내역 로드 중...</td></tr>';
+
+            try {
+                const res = await fetch('/api/admin/consultations');
+                if (!res.ok) throw new Error('상담 내역 로드 실패');
+                const list = await res.json();
+
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="py-12 text-center text-slate-500">접수된 상담 내역이 없습니다.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = list.map(c => `
+                    <tr class="hover:bg-[#1A1F24] transition-colors">
+                        <td class="py-3 px-4 text-slate-400 font-mono text-[11px]">${(c.created_at || '').slice(0, 16)}</td>
+                        <td class="py-3 px-4 font-bold text-white">${c.customer_name || '익명'}</td>
+                        <td class="py-3 px-4 font-mono text-[#C8FF3D]">${c.phone || '-'}</td>
+                        <td class="py-3 px-4 font-medium text-slate-200">${c.target_vehicle_model || '-'}</td>
+                        <td class="py-3 px-4 text-slate-300 max-w-xs truncate" title="${c.content}">${c.content}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                                c.customer_status === 'NEW' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                                c.customer_status === 'CONSULTING' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            }">
+                                ${c.customer_status || 'NEW'}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-right space-x-1">
+                            <button onclick="updateConsultationStatus('${c.id}', 'CONSULTING')" class="px-2 py-1 bg-amber-500/20 hover:bg-amber-500 hover:text-black text-amber-300 rounded text-[10px] font-bold transition-colors">
+                                상담중
+                            </button>
+                            <button onclick="updateConsultationStatus('${c.id}', 'CONTRACTED')" class="px-2 py-1 bg-emerald-500/20 hover:bg-emerald-500 hover:text-black text-emerald-400 rounded text-[10px] font-bold transition-colors">
+                                계약완료
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-rose-400">오류: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function updateConsultationStatus(cid, status) {
+            try {
+                const res = await fetch(`/api/admin/consultations/${cid}/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: status })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '상태 변경 실패');
+                alert(data.message);
+                loadConsultations();
+            } catch (err) {
+                alert('오류: ' + err.message);
+            }
+        }
+
+        function handleLogout() {
+            if (confirm('관리자 세션을 로그아웃하시겠습니까?')) {
+                location.reload();
+            }
+        }
+
+        // 초기 시작
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboard();
+            if (window.lucide) lucide.createIcons();
+        });
+    </script>
+</body>
+</html>

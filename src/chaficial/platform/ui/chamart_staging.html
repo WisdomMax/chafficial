@@ -112,23 +112,85 @@
                 margin: 12mm 15mm;
             }
         }
+
+        /* DIRECTIVE 071/072: PC 환경 전체 창 스크롤 차단 및 우측 배너+매물 통프레임 독립 스크롤 */
+        @media (min-width: 768px) {
+            html, body {
+                height: 100vh !important;
+                max-height: 100vh !important;
+                overflow: hidden !important;
+            }
+
+            #cmSiteHeader {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                z-index: 50 !important;
+            }
+
+            main {
+                position: fixed !important;
+                top: 178px !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                overflow: hidden !important;
+                padding-top: 4px !important;
+                margin-top: 0 !important;
+            }
+
+            #view-home {
+                height: 100% !important;
+                overflow: hidden !important;
+            }
+
+            .cm-listing-layout {
+                height: 100% !important;
+                overflow: hidden !important;
+                padding-top: 4px !important;
+                padding-bottom: 0 !important;
+            }
+
+            /* 좌측 상세 검색 패널: 제자리 완전 고정 (필요시 내부 스크롤) */
+            .cm-filter-panel {
+                height: 100% !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                padding-right: 14px !important;
+                padding-bottom: 30px !important;
+            }
+
+            /* 우측 메인 프레임: 배너 + 툴바 + 차량목록 통째로 독립 스크롤 */
+            .cm-listing-results {
+                height: 100% !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                padding-right: 8px !important;
+                padding-bottom: 40px !important;
+                scroll-behavior: smooth !important;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col bg-[#F5F6F4] text-[#171B1E]">
-    <!-- STAGING DESIGN PREVIEW BAR (일반 고객 접근 불가 격리 환경) -->
+
+    <!-- [고정 상단 일체형 헤더 바: 스테이징 바 + 네비게이션 + 검색바 (영구 고정 Y=0)] -->
+    <header id="cmSiteHeader" class="bg-white/98 backdrop-blur-md border-b border-[#E5E8EC] fixed top-0 left-0 right-0 z-50 shadow-2xs">
+        <!-- STAGING DESIGN PREVIEW BAR (일반 고객 접근 불가 격리 환경) -->
     <aside class="bg-[#101A2A] text-slate-300 py-2 px-4 text-xs border-b border-teal-500/30">
         <div class="max-w-[1280px] mx-auto w-full flex items-center justify-between">
             <div class="flex items-center space-x-2">
                 <span class="bg-[#176B68] text-white text-[10px] font-bold px-2 py-0.5 rounded font-mono shadow-2xs">STAGING PREVIEW</span>
-                <span class="text-xs text-slate-300 font-medium">엔카·K Car 규격 2단 레이아웃 UI/UX 디자인 검수용 시연 환경</span>
+                <span class="text-xs text-slate-300 font-medium">차마트 프리미엄 2단 레이아웃 UI/UX 디자인 검수용 시연 환경</span>
             </div>
             <a href="/chamart" class="text-[11px] text-teal-400 hover:text-teal-300 hover:underline">운영 쇼룸 (/chamart) 이동 ➔</a>
         </div>
     </aside>
 
-    <!-- 1. 상용급 차마트 전문 헤더 (영구 고정 메뉴바: 스크롤 시에도 최상단 Y=0에 항상 고정) -->
-    <header class="bg-white/98 backdrop-blur-md border-b border-[#E5E8EC] fixed top-0 left-0 right-0 z-50 shadow-2xs">
-        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 h-[64px] flex items-center justify-between">
+        <!-- 1. 메인 글로벌 네비게이션 (H: 64px) -->
+        <div class="border-b border-[#E5E8EC]/80">
+            <div class="max-w-[1320px] mx-auto px-4 sm:px-6 h-[64px] flex items-center justify-between">
             <!-- 좌측: 차마트 공식 로고 + 장한평 직영점 정밀 정렬 타이포 -->
             <div class="flex items-center space-x-6 sm:space-x-8 shrink-0">
                 <a href="/chamart" onclick="navigateHome(event)" class="flex items-center shrink-0 group">
@@ -142,7 +204,7 @@
                     </div>
                 </a>
 
-                <!-- 엔카 스타일 메인 네비게이션 -->
+                <!-- 차마트 공식 메인 네비게이션 -->
                 <nav class="hidden md:flex items-center space-x-7 text-sm font-semibold text-slate-700">
                     <a href="/chamart" onclick="navigateHome(event)" id="nav-link-home" class="hover:text-[#171B1E] transition-colors text-[#171B1E] font-bold border-b-2 border-[#171B1E] pb-1">중고차 검색</a>
                     <a href="/cars" onclick="navigateCars(event)" id="nav-link-cars" class="hover:text-[#171B1E] transition-colors pb-1">전체 실차 매물</a>
@@ -164,10 +226,10 @@
                 </button>
             </div>
         </div>
-    </header>
+    </div>
 
-    <!-- 2. 상단 간결한 검색 인터페이스 + 와디즈식 실시간 인기 검색어 (헤더 바로 아래 고정 & 오차 없이 바짝 밀착) -->
-    <div class="bg-white border-b border-[#E5E8EC] sticky top-[64px] z-40 shadow-2xs mt-[64px]">
+    <!-- 2. 상단 간결한 검색 인터페이스 + 실시간 인기 키워드 태그 바 -->
+    <div class="bg-white">
         <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-2 space-y-1.5">
             <div class="flex items-center gap-2">
                 <div class="relative flex-1">
@@ -199,17 +261,19 @@
         </div>
     </div>
 
-    <!-- 3. 메인 콘텐츠 영역 (상단 여백 콤팩트 다이어트: pt-2) -->
-    <main class="flex-1 w-full pt-2">
+    </header>
+
+    <!-- 3. 메인 콘텐츠 영역 (상단 완전 고정 헤더 바로 아래에 도킹) -->
+    <main class="flex-1 w-full">
 
         <!-- [VIEW 1: 메인 쇼룸 뷰] (/chamart) -->
         <section id="view-home">
             <div class="cm-listing-layout">
 
-                <!-- [좌측: 엔카 다단계 정밀 필터 패널 (폭 260px)] -->
+                <!-- [좌측: 차마트 다단계 정밀 필터 패널 (폭 260px)] -->
                 <aside class="cm-filter-panel" aria-label="차량 검색 조건">
                     <div class="cm-filter-panel__header">
-                        <strong class="text-sm font-bold text-[#171B1E]">엔카급 상세 검색</strong>
+                        <strong class="text-sm font-bold text-[#171B1E]">차마트 정밀 상세 검색</strong>
                         <button type="button" id="resetAllFilters" class="cm-filter-panel__reset" onclick="resetAllFilters()">
                             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 초기화
                         </button>
@@ -361,7 +425,7 @@
                     </div>
                 </aside>
 
-                <!-- [우측 메인: 엔카 매물 결과 섹션] (DIRECTIVE 069 & 071) -->
+                <!-- [우측 메인: 차마트 실차 매물 결과 섹션] (DIRECTIVE 069 & 071) -->
                 <section class="cm-listing-results space-y-3.5">
                     
                     <!-- [우측 상단: 브랜드 히어로 배너 (우측 컬럼 상단 100% 풀 배치 & 16:9 원본 꽉 채움)] -->
@@ -476,7 +540,7 @@
                                 <option value="year_desc">최신 연식순</option>
                             </select>
 
-                            <!-- 엔카 뷰 모드 전환 버튼 (목록형 vs 앨범형) -->
+                            <!-- 차마트 뷰 모드 전환 버튼 (목록형 vs 앨범형) -->
                             <div class="cm-view-switch">
                                 <button type="button" id="cmViewList" aria-pressed="true" onclick="setViewMode('list')" title="목록형 보기">
                                     <i data-lucide="list" class="w-4 h-4 mr-1"></i> 목록형
@@ -584,7 +648,7 @@
 
     </main>
 
-    <!-- 엔카 스타일 우측 플로팅 퀵 위젯 (최근 본 차량 + 3대 비교함 + Top 버튼) -->
+    <!-- 차마트 우측 플로팅 퀵 위젯 (최근 본 차량 + 3대 비교함 + Top 버튼) -->
     <div id="encarQuickBar" class="hidden xl:flex flex-col fixed right-6 bottom-12 z-30 space-y-2 select-none">
         <!-- 1. 비교함 위젯 (최대 3대) -->
         <button onclick="openCompareModalDirect()" id="quickCompareBtn" class="w-14 h-14 bg-white border border-[#E5E8EC] hover:border-[#176B68] rounded-xl shadow-md flex flex-col items-center justify-center text-slate-700 hover:text-[#176B68] transition-all cursor-pointer relative group">
@@ -786,7 +850,7 @@
                             <span>차량 부위별 전문 사진 관리 시스템</span>
                             <span class="text-xs bg-white/10 text-[#C8FF3D] border border-[#C8FF3D]/40 px-2 py-0.5 rounded font-mono">45 SLOTS SSOT</span>
                         </h3>
-                        <p class="text-xs text-slate-300">엔카 표준 45개 촬영 부위별 사진 슬롯 등록, EXIF 제거, 대표 사진 지정 및 우선노출 제어</p>
+                        <p class="text-xs text-slate-300">차마트 표준 45개 촬영 부위별 사진 슬롯 등록, EXIF 제거, 대표 사진 지정 및 우선노출 제어</p>
                     </div>
                 </div>
                 <button type="button" onclick="closeAdminPhotoMatrixModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
@@ -1356,7 +1420,7 @@
             if (window.lucide) window.lucide.createIcons();
         }
 
-        // DIRECTIVE 071: 엔카급 상세 검색 및 차마트 보유 매물 우선순위 정렬 상태 관리
+        // DIRECTIVE 071: 차마트 정밀 상세 검색 및 차마트 보유 매물 우선순위 정렬 상태 관리
         let filterState = {
             origin: 'DOMESTIC',       // 'DOMESTIC', 'IMPORT', 'ALL'
             manufacturers: [],        // ['현대', '기아'] 등
@@ -1507,7 +1571,7 @@
             syncUrlParams();
         }
 
-        // 엔카식 통합 필터 및 뷰 상태 관리 (DIRECTIVE 069: 기본 목록형(list))
+        // 차마트 정밀 통합 필터 및 뷰 상태 관리 (DIRECTIVE 069: 기본 목록형(list))
         let currentViewMode = 'list'; // 'list' | 'album'
         let currentOriginFilter = 'DOMESTIC'; // 'DOMESTIC' | 'IMPORT' | 'ALL'
         let filterState = {
