@@ -1,10 +1,8 @@
-"""차마트(CHAMART) 통합 운영 플랫폼 FastAPI 애플리케이션.
+"""차피셜(CHA-FICIAL) 통합 운영 관리 시스템 FastAPI 애플리케이션.
 
-DIRECTIVE 045 명세 준수:
-- 12대 전체 메뉴 네비게이션을 지원하는 단일 웹 플랫폼 백엔드
-- 실제 작동 4대 영역(차량, CRM, 거래, 영상) + AI 서류 검토 업로드 API
-- 미래 연동 영역(텔레그램, SMS, 카매니저, 마케팅)의 구조화된 데이터 응답
-- 로컬 우선 실행 및 외부 접속(Cloudflare Tunnel) 지원을 위한 보안 헤더/인증
+- 장한평 본사 및 거점 확장을 위한 차량·고객CRM·거래·AI영상·소싱 통합 OS
+- 차마트(CHAMART) 일반 고객용 독립 쇼룸 웹사이트(/chamart) 및 실매물 공개 API 제공
+- 내부 관리시스템(차피셜)과 외부 고객 쇼룸(차마트)의 브랜드 및 보안 완전 분리
 """
 
 from __future__ import annotations
@@ -84,8 +82,8 @@ from chaficial.platform.lab.service import ContentLabService
 
 # 앱 초기화
 app = FastAPI(
-    title="차마트(CHAMART) 통합 운영 플랫폼",
-    description="장한평 본사 및 거점 확장을 위한 차량·고객·거래·영상 통합 OS",
+    title="차피셜(CHA-FICIAL) 통합 운영 관리 시스템",
+    description="장한평 본사 및 거점 확장을 위한 차량·고객CRM·거래·영상 통합 OS",
     version="1.0.0-demo",
 )
 

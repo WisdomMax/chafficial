@@ -141,6 +141,9 @@ class VehicleDetailRenderer {
     const dealerPhone = dealer.phone || '1544-0000';
     const showroomLoc = dealer.showroom_location || '서울특별시 동대문구 천호대로 329 (장한평 매매단지 가온모터스)';
 
+    // DIRECTIVE 058: 카카오 상담 채널 정직성 - 공식 채널 ID가 명시적으로 설정된 경우에만 버튼 노출
+    const kakaoChannelId = d.kakao_channel_id || window.__CHAMART_KAKAO_CHANNEL_ID || '';
+
     // 5. 엔카·K Car 급 상용 레이아웃 마운트
     this.container.innerHTML = `
       <div class="w-full max-w-[1280px] mx-auto px-2 sm:px-4 py-3 sm:py-5 space-y-6">
@@ -514,11 +517,13 @@ class VehicleDetailRenderer {
                 </div>
               </div>
 
-              <!-- 카카오톡 1:1 빠른 상담 -->
-              <button onclick="window.__vdrInstance.handleKakaoConsult()" class="w-full py-2.5 bg-[#FEE500] hover:bg-[#FADA0A] text-[#191919] font-bold text-xs rounded transition-colors flex items-center justify-center cursor-pointer shadow-2xs">
+              <!-- 카카오톡 1:1 빠른 상담 (DIRECTIVE 058: 공식 채널 ID 설정 시에만 정직하게 노출, 미설정 시 완전 숨김) -->
+              ${kakaoChannelId ? `
+              <button onclick="window.__vdrInstance.handleKakaoConsult('${escapeHtml(kakaoChannelId)}')" class="w-full py-2.5 bg-[#FEE500] hover:bg-[#FADA0A] text-[#191919] font-bold text-xs rounded transition-colors flex items-center justify-center cursor-pointer shadow-2xs">
                 <i data-lucide="message-circle" class="w-4 h-4 mr-1.5 text-[#191919]"></i>
                 카카오톡 1:1 빠른 상담
               </button>
+              ` : ''}
 
               <!-- 데스크톱 방문 예약 간편 폼 -->
               <form id="vdrConsultForm" onsubmit="window.__vdrInstance.handleSubmitConsult(event, false)" class="space-y-3 pt-1">
@@ -1090,13 +1095,13 @@ class VehicleDetailRenderer {
     if (bs) bs.classList.add('hidden');
   }
 
-  handleKakaoConsult() {
-    const model = this.data?.model_name || '차량';
-    const plate = this.data?.plate_number || '';
-    const msg = `[차마트 카카오톡 1:1 상담 안내]\n${model} (${plate}) 차량에 대한 실시간 상담을 원하시면 공식 채널 또는 고객센터(1544-0000)로 연결됩니다.\n\n카카오톡 채널 연동을 진행하시겠습니까?`;
-    if (confirm(msg)) {
-      window.open('https://pf.kakao.com', '_blank');
+  handleKakaoConsult(channelId) {
+    const validId = channelId || this.data?.kakao_channel_id || window.__CHAMART_KAKAO_CHANNEL_ID;
+    if (!validId) {
+      alert('현재 차마트 카카오톡 1:1 전용 채널 개설 준비 중입니다. 방문 예약 신청 또는 대표번호(1544-0000)를 이용해 주시기 바랍니다.');
+      return;
     }
+    window.open(`https://pf.kakao.com/_${validId}/chat`, '_blank');
   }
 
   async handleSubmitConsult(e, isBottomSheet = false) {

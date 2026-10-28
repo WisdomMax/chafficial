@@ -493,10 +493,43 @@ class PlatformService:
     # =========================================================================
     # DIRECTIVE 051: 차마트(CHAMART) 고객용 공개 서비스 & 관리자 게시 연동
     # =========================================================================
+    # DIRECTIVE 051 / 058: 차마트(CHAMART) 고객용 공개 서비스 & 단일 공개 검증 정책
+    # =========================================================================
+
+    @staticmethod
+    def is_vehicle_eligible_for_chamart_public(v: Optional[Vehicle], db: Session) -> bool:
+        """DIRECTIVE 058 P0: 차마트 고객 공개 매물 단일 검증 가드 (목록/상세 100% 동일 정책).
+        
+        공개 필수 요건:
+        1. 차마트 직영(CHAMART_OWNED) 또는 공식 승인 제휴(PARTNER_APPROVED)
+        2. 실제 판매 가능 상태 (FOR_SALE, AVAILABLE)
+        3. 관리자 고객 공개 승인 플래그 (is_public == True)
+        4. 내부 테스트/데모 차량 배제 (is_demo == False)
+        5. 실차 사진 검증 완료: 등록된 사진 중 placeholder/예시가 아닌 실제 검증 사진 1장 이상 필수
+        """
+        if not v:
+            return False
+        if v.ownership_type not in [OwnershipType.CHAMART_OWNED.value, OwnershipType.PARTNER_APPROVED.value]:
+            return False
+        if v.status not in ["FOR_SALE", "AVAILABLE"]:
+            return False
+        if not v.is_public or v.is_demo:
+            return False
+
+        # 실차 사진 검증 (DEMO_PLACEHOLDER 및 임시 placeholder 격리)
+        photos = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).all()
+        has_real_photo = False
+        for p in photos:
+            if p.photo_url and "placeholder" not in p.photo_url and "neutral_car" not in p.photo_url:
+                if p.caption and "DEMO_PLACEHOLDER" not in p.caption and "예시" not in p.caption:
+                    has_real_photo = True
+                    break
+
+        return has_real_photo
 
     @staticmethod
     def get_chamart_public_vehicles(db: Session) -> list[dict[str, Any]]:
-        """차마트 고객 공개 차량 목록 조회 (시장 관측 매물 배제, 민감 원가/마진 비노출, DIRECTIVE 052 정직 필터)."""
+        """차마트 고객 공개 차량 목록 조회 (단일 공개 검증 가드 강제)."""
         query = (
             db.query(Vehicle)
             .filter(
@@ -511,18 +544,7 @@ class PlatformService:
 
         results = []
         for v in vehicles:
-            # DIRECTIVE 056 P0: 실차 사진 검증 완료 매물만 고객 쇼룸 공개 허용
-            # DEMO_PLACEHOLDER 및 사진 미등록 매물은 일반 고객 목록에서 비공개 격리 (관리자에서만 준비중 관리)
-            photos = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).all()
-            has_real_photo = False
-            for p in photos:
-                if p.photo_url and "placeholder" not in p.photo_url and "neutral_car" not in p.photo_url:
-                    if p.caption and "DEMO_PLACEHOLDER" not in p.caption and "예시" not in p.caption:
-                        has_real_photo = True
-                        break
-
-            # 실차 촬영본이 아직 검증되지 않은 매물은 고객 목록에서 제외
-            if not has_real_photo:
+            if not PlatformService.is_vehicle_eligible_for_chamart_public(v, db):
                 continue
 
             # 월 납입금 추산 (60개월, 연 5.9% 기준 원리금 균등)
@@ -556,18 +578,13 @@ class PlatformService:
 
     @staticmethod
     def get_chamart_public_vehicle_detail(db: Session, vehicle_id: str) -> Optional[dict[str, Any]]:
-        """차마트 고객 공개 차량 상세 조회 (8대 필수영역 완비, 원가/수익 엄격 배제, 허위 기본값 전면 제거)."""
-        v = (
-            db.query(Vehicle)
-            .filter(
-                Vehicle.id == vehicle_id,
-                Vehicle.ownership_type.in_([OwnershipType.CHAMART_OWNED.value, OwnershipType.PARTNER_APPROVED.value]),
-                Vehicle.is_public == True,
-                Vehicle.is_demo == False,
-            )
-            .first()
-        )
+        """차마트 고객 공개 차량 상세 조회 (목록과 동일한 단일 공개 검증 정책 적용)."""
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
         if not v:
+            return None
+
+        # DIRECTIVE 058 P0: 목록과 100% 동일한 공개 정책 적용 (비공개 또는 실차사진 미검증 시 404 차단)
+        if not PlatformService.is_vehicle_eligible_for_chamart_public(v, db):
             return None
 
         # 1. 월 납입금 계산 (60개월 5.9%)
