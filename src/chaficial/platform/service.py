@@ -497,15 +497,26 @@ class PlatformService:
     # =========================================================================
 
     @staticmethod
-    def is_vehicle_eligible_for_chamart_public(v: Optional[Vehicle], db: Session) -> bool:
-        """DIRECTIVE 058 P0: 차마트 고객 공개 매물 단일 검증 가드 (목록/상세 100% 동일 정책).
+    def is_vehicle_eligible_for_chamart_public(v: Optional[Vehicle], db: Session, allow_demo: bool = False) -> bool:
+        """DIRECTIVE 064 P0: 차마트 고객 공개 매물 단일 검증 가드 (운영 실차 검증 vs 데모 검수 분리).
         
-        공개 필수 요건:
+        운영 공개(allow_demo=False) 필수 요건:
         1. 차마트 직영(CHAMART_OWNED) 또는 공식 승인 제휴(PARTNER_APPROVED)
         2. 실제 판매 가능 상태 (FOR_SALE, AVAILABLE)
         3. 관리자 고객 공개 승인 플래그 (is_public == True)
-        4. 내부 테스트/데모 차량 배제 (is_demo == False)
-        5. 실차 사진 검증 완료: 등록된 사진 중 placeholder/예시가 아닌 실제 검증 사진 1장 이상 필수
+        4. 내부 테스트/데모 플래그 배제 (is_demo == False)
+        5. 모델명 가드 (테스트, demo, 임시, placeholder 배제)
+        6. 판매 가격 유효성 (target_price > 0)
+        7. 제휴 매물인 경우 공식 판매권한 유효성 (sale_auth, 미철회, 미만료)
+        8. [DIRECTIVE 064 P0] 실차 자산 검증 원장 레코드:
+           - verification_status == 'VERIFIED_REAL_ASSET'
+           - usage_rights_status == 'CONFIRMED_COMMERCIAL'
+           - photo_source == 'FIELD_INSPECTION_PHOTO'
+           - original_file_hash 해시값 기록 필수
+           (단순 URL/파일명 문자열 필터가 아닌 서버 검증 원장 확인)
+        
+        데모/검수 모드(allow_demo=True):
+        - 1~6번 만족 차량 중 UI 검수용 시연 데이터 허용.
         """
         if not v:
             return False
@@ -517,7 +528,7 @@ class PlatformService:
         if not v.is_public or v.is_demo:
             return False
 
-        # DIRECTIVE 063 P0: 테스트용 및 데모 모델명 배제 가드 강화
+        # 모델명 배제 가드 강화
         model_name_lower = (v.model_name or "").lower()
         if any(keyword in model_name_lower for keyword in ["테스트", "test", "demo", "임시", "placeholder"]):
             return False
@@ -526,22 +537,17 @@ class PlatformService:
         if (v.target_price or 0) <= 0:
             return False
 
-        # DIRECTIVE 059 P0: 제휴 매물(PARTNER_APPROVED)인 경우 공식 판매권한 유효성(승인/철회/만료) 엄격 검증
+        # 제휴 매물 판매권한 유효성 검증
         if v.ownership_type == OwnershipType.PARTNER_APPROVED.value:
             try:
                 auth_json = json.loads(v.marketing_auth_json or "{}")
             except Exception:
                 auth_json = {}
 
-            # 1) 명시적 sale_auth 승인 필수
             if auth_json.get("sale_auth") is not True:
                 return False
-
-            # 2) 권한 철회 여부 검증
             if auth_json.get("is_revoked") is True:
                 return False
-
-            # 3) 권한 유효기간 만료 검증
             expires_at_str = auth_json.get("expires_at")
             if expires_at_str:
                 try:
@@ -551,24 +557,39 @@ class PlatformService:
                 except Exception:
                     return False
 
-        # 2. 실차 사진 엄격 검증 (DEMO_PLACEHOLDER, unsplash, neutral_car, 예시 전면 배제)
+        # 2. 실차 사진 원장 검증
         photos = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).all()
-        has_real_photo = False
-        for p in photos:
-            url_lower = (p.photo_url or "").lower()
-            caption_lower = (p.caption or "").lower()
-            if not url_lower or any(ign in url_lower for ign in ["placeholder", "neutral_car", "unsplash", "demo"]):
-                continue
-            if any(ign in caption_lower for ign in ["demo", "placeholder", "예시", "샘플", "임시", "가상"]):
-                continue
-            has_real_photo = True
-            break
+        if not photos:
+            return False
 
-        return has_real_photo
+        if allow_demo:
+            # 데모 검수 모드: 사진 자산이 1장 이상 존재하면 승인
+            return len(photos) > 0
+
+        # 운영 모드 (allow_demo == False):
+        # 반드시 검증 원장 레코드(VERIFIED_REAL_ASSET, CONFIRMED_COMMERCIAL, FIELD_INSPECTION_PHOTO) 만족 필수
+        has_verified_real_asset = False
+        for p in photos:
+            v_status = getattr(p, "verification_status", None)
+            u_status = getattr(p, "usage_rights_status", None)
+            source = getattr(p, "photo_source", None)
+            f_hash = getattr(p, "original_file_hash", None)
+
+            if (
+                v_status == "VERIFIED_REAL_ASSET"
+                and u_status == "CONFIRMED_COMMERCIAL"
+                and source == "FIELD_INSPECTION_PHOTO"
+                and f_hash
+            ):
+                has_verified_real_asset = True
+                break
+
+        return has_verified_real_asset
 
     @staticmethod
-    def get_chamart_public_vehicles(db: Session) -> list[dict[str, Any]]:
-        """차마트 고객 공개 차량 목록 조회 (단일 공개 검증 가드 강제)."""
+    def get_chamart_public_vehicles(db: Session, mode: str = "prod") -> list[dict[str, Any]]:
+        """차마트 고객 공개 차량 목록 조회 (운영 실차 vs 데모 검수 분리)."""
+        allow_demo = (mode in ["demo", "staging"])
         query = (
             db.query(Vehicle)
             .filter(
@@ -583,7 +604,7 @@ class PlatformService:
 
         results = []
         for v in vehicles:
-            if not PlatformService.is_vehicle_eligible_for_chamart_public(v, db):
+            if not PlatformService.is_vehicle_eligible_for_chamart_public(v, db, allow_demo=allow_demo):
                 continue
 
             # 월 납입금 추산 (60개월, 연 5.9% 기준 원리금 균등)
@@ -609,21 +630,24 @@ class PlatformService:
                 "target_price": v.target_price,
                 "monthly_payment_estimate": monthly_est,
                 "primary_photo_url": v.primary_photo_url or "/static/img/car_placeholder.jpg",
-                "branch_name": v.branch.name if v.branch else "차마트 장한평 본사",
+                "branch_name": "차마트 제휴 전시장 (장한평)",
                 "status": v.status,
                 "publishing_status": getattr(v, "publishing_status", "PUBLISHED"),
+                "is_demo_asset": allow_demo,
+                "demo_notice": "UI 디자인 검수용 시연 데이터" if allow_demo else None,
             })
         return results
 
     @staticmethod
-    def get_chamart_public_vehicle_detail(db: Session, vehicle_id: str) -> Optional[dict[str, Any]]:
+    def get_chamart_public_vehicle_detail(db: Session, vehicle_id: str, mode: str = "prod") -> Optional[dict[str, Any]]:
         """차마트 고객 공개 차량 상세 조회 (목록과 동일한 단일 공개 검증 정책 적용)."""
+        allow_demo = (mode in ["demo", "staging"])
         v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
         if not v:
             return None
 
-        # DIRECTIVE 058 P0: 목록과 100% 동일한 공개 정책 적용 (비공개 또는 실차사진 미검증 시 404 차단)
-        if not PlatformService.is_vehicle_eligible_for_chamart_public(v, db):
+        # DIRECTIVE 064 P0: 단일 공개 정책 (운영 검증 vs 데모 검수)
+        if not PlatformService.is_vehicle_eligible_for_chamart_public(v, db, allow_demo=allow_demo):
             return None
 
         # 1. 월 납입금 계산 (60개월 5.9%)
@@ -757,8 +781,11 @@ class PlatformService:
             "dealer_info": dealer_info,
             "price_comparison": price_comparison,
             "approved_video": approved_video,
+            "branch_name": "차마트 제휴 전시장 (장한평)",
             "is_public": v.is_public,
             "publishing_status": getattr(v, "publishing_status", "PUBLISHED"),
+            "is_demo_asset": allow_demo,
+            "demo_notice": "UI 디자인 검수용 시연 데이터" if allow_demo else None,
             "updated_at": v.updated_at.strftime("%Y-%m-%d %H:%M"),
         }
 

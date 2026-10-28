@@ -1366,15 +1366,22 @@ def transition_publishing_status(
 # -----------------------------------------------------------------------------
 
 @app.get("/api/chamart/vehicles")
-def get_chamart_public_vehicles(db: Session = Depends(get_db)) -> list[dict[str, Any]]:
-    """차마트 일반 고객 공개 차량 목록 (관측 매물 제외, 원가/수익 비노출)."""
-    return PlatformService.get_chamart_public_vehicles(db)
+def get_chamart_public_vehicles(
+    mode: str = "prod",
+    db: Session = Depends(get_db)
+) -> list[dict[str, Any]]:
+    """차마트 일반 고객 공개 차량 목록 (운영 prod: 100% 실차 검증 완료 매물만, demo/staging: UI 검수용 매물)."""
+    return PlatformService.get_chamart_public_vehicles(db, mode=mode)
 
 
 @app.get("/api/chamart/vehicles/{vehicle_id}")
-def get_chamart_public_vehicle_detail(vehicle_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
-    """차마트 일반 고객 공개 차량 상세 조회 (대형갤러리, 제원, 옵션, 성능요약, 시세비교 등 8대 영역)."""
-    detail = PlatformService.get_chamart_public_vehicle_detail(db, vehicle_id)
+def get_chamart_public_vehicle_detail(
+    vehicle_id: str,
+    mode: str = "prod",
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """차마트 일반 고객 공개 차량 상세 조회 (운영 prod vs 데모 demo 검수)."""
+    detail = PlatformService.get_chamart_public_vehicle_detail(db, vehicle_id, mode=mode)
     if not detail:
         raise HTTPException(status_code=404, detail="공개된 차량 정보를 찾을 수 없습니다.")
     return detail

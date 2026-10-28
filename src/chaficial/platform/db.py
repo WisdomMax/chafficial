@@ -281,6 +281,14 @@ class VehiclePhoto(Base):
     caption: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
 
+    # DIRECTIVE 064 실차 자산 검증 원장 메타데이터 (P0 실차 촬영본 진위 및 저작권 추적)
+    verification_status: Mapped[str] = mapped_column(String(30), default="UNVERIFIED")  # VERIFIED_REAL_ASSET, UNVERIFIED_DEMO, PENDING_REVIEW, REJECTED
+    photo_source: Mapped[str] = mapped_column(String(50), default="UNKNOWN")  # FIELD_INSPECTION_PHOTO, DEALER_UPLOAD, DEMO_GRAPHIC
+    original_file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)  # SHA256 해시
+    usage_rights_status: Mapped[str] = mapped_column(String(30), default="PENDING")  # CONFIRMED_COMMERCIAL, DEMO_ONLY, PENDING_RIGHTS
+    verified_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    verified_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+
     vehicle = relationship("Vehicle", back_populates="photos")
 
 

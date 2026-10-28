@@ -19,6 +19,56 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+/**
+ * DIRECTIVE 064 P1: 차량 할부 금융 단일 순수 계산 함수
+ * 내부 연산 단위를 원(KRW)으로 정밀 계산하여 독립 수학 결과와 100% 일치 보장
+ */
+function calculateVehicleLoanPure({ priceWon, downRate, annualRate, months }) {
+  const pWon = Math.max(0, Number(priceWon) || 0);
+  const dRate = Math.min(100, Math.max(0, Number(downRate) || 0));
+  const aRate = Math.max(0, Number(annualRate) || 0);
+  const nMonths = Math.max(1, parseInt(months, 10) || 36);
+
+  const downWon = Math.round(pWon * (dRate / 100));
+  const principalWon = Math.max(0, pWon - downWon);
+
+  let monthlyWon = 0;
+  let totalInterestWon = 0;
+
+  if (pWon === 0 || principalWon === 0) {
+    monthlyWon = 0;
+    totalInterestWon = 0;
+  } else if (aRate === 0) {
+    monthlyWon = Math.round(principalWon / nMonths);
+    totalInterestWon = 0;
+  } else {
+    const monthlyRate = (aRate / 100) / 12;
+    const factor = Math.pow(1 + monthlyRate, nMonths);
+    monthlyWon = Math.round((principalWon * monthlyRate * factor) / (factor - 1));
+    totalInterestWon = Math.max(0, (monthlyWon * nMonths) - principalWon);
+  }
+
+  const totalRepayWon = (monthlyWon * nMonths);
+
+  return {
+    priceWon: pWon,
+    downRate: dRate,
+    downWon: downWon,
+    downTenThousand: Math.round(downWon / 10000),
+    principalWon: principalWon,
+    principalTenThousand: Math.round(principalWon / 10000),
+    annualRate: aRate,
+    months: nMonths,
+    monthlyWon: monthlyWon,
+    monthlyTenThousand: Math.round(monthlyWon / 10000),
+    totalInterestWon: totalInterestWon,
+    totalInterestTenThousand: Math.round(totalInterestWon / 10000),
+    totalRepayWon: totalRepayWon,
+    totalRepayTenThousand: Math.round(totalRepayWon / 10000),
+  };
+}
+window.calculateVehicleLoanPure = calculateVehicleLoanPure;
+
 class VehicleDetailRenderer {
   constructor(containerId, options = {}) {
     this.container = typeof containerId === 'string' ? document.getElementById(containerId) : containerId;
@@ -139,11 +189,12 @@ class VehicleDetailRenderer {
     const bondAndFeeEst = d.target_price ? 15 : 0; // 공채 및 대행 부대비용 약 15만원
     const totalPurchaseCostEst = d.target_price ? (d.target_price + acquisitionTaxEst + bondAndFeeEst) : 0;
 
-    // 딜러 정보
+    // 딜러 정보 (DIRECTIVE 064: 임시 대표번호 전수 제거 및 제휴 전시장 정직화)
     const dealer = d.dealer_info || d.dealer || {};
-    const dealerName = dealer.name || '차마트 공식 인증팀';
-    const dealerPhone = dealer.phone || '1544-0000';
-    const showroomLoc = dealer.showroom_location || '서울특별시 동대문구 천호대로 329 (장한평 매매단지 가온모터스)';
+    const dealerName = dealer.name || '차마트 제휴 전시장 (장한평)';
+    const rawPhone = (dealer.phone || '').trim();
+    const dealerPhone = (rawPhone && !rawPhone.includes('1544') && rawPhone.length >= 8) ? rawPhone : null;
+    const showroomLoc = dealer.showroom_location || '서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지';
 
     // DIRECTIVE 058: 카카오 상담 채널 정직성 - 공식 채널 ID가 명시적으로 설정된 경우에만 버튼 노출
     const kakaoChannelId = d.kakao_channel_id || window.__CHAMART_KAKAO_CHANNEL_ID || '';
@@ -556,7 +607,11 @@ class VehicleDetailRenderer {
                 </div>
                 <div class="flex items-center space-x-1.5 pt-0.5">
                   <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                  <a href="tel:${escapeHtml(dealerPhone)}" class="text-[#171B1E] font-bold hover:underline">${escapeHtml(dealerPhone)}</a>
+                  ${dealerPhone ? `
+                    <a href="tel:${escapeHtml(dealerPhone)}" class="text-[#171B1E] font-bold hover:underline">${escapeHtml(dealerPhone)}</a>
+                  ` : `
+                    <span class="text-slate-500 font-medium">1:1 온라인 방문 예약 접수 후 안내</span>
+                  `}
                 </div>
                 <!-- 주소 복사 & 공식 지도 길찾기 버튼 (DIRECTIVE 062 P3) -->
                 <div class="pt-2 border-t border-slate-200/70 flex items-center justify-between">
@@ -715,7 +770,7 @@ class VehicleDetailRenderer {
           <div id="vdrPrintableEstimateSheet" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 text-xs text-slate-700 pr-1 p-2 bg-white">
             <div class="border-b-2 border-[#171B1E] pb-3 flex justify-between items-end">
               <div>
-                <span class="text-xs font-bold text-slate-500">CHAMART MOBILITY</span>
+                <span class="text-xs font-bold text-slate-500">차마트 모빌리티</span>
                 <h2 class="text-xl font-bold text-[#171B1E] mt-0.5">${escapeHtml(displayTitle)} ${displayTrim ? escapeHtml(displayTrim) : ''}</h2>
                 <span class="text-xs text-slate-500">${escapeHtml(d.plate_number || '차량번호 미기재')} · ${d.year ? d.year + '년식' : '연식미확인'} · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '주행거리 미확인'}</span>
               </div>
@@ -810,20 +865,20 @@ class VehicleDetailRenderer {
           </div>
 
           <div class="space-y-3 text-xs text-slate-700">
-            <!-- 공식 도로명 주소 및 실측 좌표 안내 (DIRECTIVE 063) -->
+            <!-- 공식 도로명 주소 및 실측 좌표 안내 (DIRECTIVE 064: 정직한 제휴 전시장) -->
             <div class="bg-slate-50 p-3.5 rounded-lg border border-[#E7E9E5] space-y-1.5 text-xs">
               <div class="flex items-center justify-between">
-                <span class="font-bold text-[#171B1E] text-sm">차마트 장한평 본사 전시장</span>
-                <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded border border-emerald-200">공식 실측</span>
+                <span class="font-bold text-[#171B1E] text-sm">차마트 제휴 전시장 (장한평)</span>
+                <span class="text-[10px] bg-slate-200 text-slate-700 font-medium px-1.5 py-0.5 rounded">제휴 매매단지</span>
               </div>
               <div class="text-slate-800 font-medium">서울특별시 성동구 자동차시장1길 70 (용답동)</div>
-              <div class="text-[11px] text-slate-500 font-mono">공식 좌표: 37.56191°N, 127.06424°E</div>
-              <div class="text-[11px] text-slate-400 pt-0.5">※ 지하철 5호선 장한평역 5·6번 출구 도보 3분 / 고객 전용 무료 주차장</div>
+              <div class="text-[11px] text-slate-500 font-mono">참고 좌표: 37.56191°N, 127.06424°E</div>
+              <div class="text-[11px] text-slate-400 pt-0.5">※ 지하철 5호선 장한평역 5·6번 출구 인근 (방문 전 1:1 방문 예약 필수)</div>
             </div>
 
             <!-- 공식 지도 앱 바로가기 버튼들 -->
             <div class="space-y-2 pt-1">
-              <a href="https://map.kakao.com/link/to/차마트장한평본사전시장,37.56191,127.06424" target="_blank" rel="noopener noreferrer" 
+              <a href="https://map.kakao.com/link/to/차마트제휴전시장,37.56191,127.06424" target="_blank" rel="noopener noreferrer" 
                  class="w-full py-2.5 px-4 bg-[#FEE500] hover:bg-[#FADA0A] text-[#191919] font-bold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors shadow-2xs">
                 <span class="flex items-center">
                   <i data-lucide="map-pin" class="w-4 h-4 mr-2 text-[#191919]"></i>
@@ -832,7 +887,7 @@ class VehicleDetailRenderer {
                 <i data-lucide="chevron-right" class="w-4 h-4"></i>
               </a>
 
-              <a href="https://map.naver.com/v5/directions/-/127.06424,37.56191,차마트장한평본사전시장/-/car" target="_blank" rel="noopener noreferrer"
+              <a href="https://map.naver.com/v5/directions/-/127.06424,37.56191,차마트제휴전시장/-/car" target="_blank" rel="noopener noreferrer"
                  class="w-full py-2.5 px-4 bg-[#03C75A] hover:bg-[#02B351] text-white font-bold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors shadow-2xs">
                 <span class="flex items-center">
                   <i data-lucide="map" class="w-4 h-4 mr-2 text-white"></i>
@@ -841,7 +896,7 @@ class VehicleDetailRenderer {
                 <i data-lucide="chevron-right" class="w-4 h-4"></i>
               </a>
 
-              <a href="tmap://route?goalname=차마트장한평본사전시장&goalx=127.06424&goaly=37.56191" 
+              <a href="tmap://route?goalname=차마트제휴전시장&goalx=127.06424&goaly=37.56191" 
                  class="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors">
                 <span class="flex items-center">
                   <i data-lucide="navigation-2" class="w-3.5 h-3.5 mr-2 text-slate-600"></i>
@@ -1219,25 +1274,26 @@ class VehicleDetailRenderer {
       return;
     }
 
-    const downPercent = downSelect ? parseFloat(downSelect.value) / 100 : 0.1;
+    const downRate = downSelect ? parseFloat(downSelect.value) : 10;
     const months = monthSelect ? parseInt(monthSelect.value, 10) : 60;
-    const annualRate = rateSelect ? parseFloat(rateSelect.value) : 0.059;
-    const monthlyRate = annualRate / 12;
+    const annualRate = rateSelect ? parseFloat(rateSelect.value) * 100 : 5.9;
 
-    const loanAmount = targetPrice * (1 - downPercent);
-    if (loanAmount <= 0) {
+    const res = calculateVehicleLoanPure({
+      priceWon: targetPrice * 10000,
+      downRate: downRate,
+      annualRate: annualRate,
+      months: months
+    });
+
+    if (res.principalWon === 0) {
       resultEl.textContent = '선수금 100% (월 0원)';
-      if (totalEl) totalEl.textContent = '총 납부 이자: 0원';
+      if (totalEl) totalEl.textContent = '총 납부 이자: 0원 / 총 상환액: 0원';
       return;
     }
 
-    const monthlyPayment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
-    const totalRepay = monthlyPayment * months;
-    const totalInterest = totalRepay - loanAmount;
-
-    resultEl.textContent = `월 약 ${Math.round(monthlyPayment).toLocaleString('ko-KR')}만원`;
+    resultEl.textContent = `월 약 ${res.monthlyTenThousand.toLocaleString('ko-KR')}만원`;
     if (totalEl) {
-      totalEl.textContent = `예상 이자: 약 ${Math.round(totalInterest).toLocaleString('ko-KR')}만원 / 총 상환액: 약 ${Math.round(totalRepay).toLocaleString('ko-KR')}만원`;
+      totalEl.textContent = `예상 이자: 약 ${res.totalInterestTenThousand.toLocaleString('ko-KR')}만원 / 총 상환액: 약 ${res.totalRepayTenThousand.toLocaleString('ko-KR')}만원`;
     }
   }
 
@@ -1324,22 +1380,16 @@ class VehicleDetailRenderer {
     const rateSelect = document.getElementById('vdrCalcRate');
     const targetPrice = this.data?.target_price || 0;
 
-    const downPercent = downSelect ? parseFloat(downSelect.value) / 100 : 0.1;
-    const downValWon = Math.round(targetPrice * downPercent);
+    const downRate = downSelect ? parseFloat(downSelect.value) : 10;
     const months = monthSelect ? parseInt(monthSelect.value, 10) : 60;
-    const annualRate = rateSelect ? parseFloat(rateSelect.value) : 0.059;
-    const monthlyRate = annualRate / 12;
-    const loanAmount = targetPrice * (1 - downPercent);
+    const annualRate = rateSelect ? parseFloat(rateSelect.value) * 100 : 5.9;
 
-    let monthlyPayment = 0;
-    let totalInterest = 0;
-    let totalRepay = targetPrice;
-
-    if (loanAmount > 0 && monthlyRate > 0) {
-      monthlyPayment = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
-      totalRepay = monthlyPayment * months;
-      totalInterest = totalRepay - loanAmount;
-    }
+    const res = calculateVehicleLoanPure({
+      priceWon: targetPrice * 10000,
+      downRate: downRate,
+      annualRate: annualRate,
+      months: months
+    });
 
     const estDown = document.getElementById('vdrEstDownText');
     const estMonths = document.getElementById('vdrEstMonthsText');
@@ -1348,12 +1398,12 @@ class VehicleDetailRenderer {
     const estPrincipal = document.getElementById('vdrEstPrincipalText');
     const estInterest = document.getElementById('vdrEstInterestText');
 
-    if (estDown) estDown.textContent = `${Math.round(downPercent * 100)}% (${downValWon.toLocaleString('ko-KR')}만원)`;
-    if (estPrincipal) estPrincipal.textContent = `${Math.round(loanAmount).toLocaleString('ko-KR')}만원`;
-    if (estMonths) estMonths.textContent = `${months}개월`;
-    if (estRate) estRate.textContent = `연 ${(annualRate * 100).toFixed(1)}%`;
-    if (estMonthly) estMonthly.textContent = `월 약 ${Math.round(monthlyPayment).toLocaleString('ko-KR')}만원`;
-    if (estInterest) estInterest.textContent = `약 ${Math.round(totalInterest).toLocaleString('ko-KR')}만원`;
+    if (estDown) estDown.textContent = `${Math.round(res.downRate)}% (${res.downTenThousand.toLocaleString('ko-KR')}만원)`;
+    if (estPrincipal) estPrincipal.textContent = `${res.principalTenThousand.toLocaleString('ko-KR')}만원`;
+    if (estMonths) estMonths.textContent = `${res.months}개월`;
+    if (estRate) estRate.textContent = `연 ${res.annualRate.toFixed(1)}%`;
+    if (estMonthly) estMonthly.textContent = `월 약 ${res.monthlyTenThousand.toLocaleString('ko-KR')}만원`;
+    if (estInterest) estInterest.textContent = `약 ${res.totalInterestTenThousand.toLocaleString('ko-KR')}만원`;
 
     const modal = document.getElementById('vdrEstimatePrintModal');
     if (modal) {
@@ -1480,7 +1530,7 @@ class VehicleDetailRenderer {
   handleKakaoConsult(channelId) {
     const validId = channelId || this.data?.kakao_channel_id || window.__CHAMART_KAKAO_CHANNEL_ID;
     if (!validId) {
-      alert('현재 차마트 카카오톡 1:1 전용 채널 개설 준비 중입니다. 방문 예약 신청 또는 대표번호(1544-0000)를 이용해 주시기 바랍니다.');
+      alert('현재 차마트 카카오톡 1:1 전용 채널 개설 준비 중입니다. 1:1 방문 예약 및 구매 상담 신청 폼을 이용해 주시기 바랍니다.');
       return;
     }
     window.open(`https://pf.kakao.com/_${validId}/chat`, '_blank');
