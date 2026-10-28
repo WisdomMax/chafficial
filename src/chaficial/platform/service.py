@@ -697,7 +697,20 @@ class PlatformService:
         # 3. 사고 및 성능 상태 요약 (DIRECTIVE 054: 단일 SSOT 정규화 사용)
         accident_summary = PlatformService._normalize_accident_summary(v)
 
-        # 4. 사진 갤러리 (공개 정렬)
+        # 4. 사진 갤러리 (DIRECTIVE 065 P0: 승인된 검증 사진만 고객에게 반환)
+        eligible_photos = []
+        for p in sorted(v.photos, key=lambda x: (not x.is_primary, x.sort_order)):
+            if allow_demo:
+                eligible_photos.append(p)
+            else:
+                # 운영 모드: 반드시 승인 원장 검증 통과 사진만 고객에게 공개
+                v_stat = getattr(p, "verification_status", None)
+                u_stat = getattr(p, "usage_rights_status", None)
+                src = getattr(p, "photo_source", None)
+                f_hash = getattr(p, "original_file_hash", None)
+                if v_stat == "VERIFIED_REAL_ASSET" and u_stat == "CONFIRMED_COMMERCIAL" and src == "FIELD_INSPECTION_PHOTO" and f_hash:
+                    eligible_photos.append(p)
+
         photos = [
             {
                 "id": p.id,
@@ -707,9 +720,9 @@ class PlatformService:
                 "is_primary": p.is_primary,
                 "caption": p.caption or f"{v.model_name} {p.category}",
             }
-            for p in sorted(v.photos, key=lambda x: (not x.is_primary, x.sort_order))
+            for p in eligible_photos
         ]
-        if not photos and v.primary_photo_url:
+        if not photos and allow_demo and v.primary_photo_url:
             photos.append({
                 "id": "primary",
                 "photo_url": v.primary_photo_url,
@@ -719,13 +732,15 @@ class PlatformService:
                 "caption": v.model_name,
             })
 
-        # 5. 판매자 및 전시장 정보 (허위 개인 연락처 날조 제거)
+        # 5. 판매자 및 전시장 정보 (DIRECTIVE 065: 1544 제거 및 단일 제휴 전시장 정보 정직화)
+        raw_phone = v.dealer.phone if v.dealer else None
+        valid_phone = raw_phone if (raw_phone and not raw_phone.startswith("1544") and len(raw_phone) >= 8) else None
         dealer_info = {
-            "name": v.dealer.name if v.dealer else "차마트 공용 상담팀",
-            "dealership_name": v.dealer.dealership_name if v.dealer else "차마트 장한평 본사",
-            "phone": v.dealer.phone if v.dealer else "1544-0000",
-            "showroom_location": v.branch.address if v.branch else "서울특별시 동대문구 천호대로 329 (장한평 매매단지)",
-            "showroom_detail": "장한평 중고차 매매시장 가온모터스 전시장",
+            "name": v.dealer.name if v.dealer else "차마트 제휴 전시장 담당팀",
+            "dealership_name": "차마트 제휴 전시장 (장한평)",
+            "phone": valid_phone,
+            "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
+            "showroom_detail": "장한평 자동차매매단지 제휴 전시장 (사전 1:1 방문 예약 필수)",
         }
 
         # 6. 시세 비교 및 부대비용 가이드 (P0-3: 1.05배 가짜 평균 시세 전면 제거)
@@ -801,6 +816,16 @@ class PlatformService:
             raise ValueError("고객 성함과 연락처는 필수 입력 사항입니다.")
 
         vehicle_id = data.get("vehicle_id")
+        target_model = data.get("vehicle_title") or "차마트 문의 매물"
+        if vehicle_id:
+            v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+            if not v:
+                raise ValueError("존재하지 않는 차량에 대한 상담 신청입니다.")
+            # DIRECTIVE 065 P0: 운영 공개 적격 매물인지 검증 (미승인, 데모, 비공개 매물은 운영 상담 신청 차단)
+            if not PlatformService.is_vehicle_eligible_for_chamart_public(v, db, allow_demo=False):
+                raise ValueError("현재 판매 공개 중인 실차 매물에 대해서만 방문 예약이 가능합니다.")
+            target_model = f"{v.manufacturer or ''} {v.model_name}".strip()
+
         content = data.get("content") or "웹사이트 차량 상세페이지 상담 신청"
         preferred_date = data.get("preferred_date")
 
@@ -813,7 +838,7 @@ class PlatformService:
                 branch_id=branch.id if branch else None,
                 name=name,
                 phone=phone_norm,
-                target_vehicle_model=data.get("vehicle_title") or "차마트 문의 매물",
+                target_vehicle_model=target_model,
                 status="NEW",
                 source="CHAMART_WEB",
             )

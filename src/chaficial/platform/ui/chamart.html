@@ -28,28 +28,51 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
         
         /* DIRECTIVE 062: 실차 예상 구매비용 안내서 A4 정밀 인쇄 및 PDF 저장 CSS */
+                /* DIRECTIVE 065 P1: 실차 예상 구매비용 안내서 A4 단 1페이지 정밀 인쇄 및 PDF 저장 CSS */
         @media print {
-            body * {
-                visibility: hidden !important;
+            html, body {
+                height: 100% !important;
+                max-height: 100% !important;
+                overflow: hidden !important;
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
-            #vdrEstimatePrintModal, #vdrEstimatePrintModal * {
-                visibility: visible !important;
+            header, nav, footer, #view-home, #compareModal, #policyModal, #compareFloatingBar, #mobileFilterBottomSheet {
+                display: none !important;
+            }
+            #view-detail > *:not(#vdrEstimatePrintModal) {
+                display: none !important;
             }
             #vdrEstimatePrintModal {
-                position: fixed !important;
+                display: block !important;
+                position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
                 width: 100% !important;
+                max-width: 100% !important;
                 height: auto !important;
                 margin: 0 !important;
-                padding: 20px !important;
+                padding: 0 !important;
                 background: white !important;
                 border: none !important;
                 box-shadow: none !important;
                 z-index: 999999 !important;
             }
+            #vdrEstimatePrintModal > div {
+                max-width: 100% !important;
+                max-height: none !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
             #vdrEstimatePrintModal button {
                 display: none !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 10mm 12mm;
             }
         }
     </style>
@@ -82,32 +105,16 @@
                 <a href="#guide" onclick="scrollToGuide(event)" class="hover:text-[#171B1E] transition-colors pb-1">구매 가이드</a>
             </nav>
 
-            <!-- 우측: 모드 스위처 & 1:1 방문상담 안내 (DIRECTIVE 064: 임시 대표번호 전수 제거) -->
+            <!-- 우측: 상용 쇼핑몰 1:1 고객 문의 및 방문 예약 (DIRECTIVE 065: 개발용 모드 스위치 완전 제거) -->
             <div class="flex items-center space-x-2 sm:space-x-3">
-                <!-- 운영 실차 vs 데모 검수 모드 토글 스위치 -->
-                <button type="button" onclick="toggleShowroomMode()" id="btnModeToggle" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center space-x-1.5 transition-colors cursor-pointer" title="실차 운영 모드와 UI 디자인 검수 모드를 전환합니다.">
-                    <span id="modeStatusDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
-                    <span id="modeStatusText">운영 모드</span>
-                </button>
-                <button onclick="scrollToConsultation()" class="inline-flex items-center text-xs font-bold bg-[#C8FF3D] hover:bg-[#B5F028] text-[#171B1E] px-3 py-2 rounded-lg transition-colors cursor-pointer border border-[#AEEB20]/60 shadow-xs">
+                <button onclick="scrollToConsultation()" class="inline-flex items-center text-xs sm:text-sm font-bold bg-[#C8FF3D] hover:bg-[#B5F028] text-[#171B1E] px-3.5 py-2 rounded-lg transition-colors cursor-pointer border border-[#AEEB20]/60 shadow-xs">
                     <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1.5 text-[#171B1E]"></i>
-                    1:1 방문 예약
+                    1:1 방문 예약 / 구매 상담
                 </button>
             </div>
         </div>
     </header>
-    <!-- 데모/디자인 검수 모드 고정 안내 배너 (DIRECTIVE 064: 운영 실차와 UI 검수 데모 분리) -->
-    <div id="demoModeBanner" class="hidden bg-[#171B1E] text-white py-2 px-4 text-xs border-b border-[#C8FF3D]/40">
-        <div class="max-w-[1280px] mx-auto flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-                <span class="bg-[#C8FF3D] text-[#171B1E] text-[10px] font-bold px-1.5 py-0.5 rounded">UI 검수 모드</span>
-                <span class="text-slate-300">현재 화면은 엔카·K Car 기준 UI/UX 레이아웃 검수용 시연 모드입니다. (실제 판매 차량이 아님)</span>
-            </div>
-            <button onclick="setMode('prod')" class="text-[11px] text-[#C8FF3D] hover:underline cursor-pointer">
-                실차 운영 모드로 전환 (0대) ➔
-            </button>
-        </div>
-    </div>
+
 
     <!-- 2. 메인 컨텐츠 영역 -->
     <main class="flex-1 max-w-[1280px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -115,22 +122,15 @@
         <!-- [VIEW 1: 메인 쇼룸 뷰] (/chamart) -->
         <section id="view-home" class="space-y-8">
             
-            <!-- 단정한 검색 및 쇼룸 헤더 (DIRECTIVE 064: PC 1440x900 화면 위계 압축 최적화) -->
-            <div class="bg-white rounded-xl border border-[#E2E6EA] p-4 sm:p-5 space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                        <h1 class="text-xl sm:text-2xl font-bold text-[#171B1E] tracking-tight flex items-center gap-2">
-                            <span>장한평 전시장 실차 매물 검색</span>
-                            <span class="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">정찰제</span>
-                        </h1>
-                        <p class="text-xs text-slate-500 mt-0.5">
-                            허위 매물 없이 실제 전시장에 입고된 실차 매물만을 정직하게 공개합니다.
-                        </p>
-                    </div>
-                    <div class="hidden sm:inline-flex items-center space-x-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 shrink-0">
-                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
-                        <span>소유권·성능 100% 대조</span>
-                    </div>
+            <!-- 단정한 차량 검색 영역 (DIRECTIVE 065: 자기홍보 배지 제거 및 상용 검색 정돈) -->
+            <div class="bg-white rounded-lg border border-[#E2E6EA] p-4 sm:p-5 space-y-3.5 shadow-2xs">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-[#171B1E] tracking-tight">
+                        중고차 검색
+                    </h1>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        원하시는 제조사, 모델명, 가격대를 선택하여 차량을 검색해 보세요.
+                    </p>
                 </div>
 
                 <!-- 검색창 및 퀵 필터 -->
@@ -1049,49 +1049,10 @@
             }
         }
 
-        // DIRECTIVE 064: 모드 관리 (운영 prod vs 데모 demo)
-        window.currentShowroomMode = new URLSearchParams(window.location.search).get('mode') === 'demo' ? 'demo' : 'prod';
-
-        function updateModeSwitcherUi() {
-            const isDemo = window.currentShowroomMode === 'demo';
-            const dot = document.getElementById('modeStatusDot');
-            const txt = document.getElementById('modeStatusText');
-            const banner = document.getElementById('demoModeBanner');
-
-            if (dot) {
-                dot.className = isDemo ? 'w-2 h-2 rounded-full bg-[#C8FF3D] ring-2 ring-[#C8FF3D]/40' : 'w-2 h-2 rounded-full bg-emerald-500';
-            }
-            if (txt) {
-                txt.textContent = isDemo ? 'UI 검수 모드 (3대)' : '실차 운영 모드 (0대)';
-            }
-            if (banner) {
-                banner.classList.toggle('hidden', !isDemo);
-            }
-        }
-
-        function setMode(mode) {
-            window.currentShowroomMode = mode;
-            updateModeSwitcherUi();
-            const url = new URL(window.location.href);
-            if (mode === 'demo') {
-                url.searchParams.set('mode', 'demo');
-            } else {
-                url.searchParams.delete('mode');
-            }
-            window.history.replaceState({}, '', url.toString());
-            loadPublicVehicles();
-        }
-
-        function toggleShowroomMode() {
-            const nextMode = window.currentShowroomMode === 'demo' ? 'prod' : 'demo';
-            setMode(nextMode);
-        }
-
-        // 고객용 공개 실차 목록 로드 및 필터 렌더링 (DIRECTIVE 064: mode 파라미터 전송)
+        // 고객용 공개 실차 목록 로드 및 필터 렌더링 (DIRECTIVE 065: 운영 전용 API 호출)
         async function loadPublicVehicles() {
             try {
-                updateModeSwitcherUi();
-                const res = await fetch(`/api/chamart/vehicles?mode=${window.currentShowroomMode}`);
+                const res = await fetch('/api/chamart/vehicles');
                 if (!res.ok) throw new Error('매물 목록 조회 실패');
                 publicVehicles = await res.json();
 
@@ -1175,43 +1136,26 @@
             if (badge) badge.textContent = `${filtered.length}대`;
 
             if (filtered.length === 0) {
-                if (window.currentShowroomMode === 'prod') {
-                    // DIRECTIVE 064: 운영 실차 검증 등록 대기 정직한 Zero-Inventory 안내
-                    grid.innerHTML = `
-                        <div class="col-span-full py-14 px-6 text-center bg-white rounded-xl border border-[#E2E6EA] space-y-4 shadow-2xs">
-                            <div class="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
-                                <span>정직한 100% 실차 검증 원칙</span>
-                            </div>
-                            <h3 class="text-xl sm:text-2xl font-bold text-[#171B1E] tracking-tight">
-                                현재 실차 검증 기준을 통과한 매물을 등록 준비 중입니다.
-                            </h3>
-                            <p class="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
-                                차마트는 실차 현장 촬영본, 원부 대조, 성능점검 실사 기록이 100% 완료된 매물만 정직하게 등록합니다.<br class="hidden sm:inline">
-                                가짜 사진이나 합성 카드를 실차로 둔갑시켜 등록하지 않습니다.
-                            </p>
-                            <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
-                                <button onclick="scrollToConsultation()" class="px-5 py-2.5 bg-[#171B1E] hover:bg-black text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs">
-                                    1:1 원하는 차량 맞춤 소싱 의뢰
-                                </button>
-                                <button onclick="setMode('demo')" class="px-5 py-2.5 bg-[#C8FF3D] hover:bg-[#B7ED2E] text-[#171B1E] text-xs font-bold rounded-lg transition-colors cursor-pointer border border-[#AEEB20]/60 shadow-xs">
-                                    UI 디자인 및 쇼핑 기능 체험하기 (데모 모드) ➔
-                                </button>
-                            </div>
+                // DIRECTIVE 065: 상용 중고차 쇼핑몰 권장 표준 빈 상태 (기술 용어, 자기홍보 제거)
+                grid.innerHTML = `
+                    <div class="col-span-full py-16 px-6 text-center bg-white rounded-lg border border-[#E2E6EA] space-y-3.5 shadow-2xs">
+                        <div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-1">
+                            <i data-lucide="search-x" class="w-6 h-6"></i>
                         </div>
-                    `;
-                } else {
-                    grid.innerHTML = `
-                        <div class="col-span-full py-16 text-center text-slate-500 bg-white rounded-xl border border-[#E5E8EC]">
-                            <i data-lucide="car" class="w-10 h-10 mx-auto text-slate-300 mb-2"></i>
-                            <h4 class="font-bold text-slate-700 text-sm">조건에 맞는 실차 매물이 없습니다.</h4>
-                            <p class="text-xs text-slate-400 mt-1">선택하신 조건의 실차 매물이 현재 준비 중이거나 판매 완료되었습니다.</p>
-                            <button onclick="resetMobileFilters()" class="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg cursor-pointer">
-                                검색 조건 초기화
+                        <h3 class="text-lg sm:text-xl font-bold text-[#171B1E] tracking-tight">
+                            현재 등록된 판매 차량이 없습니다.
+                        </h3>
+                        <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+                            새로운 차량 입고 및 검증이 완료되는 대로 순차적으로 등록될 예정입니다.<br class="hidden sm:inline">
+                            원하시는 차량이 있다면 1:1 맞춤 상담을 통해 문의하실 수 있습니다.
+                        </p>
+                        <div class="pt-2">
+                            <button onclick="scrollToConsultation()" class="px-5 py-2.5 bg-[#171B1E] hover:bg-black text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer shadow-xs">
+                                1:1 차량 맞춤 상담 신청
                             </button>
                         </div>
-                    `;
-                }
+                    </div>
+                `;
                 if (window.lucide) window.lucide.createIcons();
                 return;
             }
@@ -1323,8 +1267,7 @@
             window.scrollTo(0, 0);
 
             try {
-                const modeParam = window.currentShowroomMode || 'prod';
-                const res = await fetch(`/api/chamart/vehicles/${vid}?mode=${modeParam}`);
+                const res = await fetch(`/api/chamart/vehicles/${vid}`);
                 if (!res.ok) {
                     if (res.status === 404) {
                         alert('존재하지 않거나 비공개 격리된 매물입니다.');

@@ -1367,23 +1367,45 @@ def transition_publishing_status(
 
 @app.get("/api/chamart/vehicles")
 def get_chamart_public_vehicles(
-    mode: str = "prod",
     db: Session = Depends(get_db)
 ) -> list[dict[str, Any]]:
-    """차마트 일반 고객 공개 차량 목록 (운영 prod: 100% 실차 검증 완료 매물만, demo/staging: UI 검수용 매물)."""
-    return PlatformService.get_chamart_public_vehicles(db, mode=mode)
+    """차마트 일반 고객 공개 차량 목록 (운영: 100% 실차 검증 원장 통과 매물만 강제, 데모 파라미터 불허)."""
+    return PlatformService.get_chamart_public_vehicles(db, mode="prod")
 
 
 @app.get("/api/chamart/vehicles/{vehicle_id}")
 def get_chamart_public_vehicle_detail(
     vehicle_id: str,
-    mode: str = "prod",
     db: Session = Depends(get_db)
 ) -> dict[str, Any]:
-    """차마트 일반 고객 공개 차량 상세 조회 (운영 prod vs 데모 demo 검수)."""
-    detail = PlatformService.get_chamart_public_vehicle_detail(db, vehicle_id, mode=mode)
+    """차마트 일반 고객 공개 차량 상세 조회 (운영: 미승인 매물 404 차단)."""
+    detail = PlatformService.get_chamart_public_vehicle_detail(db, vehicle_id, mode="prod")
     if not detail:
         raise HTTPException(status_code=404, detail="공개된 차량 정보를 찾을 수 없습니다.")
+    return detail
+
+
+# -----------------------------------------------------------------------------
+# DIRECTIVE 065: PART 1-B. 디자인 검수 및 스테이징 전용 격리 API (/api/staging/...)
+# -----------------------------------------------------------------------------
+
+@app.get("/api/staging/chamart/vehicles")
+def get_staging_chamart_vehicles(
+    db: Session = Depends(get_db)
+) -> list[dict[str, Any]]:
+    """디자인 및 UI/UX 레이아웃 검수 전용 시연 매물 API (일반 고객 공개 API와 물리적 분리)."""
+    return PlatformService.get_chamart_public_vehicles(db, mode="demo")
+
+
+@app.get("/api/staging/chamart/vehicles/{vehicle_id}")
+def get_staging_chamart_vehicle_detail(
+    vehicle_id: str,
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """디자인 및 UI/UX 레이아웃 검수 전용 시연 상세 API."""
+    detail = PlatformService.get_chamart_public_vehicle_detail(db, vehicle_id, mode="demo")
+    if not detail:
+        raise HTTPException(status_code=404, detail="시연용 매물 정보를 찾을 수 없습니다.")
     return detail
 
 
@@ -1644,3 +1666,16 @@ def serve_chamart(vehicle_id: Optional[str] = None) -> HTMLResponse:
         content = UI_CHAMART_FILE.read_text(encoding="utf-8")
         return HTMLResponse(content=content)
     return HTMLResponse("<h1>Chamart UI File Not Found</h1>", status_code=404)
+
+
+UI_CHAMART_STAGING_FILE = Path(__file__).parent / "ui" / "chamart_staging.html"
+
+@app.get("/staging/chamart", response_class=HTMLResponse)
+@app.get("/staging/cars", response_class=HTMLResponse)
+@app.get("/staging/cars/{vehicle_id}", response_class=HTMLResponse)
+def serve_chamart_staging(vehicle_id: Optional[str] = None) -> HTMLResponse:
+    """디자인 및 UI/UX 검수 전용 스테이징 쇼룸 (DIRECTIVE 065: 운영 쇼룸과 물리적 분리)."""
+    if UI_CHAMART_STAGING_FILE.exists():
+        content = UI_CHAMART_STAGING_FILE.read_text(encoding="utf-8")
+        return HTMLResponse(content=content)
+    return HTMLResponse("<h1>Staging Chamart UI File Not Found</h1>", status_code=404)

@@ -915,6 +915,23 @@ def migrate_db_schema() -> None:
             )
         """)
 
+        # 12. vehicle_photos 테이블 마이그레이션 (DIRECTIVE 064/065 실차 자산 검증 원장 메타데이터)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vehicle_photos'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(vehicle_photos)")
+            vp_cols = {row[1] for row in cursor.fetchall()}
+            vp_columns = [
+                ("verification_status", "VARCHAR(30) DEFAULT 'UNVERIFIED'"),
+                ("photo_source", "VARCHAR(50) DEFAULT 'UNKNOWN'"),
+                ("original_file_hash", "VARCHAR(64)"),
+                ("usage_rights_status", "VARCHAR(30) DEFAULT 'PENDING'"),
+                ("verified_by", "VARCHAR(50)"),
+                ("verified_at", "DATETIME"),
+            ]
+            for col_name, col_type in vp_columns:
+                if col_name not in vp_cols:
+                    cursor.execute(f"ALTER TABLE vehicle_photos ADD COLUMN {col_name} {col_type}")
+
         conn.commit()
     finally:
         conn.close()
