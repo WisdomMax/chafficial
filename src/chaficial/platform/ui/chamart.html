@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>차마트 - 장한평 실차 인증 중고차 공식 쇼룸</title>
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-touch-icon.png">
     <!-- Pretendard Webfont -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <!-- Tailwind CSS -->
@@ -29,18 +33,10 @@
     <!-- 1. 상용급 차마트 전문 헤더 (PC 68px, 모바일 56px - White 80% / Deep Charcoal 15% / Electric Lime 5%) -->
     <header class="bg-white border-b border-[#E2E6EA] sticky top-0 z-40">
         <div class="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 sm:h-[68px] flex items-center justify-between">
-            <!-- 좌측: 차마트 'ㅊ' 기하학 전진 심벌 로고 (모바일 꺾임 방지 whitespace-nowrap) -->
+            <!-- 좌측: 차마트 공식 그림 로고 (고해상도 투명 PNG 및 모바일 꺾임 방지) -->
             <div class="flex items-center space-x-3 sm:space-x-4 shrink-0">
-                <a href="/chamart" onclick="navigateHome(event)" class="flex items-center space-x-2.5 text-[#171B1E] font-bold text-lg sm:text-2xl tracking-tight shrink-0 whitespace-nowrap group">
-                    <!-- 한글 'ㅊ' 조형과 도로 전진감을 결합한 독자적 모빌리티 벡터 심벌 -->
-                    <svg class="w-7 h-7 sm:w-8 sm:h-8 shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="32" height="32" rx="7" fill="#171B1E"/>
-                        <path d="M16 6.5L19 9.5L16 12.5L13 9.5Z" fill="#C8FF3D"/>
-                        <rect x="8" y="14" width="16" height="2.5" rx="1.25" fill="#FFFFFF"/>
-                        <path d="M14 17L8.5 25.5" stroke="#C8FF3D" stroke-width="2.5" stroke-linecap="round"/>
-                        <path d="M18 17L23.5 25.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
-                    </svg>
-                    <span class="font-bold text-lg sm:text-[22px] tracking-tight shrink-0 text-[#171B1E] group-hover:text-black transition-colors">차마트</span>
+                <a href="/chamart" onclick="navigateHome(event)" class="flex items-center space-x-2 text-[#171B1E] shrink-0 whitespace-nowrap group">
+                    <img src="/static/img/chamart_logo_lime_charcoal_transparent.png" alt="차마트" class="h-8 sm:h-9 w-auto object-contain shrink-0" />
                 </a>
                 <span class="hidden lg:inline-block text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded border border-slate-200 shrink-0">
                     장한평 실차 직영 쇼룸
@@ -225,14 +221,7 @@
         <div class="max-w-[1280px] mx-auto px-4 sm:px-6 space-y-6">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
                 <div class="flex items-center space-x-2.5 shrink-0">
-                    <svg class="w-6 h-6 shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="32" height="32" rx="6" fill="#171B1E"/>
-                        <path d="M16 6.5L19 9.5L16 12.5L13 9.5Z" fill="#C8FF3D"/>
-                        <rect x="8" y="14" width="16" height="2.5" rx="1.25" fill="#FFFFFF"/>
-                        <path d="M14 17L8.5 25.5" stroke="#C8FF3D" stroke-width="2.5" stroke-linecap="round"/>
-                        <path d="M18 17L23.5 25.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
-                    </svg>
-                    <span class="font-bold text-base text-[#171B1E]">차마트 (CHAMART)</span>
+                    <img src="/static/img/chamart_logo_lime_charcoal_transparent.png" alt="차마트" class="h-7 w-auto object-contain shrink-0" />
                 </div>
                 <div class="flex flex-wrap gap-5 text-xs text-slate-600">
                     <button onclick="openPolicyModal('terms')" class="hover:text-slate-900 transition-colors cursor-pointer">이용약관</button>

@@ -258,45 +258,43 @@ class VehicleDetailRenderer {
               `}
             </div>
 
-            <!-- 2. 핵심 기본 제원표 (K Car 스타일 정돈된 표) -->
-            <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 space-y-4">
+            <!-- 2. 핵심 기본 제원표 (K Car 스타일 정밀 표 규격) -->
+            <div class="bg-white rounded-lg border border-[#E7E9E5] p-5 space-y-4">
               <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-[#171C24]">차량 기본 제원 상세</h3>
-                <span class="text-xs text-slate-400">자동차등록원부 및 성능점검부 기준</span>
+                <h3 class="text-lg font-bold text-[#171B1E]">차량 기본 제원 상세</h3>
+                <span class="text-xs text-[#646B6B]">자동차등록원부 및 성능점검부 기준 공시</span>
               </div>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4 text-xs sm:text-sm">
-                <div class="border-b sm:border-b-0 pb-2 sm:pb-0">
-                  <span class="text-slate-400 text-xs block mb-0.5">차량번호</span>
-                  <span class="font-semibold text-slate-800">${escapeHtml(d.plate_number || '미기재')}</span>
-                </div>
-                <div class="border-b sm:border-b-0 pb-2 sm:pb-0">
-                  <span class="text-slate-400 text-xs block mb-0.5">차대번호 (VIN)</span>
-                  <span class="font-mono text-slate-800 text-xs truncate block" title="${escapeHtml(d.vin || '미확인')}">${escapeHtml(d.vin || '미확인')}</span>
-                </div>
-                <div class="border-b sm:border-b-0 pb-2 sm:pb-0">
-                  <span class="text-slate-400 text-xs block mb-0.5">연식 / 최초등록일</span>
-                  <span class="font-semibold text-slate-800">${d.year}년 / ${escapeHtml(d.first_registration_date || '미확인')}</span>
-                </div>
-                <div class="border-b sm:border-b-0 pb-2 sm:pb-0">
-                  <span class="text-slate-400 text-xs block mb-0.5">주행거리</span>
-                  <span class="font-semibold text-slate-800">${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + ' km' : '미확인'}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 text-xs block mb-0.5">배기량</span>
-                  <span class="font-semibold text-slate-800">${d.displacement_cc ? Number(d.displacement_cc).toLocaleString('ko-KR') + ' cc' : '미확인'}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 text-xs block mb-0.5">변속기 / 구동방식</span>
-                  <span class="font-semibold text-slate-800">${escapeHtml(d.transmission || '오토')} / ${escapeHtml(d.drive_type || '2WD')}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 text-xs block mb-0.5">사용연료 / 색상</span>
-                  <span class="font-semibold text-slate-800">${escapeHtml(d.fuel_type || '가솔린')} / ${escapeHtml(d.color || '미확인')}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 text-xs block mb-0.5">차체형태</span>
-                  <span class="font-semibold text-slate-800">${escapeHtml(d.body_type || '세단')}</span>
-                </div>
+              
+              <!-- K Car 정밀 표 구조 (단일 표준 반응형 4열 테이블) -->
+              <div class="border border-[#E7E9E5] rounded-lg overflow-hidden">
+                <table id="vdrSpecTable" class="w-full text-xs sm:text-sm border-collapse">
+                  <tbody>
+                    <tr class="border-b border-[#E7E9E5]">
+                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">차량번호</th>
+                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">${escapeHtml(d.plate_number || '미기재')}</td>
+                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">차대번호 (VIN)</th>
+                      <td class="bg-white text-[#171B1E] font-mono text-xs px-3.5 py-2.5 w-1/4 truncate" title="${escapeHtml(d.vin || '미확인')}">${escapeHtml(d.vin || '미확인')}</td>
+                    </tr>
+                    <tr class="border-b border-[#E7E9E5]">
+                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">연식 / 최초등록</th>
+                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">${d.year}년식 / ${escapeHtml(d.first_registration_date || '미확인')}</td>
+                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">주행거리</th>
+                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4">${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + ' km' : '미확인'}</td>
+                    </tr>
+                    <tr class="border-b border-[#E7E9E5]">
+                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">배기량</th>
+                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">${d.displacement_cc ? Number(d.displacement_cc).toLocaleString('ko-KR') + ' cc' : '미확인'}</td>
+                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">변속기 / 구동방식</th>
+                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4">${escapeHtml(d.transmission || '오토')} / ${escapeHtml(d.drive_type || '2WD')}</td>
+                    </tr>
+                    <tr>
+                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">사용연료 / 색상</th>
+                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">${escapeHtml(d.fuel_type || '가솔린')} / ${escapeHtml(d.color || '미확인')}</td>
+                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">차체형태 / 인승</th>
+                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4">${escapeHtml(d.body_type || '세단')} ${d.seating_capacity ? `(${d.seating_capacity}인승)` : ''}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
