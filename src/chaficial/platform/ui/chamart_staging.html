@@ -126,8 +126,8 @@
         </div>
     </aside>
 
-    <!-- 1. 상용급 차마트 전문 헤더 (장한평 직영점 공식 뱃지 통합) -->
-    <header class="bg-white border-b border-[#E5E8EC] sticky top-0 z-40">
+    <!-- 1. 상용급 차마트 전문 헤더 (고정 메뉴바: 스크롤 시에도 최상단에 항상 고정) -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-[#E5E8EC] sticky top-0 z-50 transition-all duration-200">
         <div class="max-w-[1320px] mx-auto px-4 sm:px-6 h-[68px] flex items-center justify-between">
             <!-- 좌측: 차마트 공식 로고 + 장한평 직영점 정밀 정렬 타이포 -->
             <div class="flex items-center space-x-6 sm:space-x-8 shrink-0">
@@ -166,31 +166,93 @@
         </div>
     </header>
 
-    <!-- 1.5 공식 브랜드 히어로 배너 (와디즈 크라우드펀딩 스타일: 강렬한 시선 집중 훅 + 장한평 직영 독점) -->
+    <!-- 1.5 공식 브랜드 히어로 배너 (5장 3초 자동 슬라이드 & 5번->1번 무한 순환 캐러셀) -->
     <section class="bg-white border-b border-[#E5E8EC]">
         <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-3">
-            <div class="relative w-full rounded-2xl overflow-hidden bg-[#171B1E] border border-slate-200/80 shadow-xs flex items-center min-h-[155px] sm:min-h-[185px] lg:min-h-[205px]">
-                <!-- 배경 실차 도열 파노라마 이미지 (아반떼·레이·모닝 & 서울 전경) -->
-                <img src="/static/img/chamart_hero_banner.webp?v=20261029_0455" onerror="this.src='/static/img/chamart_hero_banner.png?v=20261029_0455'" alt="차마트 장한평 실차 전시장" class="absolute inset-0 w-full h-full object-cover object-right pointer-events-none select-none" />
-                
-                <!-- 왼쪽 다크 차콜 그라데이션 오버레이 (텍스트 시인성 완벽 보장) -->
-                <div class="absolute inset-0 bg-gradient-to-r from-[#171B1E] via-[#171B1E]/95 sm:via-[#171B1E]/85 to-transparent w-full sm:w-[70%] pointer-events-none"></div>
-
-                <!-- 배너 헤드카피 (와디즈 스타일 도발 + 장한평 직영 1등 실매물) -->
-                <div class="relative z-10 p-4 sm:p-6 lg:p-7 max-w-[640px] text-white">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-[#C8FF3D]/40 text-[11px] sm:text-xs font-black text-[#C8FF3D] mb-2 shadow-2xs">
-                        <span class="w-2 h-2 rounded-full bg-[#C8FF3D] animate-ping"></span>
-                        🔥 45년 장한평 역사상 최초 · 온라인 직영 실매물 독점 오픈
+            <div id="chamartHeroCarousel" class="group relative w-full rounded-2xl overflow-hidden bg-white border border-slate-200/90 shadow-xs select-none aspect-[16/7] sm:aspect-[2.1/1] md:aspect-[2.35/1] max-h-[340px]">
+                <!-- 슬라이드 트랙 (루프를 위해 5번 복제 + 1~5번 + 1번 복제 총 7개 구성) -->
+                <div id="heroTrack" class="flex h-full will-change-transform" style="transform: translateX(-100%);">
+                    <!-- Clone of Slide 5 (자연스러운 역방향 루프용) -->
+                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                        <picture class="w-full h-full flex items-center justify-center">
+                            <source srcset="/static/img/chamart_slide_05.webp" type="image/webp">
+                            <img src="/static/img/chamart_slide_05.jpg" alt="차마트 장한평 5번 배너" class="w-full h-full object-contain object-center" />
+                        </picture>
                     </div>
-                    <h2 class="text-xl sm:text-2xl lg:text-[27px] font-black tracking-tight text-white leading-tight">
-                        <span class="text-white text-base sm:text-xl font-extrabold block mb-1">“아직도 딜러 말만 믿고 중고차 사시나요?”</span>
-                        <span class="text-[#C8FF3D]">대한민국 1등 성지, 장한평이 직접 깝니다!</span>
-                    </h2>
-                    <p class="text-slate-200 text-xs sm:text-xs mt-2.5 font-medium hidden sm:flex items-center gap-2 flex-wrap">
-                        <span class="bg-white/15 px-2 py-0.5 rounded text-[11px] font-bold text-white">📍 장한평 매매단지 직영</span>
-                        <span class="bg-white/15 px-2 py-0.5 rounded text-[11px] font-bold text-white">헛걸음 시 100만원 현장 보상</span>
-                        <span class="bg-[#C8FF3D] px-2 py-0.5 rounded text-[11px] font-black text-[#171B1E]">허위매물 0% 실차보증</span>
-                    </p>
+
+                    <!-- Slide 1: 차 한 대 보려고, 수원·인천까지 가시나요? -->
+                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                        <picture class="w-full h-full flex items-center justify-center">
+                            <source srcset="/static/img/chamart_slide_01.webp" type="image/webp">
+                            <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-contain object-center" />
+                        </picture>
+                    </div>
+
+                    <!-- Slide 2: 잠깐! 서울은 다 둘러보셨나요? -->
+                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                        <picture class="w-full h-full flex items-center justify-center">
+                            <source srcset="/static/img/chamart_slide_02.webp" type="image/webp">
+                            <img src="/static/img/chamart_slide_02.png" alt="잠깐! 서울은 다 둘러보셨나요?" class="w-full h-full object-contain object-center" />
+                        </picture>
+                    </div>
+
+                    <!-- Slide 3: 중고차의 중심, 서울 장한평. -->
+                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                        <picture class="w-full h-full flex items-center justify-center">
+                            <source srcset="/static/img/chamart_slide_03.webp" type="image/webp">
+                            <img src="/static/img/chamart_slide_03.png" alt="중고차의 중심, 서울 장한평" class="w-full h-full object-contain object-center" />
+                        </picture>
+                    </div>
+
+                    <!-- Slide 4: 차를 보는 기준은, 25년 경험에서 나옵니다. -->
+                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                        <picture class="w-full h-full flex items-center justify-center">
+                            <source srcset="/static/img/chamart_slide_04.webp" type="image/webp">
+                            <img src="/static/img/chamart_slide_04.jpg" alt="차를 보는 기준은, 25년 경험에서 나옵니다" class="w-full h-full object-contain object-center" />
+                        </picture>
+                    </div>
+
+                    <!-- Slide 5: 멀리 가지 마세요. 서울 장한평에서 만나겠습니다. -->
+                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                        <picture class="w-full h-full flex items-center justify-center">
+                            <source srcset="/static/img/chamart_slide_05.webp" type="image/webp">
+                            <img src="/static/img/chamart_slide_05.jpg" alt="멀리 가지 마세요. 서울 장한평에서 만나겠습니다" class="w-full h-full object-contain object-center" />
+                        </picture>
+                    </div>
+
+                    <!-- Clone of Slide 1 (5번에서 1번으로 끊김 없는 순방향 무한 루프용) -->
+                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                        <picture class="w-full h-full flex items-center justify-center">
+                            <source srcset="/static/img/chamart_slide_01.webp" type="image/webp">
+                            <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-contain object-center" />
+                        </picture>
+                    </div>
+                </div>
+
+                <!-- 이전 / 다음 화살표 버튼 -->
+                <button id="heroPrevBtn" type="button" aria-label="이전 배너" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/75 text-white backdrop-blur-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 cursor-pointer shadow-md">
+                    <i data-lucide="chevron-left" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                </button>
+                <button id="heroNextBtn" type="button" aria-label="다음 배너" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/75 text-white backdrop-blur-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 cursor-pointer shadow-md">
+                    <i data-lucide="chevron-right" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                </button>
+
+                <!-- 우측 하단 카운터 배지 및 재생/일시정지 토글 -->
+                <div class="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] sm:text-xs font-medium shadow-sm">
+                    <span id="heroSlideCounter" class="font-bold tracking-wider font-mono">1 / 5</span>
+                    <span class="text-white/40 text-[10px]">|</span>
+                    <button id="heroAutoToggleBtn" type="button" aria-label="자동 재생 일시정지" class="hover:text-[#C8FF3D] transition-colors cursor-pointer flex items-center">
+                        <i id="heroPlayPauseIcon" data-lucide="pause" class="w-3 h-3"></i>
+                    </button>
+                </div>
+
+                <!-- 중앙 하단 도트(dot) 인디케이터 바 -->
+                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-xs shadow-xs">
+                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-[#C8FF3D] scale-125" data-idx="1" aria-label="슬라이드 1"></button>
+                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="2" aria-label="슬라이드 2"></button>
+                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="3" aria-label="슬라이드 3"></button>
+                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="4" aria-label="슬라이드 4"></button>
+                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="5" aria-label="슬라이드 5"></button>
                 </div>
             </div>
         </div>
@@ -2031,6 +2093,168 @@
                 closeMobileFilterBottomSheet();
             }
         });
+
+        // 1.5 히어로 배너 5장 3초 무한 루프 캐러셀 컨트롤러 (5번 -> 1번 자연스러운 무한 순환)
+        (function initChamartCarousel() {
+            function setupCarousel() {
+                const track = document.getElementById('heroTrack');
+                const container = document.getElementById('chamartHeroCarousel');
+                const prevBtn = document.getElementById('heroPrevBtn');
+                const nextBtn = document.getElementById('heroNextBtn');
+                const counter = document.getElementById('heroSlideCounter');
+                const dots = document.querySelectorAll('.hero-dot');
+                const toggleBtn = document.getElementById('heroAutoToggleBtn');
+                const toggleIcon = document.getElementById('heroPlayPauseIcon');
+                if (!track || !container) return;
+
+                const totalReal = 5;
+                // 트랙 구성: [Clone 5 (idx 0), Slide 1 (idx 1), Slide 2 (idx 2), Slide 3 (idx 3), Slide 4 (idx 4), Slide 5 (idx 5), Clone 1 (idx 6)]
+                let currentIndex = 1;
+                let isTransitioning = false;
+                let autoTimer = null;
+                let isPlaying = true;
+                const intervalMs = 3000;
+
+                function updateUI(idx) {
+                    const displayIdx = idx === 0 ? 5 : (idx === 6 ? 1 : idx);
+                    if (counter) counter.textContent = `${displayIdx} / ${totalReal}`;
+                    dots.forEach((dot, i) => {
+                        if (i + 1 === displayIdx) {
+                            dot.classList.remove('bg-white/50');
+                            dot.classList.add('bg-[#C8FF3D]', 'scale-125');
+                        } else {
+                            dot.classList.remove('bg-[#C8FF3D]', 'scale-125');
+                            dot.classList.add('bg-white/50');
+                        }
+                    });
+                }
+
+                function moveTo(idx, withTransition = true) {
+                    if (withTransition) {
+                        isTransitioning = true;
+                        track.style.transition = 'transform 600ms cubic-bezier(0.25, 1, 0.5, 1)';
+                    } else {
+                        track.style.transition = 'none';
+                    }
+                    track.style.transform = `translateX(-${idx * 100}%)`;
+                    currentIndex = idx;
+                    updateUI(idx);
+                }
+
+                function nextSlide() {
+                    if (isTransitioning) return;
+                    moveTo(currentIndex + 1, true);
+                }
+
+                function prevSlide() {
+                    if (isTransitioning) return;
+                    moveTo(currentIndex - 1, true);
+                }
+
+                track.addEventListener('transitionend', () => {
+                    isTransitioning = false;
+                    // 5번 -> 1번 Clone(idx 6) 도달 직후, 깜빡임 없이 진짜 1번(idx 1)으로 순간 이동
+                    if (currentIndex === 6) {
+                        moveTo(1, false);
+                    } else if (currentIndex === 0) {
+                        // 1번 -> 5번 Clone(idx 0) 도달 직후, 진짜 5번(idx 5)으로 순간 이동
+                        moveTo(5, false);
+                    }
+                });
+
+                function startTimer() {
+                    stopTimer();
+                    if (isPlaying) {
+                        autoTimer = setInterval(nextSlide, intervalMs);
+                    }
+                }
+
+                function stopTimer() {
+                    if (autoTimer) {
+                        clearInterval(autoTimer);
+                        autoTimer = null;
+                    }
+                }
+
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        nextSlide();
+                        startTimer();
+                    });
+                }
+
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        prevSlide();
+                        startTimer();
+                    });
+                }
+
+                dots.forEach((dot) => {
+                    dot.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetIdx = parseInt(e.currentTarget.getAttribute('data-idx'), 10);
+                        if (isTransitioning || targetIdx === currentIndex) return;
+                        moveTo(targetIdx, true);
+                        startTimer();
+                    });
+                });
+
+                // 마우스 호버 시 일시 정지 (사용자가 배너 내용을 찬찬히 읽을 수 있도록 지원)
+                container.addEventListener('mouseenter', stopTimer);
+                container.addEventListener('mouseleave', () => {
+                    if (isPlaying) startTimer();
+                });
+
+                // 재생/일시정지 토글 버튼
+                if (toggleBtn) {
+                    toggleBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        isPlaying = !isPlaying;
+                        if (isPlaying) {
+                            startTimer();
+                            if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'pause');
+                        } else {
+                            stopTimer();
+                            if (toggleIcon) toggleIcon.setAttribute('data-lucide', 'play');
+                        }
+                        if (window.lucide) lucide.createIcons();
+                    });
+                }
+
+                // 모바일 터치 스와이프 제스처
+                let touchStartX = 0;
+                let touchEndX = 0;
+                container.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                    stopTimer();
+                }, { passive: true });
+
+                container.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    const diff = touchStartX - touchEndX;
+                    if (diff > 40) {
+                        nextSlide();
+                    } else if (diff < -40) {
+                        prevSlide();
+                    }
+                    if (isPlaying) startTimer();
+                }, { passive: true });
+
+                // 초기 위치 설정 (진짜 1번 슬라이드) 및 타이머 시작
+                moveTo(1, false);
+                startTimer();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupCarousel);
+            } else {
+                setupCarousel();
+            }
+        })();
     </script>
 </body>
 </html>
