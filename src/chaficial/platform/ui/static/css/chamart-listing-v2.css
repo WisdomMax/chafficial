@@ -1,0 +1,487 @@
+:root {
+  --cm-ink: #171b1e;
+  --cm-muted: #667085;
+  --cm-border: #e5e7eb;
+  --cm-surface: #f8f9fa;
+  --cm-accent: #c8ff3d;
+  --cm-accent-dark: #aee020;
+}
+
+/* 1. 레이아웃: PC 폭 최대 1320px, 좌측 238px + 간격 24px + minmax(0, 1fr) */
+.cm-listing-layout {
+  display: grid;
+  grid-template-columns: 238px minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+}
+
+/* 2. 좌측 필터 패널 */
+.cm-filter-panel {
+  align-self: start;
+  padding: 0 20px 0 0;
+  border-right: 1px solid var(--cm-border);
+}
+
+.cm-filter-panel__header {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--cm-border);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--cm-ink);
+}
+
+.cm-filter-panel__reset {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--cm-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.cm-filter-panel__reset:hover {
+  color: var(--cm-ink);
+  background: #f1f2f4;
+}
+
+/* 3. 우측 결과 영역 및 툴바 */
+.cm-listing-results {
+  min-width: 0;
+}
+
+.cm-listing-toolbar {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--cm-border);
+  margin-bottom: 8px;
+}
+
+.cm-listing-toolbar h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cm-ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cm-listing-toolbar h2 span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cm-ink);
+  background: var(--cm-accent);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.cm-listing-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cm-sort-select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--cm-border);
+  border-radius: 6px;
+  background: white;
+  font-size: 13px;
+  color: var(--cm-ink);
+  outline: none;
+  cursor: pointer;
+}
+
+.cm-view-switch {
+  display: flex;
+  border: 1px solid #d8dce1;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cm-view-switch button {
+  min-height: 36px;
+  padding: 0 14px;
+  background: white;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cm-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cm-view-switch button[aria-pressed="true"] {
+  background: var(--cm-ink);
+  color: white;
+}
+
+/* 4. 가로 리스트형 (기본 뷰: 높이 약 170~185px, 사진 245x147px) */
+.cm-vehicle-results.is-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cm-vehicle-row {
+  display: grid;
+  grid-template-columns: 245px minmax(0, 1fr) 165px;
+  gap: 20px;
+  align-items: center;
+  min-height: 178px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--cm-border);
+  background: white;
+  transition: background-color 0.15s;
+}
+
+.cm-vehicle-row:hover {
+  background: #fafbfc;
+}
+
+.cm-vehicle-row__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  background: #f1f2f4;
+  overflow: hidden;
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+}
+
+.cm-vehicle-row__photo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.cm-vehicle-row:hover .cm-vehicle-row__photo img {
+  transform: scale(1.02);
+}
+
+.cm-vehicle-row__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: var(--cm-ink);
+  color: var(--cm-accent);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: -0.02em;
+}
+
+.cm-vehicle-row__information {
+  min-width: 0;
+  align-self: center;
+}
+
+.cm-vehicle-row__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--cm-ink);
+  cursor: pointer;
+  word-break: keep-all;
+}
+
+.cm-vehicle-row__title:hover {
+  color: #000;
+  text-decoration: underline;
+}
+
+.cm-vehicle-row__specs {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cm-muted);
+}
+
+.cm-vehicle-row__extras {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--cm-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cm-tag-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.cm-tag-record {
+  display: inline-flex;
+  align-items: center;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.cm-vehicle-row__purchase {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  text-align: right;
+}
+
+.cm-vehicle-row__price {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--cm-ink);
+  white-space: nowrap;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.cm-vehicle-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cm-row-favorite {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid var(--cm-border);
+  background: white;
+  color: var(--cm-muted);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cm-row-favorite:hover {
+  color: #e11d48;
+  border-color: #fda4af;
+  background: #fff1f2;
+}
+
+.cm-row-favorite.is-active {
+  color: #e11d48;
+  border-color: #f43f5e;
+  background: #fff1f2;
+}
+
+.cm-row-compare-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cm-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.cm-row-compare {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--cm-ink);
+  cursor: pointer;
+}
+
+.cm-vehicle-row__detail {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 5px;
+  border: 1px solid var(--cm-ink);
+  background: var(--cm-ink);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cm-vehicle-row__detail:hover {
+  background: #000;
+  border-color: #000;
+}
+
+/* 5. 앨범형 그리드 (선택적 전환 뷰: 5:3 비율 대형 카드) */
+.cm-vehicle-results.is-album {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding: 16px 0;
+}
+
+.cm-album-card {
+  background: white;
+  border: 1px solid var(--cm-border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.cm-album-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.cm-album-card__photo {
+  aspect-ratio: 5 / 3;
+  width: 100%;
+  background: #f1f2f4;
+  position: relative;
+  overflow: hidden;
+}
+
+.cm-album-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.cm-album-card:hover .cm-album-card__photo img {
+  transform: scale(1.02);
+}
+
+.cm-album-card__body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.cm-album-card__specs {
+  font-size: 12px;
+  color: var(--cm-muted);
+  margin-bottom: 6px;
+}
+
+.cm-album-card__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cm-ink);
+  line-height: 1.35;
+  margin: 0 0 10px;
+  word-break: keep-all;
+}
+
+.cm-album-card__footer {
+  border-top: 1px solid #f1f2f4;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cm-album-card__price {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--cm-ink);
+  letter-spacing: -0.02em;
+}
+
+/* 6. 반응형 중단점 (1100px 이하 및 767px 이하) */
+@media (max-width: 1100px) {
+  .cm-vehicle-row {
+    grid-template-columns: 200px minmax(0, 1fr) 145px;
+    gap: 14px;
+    min-height: 155px;
+  }
+
+  .cm-vehicle-row__title {
+    font-size: 17px;
+  }
+
+  .cm-vehicle-row__price {
+    font-size: 22px;
+  }
+
+  .cm-vehicle-results.is-album {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .cm-listing-layout {
+    display: block;
+    padding: 0 12px 32px;
+  }
+
+  .cm-filter-panel {
+    display: none;
+  }
+
+  .cm-vehicle-row {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 0;
+    min-height: 0;
+  }
+
+  .cm-vehicle-row__title {
+    font-size: 15px;
+  }
+
+  .cm-vehicle-row__specs {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  .cm-vehicle-row__purchase {
+    grid-column: 2;
+    align-items: flex-start;
+    gap: 6px;
+    text-align: left;
+  }
+
+  .cm-vehicle-row__price {
+    font-size: 19px;
+  }
+
+  .cm-view-switch {
+    display: none;
+  }
+
+  .cm-vehicle-results.is-album {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}

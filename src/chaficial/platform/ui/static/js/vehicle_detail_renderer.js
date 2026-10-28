@@ -160,7 +160,7 @@ class VehicleDetailRenderer {
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
             <div class="flex flex-wrap items-center gap-3">
               <span class="inline-flex items-center px-2 py-0.5 rounded font-bold bg-[#171B1E] text-white">
-                <i data-lucide="shield" class="w-3.5 h-3.5 mr-1 text-[#C8FF3D]"></i>차피셜 관리자 제어판
+                <i data-lucide="shield" class="w-3.5 h-3.5 mr-1 text-teal-400"></i>차피셜 관리자 제어판
               </span>
               <span class="text-slate-300">소유: <strong class="text-white">${escapeHtml(d.ownership_type || 'CHAMART_OWNED')}</strong></span>
               <span class="text-slate-300">거점: <strong class="text-teal-300">${escapeHtml(d.branch_location || '장한평 본사')}</strong></span>
@@ -229,47 +229,41 @@ class VehicleDetailRenderer {
           </div>
         </div>
 
-        <!-- 핵심 타이틀 & 가격 헤더 (엔카급 26px / 32px 타이포그래피) -->
+        <!-- 핵심 타이틀 헤더 (DIRECTIVE 069: 상단 중복 가격 제거, 차량명 및 핵심 제원 집중) -->
         <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 sm:p-6">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="space-y-1.5">
+            <div class="space-y-2">
               <div class="flex flex-wrap items-center gap-2">
                 ${this.isRealPhotoVerified 
-                  ? '<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#171B1E] text-[#C8FF3D] border border-[#C8FF3D]/40 shadow-xs">실차인증</span>' 
+                  ? '<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#171B1E] text-[#C8FF3D] shadow-xs">실차인증</span>' 
                   : '<span class="px-2.5 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200">실차 준비 중 (예시 자료)</span>'}
                 <span class="text-xs text-slate-500 font-medium">
                   ${escapeHtml(d.plate_number || '차량번호 미기재')} · ${d.year ? d.year + '년식' : '연식 미확인'} · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '주행거리 미확인'} · ${escapeHtml(d.fuel_type || '연료 미확인')}
                 </span>
               </div>
-              <div class="flex items-center space-x-3">
-                <h1 class="text-2xl sm:text-[26px] font-bold text-[#171B1E] tracking-tight leading-snug">
-                  ${escapeHtml(displayTitle)} ${displayTrim ? `<span class="text-slate-500 font-normal text-xl sm:text-2xl">${escapeHtml(displayTrim)}</span>` : ''}
-                </h1>
-                <!-- 관심 차량 찜 버튼 (DIRECTIVE 062) -->
-                <button id="vdrBtnFavorite" onclick="window.__vdrInstance.toggleFavorite()" class="p-2 rounded-full border border-slate-200 hover:border-slate-300 bg-white transition-all active:scale-95 cursor-pointer shrink-0 shadow-2xs" aria-label="관심 차량 찜하기">
-                  <i data-lucide="heart" id="vdrIconFavorite" class="w-5 h-5 text-slate-400"></i>
-                </button>
-              </div>
+              <h1 class="text-2xl sm:text-[26px] font-bold text-[#171B1E] tracking-tight leading-snug">
+                ${escapeHtml(displayTitle)} ${displayTrim ? `<span class="text-slate-500 font-normal text-xl sm:text-2xl">${escapeHtml(displayTrim)}</span>` : ''}
+              </h1>
             </div>
 
-            <!-- 우측 판매가 (32px, 700 진한 차콜 #171C24) -->
-            <div class="text-left md:text-right shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-              <span class="text-xs text-slate-400 block mb-0.5">정찰 판매가</span>
-              <div class="text-2xl sm:text-[32px] font-bold text-[#171C24] tracking-tight">
-                ${targetPriceFormatted}
-              </div>
-              <span class="text-xs text-slate-500 font-normal">
-                이전등록세 약 ${acquisitionTaxEst ? acquisitionTaxEst.toLocaleString('ko-KR') + '만원' : '상담'} (별도)
+            <!-- 우측 보조 액션 (찜하기 및 거점 안내) -->
+            <div class="flex items-center space-x-3 shrink-0 pt-2 md:pt-0">
+              <span class="text-xs text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded font-medium">
+                ${escapeHtml(d.branch_location || '차마트 장한평 전시장')}
               </span>
+              <button id="vdrBtnFavorite" onclick="window.__vdrInstance.toggleFavorite()" class="p-2.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-white transition-all active:scale-95 cursor-pointer shadow-2xs flex items-center space-x-1.5" aria-label="관심 차량 찜하기">
+                <i data-lucide="heart" id="vdrIconFavorite" class="w-4 h-4 text-slate-400"></i>
+                <span class="text-xs font-semibold text-slate-700">찜</span>
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- 메인 2단 본문 그리드 (좌측 68% : 우측 32%) -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- 메인 2단 본문 그리드 (DIRECTIVE 069: 좌측 유연 영역 + 우측 350px 고정 구매 패널) -->
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_350px] gap-6 items-start">
           
-          <!-- [좌측 8컬럼: 5:3 대형 갤러리 + 기본제원표 + 사고진단 + 소모품 + 옵션 + 구매비용] -->
-          <div class="lg:col-span-8 space-y-6 w-full max-w-full">
+          <!-- [좌측: 5:3 대형 갤러리 + 기본제원표 + 사고진단 + 소모품 + 옵션 + 구매비용] -->
+          <div class="space-y-6 w-full min-w-0">
             
             <!-- 1. 5:3 비율 대형 실차 사진 갤러리 (엔카 5:3 공식 규격) -->
             <div class="bg-white rounded-lg border border-[#E5E8EC] overflow-hidden p-4 space-y-3">
@@ -307,7 +301,7 @@ class VehicleDetailRenderer {
               ${this.photos.length > 1 ? `
                 <div id="vdrThumbnailsContainer" class="flex gap-2 overflow-x-auto py-1 custom-scrollbar">
                   ${this.photos.map((p, idx) => `
-                    <button onclick="window.__vdrInstance.selectPhoto(${idx})" class="w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${idx === 0 ? 'border-[#171B1E] ring-1 ring-[#C8FF3D]' : 'border-[#E5E8EC] opacity-70 hover:opacity-100'}">
+                    <button onclick="window.__vdrInstance.selectPhoto(${idx})" class="w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${idx === 0 ? 'border-[#171B1E] ring-1 ring-[#171B1E]' : 'border-[#E5E8EC] opacity-70 hover:opacity-100'}">
                       <img src="${escapeHtml(p.url)}" alt="썸네일 ${idx+1}" class="w-full h-full object-cover" />
                     </button>
                   `).join('')}
@@ -380,7 +374,7 @@ class VehicleDetailRenderer {
                     ? `
                       <span class="text-slate-600 hidden sm:inline">문서번호: <strong class="font-mono text-slate-800">${escapeHtml(acc.inspection_document_id)}</strong></span>
                       <a href="${escapeHtml(acc.inspection_document_url)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center cursor-pointer transition-colors shadow-2xs">
-                        <i data-lucide="file-text" class="w-3.5 h-3.5 mr-1 text-[#C8FF3D]"></i>
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 mr-1 text-teal-400"></i>
                         검증된 성능기록부 원본
                       </a>
                     ` 
@@ -565,8 +559,8 @@ class VehicleDetailRenderer {
 
           </div>
 
-          <!-- [우측 4컬럼: Sticky 가격 및 구매 상담 패널] (데스크톱 32%) -->
-          <div class="lg:col-span-4 lg:sticky lg:top-20 space-y-5">
+          <!-- [우측: Sticky 가격 및 구매 상담 패널] (DIRECTIVE 069: 폭 350px 지정) -->
+          <div class="w-full lg:w-[350px] lg:sticky lg:top-20 space-y-5 shrink-0">
             
             <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 space-y-5">
               <div>
@@ -618,8 +612,8 @@ class VehicleDetailRenderer {
                   <button type="button" onclick="window.__vdrInstance.copyShowroomAddress()" class="text-[11px] text-slate-500 hover:text-slate-800 flex items-center cursor-pointer transition-colors">
                     <i data-lucide="copy" class="w-3 h-3 mr-1"></i><span id="vdrBtnCopyAddrText">주소 복사</span>
                   </button>
-                  <button type="button" id="vdrBtnOpenWayfinding" onclick="window.__vdrInstance.openWayfindingModal()" class="px-2.5 py-1 rounded bg-[#171B1E] hover:bg-black text-[#C8FF3D] font-bold text-xs flex items-center cursor-pointer transition-colors shadow-2xs">
-                    <i data-lucide="navigation" class="w-3.5 h-3.5 mr-1 text-[#C8FF3D]"></i>
+                  <button type="button" id="vdrBtnOpenWayfinding" onclick="window.__vdrInstance.openWayfindingModal()" class="px-2.5 py-1 rounded bg-[#101A2A] hover:bg-black text-white font-bold text-xs flex items-center cursor-pointer transition-colors shadow-2xs">
+                    <i data-lucide="navigation" class="w-3.5 h-3.5 mr-1 text-teal-400"></i>
                     길찾기
                   </button>
                 </div>
@@ -633,7 +627,7 @@ class VehicleDetailRenderer {
               </button>
               ` : ''}
 
-              <!-- 데스크톱 방문 예약 간편 폼 (일렉트릭 라임 CTA) -->
+              <!-- 데스크톱 방문 예약 간편 폼 (엔카 스타일 차마트 딥 틸 CTA) -->
               <form id="vdrConsultForm" onsubmit="window.__vdrInstance.handleSubmitConsult(event, false)" class="space-y-3 pt-1">
                 <div class="text-xs font-bold text-slate-800">방문 시승 및 실차 확인 신청</div>
                 <div>
@@ -654,8 +648,8 @@ class VehicleDetailRenderer {
                     [필수] 방문 상담 예약을 위한 개인정보 수집·이용에 동의합니다.
                   </label>
                 </div>
-                <button type="submit" id="vdrBtnSubmitConsult" class="w-full py-2.5 bg-[#C8FF3D] hover:bg-[#B5F028] text-[#171B1E] font-bold text-xs rounded transition-colors flex items-center justify-center cursor-pointer border border-[#AEEB20]/60 shadow-xs">
-                  <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1.5 text-[#171B1E]"></i>
+                <button type="submit" id="vdrBtnSubmitConsult" class="w-full py-2.5 bg-[#171B1E] hover:bg-[#000000] text-white font-bold text-xs rounded transition-colors flex items-center justify-center cursor-pointer shadow-xs">
+                  <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1.5 text-white"></i>
                   방문 예약 신청하기
                 </button>
               </form>
@@ -673,8 +667,8 @@ class VehicleDetailRenderer {
             <i data-lucide="phone" class="w-3.5 h-3.5 mr-1 text-[#171B1E]"></i>
             전화 상담
           </a>
-          <button onclick="window.__vdrInstance.openBottomSheet()" class="flex-1 py-2.5 px-3 bg-[#C8FF3D] hover:bg-[#B5F028] text-[#171B1E] font-bold text-xs rounded flex items-center justify-center border border-[#AEEB20]/60 shadow-xs cursor-pointer">
-            <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-[#171B1E]"></i>
+          <button onclick="window.__vdrInstance.openBottomSheet()" class="flex-1 py-2.5 px-3 bg-[#171B1E] hover:bg-[#000000] text-white font-bold text-xs rounded flex items-center justify-center shadow-xs cursor-pointer">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-white"></i>
             방문 예약
           </button>
         </div>
@@ -716,8 +710,8 @@ class VehicleDetailRenderer {
                 [필수] 방문 상담 예약을 위한 개인정보 수집·이용에 동의합니다.
               </label>
             </div>
-            <button type="submit" id="vdrBsBtnSubmit" class="w-full py-2.5 bg-[#C8FF3D] hover:bg-[#B5F028] text-[#171B1E] font-bold text-xs rounded shadow-xs transition-colors flex items-center justify-center cursor-pointer border border-[#AEEB20]/60 mt-2">
-              <i data-lucide="check" class="w-4 h-4 mr-1 text-[#171B1E]"></i>
+            <button type="submit" id="vdrBsBtnSubmit" class="w-full py-2.5 bg-[#171B1E] hover:bg-[#000000] text-white font-bold text-xs rounded shadow-xs transition-colors flex items-center justify-center cursor-pointer mt-2">
+              <i data-lucide="check" class="w-4 h-4 mr-1 text-white"></i>
               간편 예약 신청 완료
             </button>
           </form>
@@ -772,7 +766,7 @@ class VehicleDetailRenderer {
               <div>
                 <div class="flex items-center space-x-2 mb-1">
                   <span class="text-xs font-bold text-slate-500">차마트</span>
-                  <span class="inline-block bg-[#171B1E] text-[#C8FF3D] font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-[#C8FF3D]/40">[시연용 견적서]</span>
+                  <span class="inline-block bg-[#101A2A] text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">[시연용 견적서]</span>
                 </div>
                 <h2 class="text-xl font-bold text-[#171B1E] mt-0.5 leading-snug">${escapeHtml(displayTitle)} ${displayTrim ? escapeHtml(displayTrim) : ''}</h2>
                 <span class="text-xs text-slate-500">${escapeHtml(d.plate_number || '차량번호 미기재')} · ${d.year ? d.year + '년식' : '연식미확인'} · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '주행거리 미확인'}</span>
@@ -846,8 +840,8 @@ class VehicleDetailRenderer {
               <button onclick="window.__vdrInstance.closeEstimateModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer">
                 닫기
               </button>
-              <button onclick="window.print()" class="px-4 py-2 rounded-lg bg-[#C8FF3D] hover:bg-[#B7ED2E] text-[#171B1E] text-xs font-bold cursor-pointer transition-colors border border-[#AEEB20]/60 flex items-center">
-                <i data-lucide="printer" class="w-3.5 h-3.5 mr-1.5 text-[#171B1E]"></i>
+              <button onclick="window.print()" class="px-4 py-2 rounded-lg bg-[#171B1E] hover:bg-[#000000] text-white text-xs font-bold cursor-pointer transition-colors flex items-center shadow-xs">
+                <i data-lucide="printer" class="w-3.5 h-3.5 mr-1.5 text-white"></i>
                 안내서 인쇄 / PDF 저장
               </button>
             </div>
@@ -1329,7 +1323,7 @@ class VehicleDetailRenderer {
       const btns = container.querySelectorAll('button');
       btns.forEach((btn, idx) => {
         if (idx === this.currentPhotoIdx) {
-          btn.className = "w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#171B1E] ring-1 ring-[#C8FF3D] cursor-pointer";
+          btn.className = "w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#171B1E] ring-1 ring-[#171B1E] cursor-pointer";
         } else {
           btn.className = "w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#E5E8EC] opacity-70 hover:opacity-100 cursor-pointer";
         }
