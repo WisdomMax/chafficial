@@ -211,25 +211,6 @@
                     </div>
 
                     <div id="cmExistingFilterMount" class="pt-3 space-y-4 text-xs">
-                        <!-- 0. 차마트 보유 / 우선 매물 특화 필터 (라임 하이라이트) -->
-                        <div class="p-2.5 rounded-lg bg-[#171B1E] text-white space-y-2 shadow-xs">
-                            <div class="text-[11px] font-bold text-[#C8FF3D] flex items-center justify-between">
-                                <span class="flex items-center gap-1">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-[#C8FF3D] animate-ping"></span>
-                                    차마트 안심 매물
-                                </span>
-                                <span class="text-[10px] text-slate-300">직영 보증</span>
-                            </div>
-                            <label class="flex items-center space-x-2 text-xs text-white cursor-pointer select-none">
-                                <input type="checkbox" id="checkOnlyChamartOwned" onchange="toggleChamartOwnedFilter(this.checked)" class="rounded border-slate-600 text-[#C8FF3D] focus:ring-0 w-3.5 h-3.5 accent-[#C8FF3D]">
-                                <span class="font-bold text-[#C8FF3D]">차마트 보유 차량만 보기</span>
-                            </label>
-                            <label class="flex items-center space-x-2 text-[11px] text-slate-200 cursor-pointer select-none">
-                                <input type="checkbox" id="checkOnlyPriority" onchange="togglePriorityFilter(this.checked)" class="rounded border-slate-600 text-[#C8FF3D] focus:ring-0 w-3.5 h-3.5 accent-[#C8FF3D]">
-                                <span>차마트 우선 추천 매물만</span>
-                            </label>
-                        </div>
-
                         <!-- 1. 국산차 / 수입차 탭 -->
                         <div>
                             <div class="text-xs font-bold text-slate-800 mb-1.5">차량 구분</div>
@@ -378,15 +359,15 @@
                 <!-- [우측 메인: 엔카 매물 결과 섹션] (DIRECTIVE 069 & 071) -->
                 <section class="cm-listing-results space-y-3.5">
                     
-                    <!-- [우측 상단: 브랜드 히어로 배너 (우측 컬럼 상단 100% 풀 배치)] -->
-                    <div id="chamartHeroCarousel" class="group relative w-full rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-xs select-none aspect-[2.4/1] sm:aspect-[2.8/1] md:aspect-[3.2/1] max-h-[260px]">
+                    <!-- [우측 상단: 브랜드 히어로 배너 (우측 컬럼 상단 100% 풀 배치 & 16:9 원본 꽉 채움)] -->
+                    <div id="chamartHeroCarousel" class="group relative w-full rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-xs select-none aspect-[16/9]">
                         <!-- 슬라이드 트랙 (루프를 위해 5번 복제 + 1~5번 + 1번 복제 총 7개 구성) -->
                         <div id="heroTrack" class="flex h-full will-change-transform" style="transform: translateX(-100%);">
                             <!-- Clone of Slide 5 (자연스러운 역방향 루프용) -->
                             <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
                                 <picture class="w-full h-full flex items-center justify-center">
                                     <source srcset="/static/img/chamart_slide_05.webp" type="image/webp">
-                                    <img src="/static/img/chamart_slide_05.jpg" alt="차마트 장한평 5번 배너" class="w-full h-full object-contain object-center" />
+                                    <img src="/static/img/chamart_slide_05.jpg" alt="차마트 장한평 5번 배너" class="w-full h-full object-cover object-center" />
                                 </picture>
                             </div>
 
@@ -394,7 +375,7 @@
                             <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
                                 <picture class="w-full h-full flex items-center justify-center">
                                     <source srcset="/static/img/chamart_slide_01.webp" type="image/webp">
-                                    <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-contain object-center" />
+                                    <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-cover object-center" />
                                 </picture>
                             </div>
 
@@ -402,7 +383,7 @@
                             <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
                                 <picture class="w-full h-full flex items-center justify-center">
                                     <source srcset="/static/img/chamart_slide_02.webp" type="image/webp">
-                                    <img src="/static/img/chamart_slide_02.png" alt="잠깐! 서울은 다 둘러보셨나요?" class="w-full h-full object-contain object-center" />
+                                    <img src="/static/img/chamart_slide_02.png" alt="잠깐! 서울은 다 둘러보셨나요?" class="w-full h-full object-cover object-center" />
                                 </picture>
                             </div>
 
@@ -410,7 +391,7 @@
                             <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
                                 <picture class="w-full h-full flex items-center justify-center">
                                     <source srcset="/static/img/chamart_slide_03.webp" type="image/webp">
-                                    <img src="/static/img/chamart_slide_03.png" alt="중고차의 중심, 서울 장한평" class="w-full h-full object-contain object-center" />
+                                    <img src="/static/img/chamart_slide_03.png" alt="중고차의 중심, 서울 장한평" class="w-full h-full object-cover object-center" />
                                 </picture>
                             </div>
 
@@ -418,7 +399,7 @@
                             <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
                                 <picture class="w-full h-full flex items-center justify-center">
                                     <source srcset="/static/img/chamart_slide_04.webp" type="image/webp">
-                                    <img src="/static/img/chamart_slide_04.jpg" alt="차를 보는 기준은, 25년 경험에서 나옵니다" class="w-full h-full object-contain object-center" />
+                                    <img src="/static/img/chamart_slide_04.jpg" alt="차를 보는 기준은, 25년 경험에서 나옵니다" class="w-full h-full object-cover object-center" />
                                 </picture>
                             </div>
 
@@ -426,7 +407,7 @@
                             <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
                                 <picture class="w-full h-full flex items-center justify-center">
                                     <source srcset="/static/img/chamart_slide_05.webp" type="image/webp">
-                                    <img src="/static/img/chamart_slide_05.jpg" alt="멀리 가지 마세요. 서울 장한평에서 만나겠습니다" class="w-full h-full object-contain object-center" />
+                                    <img src="/static/img/chamart_slide_05.jpg" alt="멀리 가지 마세요. 서울 장한평에서 만나겠습니다" class="w-full h-full object-cover object-center" />
                                 </picture>
                             </div>
 
@@ -434,7 +415,7 @@
                             <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
                                 <picture class="w-full h-full flex items-center justify-center">
                                     <source srcset="/static/img/chamart_slide_01.webp" type="image/webp">
-                                    <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-contain object-center" />
+                                    <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-cover object-center" />
                                 </picture>
                             </div>
                         </div>
@@ -2060,8 +2041,7 @@
                     </div>
                     <div class="cm-vehicle-row__information">
                         <div class="flex items-center flex-wrap gap-1 mb-1">
-                            ${isOwned ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-black bg-[#C8FF3D] text-[#171B1E] shadow-2xs">차마트 보유</span>' : ''}
-                            ${isPriority ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#171B1E] text-white">우선매물</span>' : ''}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-black bg-[#C8FF3D] text-[#171B1E] shadow-2xs">장한평 직영 실매물</span>
                             ${photoCount > 0 ? `<span class="inline-flex items-center text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">📷 ${photoCount}장 부위별</span>` : ''}
                         </div>
                         <h3 class="cm-vehicle-row__title">${titleParts.mainTitle} ${titleParts.subTrim ? `<span style="font-weight:400;color:var(--cm-muted);font-size:14px;">${titleParts.subTrim}</span>` : ''}</h3>
