@@ -1704,6 +1704,11 @@ def serve_index(vehicle_id: Optional[str] = None) -> HTMLResponse:
 @app.get("/cars/{vehicle_id}", response_class=HTMLResponse)
 def serve_chamart(vehicle_id: Optional[str] = None) -> HTMLResponse:
     """차마트(CHAMART) 일반 고객 전용 실차 쇼룸 독립 웹페이지 (DIRECTIVE 052 P0-4)."""
+    # 100대 가상 매물(UI-*) 또는 스테이징 ID 직접 접속 시 스테이징 UI로 자동 매핑
+    if vehicle_id and (vehicle_id.startswith("UI-") or vehicle_id.startswith("STG-")):
+        if UI_CHAMART_STAGING_FILE.exists():
+            content = UI_CHAMART_STAGING_FILE.read_text(encoding="utf-8")
+            return HTMLResponse(content=content)
     if UI_CHAMART_FILE.exists():
         content = UI_CHAMART_FILE.read_text(encoding="utf-8")
         return HTMLResponse(content=content)

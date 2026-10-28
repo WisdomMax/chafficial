@@ -107,19 +107,21 @@ class VehicleDetailRenderer {
     const d = this.data;
     const isAdmin = this.options.isAdmin;
 
-    // 1. 실차 사진 검증 및 갤러리 소스 정규화 (DIRECTIVE 056/057 P0)
+    // 1. 실차 사진 검증 및 갤러리 소스 정규화 (DIRECTIVE 056/057 P0 & DIRECTIVE 070)
     const firstPhoto = (d.photos && d.photos.length > 0) ? d.photos[0] : null;
     const hasDemoPlaceholderCaption = firstPhoto && String(firstPhoto.caption || '').includes('DEMO_PLACEHOLDER');
+    const hasRealPhotos = Boolean(d.photos && d.photos.length > 0 && (d.photos[0].photo_url || d.photos[0].url));
+    const isFixtureOrDemo = Boolean(d.is_demo_asset || d.gallery_status === 'STAGING_EXAMPLE' || (d.id && String(d.id).startsWith('UI-')));
 
     this.isRealPhotoVerified = Boolean(
-      d.photo_verification_status === 'REAL_PHOTO_VERIFIED' && !hasDemoPlaceholderCaption
+      (d.photo_verification_status === 'REAL_PHOTO_VERIFIED' || isFixtureOrDemo) && !hasDemoPlaceholderCaption && hasRealPhotos
     );
 
-    if (this.isRealPhotoVerified && d.photos && d.photos.length > 0) {
+    if ((this.isRealPhotoVerified || isFixtureOrDemo) && hasRealPhotos) {
       this.photos = d.photos.map(p => ({
         url: p.photo_url || p.url,
         caption: p.caption || p.category || `${d.model_name} 실차 사진`,
-        isVerified: true
+        isVerified: Boolean(d.photo_verification_status === 'REAL_PHOTO_VERIFIED')
       }));
     } else {
       this.photos = [{

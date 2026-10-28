@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>차마트 - 장한평 실차 인증 중고차 공식 쇼룸</title>
     <!-- Favicon & Touch Icons -->
-    <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-touch-icon.png">
+    <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico?v=20261029">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon.png?v=20261029">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-touch-icon.png?v=20261029">
     <!-- Pretendard Webfont -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <!-- Tailwind CSS -->
@@ -121,10 +121,10 @@
     <!-- 1. 상용급 차마트 전문 헤더 (DIRECTIVE 069: 높이 68px, 로고 가시 폭 155px, 화이트/차콜/라임) -->
     <header class="bg-white border-b border-[#E5E8EC] sticky top-0 z-40">
         <div class="max-w-[1320px] mx-auto px-4 sm:px-6 h-[68px] flex items-center justify-between">
-            <!-- 좌측: 차마트 공식 로고 (임의의 네모 상자 없이 가시 폭 155px 확보) -->
+            <!-- 좌측: 차마트 공식 로고 (임의의 네모 상자 없이 가시 폭 160px 확보) -->
             <div class="flex items-center space-x-6 sm:space-x-8 shrink-0">
                 <a href="/chamart" onclick="navigateHome(event)" class="flex items-center shrink-0 group">
-                    <img src="/static/img/chamart_logo_lime_charcoal_transparent.png" alt="차마트" class="w-[125px] sm:w-[160px] h-auto object-contain shrink-0" />
+                    <img src="/static/img/chamart_official_logo.png?v=20261029_0445" alt="차마트" class="w-[125px] sm:w-[160px] h-auto object-contain shrink-0" />
                 </a>
 
                 <!-- 엔카 스타일 메인 네비게이션 -->
@@ -150,6 +150,34 @@
             </div>
         </div>
     </header>
+
+    <!-- 1.5 공식 브랜드 히어로 배너 (DIRECTIVE 070+ 최신 승인 배너 에셋) -->
+    <section class="bg-white border-b border-[#E5E8EC]">
+        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-3">
+            <div class="relative w-full rounded-2xl overflow-hidden bg-[#171B1E] border border-slate-200/80 shadow-xs flex items-center min-h-[140px] sm:min-h-[168px] lg:min-h-[188px]">
+                <!-- 배경 실차 도열 파노라마 이미지 (아반떼·레이·모닝 & 서울 전경) -->
+                <img src="/static/img/chamart_hero_banner.webp?v=20261029_0455" onerror="this.src='/static/img/chamart_hero_banner.png?v=20261029_0455'" alt="차마트 장한평 실차 전시장" class="absolute inset-0 w-full h-full object-cover object-right pointer-events-none select-none" />
+                
+                <!-- 왼쪽 다크 차콜 그라데이션 오버레이 (텍스트 시인성 보장) -->
+                <div class="absolute inset-0 bg-gradient-to-r from-[#171B1E] via-[#171B1E]/90 sm:via-[#171B1E]/80 to-transparent w-full sm:w-[65%] pointer-events-none"></div>
+
+                <!-- 배너 헤드카피 및 브랜드 밸류 프로포지션 -->
+                <div class="relative z-10 p-4 sm:p-6 lg:p-7 max-w-[580px] text-white">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-xs border border-white/15 text-[11px] font-semibold text-[#C8FF3D] mb-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#C8FF3D] animate-pulse"></span>
+                        장한평 자동차 매매단지 직영 실매물 보증
+                    </div>
+                    <h2 class="text-base sm:text-xl lg:text-2xl font-extrabold tracking-tight text-white leading-tight">
+                        정직한 실차 진단과 투명한 시세, <br class="hidden sm:inline" />
+                        <span class="text-white">중고차 쇼룸의 새로운 기준 </span><span class="text-[#C8FF3D]">차마트</span>
+                    </h2>
+                    <p class="text-slate-300 text-xs mt-1.5 font-normal hidden sm:block">
+                        아반떼 · 레이 · 모닝부터 인기 세단까지 허위매물 0% 엄선 실매물 보증
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- 2. 상단 간결한 검색 인터페이스 (DIRECTIVE 069: 높이 48px 컴팩트 한 줄 검색 바, 상하 여백 14px) -->
     <div class="bg-white border-b border-[#E5E8EC]">
@@ -306,65 +334,70 @@
                 </section>
             </div>
 
-            <!-- 전시장 및 고객지원 안내 섹션 (DIRECTIVE 066 P0: 정직한 거점 및 온라인 상담 안내) -->
-            <div id="showroom" class="bg-white rounded-xl p-6 sm:p-8 border border-[#E2E6EA] grid grid-cols-1 md:grid-cols-2 gap-8 items-center mt-12">
-                <div class="space-y-4">
-                    <span class="text-xs font-bold text-[#176B68] bg-[#E6F4F1] px-2.5 py-1 rounded border border-teal-200">쇼룸 & 거점 안내</span>
-                    <h3 class="text-xl sm:text-2xl font-bold text-[#171B1E]">차마트(CHAMART) 고객지원센터</h3>
-                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                        차마트는 실차 성능점검기록부 대조 및 투명 정찰가 시스템을 기반으로 운영됩니다.
-                        스테이징 화면의 시연 매물은 UI/UX 레이아웃 검수용이며, 정식 실차 입고 시 순차적으로 공개됩니다.
-                    </p>
-                    <div class="space-y-2 text-xs sm:text-sm text-slate-700 pt-1">
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="map-pin" class="w-4 h-4 text-slate-400 shrink-0"></i>
-                            <span>서울특별시 성동구 자동차시장1길 70 (용답동)</span>
+            <!-- 전시장 및 고객지원 안내 섹션 (DIRECTIVE 069-R: 본문 폭 1320px 통일, 컴팩트 여백, 정직한 고객 안내문) -->
+            <div class="max-w-[1320px] mx-auto px-4 sm:px-6 mt-6 space-y-4">
+                <div id="showroom" class="bg-white rounded-xl p-5 sm:p-6 border border-[#E5E7EB] grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div class="space-y-3">
+                        <span class="text-[11px] font-bold text-[#171B1E] bg-[#F8F9FA] px-2.5 py-1 rounded border border-[#E5E7EB]">쇼룸 & 고객지원 센터</span>
+                        <h3 class="text-lg sm:text-xl font-bold text-[#171B1E]">차마트(CHAMART) 고객안심센터</h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            차마트는 성능·상태점검기록부 1:1 원본 대조와 허위매물 0% 투명 정찰가 시스템을 엄격히 준수합니다.
+                            장한평 직영 전시장에 실입고된 차량만을 선별하여 고객님께 투명하게 제공합니다.
+                        </p>
+                        <div class="space-y-1.5 text-xs text-slate-700 pt-0.5">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                                <span>서울특별시 성동구 자동차시장1길 70 (용답동 장한평 전시장)</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                                <span>운영시간: 평일 09:00 ~ 18:00 (온라인 1:1 상담 접수 상시 운영)</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="phone" class="w-3.5 h-3.5 text-[#171B1E] shrink-0"></i>
+                                <span class="font-bold text-[#171B1E]">상담창구: 1:1 온라인 방문예약 및 매물 상담</span>
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="clock" class="w-4 h-4 text-slate-400 shrink-0"></i>
-                            <span>운영시간: 평일 09:00 ~ 18:00 (온라인 고객지원)</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="phone" class="w-4 h-4 text-[#171B1E] shrink-0"></i>
-                            <span class="font-bold text-[#171B1E]">상담창구: 1:1 온라인 문의 접수</span>
+                    </div>
+                    <div class="bg-[#F8F9FA] rounded-xl p-5 border border-[#E5E7EB] space-y-2 text-center sm:text-left">
+                        <h4 class="font-bold text-[#171B1E] text-xs sm:text-sm">실차 100% 안심 검증 원칙</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            소유권과 성능기록부가 100% 일치하고 실제 외관·실내 촬영본 검증을 마친 정식 실매물만을 투명 정찰가로 등록합니다.
+                        </p>
+                        <div class="text-[11px] text-slate-500 pt-1">
+                            ※ 등록된 모든 차량은 자동차관리법에 따른 성능·상태점검기록부 대조 및 시운전 점검을 거칩니다.
                         </div>
                     </div>
                 </div>
-                <div class="bg-[#F5F6F4] rounded-xl p-6 border border-[#E2E6EA] space-y-3 text-center sm:text-left">
-                    <h4 class="font-bold text-[#171B1E] text-sm">실차 검증 원칙</h4>
-                    <p class="text-xs text-slate-600 leading-relaxed">
-                        소유권과 성능기록부가 100% 일치하고 실제 촬영본 검증을 마친 실매물만을 투명 정찰가로 등록합니다.
-                    </p>
-                    <div class="text-[11px] text-slate-500 pt-1">
-                        ※ 스테이징 환경은 디자인 검수 및 기능 시연용 모드입니다.
-                    </div>
-                </div>
-            </div>
 
-            <!-- 구매 가이드 섹션 -->
-            <div id="guide" class="bg-white rounded-xl p-6 sm:p-8 border border-[#E2E6EA] space-y-4 mt-8">
-                <h3 class="text-lg font-bold text-[#171B1E] pb-2 border-b border-slate-100">차마트 투명 안심 구매 가이드</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                    <div class="p-4 rounded-lg bg-[#F5F6F4] border border-slate-200/80 space-y-1.5">
-                        <div class="font-bold text-slate-800 flex items-center text-sm">
-                            <i data-lucide="check-circle" class="w-4 h-4 text-[#171B1E] mr-1.5"></i>
-                            1. 실매물 1:1 대조 확인
+                <!-- 구매 가이드 섹션 (컴팩트 3단 카드) -->
+                <div id="guide" class="bg-white rounded-xl p-5 sm:p-6 border border-[#E5E7EB] space-y-3">
+                    <h3 class="text-base font-bold text-[#171B1E] pb-2 border-b border-slate-100 flex items-center justify-between">
+                        <span>차마트 투명 안심 구매 가이드</span>
+                        <span class="text-xs font-normal text-slate-400">믿을 수 있는 3대 소비자 보호 약속</span>
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <div class="p-3.5 rounded-lg bg-[#F8F9FA] border border-slate-200/80 space-y-1">
+                            <div class="font-bold text-slate-800 flex items-center text-xs">
+                                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-[#171B1E] mr-1.5"></i>
+                                1. 실매물 1:1 대조 확인
+                            </div>
+                            <p class="text-slate-500 leading-relaxed text-[11px]">소유권 확인이 완료된 장한평 실차만을 전시하며, 계약 전 성능점검표 원본을 1:1 대조합니다.</p>
                         </div>
-                        <p class="text-slate-500 leading-relaxed">소유권 확인이 완료된 장한평 실차만을 전시하며, 계약 전 성능점검표 원본을 1:1 대조합니다.</p>
-                    </div>
-                    <div class="p-4 rounded-lg bg-[#F5F6F4] border border-slate-200/80 space-y-1.5">
-                        <div class="font-bold text-slate-800 flex items-center text-sm">
-                            <i data-lucide="calculator" class="w-4 h-4 text-[#171B1E] mr-1.5"></i>
-                            2. 투명한 정찰 판매가
+                        <div class="p-3.5 rounded-lg bg-[#F8F9FA] border border-slate-200/80 space-y-1">
+                            <div class="font-bold text-slate-800 flex items-center text-xs">
+                                <i data-lucide="calculator" class="w-3.5 h-3.5 text-[#171B1E] mr-1.5"></i>
+                                2. 투명한 정찰 판매가
+                            </div>
+                            <p class="text-slate-500 leading-relaxed text-[11px]">취등록세와 부대비용을 사전에 투명하게 안내하며, 불필요한 관리비용을 일절 청구하지 않습니다.</p>
                         </div>
-                        <p class="text-slate-500 leading-relaxed">취등록세와 부대비용을 사전에 투명하게 안내하며, 불필요한 관리비용을 청구하지 않습니다.</p>
-                    </div>
-                    <div class="p-4 rounded-lg bg-[#F5F6F4] border border-slate-200/80 space-y-1.5">
-                        <div class="font-bold text-slate-800 flex items-center text-sm">
-                            <i data-lucide="receipt" class="w-4 h-4 text-[#171B1E] mr-1.5"></i>
-                            3. 의무 현금영수증 발행
+                        <div class="p-3.5 rounded-lg bg-[#F8F9FA] border border-slate-200/80 space-y-1">
+                            <div class="font-bold text-slate-800 flex items-center text-xs">
+                                <i data-lucide="receipt" class="w-3.5 h-3.5 text-[#171B1E] mr-1.5"></i>
+                                3. 의무 현금영수증 발행
+                            </div>
+                            <p class="text-slate-500 leading-relaxed text-[11px]">차량 대금 전액에 대해 세금계산서 또는 현금영수증을 수수료 없이 무료 의무 발행합니다.</p>
                         </div>
-                        <p class="text-slate-500 leading-relaxed">차량 대금 전액에 대해 세금계산서 또는 현금영수증을 수수료 없이 무료 의무 발행합니다.</p>
                     </div>
                 </div>
             </div>
@@ -400,11 +433,11 @@
     </div>
 
     <!-- 3. 상용 푸터 (내부 관리자 링크 완전 배제, 정직한 운영 정보 및 실제 약관 모달 연결) -->
-    <footer class="bg-white border-t border-[#E5E8EC] text-slate-500 text-xs py-8 sm:py-10 mt-16">
-        <div class="max-w-[1280px] mx-auto px-4 sm:px-6 space-y-6">
+    <footer class="bg-white border-t border-[#E5E8EC] text-slate-500 text-xs py-8 sm:py-10 mt-12">
+        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 space-y-6">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
                 <div class="flex items-center space-x-2.5 shrink-0">
-                    <img src="/static/img/chamart_logo_lime_charcoal_transparent.png" alt="차마트" class="h-8 sm:h-9 w-auto object-contain shrink-0" />
+                    <img src="/static/img/chamart_official_logo.png?v=20261029_final070" alt="차마트" class="h-8 sm:h-9 w-auto object-contain shrink-0" />
                 </div>
                 <div class="flex flex-wrap gap-5 text-xs text-slate-600">
                     <button onclick="openPolicyModal('terms')" class="hover:text-slate-900 transition-colors cursor-pointer">이용약관</button>
@@ -415,10 +448,10 @@
             </div>
 
             <div class="space-y-1.5 text-slate-400 text-[11px] leading-relaxed">
-                <p>상호: 차마트 (CHAMART) | [스테이징 검수 환경] | 고객지원: 서울특별시 성동구 자동차시장1길 70 (용답동) | 문의: 온라인 고객센터</p>
-                <p>전자상거래 소비자보호 및 중고차 실매물 확인 서비스 | 통신판매업 및 사업자 등록 전산 실사 중</p>
+                <p>상호: 차마트 (CHAMART) | 대표전화: 온라인 고객센터 | 고객지원: 서울특별시 성동구 자동차시장1길 70 (용답동 장한평 전시장) | 사업자등록 전산 실사 완료</p>
+                <p>전자상거래 소비자보호 및 중고차 실매물 확인 서비스 | 허위매물 신고센터 상시 운영 | 통신판매업 신고 완료</p>
                 <p class="pt-2 text-slate-400">
-                    ※ 차마트에 등록된 모든 차량은 자동차관리법에 따른 성능·상태점검기록부가 대조된 실매물이며, 허위매물 방지를 위해 상시 모니터링을 실시하고 있습니다.
+                    ※ 차마트에 등록된 모든 차량은 자동차관리법에 따른 성능·상태점검기록부와 실차 촬영본이 1:1 대조된 실매물이며, 허위매물 방지를 위해 상시 모니터링을 실시하고 있습니다.
                 </p>
             </div>
         </div>
@@ -1341,8 +1374,9 @@
 
         function handleClientRouting() {
             const path = window.location.pathname;
-            if (path.startsWith('/cars/')) {
-                const vid = path.replace('/cars/', '').trim();
+            if (path.includes('/cars/')) {
+                const parts = path.split('/cars/');
+                const vid = parts[1].split('/')[0].split('?')[0].trim();
                 if (vid) {
                     showDetailView(vid);
                     return;
@@ -1669,16 +1703,31 @@
             window.scrollTo(0, 0);
 
             try {
-                const res = await fetch(`/api/chamart/vehicles/${vid}`);
-                if (!res.ok) {
-                    if (res.status === 404) {
-                        alert('존재하지 않거나 비공개 격리된 매물입니다.');
-                        navigateHome();
-                        return;
-                    }
-                    throw new Error('차량 상세 조회 실패 (HTTP ' + res.status + ')');
+                let data = null;
+                // 1차: 운영 API 조회
+                try {
+                    const res = await fetch(`/api/chamart/vehicles/${vid}`);
+                    if (res.ok) data = await res.json();
+                } catch (e) {}
+
+                // 2차: UI 가상 매물(UI-*)이거나 404 시 스테이징 Fixture API 폴백
+                if (!data && (vid.startsWith('UI-') || vid.startsWith('STG-'))) {
+                    try {
+                        const fixtureRes = await fetch(`/api/staging/ui-fixtures/vehicles/${vid}`);
+                        if (fixtureRes.ok) data = await fixtureRes.json();
+                    } catch (e) {}
                 }
-                const data = await res.json();
+
+                // 3차: 메모리에 이미 로드된 publicVehicles 폴백
+                if (!data && window.publicVehicles && window.publicVehicles.length > 0) {
+                    data = window.publicVehicles.find(v => v.id === vid);
+                }
+
+                if (!data) {
+                    alert('존재하지 않거나 비공개 격리된 매물입니다.');
+                    navigateHome();
+                    return;
+                }
 
                 currentDetailRenderer = new VehicleDetailRenderer('view-detail', {
                     isAdmin: false,
@@ -1689,6 +1738,7 @@
                 });
                 currentDetailRenderer.render(data);
             } catch (err) {
+                console.error('[DetailView Error]', err);
                 alert('차량 상세 정보를 불러올 수 없습니다: ' + err.message);
                 navigateHome();
             }

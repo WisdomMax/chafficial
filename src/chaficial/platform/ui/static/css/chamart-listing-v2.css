@@ -7,32 +7,33 @@
   --cm-accent-dark: #aee020;
 }
 
-/* 1. 레이아웃: PC 폭 최대 1320px, 좌측 238px + 간격 24px + minmax(0, 1fr) */
+/* 1. 레이아웃: PC 폭 최대 1320px (1280~1400px 황금비율 중앙 정렬), 좌측 260px + 간격 28px + minmax(0, 1fr) */
 .cm-listing-layout {
   display: grid;
-  grid-template-columns: 238px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 28px;
   max-width: 1320px;
   margin: 0 auto;
   padding: 0 16px 40px;
 }
 
-/* 2. 좌측 필터 패널 */
+/* 2. 좌측 필터 패널 (DIRECTIVE 069-R: 260px 확대 및 버튼/글자 가독성 강화) */
 .cm-filter-panel {
   align-self: start;
-  padding: 0 20px 0 0;
+  padding: 0 22px 0 0;
   border-right: 1px solid var(--cm-border);
 }
 
 .cm-filter-panel__header {
-  min-height: 48px;
+  min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--cm-border);
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--cm-ink);
+  letter-spacing: -0.01em;
 }
 
 .cm-filter-panel__reset {
@@ -140,8 +141,8 @@
 
 .cm-vehicle-row {
   display: grid;
-  grid-template-columns: 245px minmax(0, 1fr) 165px;
-  gap: 20px;
+  grid-template-columns: 250px minmax(0, 1fr) 170px;
+  gap: 24px;
   align-items: center;
   min-height: 178px;
   padding: 15px 0;
