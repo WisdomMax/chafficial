@@ -190,9 +190,15 @@ class VehicleDetailRenderer {
                   ${escapeHtml(d.plate_number || '차량번호 미기재')} · ${d.year ? d.year + '년식' : '연식 미확인'} · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '주행거리 미확인'} · ${escapeHtml(d.fuel_type || '연료 미확인')}
                 </span>
               </div>
-              <h1 class="text-2xl sm:text-[26px] font-bold text-[#171B1E] tracking-tight leading-snug">
-                ${escapeHtml(displayTitle)} ${displayTrim ? `<span class="text-slate-500 font-normal text-xl sm:text-2xl">${escapeHtml(displayTrim)}</span>` : ''}
-              </h1>
+              <div class="flex items-center space-x-3">
+                <h1 class="text-2xl sm:text-[26px] font-bold text-[#171B1E] tracking-tight leading-snug">
+                  ${escapeHtml(displayTitle)} ${displayTrim ? `<span class="text-slate-500 font-normal text-xl sm:text-2xl">${escapeHtml(displayTrim)}</span>` : ''}
+                </h1>
+                <!-- 관심 차량 찜 버튼 (DIRECTIVE 062) -->
+                <button id="vdrBtnFavorite" onclick="window.__vdrInstance.toggleFavorite()" class="p-2 rounded-full border border-slate-200 hover:border-slate-300 bg-white transition-all active:scale-95 cursor-pointer shrink-0 shadow-2xs" aria-label="관심 차량 찜하기">
+                  <i data-lucide="heart" id="vdrIconFavorite" class="w-5 h-5 text-slate-400"></i>
+                </button>
+              </div>
             </div>
 
             <!-- 우측 판매가 (32px, 700 진한 차콜 #171C24) -->
@@ -311,23 +317,23 @@ class VehicleDetailRenderer {
               </div>
             </div>
 
-            <!-- 3. 사고 및 성능점검 공식 진단표 & 2D SVG 다이어그램 (DIRECTIVE 056/061 무결성) -->
+            <!-- 3. 사고 및 성능점검 공식 진단표 & 2D SVG 다이어그램 (DIRECTIVE 062 P0: 허위 증빙 완전 제거) -->
             <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 space-y-5">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
                 <div>
                   <h3 class="text-lg font-bold text-[#171C24]">사고 및 성능점검 공식 진단</h3>
-                  <p class="text-xs text-slate-500 mt-0.5">자동차관리법 제58조 제1항에 따른 성능·상태점검 원본 기준</p>
+                  <p class="text-xs text-slate-500 mt-0.5">자동차관리법 제58조 제1항에 따른 성능·상태점검 전산 기준</p>
                 </div>
                 <div class="flex items-center space-x-2 text-xs">
-                  ${acc.inspection_document_id 
+                  ${(acc.inspection_document_id && acc.inspection_document_url) 
                     ? `
                       <span class="text-slate-600 hidden sm:inline">문서번호: <strong class="font-mono text-slate-800">${escapeHtml(acc.inspection_document_id)}</strong></span>
-                      <button id="vdrBtnOpenInspectionDoc" onclick="window.__vdrInstance.openInspectionDocModal()" class="px-3 py-1.5 rounded bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center cursor-pointer transition-colors shadow-2xs">
-                        <i data-lucide="file-check" class="w-3.5 h-3.5 mr-1 text-[#C8FF3D]"></i>
-                        공인 성능기록부 원본 보기
-                      </button>
+                      <a href="${escapeHtml(acc.inspection_document_url)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center cursor-pointer transition-colors shadow-2xs">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 mr-1 text-[#C8FF3D]"></i>
+                        검증된 성능기록부 원본
+                      </a>
                     ` 
-                    : '<span class="text-amber-700 font-medium bg-amber-50 px-2.5 py-1 rounded border border-amber-200">성능점검 공식 원본 전산 등록 대기</span>'}
+                    : '<span id="vdrInspectionPendingBadge" class="text-slate-600 font-medium bg-slate-100 px-2.5 py-1 rounded border border-slate-200">성능·상태점검기록부 확인 중</span>'}
                 </div>
               </div>
 
@@ -495,6 +501,14 @@ class VehicleDetailRenderer {
                     </span>
                   </div>
                 </div>
+
+                <!-- 예상 구매비용 안내서 인쇄·저장 버튼 (DIRECTIVE 062 P2) -->
+                <div class="pt-2 flex justify-end">
+                  <button id="vdrBtnOpenEstimate" onclick="window.__vdrInstance.openEstimateModal()" class="px-3.5 py-2 rounded-lg bg-white hover:bg-slate-50 text-[#171B1E] border border-[#CBD5E1] text-xs font-bold inline-flex items-center cursor-pointer transition-colors shadow-2xs">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-1.5 text-slate-700"></i>
+                    예상 구매비용 안내서 저장·인쇄
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -531,18 +545,28 @@ class VehicleDetailRenderer {
               </div>
 
               <!-- 전시장 및 담당 매니저 -->
-              <div class="bg-slate-50 rounded p-3.5 border border-[#E5E8EC] space-y-1.5 text-xs">
+              <div class="bg-slate-50 rounded p-3.5 border border-[#E5E8EC] space-y-2 text-xs">
                 <div class="font-bold text-slate-800 flex items-center justify-between">
                   <span>전시장 위치</span>
                   <span class="text-[#171B1E] font-bold">${escapeHtml(dealerName)}</span>
                 </div>
                 <div class="text-slate-600 flex items-start space-x-1.5">
                   <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i>
-                  <span>${escapeHtml(showroomLoc)}</span>
+                  <span id="vdrShowroomAddress">${escapeHtml(showroomLoc)}</span>
                 </div>
                 <div class="flex items-center space-x-1.5 pt-0.5">
                   <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
                   <a href="tel:${escapeHtml(dealerPhone)}" class="text-[#171B1E] font-bold hover:underline">${escapeHtml(dealerPhone)}</a>
+                </div>
+                <!-- 주소 복사 & 공식 지도 길찾기 버튼 (DIRECTIVE 062 P3) -->
+                <div class="pt-2 border-t border-slate-200/70 flex items-center justify-between">
+                  <button type="button" onclick="window.__vdrInstance.copyShowroomAddress()" class="text-[11px] text-slate-500 hover:text-slate-800 flex items-center cursor-pointer transition-colors">
+                    <i data-lucide="copy" class="w-3 h-3 mr-1"></i><span id="vdrBtnCopyAddrText">주소 복사</span>
+                  </button>
+                  <button type="button" id="vdrBtnOpenWayfinding" onclick="window.__vdrInstance.openWayfindingModal()" class="px-2.5 py-1 rounded bg-[#171B1E] hover:bg-black text-[#C8FF3D] font-bold text-xs flex items-center cursor-pointer transition-colors shadow-2xs">
+                    <i data-lucide="navigation" class="w-3.5 h-3.5 mr-1 text-[#C8FF3D]"></i>
+                    길찾기
+                  </button>
                 </div>
               </div>
 
@@ -670,131 +694,155 @@ class VehicleDetailRenderer {
         </div>
       </div>
 
-      <!-- 공인 성능·상태점검기록부 공식 사본 모달 (DIRECTIVE 061) -->
-      <div id="vdrInspectionDocModal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
-        <div class="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] flex flex-col p-5 sm:p-6 shadow-2xl space-y-4 overflow-hidden border border-[#E7E9E5]">
-          <!-- 모달 헤더 -->
+      <!-- 예상 구매비용 안내서 (견적서) 인쇄/저장 모달 (DIRECTIVE 062) -->
+      <div id="vdrEstimatePrintModal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
+        <div class="bg-white rounded-xl max-w-2xl w-full max-h-[92vh] flex flex-col p-6 shadow-2xl space-y-4 overflow-hidden border border-[#E7E9E5]">
+          <!-- 모달 상단 헤더 -->
           <div class="flex items-center justify-between border-b border-slate-200 pb-3">
             <div class="flex items-center space-x-2">
-              <i data-lucide="file-check" class="w-5 h-5 text-emerald-600"></i>
+              <i data-lucide="calculator" class="w-5 h-5 text-[#171B1E]"></i>
               <div>
-                <h3 class="text-base sm:text-lg font-bold text-[#171B1E]">자동차 성능·상태점검기록부 공인 사본</h3>
-                <p class="text-xs text-slate-500">자동차관리법 제58조 제1항 및 동법 시행규칙 제120조 제1항</p>
+                <h3 class="text-base sm:text-lg font-bold text-[#171B1E]">실차 예상 구매비용 안내서</h3>
+                <p class="text-xs text-slate-500">투명 정찰가 기준 예산 산출 안내서 (사전 안내용)</p>
               </div>
             </div>
-            <button onclick="window.__vdrInstance.closeInspectionDocModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer">
+            <button onclick="window.__vdrInstance.closeEstimateModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer">
               <i data-lucide="x" class="w-5 h-5"></i>
             </button>
           </div>
 
-          <!-- 모달 본문: 공식 전산 양식 렌더링 -->
-          <div class="flex-1 overflow-y-auto custom-scrollbar space-y-5 text-xs text-slate-700 pr-1">
-            <!-- 1. 기본 인적·차량 식별 테이블 -->
-            <div class="border border-[#E7E9E5] rounded-lg overflow-hidden">
-              <table class="w-full border-collapse text-xs">
-                <tbody>
-                  <tr class="border-b border-[#E7E9E5]">
-                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-2.5 w-1/4 border-r border-[#E7E9E5]">차명(모델)</th>
-                    <td class="p-2.5 font-bold text-slate-900 w-1/4 border-r border-[#E7E9E5]">${escapeHtml(d.model_name || '미확인')}</td>
-                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-2.5 w-1/4 border-r border-[#E7E9E5]">차량번호</th>
-                    <td class="p-2.5 font-bold text-slate-900 w-1/4">${escapeHtml(d.plate_number || '미기재')}</td>
-                  </tr>
-                  <tr class="border-b border-[#E7E9E5]">
-                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-2.5 w-1/4 border-r border-[#E7E9E5]">차대번호</th>
-                    <td class="p-2.5 font-mono text-slate-800 text-[11px] w-1/4 border-r border-[#E7E9E5]">${escapeHtml(d.vin || '미확인')}</td>
-                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-2.5 w-1/4 border-r border-[#E7E9E5]">연식 / 등록일</th>
-                    <td class="p-2.5 text-slate-800 w-1/4">${d.year}년식 (${escapeHtml(d.first_registration_date || '미확인')})</td>
-                  </tr>
-                  <tr class="border-b border-[#E7E9E5]">
-                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-2.5 w-1/4 border-r border-[#E7E9E5]">점검 문서번호</th>
-                    <td class="p-2.5 font-mono text-emerald-700 font-bold w-1/4 border-r border-[#E7E9E5]">${escapeHtml(acc.inspection_document_id || '전산 대기')}</td>
-                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-2.5 w-1/4 border-r border-[#E7E9E5]">공인 점검일자</th>
-                    <td class="p-2.5 text-slate-800 w-1/4">${escapeHtml(acc.inspected_at || acc.inspection_date || '정상 확인')}</td>
-                  </tr>
-                  <tr>
-                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-2.5 w-1/4 border-r border-[#E7E9E5]">공인 점검기관</th>
-                    <td class="p-2.5 text-slate-800 w-1/4 border-r border-[#E7E9E5]">장한평 공인 1급 성능검사장</td>
-                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-2.5 w-1/4 border-r border-[#E7E9E5]">책임 진단평가사</th>
-                    <td class="p-2.5 text-slate-800 w-1/4 flex items-center justify-between">
-                      <span>공인 평가사 (실명 대조 완료)</span>
-                      <span class="text-[10px] text-emerald-600 font-bold border border-emerald-300 px-1.5 py-0.5 rounded bg-emerald-50">인증날인</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- 2. 주요 골격 및 외판 진단 종합 판정 -->
-            <div class="bg-slate-50 p-4 rounded-lg border border-[#E7E9E5] space-y-2">
-              <h4 class="font-bold text-slate-800 text-xs">종합 상태 판정 요약</h4>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div class="bg-white p-2.5 rounded border border-slate-200">
-                  <span class="text-slate-400 block text-[11px]">사고유무 (주요골격)</span>
-                  <span class="font-bold ${frameStatus === 'VERIFIED_CLEAN' ? 'text-emerald-700' : 'text-amber-700'}">
-                    ${frameStatus === 'VERIFIED_CLEAN' ? '무사고 (골격이상 없음)' : '사고이력 있음'}
-                  </span>
-                </div>
-                <div class="bg-white p-2.5 rounded border border-slate-200">
-                  <span class="text-slate-400 block text-[11px]">단순수리 (외판부위)</span>
-                  <span class="font-bold ${bodyStatus === 'VERIFIED_CLEAN' ? 'text-emerald-700' : 'text-amber-700'}">
-                    ${bodyStatus === 'VERIFIED_CLEAN' ? '단순수리 없음' : '외판 단순교환'}
-                  </span>
-                </div>
-                <div class="bg-white p-2.5 rounded border border-slate-200">
-                  <span class="text-slate-400 block text-[11px]">미세누유 (엔진/변속기)</span>
-                  <span class="font-bold text-emerald-700">양호 (누유 없음)</span>
-                </div>
-                <div class="bg-white p-2.5 rounded border border-slate-200">
-                  <span class="text-slate-400 block text-[11px]">침수 / 화재 이력</span>
-                  <span class="font-bold text-emerald-700">무 (이상 없음)</span>
-                </div>
+          <!-- A4 인쇄 대상 본문 영역 -->
+          <div id="vdrPrintableEstimateSheet" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 text-xs text-slate-700 pr-1 p-2 bg-white">
+            <div class="border-b-2 border-[#171B1E] pb-3 flex justify-between items-end">
+              <div>
+                <span class="text-xs font-bold text-slate-500">CHAMART MOBILITY</span>
+                <h2 class="text-xl font-bold text-[#171B1E] mt-0.5">${escapeHtml(displayTitle)} ${displayTrim ? escapeHtml(displayTrim) : ''}</h2>
+                <span class="text-xs text-slate-500">${escapeHtml(d.plate_number || '차량번호 미기재')} · ${d.year ? d.year + '년식' : '연식미확인'} · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '주행거리 미확인'}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[11px] text-slate-400 block">발급일자</span>
+                <span class="font-mono text-xs font-semibold text-slate-700">${new Date().toISOString().slice(0, 10)}</span>
               </div>
             </div>
 
-            <!-- 3. 원동기/변속기/동력전달 세부 점검표 -->
+            <!-- 비용 세부 산출 내역표 -->
             <div class="border border-[#E7E9E5] rounded-lg overflow-hidden">
-              <table class="w-full border-collapse text-[11px]">
-                <thead>
-                  <tr class="bg-[#F5F6F4] border-b border-[#E7E9E5] text-[#646B6B]">
-                    <th class="p-2 text-left w-1/3">점검 장치 항목</th>
-                    <th class="p-2 text-center w-1/4">판정 결과</th>
-                    <th class="p-2 text-left">세부 판정 의견</th>
-                  </tr>
-                </thead>
+              <table class="w-full text-xs border-collapse">
                 <tbody>
                   <tr class="border-b border-[#E7E9E5]">
-                    <td class="p-2 font-medium">원동기 (엔진 작동상태 및 누유)</td>
-                    <td class="p-2 text-center text-emerald-700 font-bold">양호 / 적정</td>
-                    <td class="p-2 text-slate-500">실린더 블록 및 헤드 가스켓 미세누유 없음</td>
+                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-3 w-1/2">1. 차량 정찰 판매가 (차량 대금)</th>
+                    <td class="p-3 text-right font-bold text-[#171B1E] text-sm w-1/2">${targetPriceFormatted}</td>
                   </tr>
                   <tr class="border-b border-[#E7E9E5]">
-                    <td class="p-2 font-medium">변속기 (자동 변속기 오일유량 및 누유)</td>
-                    <td class="p-2 text-center text-emerald-700 font-bold">양호 / 적정</td>
-                    <td class="p-2 text-slate-500">변속 충격 및 오일 팬 누유 없음</td>
+                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-3 w-1/2">2. 예상 취득세 (7% 기준 추정치)</th>
+                    <td class="p-3 text-right font-semibold text-slate-800 w-1/2">${acquisitionTaxEst.toLocaleString('ko-KR')}만원</td>
                   </tr>
                   <tr class="border-b border-[#E7E9E5]">
-                    <td class="p-2 font-medium">동력전달 및 조향장치 (등속조인트/웜기어)</td>
-                    <td class="p-2 text-center text-emerald-700 font-bold">양호 / 정상</td>
-                    <td class="p-2 text-slate-500">부츠 파손 없음, 유격 및 오일 누유 없음</td>
+                    <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left p-3 w-1/2">3. 공채 및 이전대행 부대비용 (예상 안내)</th>
+                    <td class="p-3 text-right font-semibold text-slate-800 w-1/2">약 ${bondAndFeeEst}만원</td>
                   </tr>
-                  <tr>
-                    <td class="p-2 font-medium">제동장치 (브레이크 호스 및 패드)</td>
-                    <td class="p-2 text-center text-emerald-700 font-bold">양호 / 정상</td>
-                    <td class="p-2 text-slate-500">오일 누유 및 패드 마모 잔여량 적정</td>
+                  <tr class="bg-[#F5F6F4] font-bold text-slate-900 border-t border-[#171B1E]">
+                    <th class="p-3.5 text-left text-sm text-[#171B1E]">총 예상 구매비용 합계</th>
+                    <td class="p-3.5 text-right text-base sm:text-lg text-[#171B1E]">${totalPurchaseCostEst.toLocaleString('ko-KR')}만원</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div class="text-[11px] text-slate-400 leading-relaxed bg-slate-50 p-3 rounded">
-              ※ 본 성능·상태점검기록부는 자동차관리법에 따라 발급된 법적 공인 문서이며, 보증 기간(출고일 기준 30일 또는 2,000km) 동안 점검 내용과 상이할 경우 성능보증보험을 통해 보상받으실 수 있습니다.
+            <!-- 시뮬레이션 할부 조건 요약 -->
+            <div id="vdrEstimateLoanSummary" class="bg-slate-50 p-3.5 rounded-lg border border-[#E7E9E5] space-y-2 text-xs">
+              <div class="font-bold text-slate-800 flex justify-between">
+                <span>금융 할부 시뮬레이션 예시</span>
+                <span class="text-amber-800 font-normal">※ 금융사 사전 심사에 따른 참고 예시</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-600">
+                <div>선수금: <strong id="vdrEstDownText" class="text-slate-800">-</strong></div>
+                <div>할부 개월: <strong id="vdrEstMonthsText" class="text-slate-800">-</strong></div>
+                <div>예시 금리: <strong id="vdrEstRateText" class="text-slate-800">-</strong></div>
+              </div>
+              <div class="pt-2 border-t border-slate-200 flex justify-between items-center text-xs">
+                <span class="font-semibold text-slate-700">월 예상 납입금:</span>
+                <span id="vdrEstMonthlyText" class="font-bold text-[#171B1E] text-sm font-mono">-</span>
+              </div>
+            </div>
+
+            <!-- 투명 고지 문구 (DIRECTIVE 062 P2) -->
+            <div class="text-[11px] text-slate-500 leading-relaxed bg-[#F5F6F4] p-3 rounded space-y-1 border border-[#E7E9E5]">
+              <p>※ 본 안내서는 고객님의 구매 예산 수립을 돕기 위해 공식 정찰가와 표준 취득세율을 기초로 산출된 실차 사전 예상 구매비용 안내서입니다.</p>
+              <p>※ 취득세 감면 대상 여부 및 지자체별 공채 할인율에 따라 세금·공채·부대비용 변동 가능성이 있습니다.</p>
+              <p>※ 금융 할부 시뮬레이션은 표준 예시 조건이며, 실제 금융사 심사 결과와 다를 수 있습니다.</p>
             </div>
           </div>
 
-          <!-- 모달 푸터 -->
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span class="text-xs text-slate-400">차마트 장한평 실매물 대조 시스템</span>
-            <button onclick="window.__vdrInstance.closeInspectionDocModal()" class="px-5 py-2.5 bg-[#171B1E] hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer">
+          <!-- 모달 하단 액션 버튼 -->
+          <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
+            <span class="text-xs text-slate-400">전시장: ${escapeHtml(showroomLoc)}</span>
+            <div class="flex items-center space-x-2">
+              <button onclick="window.__vdrInstance.closeEstimateModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer">
+                닫기
+              </button>
+              <button onclick="window.print()" class="px-4 py-2 rounded-lg bg-[#C8FF3D] hover:bg-[#B7ED2E] text-[#171B1E] text-xs font-bold cursor-pointer transition-colors border border-[#AEEB20]/60 flex items-center">
+                <i data-lucide="printer" class="w-3.5 h-3.5 mr-1.5 text-[#171B1E]"></i>
+                안내서 인쇄 / PDF 저장
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오프라인 쇼룸 공식 지도 길찾기 모달 (DIRECTIVE 062) -->
+      <div id="vdrWayfindingModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4 animate-in fade-in duration-150">
+        <div class="bg-white rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4 border border-[#E7E9E5]">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="navigation" class="w-5 h-5 text-[#171B1E]"></i>
+              <h3 class="text-base font-bold text-[#171B1E]">전시장 오시는 길 (길찾기)</h3>
+            </div>
+            <button onclick="window.__vdrInstance.closeWayfindingModal()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <div class="space-y-3 text-xs text-slate-700">
+            <div class="bg-slate-50 p-3 rounded-lg border border-[#E7E9E5] space-y-1">
+              <div class="font-bold text-[#171B1E] text-sm">차마트 장한평 본사 전시장</div>
+              <div class="text-slate-600">${escapeHtml(showroomLoc)}</div>
+              <div class="text-[11px] text-slate-400 pt-0.5">※ 장한평역 5호선 인근, 고객 무료 주차 가능</div>
+            </div>
+
+            <!-- 공식 지도 앱 바로가기 버튼들 -->
+            <div class="space-y-2 pt-1">
+              <a href="https://map.kakao.com/link/to/차마트장한평본사,37.5619,127.0642" target="_blank" rel="noopener noreferrer" 
+                 class="w-full py-2.5 px-4 bg-[#FEE500] hover:bg-[#FADA0A] text-[#191919] font-bold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors shadow-2xs">
+                <span class="flex items-center">
+                  <i data-lucide="map-pin" class="w-4 h-4 mr-2 text-[#191919]"></i>
+                  카카오맵 길찾기 바로가기
+                </span>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </a>
+
+              <a href="https://map.naver.com/v5/directions/-/127.0642,37.5619,차마트장한평본사/-/car" target="_blank" rel="noopener noreferrer"
+                 class="w-full py-2.5 px-4 bg-[#03C75A] hover:bg-[#02B351] text-white font-bold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors shadow-2xs">
+                <span class="flex items-center">
+                  <i data-lucide="map" class="w-4 h-4 mr-2 text-white"></i>
+                  네이버지도 길찾기 바로가기
+                </span>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </a>
+
+              <a href="tmap://route?goalname=차마트장한평본사&goalx=127.0642&goaly=37.5619" 
+                 class="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors">
+                <span class="flex items-center">
+                  <i data-lucide="navigation-2" class="w-3.5 h-3.5 mr-2 text-slate-600"></i>
+                  티맵(TMAP) 내비게이션 실행
+                </span>
+                <span class="text-[10px] text-slate-400">모바일 전용</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 text-right">
+            <button onclick="window.__vdrInstance.closeWayfindingModal()" class="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-semibold rounded-lg cursor-pointer">
               확인 닫기
             </button>
           </div>
@@ -806,6 +854,7 @@ class VehicleDetailRenderer {
     this.bindEvents();
     this.updateLoanCalc();
     this.selectPart('hood');
+    this.updateFavoriteUi();
 
     if (window.lucide) {
       window.lucide.createIcons();
@@ -1257,27 +1306,115 @@ class VehicleDetailRenderer {
     img.style.transition = 'transform 0.25s ease';
   }
 
-  openInspectionDocModal(triggerEl) {
-    this.docTriggerEl = triggerEl || document.activeElement;
-    const modal = document.getElementById('vdrInspectionDocModal');
+  // DIRECTIVE 062: 견적서(실차 예상 구매비용 안내서) 모달 제어
+  openEstimateModal() {
+    const modal = document.getElementById('vdrEstimatePrintModal');
     if (modal) {
       modal.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
       if (window.lucide) window.lucide.createIcons();
-      const closeBtn = modal.querySelector('button');
-      if (closeBtn) closeBtn.focus();
     }
   }
 
-  closeInspectionDocModal() {
-    const modal = document.getElementById('vdrInspectionDocModal');
+  closeEstimateModal() {
+    const modal = document.getElementById('vdrEstimatePrintModal');
     if (modal) {
       modal.classList.add('hidden');
       document.body.style.overflow = '';
     }
-    if (this.docTriggerEl && typeof this.docTriggerEl.focus === 'function') {
-      this.docTriggerEl.focus();
+  }
+
+  // DIRECTIVE 062: 공식 지도 길찾기 모달 제어
+  openWayfindingModal() {
+    const modal = document.getElementById('vdrWayfindingModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      if (window.lucide) window.lucide.createIcons();
     }
+  }
+
+  closeWayfindingModal() {
+    const modal = document.getElementById('vdrWayfindingModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  }
+
+  // DIRECTIVE 062: 전시장 주소 원클릭 클립보드 복사
+  copyShowroomAddress() {
+    const addr = this.data?.branch_location || '서울특별시 성동구 용답동 234 장한평 자동차매매단지';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(addr).then(() => {
+        const textSpan = document.getElementById('vdrBtnCopyAddrText');
+        if (textSpan) {
+          textSpan.textContent = '복사 완료!';
+          setTimeout(() => { textSpan.textContent = '주소 복사'; }, 2000);
+        }
+      }).catch(() => {
+        alert('주소: ' + addr);
+      });
+    } else {
+      alert('전시장 주소: ' + addr);
+    }
+  }
+
+  // DIRECTIVE 062: 관심 차량 찜(하트) 토글 및 localStorage 동기화
+  toggleFavorite() {
+    if (!this.data || !this.data.id) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('chamart_favorites') || '[]');
+      const index = stored.indexOf(this.data.id);
+      if (index >= 0) {
+        stored.splice(index, 1);
+      } else {
+        stored.push(this.data.id);
+      }
+      localStorage.setItem('chamart_favorites', JSON.stringify(stored));
+      this.updateFavoriteUi();
+      
+      // 전역 찜 카운트나 목록과 동기화
+      if (typeof window.updateAllFavoritesUi === 'function') {
+        window.updateAllFavoritesUi();
+      }
+    } catch (err) {
+      console.warn('[VehicleDetailRenderer] Favorite toggle error:', err);
+    }
+  }
+
+  updateFavoriteUi() {
+    if (!this.data || !this.data.id) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('chamart_favorites') || '[]');
+      const isFav = stored.includes(this.data.id);
+      const icon = document.getElementById('vdrIconFavorite');
+      const btn = document.getElementById('vdrBtnFavorite');
+      if (icon) {
+        if (isFav) {
+          icon.classList.remove('text-slate-400');
+          icon.classList.add('text-rose-500', 'fill-rose-500');
+          if (btn) btn.setAttribute('title', '관심 차량에서 제거');
+        } else {
+          icon.classList.remove('text-rose-500', 'fill-rose-500');
+          icon.classList.add('text-slate-400');
+          if (btn) btn.setAttribute('title', '관심 차량으로 찜');
+        }
+      }
+    } catch (err) {
+      // 무시
+    }
+  }
+
+  openInspectionDocModal(triggerEl) {
+    // DIRECTIVE 062: 허위 공인 문서 모달이 제거되었으므로 실제 URL이 있는 경우에만 새 창 오픈
+    if (this.data && this.data.accident_history && this.data.accident_history.inspection_document_url) {
+      window.open(this.data.accident_history.inspection_document_url, '_blank');
+    }
+  }
+
+  closeInspectionDocModal() {
+    // 안전한 호환용 빈 구현
   }
 
   openBottomSheet() {
@@ -1440,6 +1577,8 @@ class VehicleDetailRenderer {
       if (e.key === 'Escape') {
         if (this.lightboxOpen) this.closeLightbox();
         this.closeBottomSheet();
+        this.closeEstimateModal();
+        this.closeWayfindingModal();
         this.closeInspectionDocModal();
       }
     });

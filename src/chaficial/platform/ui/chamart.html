@@ -26,6 +26,32 @@
         .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #F1F5F9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        
+        /* DIRECTIVE 062: 실차 예상 구매비용 안내서 A4 정밀 인쇄 및 PDF 저장 CSS */
+        @media print {
+            body * {
+                visibility: hidden !important;
+            }
+            #vdrEstimatePrintModal, #vdrEstimatePrintModal * {
+                visibility: visible !important;
+            }
+            #vdrEstimatePrintModal {
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 20px !important;
+                background: white !important;
+                border: none !important;
+                box-shadow: none !important;
+                z-index: 999999 !important;
+            }
+            #vdrEstimatePrintModal button {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col bg-[#F5F6F4] text-[#171B1E]">
@@ -44,9 +70,14 @@
             </div>
 
             <!-- 중앙: 상용 내비게이션 메뉴 (고객 중심) -->
-            <nav class="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-700">
+            <nav class="hidden md:flex items-center space-x-7 text-sm font-semibold text-slate-700">
                 <a href="/chamart" onclick="navigateHome(event)" id="nav-link-home" class="hover:text-[#171B1E] transition-colors text-[#171B1E] font-bold border-b-2 border-[#171B1E] pb-1">홈</a>
                 <a href="/cars" onclick="navigateCars(event)" id="nav-link-cars" class="hover:text-[#171B1E] transition-colors pb-1">전체 실차 매물</a>
+                <a href="#favorites" onclick="toggleFavoritesFilter(event)" id="nav-link-fav" class="hover:text-[#171B1E] transition-colors pb-1 flex items-center cursor-pointer">
+                    <i data-lucide="heart" class="w-3.5 h-3.5 mr-1 text-slate-400"></i>
+                    <span>관심 차량</span>
+                    <span id="navFavCountBadge" class="ml-1 text-[11px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded-full font-mono">0</span>
+                </a>
                 <a href="#showroom" onclick="scrollToShowroom(event)" class="hover:text-[#171B1E] transition-colors pb-1">전시장 안내</a>
                 <a href="#guide" onclick="scrollToGuide(event)" class="hover:text-[#171B1E] transition-colors pb-1">구매 가이드</a>
             </nav>
@@ -321,6 +352,66 @@
         </div>
     </div>
 
+    <!-- 하단 고정 차량 비교함 플로팅 바 (DIRECTIVE 062: 최대 3대 비교) -->
+    <div id="compareFloatingBar" class="fixed bottom-0 sm:bottom-4 left-0 sm:left-1/2 sm:-translate-x-1/2 z-40 w-full sm:w-[94%] sm:max-w-4xl bg-[#171B1E] text-white px-4 py-3 sm:rounded-xl shadow-2xl border border-slate-700 hidden transition-all duration-200">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center space-x-3 overflow-x-auto py-0.5 custom-scrollbar">
+                <span class="text-xs font-bold text-[#C8FF3D] whitespace-nowrap flex items-center shrink-0">
+                    <i data-lucide="scale" class="w-4 h-4 mr-1 text-[#C8FF3D]"></i>
+                    비교함 (<span id="compareCount" class="font-mono">0</span>/3)
+                </span>
+                <!-- 선택된 차량 썸네일 칩 목록 -->
+                <div id="compareThumbnails" class="flex items-center space-x-2"></div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+                <button type="button" onclick="clearCompareList()" class="px-2.5 py-1.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer">
+                    비우기
+                </button>
+                <button type="button" id="btnOpenCompareModal" onclick="openCompareModal()" disabled class="px-4 py-2 bg-[#C8FF3D] disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed hover:bg-[#B7ED2E] text-[#171B1E] text-xs font-bold rounded-lg transition-colors flex items-center cursor-pointer border border-[#AEEB20]/60 shadow-xs">
+                    <span>비교하기</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 최대 3대 차량 상세 비교 모달 (DIRECTIVE 062) -->
+    <div id="compareModal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-150">
+        <div class="bg-white rounded-xl max-w-5xl w-full max-h-[92vh] flex flex-col p-4 sm:p-6 shadow-2xl overflow-hidden border border-[#E7E9E5]">
+            <!-- 모달 상단 헤더 -->
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="scale" class="w-5 h-5 text-[#171B1E]"></i>
+                    <h3 class="text-base sm:text-lg font-bold text-[#171B1E]">실차 제원 및 구매조건 상세 비교</h3>
+                    <span id="compareModalBadge" class="text-xs bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded font-mono">0대</span>
+                </div>
+                <button type="button" onclick="closeCompareModal()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- 비교 테이블 컨테이너 -->
+            <div class="flex-1 overflow-y-auto overflow-x-auto py-4 custom-scrollbar">
+                <div id="compareTableContainer" class="min-w-[620px]">
+                    <!-- 동적 렌더링 영역 -->
+                </div>
+            </div>
+
+            <!-- 모달 하단 푸터 -->
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span class="text-[11px] text-slate-400">※ 가격 및 주행거리 차이는 비교 차량 중 최저가·최단거리 기준 실측 차액입니다.</span>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="clearCompareList(); closeCompareModal();" class="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 cursor-pointer">
+                        비교함 비우기
+                    </button>
+                    <button type="button" onclick="closeCompareModal()" class="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer">
+                        확인 닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 약관 및 개인정보처리방침 공식 모달 -->
     <div id="policyModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-lg max-w-xl w-full max-h-[80vh] flex flex-col p-6 space-y-4 shadow-xl">
@@ -462,14 +553,330 @@
             }).join('');
         }
 
+        // DIRECTIVE 062: 찜(관심 차량) 상태 관리
+        let showFavoritesOnly = false;
+
+        function getFavoriteIds() {
+            try {
+                return JSON.parse(localStorage.getItem('chamart_favorites') || '[]');
+            } catch {
+                return [];
+            }
+        }
+
+        function toggleFavoriteVehicle(vid) {
+            const ids = getFavoriteIds();
+            const idx = ids.indexOf(vid);
+            if (idx >= 0) {
+                ids.splice(idx, 1);
+            } else {
+                ids.push(vid);
+            }
+            try {
+                localStorage.setItem('chamart_favorites', JSON.stringify(ids));
+            } catch (err) {
+                console.warn('LocalStorage save failed:', err);
+            }
+            updateAllFavoritesUi();
+        }
+
+        function toggleFavoritesFilter(e) {
+            if (e) e.preventDefault();
+            showFavoritesOnly = !showFavoritesOnly;
+            const navFav = document.getElementById('nav-link-fav');
+            if (navFav) {
+                if (showFavoritesOnly) {
+                    navFav.classList.add('text-[#171B1E]', 'font-bold', 'border-b-2', 'border-[#171B1E]');
+                } else {
+                    navFav.classList.remove('text-[#171B1E]', 'font-bold', 'border-b-2', 'border-[#171B1E]');
+                }
+            }
+            navigateCars();
+        }
+
+        function updateAllFavoritesUi() {
+            const ids = getFavoriteIds();
+            const badge = document.getElementById('navFavCountBadge');
+            if (badge) badge.textContent = String(ids.length);
+
+            document.querySelectorAll('[data-fav-btn]').forEach(btn => {
+                const vid = btn.getAttribute('data-fav-btn');
+                const icon = btn.querySelector('svg, i');
+                if (icon) {
+                    if (ids.includes(vid)) {
+                        icon.classList.remove('text-slate-400');
+                        icon.classList.add('text-rose-500', 'fill-rose-500');
+                    } else {
+                        icon.classList.remove('text-rose-500', 'fill-rose-500');
+                        icon.classList.add('text-slate-400');
+                    }
+                }
+            });
+
+            if (showFavoritesOnly) {
+                renderVehiclesList();
+            }
+        }
+        window.updateAllFavoritesUi = updateAllFavoritesUi;
+
+        // DIRECTIVE 062: 최대 3대 차량 비교함 상태 관리
+        window.compareVehicleIds = [];
+
+        function toggleCompareVehicle(vid, checked) {
+            const idx = window.compareVehicleIds.indexOf(vid);
+            if (checked) {
+                if (idx < 0) {
+                    if (window.compareVehicleIds.length >= 3) {
+                        alert('차량 비교는 최대 3대까지 가능합니다.\n기존 선택된 차량을 해제 후 다시 선택해 주세요.');
+                        const cb = document.querySelector(`[data-compare-id="${vid}"]`);
+                        if (cb) cb.checked = false;
+                        return;
+                    }
+                    window.compareVehicleIds.push(vid);
+                }
+            } else {
+                if (idx >= 0) {
+                    window.compareVehicleIds.splice(idx, 1);
+                }
+            }
+            updateCompareFloatingBar();
+        }
+
+        function clearCompareList() {
+            window.compareVehicleIds = [];
+            document.querySelectorAll('.compare-checkbox').forEach(cb => { cb.checked = false; });
+            updateCompareFloatingBar();
+        }
+
+        function removeFromCompare(vid) {
+            const idx = window.compareVehicleIds.indexOf(vid);
+            if (idx >= 0) {
+                window.compareVehicleIds.splice(idx, 1);
+            }
+            const cb = document.querySelector(`[data-compare-id="${vid}"]`);
+            if (cb) cb.checked = false;
+            updateCompareFloatingBar();
+            if (window.compareVehicleIds.length < 2) {
+                closeCompareModal();
+            } else {
+                renderCompareModalTable();
+            }
+        }
+
+        function updateCompareFloatingBar() {
+            const bar = document.getElementById('compareFloatingBar');
+            const countEl = document.getElementById('compareCount');
+            const thumbContainer = document.getElementById('compareThumbnails');
+            const btnOpen = document.getElementById('btnOpenCompareModal');
+            if (!bar) return;
+
+            const count = window.compareVehicleIds.length;
+            if (countEl) countEl.textContent = String(count);
+
+            if (count === 0) {
+                bar.classList.add('hidden');
+                return;
+            }
+
+            bar.classList.remove('hidden');
+
+            if (thumbContainer) {
+                thumbContainer.innerHTML = window.compareVehicleIds.map(vid => {
+                    const v = publicVehicles.find(x => x.id === vid);
+                    if (!v) return '';
+                    const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/vehicles/neutral_car_placeholder.jpg');
+                    return `
+                        <div class="relative group shrink-0">
+                            <img src="${photoUrl}" alt="${v.model_name}" class="w-10 h-7 object-cover rounded border border-slate-600">
+                            <button type="button" onclick="removeFromCompare('${vid}')" class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 hover:bg-rose-700 text-white rounded-full flex items-center justify-center text-[10px] font-bold cursor-pointer shadow-xs" title="제외">
+                                ✕
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            if (btnOpen) {
+                if (count >= 2) {
+                    btnOpen.disabled = false;
+                    btnOpen.innerHTML = `<span>${count}대 상세 비교</span><i data-lucide="arrow-right" class="w-3.5 h-3.5 ml-1"></i>`;
+                } else {
+                    btnOpen.disabled = true;
+                    btnOpen.innerHTML = `<span>2대 이상 선택</span>`;
+                }
+            }
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        function openCompareModal() {
+            if (window.compareVehicleIds.length < 2) {
+                alert('비교를 위해 2대 이상의 차량을 선택해 주세요.');
+                return;
+            }
+            renderCompareModalTable();
+            const modal = document.getElementById('compareModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        }
+
+        function closeCompareModal() {
+            const modal = document.getElementById('compareModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function renderCompareModalTable() {
+            const container = document.getElementById('compareTableContainer');
+            const badge = document.getElementById('compareModalBadge');
+            if (!container) return;
+
+            const count = window.compareVehicleIds.length;
+            if (badge) badge.textContent = `${count}대 비교`;
+
+            const vehicles = window.compareVehicleIds.map(vid => publicVehicles.find(x => x.id === vid)).filter(Boolean);
+            if (vehicles.length === 0) {
+                container.innerHTML = '<div class="py-8 text-center text-slate-500">선택된 비교 매물이 없습니다.</div>';
+                return;
+            }
+
+            const validPrices = vehicles.map(v => v.target_price || 0).filter(p => p > 0);
+            const minPrice = validPrices.length > 0 ? Math.min(...validPrices) : 0;
+
+            const validMileages = vehicles.map(v => v.mileage || 0).filter(m => m > 0);
+            const minMileage = validMileages.length > 0 ? Math.min(...validMileages) : 0;
+
+            let html = `
+                <table class="w-full border-collapse text-xs text-left">
+                    <thead>
+                        <tr class="border-b border-slate-200">
+                            <th class="p-3 bg-slate-50 font-bold text-slate-700 w-28 shrink-0">비교 항목</th>
+                            ${vehicles.map(v => `
+                                <th class="p-3 text-center bg-white border-l border-slate-200">
+                                    <div class="flex justify-end mb-1">
+                                        <button type="button" onclick="removeFromCompare('${v.id}')" class="text-slate-400 hover:text-rose-500 text-xs flex items-center font-normal cursor-pointer">
+                                            <i data-lucide="x" class="w-3.5 h-3.5 mr-0.5"></i>제외
+                                        </button>
+                                    </div>
+                                    <div class="aspect-[5/3] bg-slate-900 rounded overflow-hidden mb-2 max-w-[220px] mx-auto">
+                                        <img src="${v.primary_photo_url || (v.photos && v.photos[0] ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/vehicles/neutral_car_placeholder.jpg')}" 
+                                             alt="${v.model_name}" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="font-bold text-slate-900 text-sm truncate max-w-[220px] mx-auto">${v.model_name}</div>
+                                    <div class="text-[11px] text-slate-500 truncate max-w-[220px] mx-auto">${v.trim || ''}</div>
+                                </th>
+                            `).join('')}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr>
+                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">정찰 판매가</td>
+                            ${vehicles.map(v => {
+                                const price = v.target_price || 0;
+                                const diff = price - minPrice;
+                                return `
+                                    <td class="p-3 text-center border-l border-slate-200">
+                                        <div class="text-base sm:text-lg font-bold text-[#171B1E]">${price ? price.toLocaleString('ko-KR') + '만원' : '가격 상담'}</div>
+                                        ${price && minPrice && diff > 0 ? `<div class="text-[11px] text-slate-500 font-mono mt-0.5">최저가 대비 +${diff.toLocaleString('ko-KR')}만원</div>` : (price === minPrice && minPrice > 0 ? `<div class="text-[11px] text-emerald-700 font-bold mt-0.5">최저가</div>` : '')}
+                                    </td>
+                                `;
+                            }).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">연식</td>
+                            ${vehicles.map(v => `
+                                <td class="p-3 text-center border-l border-slate-200 font-semibold text-slate-800">
+                                    ${v.year ? v.year + '년식' : '미확인'}
+                                </td>
+                            `).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">주행거리</td>
+                            ${vehicles.map(v => {
+                                const mileage = v.mileage || 0;
+                                const diff = mileage - minMileage;
+                                return `
+                                    <td class="p-3 text-center border-l border-slate-200">
+                                        <div class="font-semibold text-slate-800">${mileage ? Number(mileage).toLocaleString('ko-KR') + 'km' : '미확인'}</div>
+                                        ${mileage && minMileage && diff > 0 ? `<div class="text-[11px] text-slate-500 font-mono mt-0.5">최단 대비 +${diff.toLocaleString('ko-KR')}km</div>` : (mileage === minMileage && minMileage > 0 ? `<div class="text-[11px] text-emerald-700 font-bold mt-0.5">최단거리</div>` : '')}
+                                    </td>
+                                `;
+                            }).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">변속기 / 구동</td>
+                            ${vehicles.map(v => `
+                                <td class="p-3 text-center border-l border-slate-200 text-slate-700">
+                                    ${v.transmission || '미확인'} / ${v.drive_type || '미확인'}
+                                </td>
+                            `).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">연료 방식</td>
+                            ${vehicles.map(v => `
+                                <td class="p-3 text-center border-l border-slate-200 text-slate-700">
+                                    ${v.fuel_type || '미확인'}
+                                </td>
+                            `).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">사고 및 성능상태</td>
+                            ${vehicles.map(v => {
+                                const acc = v.accident_history || {};
+                                let badgeHtml = '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600">전산 확인 중</span>';
+                                if (acc.has_accident === false && acc.has_frame_damage === false) {
+                                    badgeHtml = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">무사고 (확인됨)</span>';
+                                } else if (acc.has_accident === true || acc.has_frame_damage === true) {
+                                    badgeHtml = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">수리이력 있음</span>';
+                                }
+                                return `
+                                    <td class="p-3 text-center border-l border-slate-200">
+                                        ${badgeHtml}
+                                    </td>
+                                `;
+                            }).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">전시장 위치</td>
+                            ${vehicles.map(v => `
+                                <td class="p-3 text-center border-l border-slate-200 text-slate-600 text-[11px]">
+                                    ${v.branch_location || '장한평 본사 전시장'}
+                                </td>
+                            `).join('')}
+                        </tr>
+                        <tr>
+                            <td class="p-3 bg-slate-50 font-semibold text-slate-600">실차 확인</td>
+                            ${vehicles.map(v => `
+                                <td class="p-3 text-center border-l border-slate-200">
+                                    <button type="button" onclick="closeCompareModal(); openVehicleDetail('${v.id}')" class="w-full max-w-[200px] mx-auto py-2 bg-[#171B1E] hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer transition-colors shadow-2xs">
+                                        실차 상세 보기
+                                    </button>
+                                </td>
+                            `).join('')}
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+            if (window.lucide) window.lucide.createIcons();
+        }
+
         function getFilteredVehicles() {
             const searchVal = (document.getElementById('homeSearchInput')?.value || '').toLowerCase().trim();
             const priceVal = mbFilterState.price || (document.getElementById('homePriceFilter')?.value || '');
             const makerVal = mbFilterState.maker;
             const modelVal = mbFilterState.model;
             const yearVal = mbFilterState.year ? parseInt(mbFilterState.year, 10) : 0;
+            const favIds = showFavoritesOnly ? getFavoriteIds() : null;
 
             return publicVehicles.filter(v => {
+                if (favIds && !favIds.includes(v.id)) return false;
+
                 const matchText = (v.model_name + ' ' + (v.plate_number || '') + ' ' + (v.manufacturer || '')).toLowerCase();
                 if (searchVal && !matchText.includes(searchVal)) return false;
 
@@ -630,6 +1037,8 @@
                 renderMbFilterChips();
                 renderMbModelChips();
                 updateFilterBadge();
+                updateAllFavoritesUi();
+                updateCompareFloatingBar();
             } catch (err) {
                 const grid = document.getElementById('vehicleGrid');
                 if (grid) {
@@ -716,15 +1125,20 @@
                 return;
             }
 
+            const favorites = getFavoriteIds();
+            const compareIds = window.compareVehicleIds || [];
+
             // 엔카 스타일 5:3 비율 대형 카드 (White 80% / Deep Charcoal 15% / Electric Lime 5%)
             grid.innerHTML = filtered.map(v => {
                 const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/vehicles/neutral_car_placeholder.jpg');
                 const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
                 const mileageFormatted = v.mileage ? `${Number(v.mileage).toLocaleString('ko-KR')}km` : '주행 미확인';
                 const titleParts = formatVehicleTitleParts(v.model_name, v.trim);
+                const isFav = favorites.includes(v.id);
+                const isComp = compareIds.includes(v.id);
 
                 return `
-                    <div class="bg-white rounded-xl overflow-hidden border border-[#E2E6EA] hover:border-slate-400 hover:shadow-sm transition-all duration-200 cursor-pointer flex flex-col group"
+                    <div class="bg-white rounded-xl overflow-hidden border border-[#E2E6EA] hover:border-slate-400 hover:shadow-sm transition-all duration-200 cursor-pointer flex flex-col group relative"
                          onclick="openVehicleDetail('${v.id}')">
                         <!-- 5:3 비율 실차 사진 영역 (엔카 5:3 공식 규격) -->
                         <div class="aspect-[5/3] bg-slate-900 relative overflow-hidden flex items-center justify-center">
@@ -734,6 +1148,14 @@
                             <span class="absolute top-3 left-3 bg-[#171B1E] text-[#C8FF3D] border border-[#C8FF3D]/40 text-[11px] font-bold px-2.5 py-0.5 rounded shadow-2xs">
                                 실차인증
                             </span>
+                            <!-- 관심 차량 찜 버튼 (DIRECTIVE 062) -->
+                            <button type="button" 
+                                    onclick="event.stopPropagation(); toggleFavoriteVehicle('${v.id}')"
+                                    class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-700 flex items-center justify-center transition-transform active:scale-90 shadow-2xs z-10 cursor-pointer"
+                                    aria-label="관심 차량 찜하기"
+                                    data-fav-btn="${v.id}">
+                                <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : 'text-slate-400'}"></i>
+                            </button>
                         </div>
 
                         <!-- 차량 정보 영역 -->
@@ -754,14 +1176,21 @@
                                 </div>
                             </div>
 
-                            <div class="pt-3 border-t border-slate-100 flex items-end justify-between">
+                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
                                 <div>
                                     <span class="text-[11px] text-slate-400 block mb-0.5">정찰 판매가</span>
                                     <span class="text-xl font-bold text-[#171B1E] tracking-tight">${priceFormatted}</span>
                                 </div>
-                                <span class="text-xs font-bold text-[#171B1E] group-hover:text-black flex items-center">
-                                    상세보기 <i data-lucide="chevron-right" class="w-3.5 h-3.5 ml-0.5"></i>
-                                </span>
+                                <div class="flex items-center space-x-3">
+                                    <!-- 최대 3대 차량 비교 체크박스 (DIRECTIVE 062) -->
+                                    <label class="flex items-center space-x-1.5 text-xs text-slate-600 hover:text-black cursor-pointer select-none py-1 px-1.5 rounded hover:bg-slate-100 transition-colors" onclick="event.stopPropagation()">
+                                        <input type="checkbox" ${isComp ? 'checked' : ''} onchange="toggleCompareVehicle('${v.id}', this.checked)" class="compare-checkbox rounded border-slate-300 text-[#171B1E] focus:ring-0 cursor-pointer w-3.5 h-3.5" data-compare-id="${v.id}">
+                                        <span class="font-medium text-[11px]">비교</span>
+                                    </label>
+                                    <span class="text-xs font-bold text-[#171B1E] group-hover:text-black flex items-center">
+                                        상세 <i data-lucide="chevron-right" class="w-3.5 h-3.5 ml-0.5"></i>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -788,11 +1217,6 @@
                 publicVehicles.sort((a, b) => (a.mileage || 0) - (b.mileage || 0));
             }
             renderVehiclesList();
-        }
-
-        function openVehicleDetail(vid) {
-            window.history.pushState({}, '', `/cars/${vid}`);
-            showDetailView(vid);
         }
 
         function openVehicleDetail(vid) {
@@ -955,7 +1379,11 @@
 
         // ESC 키로 모달 닫기
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closePolicyModal();
+            if (e.key === 'Escape') {
+                closePolicyModal();
+                closeCompareModal();
+                closeMobileFilterBottomSheet();
+            }
         });
     </script>
 </body>
