@@ -141,6 +141,16 @@ class Vehicle(Base):
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
     timeline_json: Mapped[str] = mapped_column(Text, default="[]")  # 상태 변경 이력 리스트 JSON
 
+    # DIRECTIVE 071 확장 필드: 소유/판매 유형 분리 및 차마트 보유 매물 우선노출 시스템
+    listing_ownership_type: Mapped[str] = mapped_column(String(30), default="OWNED")
+    # 유형: OWNED (차마트 직접 보유), PARTNER_CONFIRMED (파트너 권한 확인), BROKERAGE (알선), EXTERNAL (외부)
+    is_priority_exposure: Mapped[bool] = mapped_column(Boolean, default=False)  # 우선노출 여부
+    priority_rank: Mapped[int] = mapped_column(Integer, default=0)              # 우선순위 가중치 (높을수록 우선)
+    priority_start_date: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True) # 노출 시작일
+    priority_end_date: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)   # 노출 종료일
+    priority_reason: Mapped[str | None] = mapped_column(String(255), nullable=True) # 우선노출 사유
+    priority_history_json: Mapped[str] = mapped_column(Text, default="[]")      # 관리자 변경 이력
+
     # DIRECTIVE 050 확장 필드: 마스터 상세 제원 및 다중 플랫폼 연동
     manufacturer: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 제조사 (현대, 기아 등)
     trim: Mapped[str | None] = mapped_column(String(100), nullable=True)          # 세부 등급/트림
@@ -267,7 +277,7 @@ class VehicleDefect(Base):
 
 
 class VehiclePhoto(Base):
-    """차량 사진 자산 관리 모델 (외관, 실내, 엔진, 하자, 문서) (DIRECTIVE 046-D)."""
+    """차량 사진 자산 관리 모델 (외관, 실내, 엔진, 하자, 문서) (DIRECTIVE 046-D / 071)."""
     __tablename__ = "vehicle_photos"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -287,6 +297,21 @@ class VehiclePhoto(Base):
     original_file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)  # SHA256 해시
     usage_rights_status: Mapped[str] = mapped_column(String(30), default="PENDING")  # CONFIRMED_COMMERCIAL, DEMO_ONLY, PENDING_RIGHTS
     verified_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    verified_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # DIRECTIVE 071 차량 부위·촬영 각도별 전문 사진 메타데이터
+    view_code: Mapped[str | None] = mapped_column(String(50), nullable=True)        # EXT_FRONT, INT_DASHBOARD 등
+    category_code: Mapped[str] = mapped_column(String(50), default="EXTERIOR_FULL") # EXTERIOR_FULL, EXTERIOR_PANEL, INTERIOR 등
+    display_label: Mapped[str] = mapped_column(String(100), default="외관")          # 한글 부위명 (예: 정면, 운전석 등)
+    original_path: Mapped[str | None] = mapped_column(String(255), nullable=True)   # 원본 파일 경로
+    thumbnail_path: Mapped[str | None] = mapped_column(String(255), nullable=True)  # 썸네일 경로
+    uploaded_by: Mapped[str | None] = mapped_column(String(50), nullable=True)      # 업로더
+    public_visibility: Mapped[str] = mapped_column(String(30), default="PUBLIC")   # PUBLIC, PRIVATE, ADMIN_ONLY
+    approval_status: Mapped[str] = mapped_column(String(30), default="APPROVED")   # PENDING, APPROVED, REJECTED
+    photo_note: Mapped[str | None] = mapped_column(Text, nullable=True)             # 부위 메모 및 하자 특이사항
+    damage_evidence: Mapped[bool] = mapped_column(Boolean, default=False)          # 하자/손상 입증 사진 여부
+    mime_type: Mapped[str] = mapped_column(String(50), default="image/jpeg")       # MIME 형식
+    file_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)     # 파일 바이트 크기
     verified_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
 
     vehicle = relationship("Vehicle", back_populates="photos")

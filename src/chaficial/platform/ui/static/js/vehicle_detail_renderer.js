@@ -120,16 +120,24 @@ class VehicleDetailRenderer {
     if ((this.isRealPhotoVerified || isFixtureOrDemo) && hasRealPhotos) {
       this.photos = d.photos.map(p => ({
         url: p.photo_url || p.url,
-        caption: p.caption || p.category || `${d.model_name} 실차 사진`,
-        isVerified: Boolean(d.photo_verification_status === 'REAL_PHOTO_VERIFIED')
+        caption: p.caption || p.display_label || `${d.model_name} 실차 사진`,
+        display_label: p.display_label || p.label || '외관',
+        category_code: p.category_code || (p.category ? `${p.category}_FULL` : 'EXTERIOR_FULL'),
+        view_code: p.view_code || 'UNSPECIFIED',
+        isVerified: Boolean(d.photo_verification_status === 'REAL_PHOTO_VERIFIED' || isFixtureOrDemo)
       }));
     } else {
       this.photos = [{
         url: '/static/img/vehicles/neutral_car_placeholder.jpg',
         caption: '차량 실차 사진 등록 전 (전시장 준비 중)',
+        display_label: '준비 중',
+        category_code: 'EXTERIOR_FULL',
+        view_code: 'EXT_FRONT',
         isVerified: false
       }];
     }
+
+    this.activePhotoCategory = 'ALL';
 
     // 2. 단일 SSOT 사고·성능 정규화 데이터 바인딩
     const acc = d.accident_summary || d.accident_history || {};
@@ -267,8 +275,33 @@ class VehicleDetailRenderer {
           <!-- [좌측: 5:3 대형 갤러리 + 기본제원표 + 사고진단 + 소모품 + 옵션 + 구매비용] -->
           <div class="space-y-6 w-full min-w-0">
             
-            <!-- 1. 5:3 비율 대형 실차 사진 갤러리 (엔카 5:3 공식 규격) -->
+            <!-- 1. 5:3 비율 대형 실차 사진 갤러리 (엔카 5:3 공식 규격 & DIRECTIVE 071 부위별 탐색) -->
             <div class="bg-white rounded-lg border border-[#E5E8EC] overflow-hidden p-4 space-y-3">
+              <!-- 부위별 카테고리 탭 (DIRECTIVE 071 TASK 6) -->
+              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-100 text-xs font-semibold custom-scrollbar">
+                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('ALL')" id="vdrTabCatALL" class="px-3 py-1.5 rounded-full transition-all bg-[#171B1E] text-white font-bold cursor-pointer shrink-0 shadow-2xs">
+                  전체 (${this.photos.length})
+                </button>
+                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('EXTERIOR_FULL')" id="vdrTabCatEXTERIOR_FULL" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
+                  외관 전체
+                </button>
+                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('EXTERIOR_PANEL')" id="vdrTabCatEXTERIOR_PANEL" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
+                  외판 상세
+                </button>
+                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('INTERIOR')" id="vdrTabCatINTERIOR" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
+                  실내
+                </button>
+                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('ENGINE_MECHANICAL')" id="vdrTabCatENGINE_MECHANICAL" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
+                  엔진·하부
+                </button>
+                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('OPTION_FEATURE')" id="vdrTabCatOPTION_FEATURE" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
+                  옵션·특이사항
+                </button>
+                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('DOCUMENT')" id="vdrTabCatDOCUMENT" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
+                  성능점검 서류
+                </button>
+              </div>
+
               <div id="vdrGalleryViewport" class="relative aspect-[5/3] bg-slate-900 rounded overflow-hidden flex items-center justify-center select-none touch-pan-y cursor-zoom-in">
                 <img id="vdrMainImage" src="${escapeHtml(this.photos[0].url)}" alt="차량 사진" class="w-full h-full object-contain transition-all duration-200" onclick="window.__vdrInstance.openLightbox()" />
                 
@@ -280,6 +313,12 @@ class VehicleDetailRenderer {
                     <i data-lucide="chevron-right" class="w-5 h-5"></i>
                   </button>
                 ` : ''}
+
+                <!-- 한글 부위명 라벨 뱃지 (DIRECTIVE 071 TASK 6) -->
+                <div class="absolute top-3 right-3 bg-black/75 backdrop-blur-xs text-[#C8FF3D] border border-[#C8FF3D]/40 text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#C8FF3D]"></span>
+                  <span id="vdrPhotoPartLabel">${escapeHtml(this.photos[0].display_label || '외관')}</span>
+                </div>
 
                 <!-- 사진 카운터 & 상태 배지 -->
                 <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white/90 bg-black/60 px-3 py-1.5 rounded">
@@ -303,7 +342,7 @@ class VehicleDetailRenderer {
               ${this.photos.length > 1 ? `
                 <div id="vdrThumbnailsContainer" class="flex gap-2 overflow-x-auto py-1 custom-scrollbar">
                   ${this.photos.map((p, idx) => `
-                    <button onclick="window.__vdrInstance.selectPhoto(${idx})" class="w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${idx === 0 ? 'border-[#171B1E] ring-1 ring-[#171B1E]' : 'border-[#E5E8EC] opacity-70 hover:opacity-100'}">
+                    <button onclick="window.__vdrInstance.selectPhoto(${idx})" data-cat="${escapeHtml(p.category_code)}" class="vdr-thumb-btn w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${idx === 0 ? 'border-[#171B1E] ring-1 ring-[#171B1E]' : 'border-[#E5E8EC] opacity-70 hover:opacity-100'}">
                       <img src="${escapeHtml(p.url)}" alt="썸네일 ${idx+1}" class="w-full h-full object-cover" />
                     </button>
                   `).join('')}
@@ -1308,6 +1347,10 @@ class VehicleDetailRenderer {
     const capEl = document.getElementById('vdrPhotoCaption');
     if (capEl) capEl.textContent = photo.caption;
 
+    // 한글 부위 라벨 갱신 (DIRECTIVE 071)
+    const partLabelEl = document.getElementById('vdrPhotoPartLabel');
+    if (partLabelEl) partLabelEl.textContent = photo.display_label || photo.caption || '외관';
+
     const countEl = document.getElementById('vdrPhotoCounter');
     if (countEl) countEl.textContent = `${this.currentPhotoIdx + 1} / ${this.photos.length}`;
 
@@ -1322,14 +1365,51 @@ class VehicleDetailRenderer {
 
     const container = document.getElementById('vdrThumbnailsContainer');
     if (container) {
-      const btns = container.querySelectorAll('button');
+      const btns = container.querySelectorAll('.vdr-thumb-btn');
       btns.forEach((btn, idx) => {
         if (idx === this.currentPhotoIdx) {
-          btn.className = "w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#171B1E] ring-1 ring-[#171B1E] cursor-pointer";
+          btn.className = "vdr-thumb-btn w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#171B1E] ring-1 ring-[#171B1E] cursor-pointer";
         } else {
-          btn.className = "w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#E5E8EC] opacity-70 hover:opacity-100 cursor-pointer";
+          btn.className = "vdr-thumb-btn w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#E5E8EC] opacity-70 hover:opacity-100 cursor-pointer";
         }
       });
+    }
+  }
+
+  filterPhotoCategory(cat) {
+    this.activePhotoCategory = cat;
+    
+    // 카테고리 탭 버튼 스타일 갱신
+    const cats = ['ALL', 'EXTERIOR_FULL', 'EXTERIOR_PANEL', 'INTERIOR', 'ENGINE_MECHANICAL', 'OPTION_FEATURE', 'DOCUMENT'];
+    cats.forEach(c => {
+      const btn = document.getElementById(`vdrTabCat${c}`);
+      if (btn) {
+        if (c === cat) {
+          btn.className = "px-3 py-1.5 rounded-full transition-all bg-[#171B1E] text-white font-bold cursor-pointer shrink-0 shadow-2xs";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0";
+        }
+      }
+    });
+
+    // 썸네일 스트립 필터링 표시/숨김
+    const container = document.getElementById('vdrThumbnailsContainer');
+    let firstMatchIdx = -1;
+    if (container) {
+      const btns = container.querySelectorAll('.vdr-thumb-btn');
+      btns.forEach((btn, idx) => {
+        const itemCat = btn.getAttribute('data-cat') || 'EXTERIOR_FULL';
+        if (cat === 'ALL' || itemCat === cat) {
+          btn.classList.remove('hidden');
+          if (firstMatchIdx === -1) firstMatchIdx = idx;
+        } else {
+          btn.classList.add('hidden');
+        }
+      });
+    }
+
+    if (firstMatchIdx !== -1) {
+      this.selectPhoto(firstMatchIdx);
     }
   }
 

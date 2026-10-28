@@ -10,7 +10,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from sqlalchemy import desc, select
+from sqlalchemy import and_, asc, case, desc, or_, select
 from sqlalchemy.orm import Session
 
 from chaficial.platform.search import normalize_phone_number, parse_currency_amount
@@ -2636,3 +2636,484 @@ class PlatformService:
             "guard_ppo_prohibited": True,  # 대규모 RL 조기 도입 차단 원칙
             "recommendation": recommendation,
         }
+
+    # =========================================================================
+    # DIRECTIVE 071: 차마트 엔카급 상세 검색, 보유 매물 우선노출, 부위별 사진 관리 시스템
+    # =========================================================================
+
+    STANDARD_PHOTO_SLOTS = [
+        # A. 외관 전체 (EXTERIOR_FULL)
+        {"category_code": "EXTERIOR_FULL", "category_label": "외관 전체", "view_code": "EXT_FRONT", "label": "정면", "is_required": True},
+        {"category_code": "EXTERIOR_FULL", "category_label": "외관 전체", "view_code": "EXT_FRONT_LEFT_45", "label": "전면 좌측 45도", "is_required": True},
+        {"category_code": "EXTERIOR_FULL", "category_label": "외관 전체", "view_code": "EXT_FRONT_RIGHT_45", "label": "전면 우측 45도", "is_required": False},
+        {"category_code": "EXTERIOR_FULL", "category_label": "외관 전체", "view_code": "EXT_SIDE_LEFT", "label": "좌측면 전체", "is_required": True},
+        {"category_code": "EXTERIOR_FULL", "category_label": "외관 전체", "view_code": "EXT_SIDE_RIGHT", "label": "우측면 전체", "is_required": True},
+        {"category_code": "EXTERIOR_FULL", "category_label": "외관 전체", "view_code": "EXT_REAR_LEFT_45", "label": "후면 좌측 45도", "is_required": True},
+        {"category_code": "EXTERIOR_FULL", "category_label": "외관 전체", "view_code": "EXT_REAR_RIGHT_45", "label": "후면 우측 45도", "is_required": False},
+        {"category_code": "EXTERIOR_FULL", "category_label": "외관 전체", "view_code": "EXT_REAR", "label": "후면", "is_required": True},
+        {"category_code": "EXTERIOR_FULL", "category_label": "외관 전체", "view_code": "EXT_ROOF", "label": "루프 상단", "is_required": False},
+
+        # B. 외판 상세 (EXTERIOR_PANEL)
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_BUMPER_FRONT", "label": "앞 범퍼", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_BUMPER_REAR", "label": "뒤 범퍼", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_BONNET", "label": "보닛", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_FENDER_FL", "label": "좌측 앞 펜더", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_FENDER_FR", "label": "우측 앞 펜더", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_DOOR_FL", "label": "좌측 앞 도어", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_DOOR_FR", "label": "우측 앞 도어", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_DOOR_RL", "label": "좌측 뒤 도어", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_DOOR_RR", "label": "우측 뒤 도어", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_TRUNK_LID", "label": "트렁크 리드 / 테일게이트", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_WHEEL_FL", "label": "좌측 앞 휠·타이어", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_WHEEL_FR", "label": "우측 앞 휠·타이어", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_WHEEL_RL", "label": "좌측 뒤 휠·타이어", "is_required": False},
+        {"category_code": "EXTERIOR_PANEL", "category_label": "외판 상세", "view_code": "PANEL_WHEEL_RR", "label": "우측 뒤 휠·타이어", "is_required": False},
+
+        # C. 실내 (INTERIOR)
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_FRONT_ROW_FULL", "label": "앞좌석 전체", "is_required": True},
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_DRIVER_SEAT", "label": "운전석", "is_required": True},
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_PASSENGER_SEAT", "label": "조수석", "is_required": False},
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_REAR_ROW_FULL", "label": "뒷좌석 전체", "is_required": True},
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_DASHBOARD", "label": "대시보드 전체", "is_required": True},
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_CLUSTER_MILEAGE", "label": "계기판 / 주행거리", "is_required": True},
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_STEERING_WHEEL", "label": "스티어링 휠", "is_required": True},
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_CENTER_FACIA", "label": "센터페시아 / 내비게이션", "is_required": True},
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_GEAR_LEVER", "label": "변속기 레버 및 센터콘솔", "is_required": False},
+        {"category_code": "INTERIOR", "category_label": "실내", "view_code": "INT_TRUNK_ROOM", "label": "트렁크 내부", "is_required": True},
+
+        # D. 엔진·기계·하부 (ENGINE_MECHANICAL)
+        {"category_code": "ENGINE_MECHANICAL", "category_label": "엔진·기계·하부", "view_code": "ENG_ROOM_FULL", "label": "엔진룸 전체", "is_required": True},
+        {"category_code": "ENGINE_MECHANICAL", "category_label": "엔진·기계·하부", "view_code": "ENG_DETAIL", "label": "엔진 상세", "is_required": False},
+        {"category_code": "ENGINE_MECHANICAL", "category_label": "엔진·기계·하부", "view_code": "ENG_BATTERY", "label": "배터리", "is_required": False},
+        {"category_code": "ENGINE_MECHANICAL", "category_label": "엔진·기계·하부", "view_code": "UND_UNDERBODY_FRONT", "label": "차량 하부 전면", "is_required": False},
+        {"category_code": "ENGINE_MECHANICAL", "category_label": "엔진·기계·하부", "view_code": "UND_UNDERBODY_CENTER", "label": "차량 하부 중앙 (누유 점검)", "is_required": False},
+        {"category_code": "ENGINE_MECHANICAL", "category_label": "엔진·기계·하부", "view_code": "UND_SUSPENSION_BRAKE", "label": "서스펜션 / 브레이크", "is_required": False},
+
+        # E. 옵션·특이사항 (OPTION_FEATURE)
+        {"category_code": "OPTION_FEATURE", "category_label": "옵션·특이사항", "view_code": "OPT_SMART_KEY", "label": "스마트키 2개", "is_required": False},
+        {"category_code": "OPTION_FEATURE", "category_label": "옵션·특이사항", "view_code": "OPT_SUNROOF_ACTIVE", "label": "선루프 작동", "is_required": False},
+        {"category_code": "OPTION_FEATURE", "category_label": "옵션·특이사항", "view_code": "OPT_CAMERA_360", "label": "어라운드뷰 / 후방카메라", "is_required": False},
+        {"category_code": "OPTION_FEATURE", "category_label": "옵션·특이사항", "view_code": "DEF_SCRATCH_EVIDENCE", "label": "외관 흠집 / 실내 오염 입증", "is_required": False},
+
+        # F. 서류 (DOCUMENT)
+        {"category_code": "DOCUMENT", "category_label": "서류", "view_code": "DOC_INSPECTION_RECORD", "label": "성능점검기록부 (마스킹 승인본)", "is_required": True},
+        {"category_code": "DOCUMENT", "category_label": "서류", "view_code": "DOC_INSURANCE_HISTORY", "label": "보험사고이력 자료", "is_required": False},
+    ]
+
+    @classmethod
+    def search_vehicles_advanced(
+        cls,
+        db: Session,
+        params: dict[str, Any],
+        mode: str = "prod"
+    ) -> dict[str, Any]:
+        """엔카 수준의 다단계 상세 검색 및 차마트 보유 매물 우선순위 정렬 시스템."""
+        allow_demo = (mode in ["demo", "staging"])
+        
+        # 1. 판매 및 공개 기본 조건 (보안 경계: 미승인, 비공개, 판매완료 원천 차단)
+        filters = [
+            Vehicle.status.in_(["FOR_SALE", "AVAILABLE"]),
+            Vehicle.is_public == True,
+            Vehicle.ownership_type.in_([OwnershipType.CHAMART_OWNED.value, OwnershipType.PARTNER_APPROVED.value]),
+        ]
+        if not allow_demo:
+            filters.append(Vehicle.is_demo == False)
+
+        # 2. 차량 기본 정보 필터
+        # 국산 / 수입
+        is_domestic = params.get("is_domestic")
+        domestic_makers = ["현대", "기아", "제네시스", "쉐보레", "르노코리아", "KG모빌리티", "쌍용", "대우"]
+        if is_domestic is True or str(is_domestic).lower() == "true":
+            filters.append(Vehicle.manufacturer.in_(domestic_makers))
+        elif is_domestic is False or str(is_domestic).lower() == "false":
+            filters.append(~Vehicle.manufacturer.in_(domestic_makers))
+
+        # 제조사 다중 선택
+        manufacturers = params.get("manufacturers")
+        if manufacturers:
+            if isinstance(manufacturers, str):
+                manufacturers = [m.strip() for m in manufacturers.split(",") if m.strip()]
+            if manufacturers:
+                filters.append(Vehicle.manufacturer.in_(manufacturers))
+
+        # 모델 / 키워드
+        keyword = params.get("keyword") or params.get("q")
+        if keyword:
+            keyword_clean = str(keyword).strip()
+            filters.append(
+                or_(
+                    Vehicle.model_name.ilike(f"%{keyword_clean}%"),
+                    Vehicle.plate_number.ilike(f"%{keyword_clean}%"),
+                    Vehicle.trim.ilike(f"%{keyword_clean}%"),
+                    Vehicle.manufacturer.ilike(f"%{keyword_clean}%")
+                )
+            )
+
+        model_name = params.get("model_name")
+        if model_name:
+            filters.append(Vehicle.model_name.ilike(f"%{model_name}%"))
+
+        trim = params.get("trim")
+        if trim:
+            filters.append(Vehicle.trim.ilike(f"%{trim}%"))
+
+        # 연식 범위
+        year_min = params.get("year_min")
+        if year_min:
+            try:
+                filters.append(Vehicle.year >= int(year_min))
+            except (ValueError, TypeError):
+                pass
+        year_max = params.get("year_max")
+        if year_max:
+            try:
+                filters.append(Vehicle.year <= int(year_max))
+            except (ValueError, TypeError):
+                pass
+
+        # 가격 범위 (만원)
+        price_min = params.get("price_min")
+        if price_min:
+            try:
+                filters.append(Vehicle.target_price >= int(price_min))
+            except (ValueError, TypeError):
+                pass
+        price_max = params.get("price_max")
+        if price_max:
+            try:
+                filters.append(Vehicle.target_price <= int(price_max))
+            except (ValueError, TypeError):
+                pass
+
+        # 주행거리 범위 (km)
+        mileage_min = params.get("mileage_min")
+        if mileage_min:
+            try:
+                filters.append(Vehicle.mileage >= int(mileage_min))
+            except (ValueError, TypeError):
+                pass
+        mileage_max = params.get("mileage_max")
+        if mileage_max:
+            try:
+                filters.append(Vehicle.mileage <= int(mileage_max))
+            except (ValueError, TypeError):
+                pass
+
+        # 연료 종류 (다중 선택 가능)
+        fuel_types = params.get("fuel_types")
+        if fuel_types:
+            if isinstance(fuel_types, str):
+                fuel_types = [f.strip() for f in fuel_types.split(",") if f.strip()]
+            if fuel_types:
+                filters.append(Vehicle.fuel_type.in_(fuel_types))
+
+        # 변속기
+        transmissions = params.get("transmissions")
+        if transmissions:
+            if isinstance(transmissions, str):
+                transmissions = [t.strip() for t in transmissions.split(",") if t.strip()]
+            if transmissions:
+                filters.append(Vehicle.transmission.in_(transmissions))
+
+        # 차종/차체 형태 (세단, SUV, RV, 경차 등)
+        body_types = params.get("body_types")
+        if body_types:
+            if isinstance(body_types, str):
+                body_types = [b.strip() for b in body_types.split(",") if b.strip()]
+            if body_types:
+                filters.append(Vehicle.body_type.in_(body_types))
+
+        # 색상
+        colors = params.get("colors")
+        if colors:
+            if isinstance(colors, str):
+                colors = [c.strip() for c in colors.split(",") if c.strip()]
+            if colors:
+                filters.append(Vehicle.color.in_(colors))
+
+        # 3. 매물 조건 필터
+        only_chamart_owned = params.get("only_chamart_owned")
+        if only_chamart_owned is True or str(only_chamart_owned).lower() == "true":
+            filters.append(
+                or_(
+                    Vehicle.listing_ownership_type == "OWNED",
+                    Vehicle.ownership_type == OwnershipType.CHAMART_OWNED.value
+                )
+            )
+
+        only_priority = params.get("only_priority")
+        if only_priority is True or str(only_priority).lower() == "true":
+            filters.append(Vehicle.is_priority_exposure == True)
+
+        # 4. 정렬 순서 (차마트 추천순 기본)
+        sort_mode = params.get("sort", "CHAMART_RECOMMENDED").upper()
+
+        query = db.query(Vehicle).filter(*filters)
+
+        # 차마트 추천순 기본 정렬:
+        # 1. 공개 승인된 차마트 직접 보유(OWNED) & 우선노출 지정 매물 (가격이 더 높아도 최우선)
+        # 2. 일반 차마트 직접 보유(OWNED) 매물
+        # 3. 파트너 승인 매물 중 우선지정 매물
+        # 4. 일반 정상 매물
+        if sort_mode == "CHAMART_RECOMMENDED":
+            # CASE 문으로 우선순위 점수 부여
+            priority_score = case(
+                (and_(Vehicle.listing_ownership_type == "OWNED", Vehicle.is_priority_exposure == True), 400),
+                (Vehicle.listing_ownership_type == "OWNED", 300),
+                (and_(Vehicle.listing_ownership_type == "PARTNER_CONFIRMED", Vehicle.is_priority_exposure == True), 200),
+                else_=100
+            )
+            query = query.order_by(
+                desc(priority_score),
+                desc(Vehicle.priority_rank),
+                desc(Vehicle.updated_at)
+            )
+        elif sort_mode in ["PRICE_ASC", "PRICE_LOW"]:
+            query = query.order_by(asc(Vehicle.target_price), desc(Vehicle.updated_at))
+        elif sort_mode in ["PRICE_DESC", "PRICE_HIGH"]:
+            query = query.order_by(desc(Vehicle.target_price), desc(Vehicle.updated_at))
+        elif sort_mode in ["DATE_DESC", "LATEST"]:
+            query = query.order_by(desc(Vehicle.created_at))
+        elif sort_mode in ["MILEAGE_ASC", "MILEAGE_LOW"]:
+            query = query.order_by(asc(Vehicle.mileage))
+        elif sort_mode in ["YEAR_DESC", "YEAR_HIGH"]:
+            query = query.order_by(desc(Vehicle.year), asc(Vehicle.mileage))
+        elif sort_mode in ["YEAR_ASC", "YEAR_LOW"]:
+            query = query.order_by(asc(Vehicle.year), asc(Vehicle.mileage))
+        else:
+            query = query.order_by(desc(Vehicle.updated_at))
+
+        raw_vehicles = query.all()
+
+        # 메모리 단계 추가 필터링 (사고/옵션 JSON 정밀 판정)
+        accident_filter = params.get("accident_type") # NO_ACCIDENT, SIMPLE_REPAIR, MAJOR_ACCIDENT
+        required_options = params.get("options")
+        if isinstance(required_options, str):
+            required_options = [o.strip() for o in required_options.split(",") if o.strip()]
+
+        filtered_results = []
+        for v in raw_vehicles:
+            # 공개 적격성 검증
+            if not PlatformService.is_vehicle_eligible_for_chamart_public(v, db, allow_demo=allow_demo):
+                continue
+
+            # 사고 상태 정밀 필터링
+            if accident_filter:
+                acc_json_str = v.accident_history_json or "{}"
+                cond_json_str = v.condition_detail_json or "{}"
+                try:
+                    acc_data = json.loads(acc_json_str)
+                    cond_data = json.loads(cond_json_str)
+                except Exception:
+                    acc_data, cond_data = {}, {}
+
+                is_no_acc = (acc_data.get("accident_count", 0) == 0 and not cond_data.get("frame_damage"))
+                is_simple = (acc_data.get("simple_repair", False) or cond_data.get("outer_panel_exchange", False))
+
+                if accident_filter == "NO_ACCIDENT" and not is_no_acc:
+                    continue
+                elif accident_filter == "SIMPLE_REPAIR" and not (is_no_acc or is_simple):
+                    continue
+
+            # 편의 옵션 다중 선택 정밀 필터링
+            if required_options:
+                opt_str = (v.options_json or "") + (v.options_structured_json or "")
+                has_all_options = True
+                for req_opt in required_options:
+                    if req_opt not in opt_str:
+                        has_all_options = False
+                        break
+                if not has_all_options:
+                    continue
+
+            # 사진 수 및 부위별 통계 계산
+            photos = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).all()
+            photo_count = len(photos)
+
+            # 월 납입금 추산 (60개월, 연 5.9% 기준 원리금 균등)
+            price_won = (v.target_price or 0) * 10000
+            monthly_est = 0
+            if price_won > 0:
+                r = 0.059 / 12
+                n = 60
+                monthly_est = int((price_won * r * ((1 + r) ** n)) / (((1 + r) ** n) - 1) / 10000)
+
+            # 소유 및 우선노출 배지 정보
+            is_owned = (v.listing_ownership_type == "OWNED" or v.ownership_type == OwnershipType.CHAMART_OWNED.value)
+            is_priority = bool(v.is_priority_exposure)
+
+            item = {
+                "id": v.id,
+                "plate_number": v.plate_number,
+                "manufacturer": v.manufacturer or "미확인",
+                "model_name": v.model_name,
+                "trim": v.trim or "",
+                "year": v.year,
+                "mileage": v.mileage,
+                "fuel_type": v.fuel_type or "미확인",
+                "transmission": v.transmission or "오토",
+                "body_type": v.body_type or "세단",
+                "color": v.color or "미확인",
+                "target_price": v.target_price,
+                "monthly_payment_estimate": monthly_est,
+                "primary_photo_url": v.primary_photo_url or (photos[0].photo_url if photos else "/static/img/car_placeholder.jpg"),
+                "photo_count": photo_count,
+                "branch_name": "차마트 장한평 본사 직영점",
+                "status": v.status,
+                "publishing_status": getattr(v, "publishing_status", "PUBLISHED"),
+                "is_demo_asset": allow_demo,
+                "demo_notice": "UI 디자인 검수용 시연 데이터" if allow_demo else None,
+
+                # DIRECTIVE 071 전용 속성
+                "listing_ownership_type": "OWNED" if is_owned else (v.listing_ownership_type or "PARTNER_CONFIRMED"),
+                "is_chamart_owned": is_owned,
+                "is_priority_exposure": is_priority,
+                "priority_rank": v.priority_rank or 0,
+                "priority_reason": v.priority_reason or ("차마트 직영 실매물 우선추천" if is_owned else None),
+                "badge_chamart_owned": is_owned,
+                "badge_priority": is_priority,
+            }
+            filtered_results.append(item)
+
+        total_count = len(filtered_results)
+
+        # 페이지네이션
+        page = max(1, int(params.get("page", 1)))
+        limit = max(1, int(params.get("limit", 20)))
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        paginated_items = filtered_results[start_idx:end_idx]
+
+        # 상단 '차마트 우선매물' 별도 추출 (선택적 노출 지원)
+        priority_items = [item for item in filtered_results if item["is_priority_exposure"] or item["is_chamart_owned"]][:4]
+
+        return {
+            "total_count": total_count,
+            "page": page,
+            "limit": limit,
+            "total_pages": (total_count + limit - 1) // limit if total_count > 0 else 1,
+            "items": paginated_items,
+            "priority_items": priority_items,
+            "sort_applied": sort_mode,
+        }
+
+    @classmethod
+    def get_vehicle_photo_matrix(cls, db: Session, vehicle_id: str) -> dict[str, Any]:
+        """차량 부위별 사진 등록 상태 및 45개 표준 슬롯 매트릭스 조회."""
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        if not v:
+            return {"error": "Vehicle not found", "slots": []}
+
+        photos = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == vehicle_id).order_by(VehiclePhoto.sort_order).all()
+        photos_by_view = {}
+        for p in photos:
+            view = p.view_code or "UNSPECIFIED"
+            if view not in photos_by_view:
+                photos_by_view[view] = []
+            photos_by_view[view].append({
+                "id": p.id,
+                "photo_url": p.photo_url,
+                "thumb_url": p.thumb_url or p.photo_url,
+                "category_code": p.category_code or p.category,
+                "display_label": p.display_label or p.caption or "부위 미확인",
+                "is_primary": p.is_primary,
+                "sort_order": p.sort_order,
+                "approval_status": p.approval_status or "APPROVED",
+                "public_visibility": p.public_visibility or "PUBLIC",
+                "photo_note": p.photo_note,
+                "damage_evidence": p.damage_evidence or False,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+            })
+
+        slots_status = []
+        registered_count = 0
+        for slot in cls.STANDARD_PHOTO_SLOTS:
+            view = slot["view_code"]
+            matched_photos = photos_by_view.get(view, [])
+            if matched_photos:
+                registered_count += len(matched_photos)
+            slots_status.append({
+                "category_code": slot["category_code"],
+                "category_label": slot["category_label"],
+                "view_code": view,
+                "label": slot["label"],
+                "is_required": slot["is_required"],
+                "is_registered": len(matched_photos) > 0,
+                "photo_count": len(matched_photos),
+                "photos": matched_photos,
+            })
+
+        return {
+            "vehicle_id": vehicle_id,
+            "plate_number": v.plate_number,
+            "model_name": v.model_name,
+            "total_slots": len(cls.STANDARD_PHOTO_SLOTS),
+            "registered_photos_count": len(photos),
+            "slots": slots_status,
+        }
+
+    @classmethod
+    def update_vehicle_priority_settings(
+        cls,
+        db: Session,
+        vehicle_id: str,
+        payload: dict[str, Any],
+        admin_username: str = "admin"
+    ) -> dict[str, Any]:
+        """관리자 전용 차량 소유/판매 유형 및 우선노출 설정 (서버 검증 및 이력 보존)."""
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        if not v:
+            return {"success": False, "message": "차량을 찾을 수 없습니다."}
+
+        # 유형 유효성 검증
+        valid_ownership_types = ["OWNED", "PARTNER_CONFIRMED", "BROKERAGE", "EXTERNAL"]
+        if "listing_ownership_type" in payload:
+            new_type = str(payload["listing_ownership_type"]).upper()
+            if new_type in valid_ownership_types:
+                v.listing_ownership_type = new_type
+                # 기존 ownership_type과도 호환 동기화
+                if new_type == "OWNED":
+                    v.ownership_type = OwnershipType.CHAMART_OWNED.value
+                elif new_type == "PARTNER_CONFIRMED":
+                    v.ownership_type = OwnershipType.PARTNER_APPROVED.value
+                elif new_type == "BROKERAGE":
+                    v.ownership_type = OwnershipType.PARTNER_CANDIDATE.value
+
+        old_priority = v.is_priority_exposure
+        if "is_priority_exposure" in payload:
+            v.is_priority_exposure = bool(payload["is_priority_exposure"])
+
+        if "priority_rank" in payload:
+            v.priority_rank = int(payload["priority_rank"])
+
+        if "priority_reason" in payload:
+            v.priority_reason = str(payload["priority_reason"]).strip()
+
+        # 이력 기록 (priority_history_json)
+        try:
+            history = json.loads(v.priority_history_json or "[]")
+        except Exception:
+            history = []
+
+        history.append({
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "updated_by": admin_username,
+            "listing_ownership_type": v.listing_ownership_type,
+            "is_priority_exposure": v.is_priority_exposure,
+            "priority_rank": v.priority_rank,
+            "priority_reason": v.priority_reason,
+        })
+        v.priority_history_json = json.dumps(history, ensure_ascii=False)
+        v.updated_at = datetime.datetime.utcnow()
+
+        db.commit()
+        return {
+            "success": True,
+            "vehicle_id": v.id,
+            "listing_ownership_type": v.listing_ownership_type,
+            "is_priority_exposure": v.is_priority_exposure,
+            "priority_rank": v.priority_rank,
+            "priority_reason": v.priority_reason,
+            "message": "우선노출 설정이 안전하게 갱신되었습니다.",
+        }
+

@@ -1362,18 +1362,143 @@ def transition_publishing_status(
 
 
 # -----------------------------------------------------------------------------
-# DIRECTIVE 051: PART 1. 차마트(CHAMART) 일반 고객용 공개 API
+# DIRECTIVE 051 & 071: PART 1. 차마트(CHAMART) 일반 고객용 공개 API 및 엔카급 상세 검색
 # -----------------------------------------------------------------------------
+
+@app.get("/api/chamart/search")
+@app.get("/api/chamart/search/vehicles")
+def search_chamart_vehicles(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """DIRECTIVE 071: 엔카급 상세 검색 및 차마트 보유 매물 우선순위 정렬 API."""
+    params = dict(request.query_params)
+    
+    # 1. DB 실차 검색 시도
+    result = PlatformService.search_vehicles_advanced(db, params, mode="prod")
+    
+    # 2. 운영 DB 실차가 아직 0건일 때, 검수용 100대 피스처 데이터를 동적으로 정밀 필터링하여 응답
+    if result["total_count"] == 0:
+        fixtures = get_staging_ui_fixture_vehicles()
+        if fixtures:
+            # 피스처 기반 인메모리 필터링 & 우선순위 정렬
+            filtered = []
+            
+            # 검색 조건 파싱
+            is_dom = params.get("is_domestic")
+            mfg_list = [m.strip() for m in params.get("manufacturers", "").split(",") if m.strip()]
+            kw = (params.get("keyword") or params.get("q") or "").strip().lower()
+            y_min = int(params.get("year_min", 0)) if params.get("year_min") else 0
+            y_max = int(params.get("year_max", 9999)) if params.get("year_max") else 9999
+            p_min = int(params.get("price_min", 0)) if params.get("price_min") else 0
+            p_max = int(params.get("price_max", 999999)) if params.get("price_max") else 999999
+            m_min = int(params.get("mileage_min", 0)) if params.get("mileage_min") else 0
+            m_max = int(params.get("mileage_max", 9999999)) if params.get("mileage_max") else 9999999
+            fuels = [f.strip() for f in params.get("fuel_types", "").split(",") if f.strip()]
+            bodies = [b.strip() for b in params.get("body_types", "").split(",") if b.strip()]
+            only_owned = str(params.get("only_chamart_owned", "")).lower() == "true"
+            only_priority = str(params.get("only_priority", "")).lower() == "true"
+            sort_mode = params.get("sort", "CHAMART_RECOMMENDED").upper()
+            
+            domestic_set = {"현대", "기아", "제네시스", "쉐보레", "르노코리아", "KG모빌리티"}
+            
+            for item in fixtures:
+                # 상태 확인: 판매완료 차량 차단
+                if item.get("status") in ["SOLD", "CANCELLED"]:
+                    continue
+                    
+                mfg = item.get("manufacturer", "")
+                if is_dom == "true" and mfg not in domestic_set:
+                    continue
+                if is_dom == "false" and mfg in domestic_set:
+                    continue
+                if mfg_list and mfg not in mfg_list:
+                    continue
+                    
+                model = item.get("model_name", "")
+                plate = item.get("plate_number", "")
+                trim = item.get("trim", "")
+                if kw and not (kw in model.lower() or kw in plate.lower() or kw in trim.lower() or kw in mfg.lower()):
+                    continue
+                    
+                yr = item.get("year", 0)
+                if not (y_min <= yr <= y_max):
+                    continue
+                pr = item.get("target_price", 0)
+                if not (p_min <= pr <= p_max):
+                    continue
+                mil = item.get("mileage", 0)
+                if not (m_min <= mil <= m_max):
+                    continue
+                if fuels and item.get("fuel_type") not in fuels:
+                    continue
+                if bodies and item.get("body_type") not in bodies:
+                    continue
+                
+                is_owned = item.get("is_chamart_owned", False) or item.get("listing_ownership_type") == "OWNED"
+                if only_owned and not is_owned:
+                    continue
+                if only_priority and not item.get("is_priority_exposure", False):
+                    continue
+                    
+                filtered.append(item)
+                
+            # 피스처 정렬
+            if sort_mode == "CHAMART_RECOMMENDED":
+                # 1. 차마트 직접 보유 & 우선노출 -> 2. 차마트 보유 -> 3. 일반
+                filtered.sort(
+                    key=lambda x: (
+                        1 if (x.get("is_chamart_owned") and x.get("is_priority_exposure")) else (
+                            2 if x.get("is_chamart_owned") else (
+                                3 if x.get("is_priority_exposure") else 4
+                            )
+                        ),
+                        -x.get("priority_rank", 0),
+                        -x.get("year", 0)
+                    )
+                )
+            elif sort_mode in ["PRICE_ASC", "PRICE_LOW"]:
+                filtered.sort(key=lambda x: x.get("target_price", 0))
+            elif sort_mode in ["PRICE_DESC", "PRICE_HIGH"]:
+                filtered.sort(key=lambda x: -x.get("target_price", 0))
+            elif sort_mode in ["MILEAGE_ASC", "MILEAGE_LOW"]:
+                filtered.sort(key=lambda x: x.get("mileage", 0))
+            elif sort_mode in ["YEAR_DESC", "YEAR_HIGH"]:
+                filtered.sort(key=lambda x: -x.get("year", 0))
+            elif sort_mode in ["YEAR_ASC", "YEAR_LOW"]:
+                filtered.sort(key=lambda x: x.get("year", 0))
+                
+            page = max(1, int(params.get("page", 1)))
+            limit = max(1, int(params.get("limit", 20)))
+            start_i = (page - 1) * limit
+            paginated = filtered[start_i:start_i + limit]
+            priority_items = [x for x in filtered if x.get("is_priority_exposure") or x.get("is_chamart_owned")][:4]
+            
+            return {
+                "total_count": len(filtered),
+                "page": page,
+                "limit": limit,
+                "total_pages": (len(filtered) + limit - 1) // limit if len(filtered) > 0 else 1,
+                "items": paginated,
+                "priority_items": priority_items,
+                "sort_applied": sort_mode,
+            }
+            
+    return result
+
 
 @app.get("/api/chamart/vehicles")
 def get_chamart_public_vehicles(
+    request: Request,
     db: Session = Depends(get_db)
-) -> list[dict[str, Any]]:
-    """차마트 고객 공개 차량 목록 (운영 실차 + DB 데모 및 100대 UI Fixture 안전 자동 연동)."""
+) -> Any:
+    """차마트 고객 공개 차량 목록 (하위 호환 배열 반환 + 파라미터 전달 시 상세 객체 반환)."""
+    # 쿼리 파라미터가 있는 경우 상세 검색 실행
+    if len(request.query_params) > 0:
+        return search_chamart_vehicles(request, db)
+
     vehicles = PlatformService.get_chamart_public_vehicles(db, mode="prod")
     if not vehicles:
-        # 운영 DB에 승인된 실차가 아직 입고 준비 중일 때, 사용자가 0대 빈 화면을 보지 않고
-        # 쇼룸 디자인과 매물 탐색을 즉시 검증할 수 있도록 100대 검수 Fixture 매물을 자동 서빙
         fixtures = get_staging_ui_fixture_vehicles()
         if fixtures:
             return fixtures
@@ -1386,18 +1511,248 @@ def get_chamart_public_vehicle_detail(
     vehicle_id: str,
     db: Session = Depends(get_db)
 ) -> dict[str, Any]:
-    """차마트 고객 공개 차량 상세 조회 (운영 실차 -> 데모 DB -> 100대 UI Fixture 3중 안전 폴백)."""
+    """차마트 고객 공개 차량 상세 조회 (부위별 사진 갤러리 메트릭스 통합 제공)."""
     detail = PlatformService.get_chamart_public_vehicle_detail(db, vehicle_id, mode="prod")
     if not detail:
         detail = PlatformService.get_chamart_public_vehicle_detail(db, vehicle_id, mode="demo")
     if not detail and (vehicle_id.startswith("UI-") or vehicle_id.startswith("STG-") or not detail):
         try:
-            return get_staging_ui_fixture_vehicle_detail(vehicle_id)
+            detail = get_staging_ui_fixture_vehicle_detail(vehicle_id)
         except HTTPException:
             pass
+            
     if not detail:
         raise HTTPException(status_code=404, detail="공개된 차량 정보를 찾을 수 없습니다.")
+
+    # 부위별 사진 매트릭스 보강 (TASK 6)
+    if "photo_matrix" not in detail:
+        try:
+            matrix = PlatformService.get_vehicle_photo_matrix(db, vehicle_id)
+            if matrix.get("slots"):
+                detail["photo_matrix"] = matrix
+        except Exception:
+            pass
+
     return detail
+
+
+# -----------------------------------------------------------------------------
+# DIRECTIVE 071: PART 2. 관리자용 차량 부위별 사진 관리 & 보유/우선노출 설정 API
+# -----------------------------------------------------------------------------
+
+@app.get("/api/admin/vehicles/{vehicle_id}/photo-matrix")
+def get_admin_vehicle_photo_matrix(
+    vehicle_id: str,
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """관리자용 45개 표준 부위별 사진 슬롯 현황 및 등록 사진 목록 조회 (DB 실차 + UI Fixture 양방향 지원)."""
+    # 1. DB 실차 조회
+    matrix = PlatformService.get_vehicle_photo_matrix(db, vehicle_id)
+    if "error" not in matrix:
+        return matrix
+        
+    # 2. UI Fixture 시연 차량 폴백
+    fixtures = get_staging_ui_fixture_vehicles()
+    for v in fixtures:
+        if v.get("id") == vehicle_id:
+            slots_status = []
+            photos = v.get("photos", [])
+            photos_by_view = {}
+            for p in photos:
+                view = p.get("view_code", "EXT_FRONT")
+                if view not in photos_by_view:
+                    photos_by_view[view] = []
+                photos_by_view[view].append(p)
+
+            for slot in PlatformService.STANDARD_PHOTO_SLOTS:
+                view = slot["view_code"]
+                matched = photos_by_view.get(view, [])
+                slots_status.append({
+                    "category_code": slot["category_code"],
+                    "category_label": slot["category_label"],
+                    "view_code": view,
+                    "label": slot["label"],
+                    "is_required": slot["is_required"],
+                    "is_registered": len(matched) > 0,
+                    "photo_count": len(matched),
+                    "photos": matched,
+                })
+            return {
+                "vehicle_id": vehicle_id,
+                "plate_number": v.get("plate_number", ""),
+                "model_name": v.get("model_name", ""),
+                "total_slots": len(PlatformService.STANDARD_PHOTO_SLOTS),
+                "registered_photos_count": len(photos),
+                "slots": slots_status,
+            }
+            
+    raise HTTPException(status_code=404, detail="해당 차량 정보를 찾을 수 없습니다.")
+
+
+@app.post("/api/admin/vehicles/{vehicle_id}/priority")
+async def update_admin_vehicle_priority(
+    vehicle_id: str,
+    request: Request,
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """관리자 전용 차량 소유/판매 유형 및 우선노출 설정 API."""
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="유효한 JSON 페이로드가 필요합니다.")
+        
+    res = PlatformService.update_vehicle_priority_settings(db, vehicle_id, payload)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("message", "설정 갱신 실패"))
+    return res
+
+
+@app.post("/api/admin/vehicles/{vehicle_id}/photos")
+async def upload_admin_vehicle_photo(
+    vehicle_id: str,
+    file: UploadFile = File(...),
+    view_code: str = Form("EXT_FRONT"),
+    category_code: str = Form("EXTERIOR_FULL"),
+    display_label: str = Form("외관"),
+    is_primary: bool = Form(False),
+    photo_note: Optional[str] = Form(None),
+    damage_evidence: bool = Form(False),
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """차량 부위별 전문 사진 업로드 (EXIF 메타데이터 제거 및 WebP 썸네일 자동 생성)."""
+    v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not v:
+        raise HTTPException(status_code=404, detail="차량을 찾을 수 없습니다.")
+
+    # 저장 경로 준비
+    upload_dir = Path("src/chaficial/platform/ui/static/uploads/vehicles") / vehicle_id
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    file_bytes = await file.read()
+    file_hash = hashlib.sha256(file_bytes).hexdigest()
+    file_ext = Path(file.filename or "photo.jpg").suffix.lower() or ".jpg"
+    safe_filename = f"{view_code}_{int(time.time())}_{secrets.token_hex(4)}{file_ext}"
+    orig_save_path = upload_dir / safe_filename
+
+    # PIL을 이용한 EXIF 정보 제거 및 원본/썸네일 생성
+    try:
+        from PIL import Image, ImageOps
+        import io
+        img = Image.open(io.BytesIO(file_bytes))
+        img = ImageOps.exif_transpose(img) # 방향 보정
+        
+        # EXIF 제거하고 깨끗하게 RGB 저장
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        img.save(orig_save_path, "JPEG", quality=90)
+        
+        # WebP 썸네일 생성
+        thumb_filename = f"thumb_{Path(safe_filename).stem}.webp"
+        thumb_save_path = upload_dir / thumb_filename
+        thumb_img = img.copy()
+        thumb_img.thumbnail((400, 300))
+        thumb_img.save(thumb_save_path, "WEBP", quality=85)
+        
+        thumb_url = f"/static/uploads/vehicles/{vehicle_id}/{thumb_filename}"
+    except Exception as e:
+        # PIL 실패 시 바이너리 직접 저장
+        with open(orig_save_path, "wb") as f:
+            f.write(file_bytes)
+        thumb_url = f"/static/uploads/vehicles/{vehicle_id}/{safe_filename}"
+
+    photo_url = f"/static/uploads/vehicles/{vehicle_id}/{safe_filename}"
+
+    # 대표 사진(is_primary) 지정 시 기존 대표 사진 해제
+    if is_primary:
+        db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == vehicle_id).update({"is_primary": False})
+        v.primary_photo_url = photo_url
+
+    new_photo = VehiclePhoto(
+        vehicle_id=vehicle_id,
+        photo_url=photo_url,
+        thumb_url=thumb_url,
+        category=category_code.split("_")[0],
+        category_code=category_code,
+        view_code=view_code,
+        display_label=display_label,
+        original_path=str(orig_save_path),
+        thumbnail_path=str(thumb_url),
+        is_primary=is_primary,
+        original_file_hash=file_hash,
+        verification_status="VERIFIED_REAL_ASSET",
+        photo_source="FIELD_INSPECTION_PHOTO",
+        usage_rights_status="CONFIRMED_COMMERCIAL",
+        approval_status="APPROVED",
+        public_visibility="PUBLIC",
+        photo_note=photo_note,
+        damage_evidence=damage_evidence,
+        mime_type="image/jpeg",
+        file_size_bytes=len(file_bytes),
+    )
+    db.add(new_photo)
+    db.commit()
+    db.refresh(new_photo)
+
+    return {
+        "success": True,
+        "photo_id": new_photo.id,
+        "photo_url": new_photo.photo_url,
+        "thumb_url": new_photo.thumb_url,
+        "view_code": new_photo.view_code,
+        "display_label": new_photo.display_label,
+        "is_primary": new_photo.is_primary,
+        "message": f"부위 [{display_label}] 사진이 성공적으로 등록되었습니다.",
+    }
+
+
+@app.delete("/api/admin/vehicles/{vehicle_id}/photos/{photo_id}")
+def delete_admin_vehicle_photo(
+    vehicle_id: str,
+    photo_id: str,
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """차량 부위 사진 삭제 API."""
+    p = db.query(VehiclePhoto).filter(VehiclePhoto.id == photo_id, VehiclePhoto.vehicle_id == vehicle_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="사진을 찾을 수 없습니다.")
+
+    db.delete(p)
+    db.commit()
+    return {"success": True, "message": "사진이 삭제되었습니다."}
+
+
+@app.put("/api/admin/vehicles/{vehicle_id}/photos/{photo_id}")
+async def update_admin_vehicle_photo(
+    vehicle_id: str,
+    photo_id: str,
+    request: Request,
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """사진 부위 코드, 한글 라벨, 메모, 대표 사진 여부 수정 API."""
+    p = db.query(VehiclePhoto).filter(VehiclePhoto.id == photo_id, VehiclePhoto.vehicle_id == vehicle_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="사진을 찾을 수 없습니다.")
+
+    payload = await request.json()
+    if "view_code" in payload:
+        p.view_code = payload["view_code"]
+    if "category_code" in payload:
+        p.category_code = payload["category_code"]
+    if "display_label" in payload:
+        p.display_label = payload["display_label"]
+    if "photo_note" in payload:
+        p.photo_note = payload["photo_note"]
+    if "damage_evidence" in payload:
+        p.damage_evidence = bool(payload["damage_evidence"])
+    if "is_primary" in payload and payload["is_primary"] is True:
+        db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == vehicle_id).update({"is_primary": False})
+        p.is_primary = True
+        v = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+        if v:
+            v.primary_photo_url = p.photo_url
+
+    db.commit()
+    return {"success": True, "message": "사진 정보가 갱신되었습니다."}
 
 
 # -----------------------------------------------------------------------------

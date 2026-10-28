@@ -14,24 +14,459 @@
     "primary_photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
     "photos": [
       {
+        "id": "photo-0-1",
+        "view_code": "EXT_FRONT",
+        "category_code": "EXTERIOR_FULL",
+        "display_label": "정면",
         "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
-        "caption": "아반떼 디자인 시안용 예시 사진"
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": true,
+        "sort_order": 1,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
       },
       {
+        "id": "photo-0-2",
+        "view_code": "EXT_FRONT_LEFT_45",
+        "category_code": "EXTERIOR_FULL",
+        "display_label": "전면 좌측 45도",
         "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
-        "caption": "아반떼 디자인 시안용 예시 사진"
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 2,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
       },
       {
+        "id": "photo-0-3",
+        "view_code": "EXT_FRONT_RIGHT_45",
+        "category_code": "EXTERIOR_FULL",
+        "display_label": "전면 우측 45도",
         "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
-        "caption": "아반떼 디자인 시안용 예시 사진"
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 3,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
       },
       {
-        "photo_url": "/static/img/ui_fixtures/아반떼_04.jpg",
-        "caption": "아반떼 디자인 시안용 예시 사진"
+        "id": "photo-0-4",
+        "view_code": "EXT_SIDE_LEFT",
+        "category_code": "EXTERIOR_FULL",
+        "display_label": "좌측면 전체",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 4,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
       },
       {
-        "photo_url": "/static/img/ui_fixtures/아반떼_05.jpg",
-        "caption": "아반떼 디자인 시안용 예시 사진"
+        "id": "photo-0-5",
+        "view_code": "EXT_SIDE_RIGHT",
+        "category_code": "EXTERIOR_FULL",
+        "display_label": "우측면 전체",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 5,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-6",
+        "view_code": "EXT_REAR_LEFT_45",
+        "category_code": "EXTERIOR_FULL",
+        "display_label": "후면 좌측 45도",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 6,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-7",
+        "view_code": "EXT_REAR",
+        "category_code": "EXTERIOR_FULL",
+        "display_label": "후면",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 7,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-8",
+        "view_code": "EXT_ROOF",
+        "category_code": "EXTERIOR_FULL",
+        "display_label": "루프 상단",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 8,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-9",
+        "view_code": "PANEL_BUMPER_FRONT",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "앞 범퍼",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 9,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-10",
+        "view_code": "PANEL_BUMPER_REAR",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "뒤 범퍼",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 10,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-11",
+        "view_code": "PANEL_BONNET",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "보닛",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 11,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-12",
+        "view_code": "PANEL_FENDER_FL",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "좌측 앞 펜더",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 12,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-13",
+        "view_code": "PANEL_FENDER_FR",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "우측 앞 펜더",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 13,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-14",
+        "view_code": "PANEL_DOOR_FL",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "좌측 앞 도어",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 14,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-15",
+        "view_code": "PANEL_DOOR_FR",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "우측 앞 도어",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 15,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-16",
+        "view_code": "PANEL_TRUNK_LID",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "트렁크 리드 / 테일게이트",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 16,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-17",
+        "view_code": "PANEL_WHEEL_FL",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "좌측 앞 휠·타이어",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 17,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-18",
+        "view_code": "PANEL_WHEEL_FR",
+        "category_code": "EXTERIOR_PANEL",
+        "display_label": "우측 앞 휠·타이어",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 18,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-19",
+        "view_code": "INT_FRONT_ROW_FULL",
+        "category_code": "INTERIOR",
+        "display_label": "앞좌석 전체",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 19,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-20",
+        "view_code": "INT_DRIVER_SEAT",
+        "category_code": "INTERIOR",
+        "display_label": "운전석 시트",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 20,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-21",
+        "view_code": "INT_PASSENGER_SEAT",
+        "category_code": "INTERIOR",
+        "display_label": "조수석 시트",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 21,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-22",
+        "view_code": "INT_REAR_ROW_FULL",
+        "category_code": "INTERIOR",
+        "display_label": "뒷좌석 전체",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 22,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-23",
+        "view_code": "INT_DASHBOARD",
+        "category_code": "INTERIOR",
+        "display_label": "대시보드 전체",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 23,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-24",
+        "view_code": "INT_CLUSTER_MILEAGE",
+        "category_code": "INTERIOR",
+        "display_label": "계기판 / 실주행거리",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 24,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-25",
+        "view_code": "INT_STEERING_WHEEL",
+        "category_code": "INTERIOR",
+        "display_label": "스티어링 휠 (핸들)",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 25,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-26",
+        "view_code": "INT_CENTER_FACIA",
+        "category_code": "INTERIOR",
+        "display_label": "센터페시아 / 내비게이션",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 26,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-27",
+        "view_code": "INT_GEAR_LEVER",
+        "category_code": "INTERIOR",
+        "display_label": "변속기 레버 및 센터콘솔",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 27,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-28",
+        "view_code": "INT_TRUNK_ROOM",
+        "category_code": "INTERIOR",
+        "display_label": "트렁크 적재함",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 28,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-29",
+        "view_code": "ENG_ROOM_FULL",
+        "category_code": "ENGINE_MECHANICAL",
+        "display_label": "엔진룸 전체",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 29,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-30",
+        "view_code": "ENG_DETAIL",
+        "category_code": "ENGINE_MECHANICAL",
+        "display_label": "엔진 블록 상세",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 30,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-31",
+        "view_code": "ENG_BATTERY",
+        "category_code": "ENGINE_MECHANICAL",
+        "display_label": "배터리 및 전장",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 31,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-32",
+        "view_code": "UND_UNDERBODY_CENTER",
+        "category_code": "ENGINE_MECHANICAL",
+        "display_label": "차량 하부 중앙 (미세누유 없음)",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 32,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-33",
+        "view_code": "OPT_SMART_KEY",
+        "category_code": "OPTION_FEATURE",
+        "display_label": "스마트키 2EA",
+        "photo_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_01.jpg",
+        "is_primary": false,
+        "sort_order": 33,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-34",
+        "view_code": "OPT_CAMERA_360",
+        "category_code": "OPTION_FEATURE",
+        "display_label": "어라운드뷰 / 후방카메라 작동",
+        "photo_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_02.jpg",
+        "is_primary": false,
+        "sort_order": 34,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
+      },
+      {
+        "id": "photo-0-35",
+        "view_code": "DOC_INSPECTION_RECORD",
+        "category_code": "DOCUMENT",
+        "display_label": "성능점검기록부 (진단 보증서)",
+        "photo_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "thumb_url": "/static/img/ui_fixtures/아반떼_03.jpg",
+        "is_primary": false,
+        "sort_order": 35,
+        "approval_status": "APPROVED",
+        "public_visibility": "PUBLIC",
+        "photo_note": "정상"
       }
     ],
     "branch_name": "차마트 제휴 전시장 (장한평)",
@@ -44,13 +479,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 통풍시트",
-      "후방카메라/감지센서",
-      "차선이탈 경고/유지",
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트",
-      "LED 헤드램프"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -82,22 +521,21 @@
         "category": "외관/휠"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": true,
+    "priority_rank": 100,
+    "priority_reason": "차마트 직영 장한평 1호 엄선 실매물",
+    "badge_chamart_owned": true,
+    "badge_priority": true,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 35
   },
   {
     "id": "UI-0002",
@@ -144,12 +582,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "후방카메라/감지센서",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러",
-      "가죽 스티어링 휠(열선)",
-      "스마트키/버튼시동"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -177,22 +616,21 @@
         "category": "편의/안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0003",
@@ -239,14 +677,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러",
-      "스마트키/버튼시동",
-      "차선이탈 경고/유지",
-      "가죽 스티어링 휠(열선)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -282,22 +723,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": true,
+    "priority_rank": 100,
+    "priority_reason": "차마트 직영 장한평 1호 엄선 실매물",
+    "badge_chamart_owned": true,
+    "badge_priority": true,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0004",
@@ -344,14 +784,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "블루투스 핸즈프리",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "하이패스/ECM 룸미러",
-      "앞좌석 열선시트",
-      "차선이탈 경고/유지",
-      "가죽 스티어링 휠(열선)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -387,22 +826,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0005",
@@ -449,11 +887,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "스마트키/버튼시동",
-      "앞좌석 통풍시트",
-      "블루투스 핸즈프리",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -477,22 +921,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0006",
@@ -539,14 +982,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "후방카메라/감지센서",
-      "차선이탈 경고/유지",
-      "가죽 스티어링 휠(열선)",
-      "하이패스/ECM 룸미러",
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -582,22 +1024,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": true,
+    "priority_rank": 100,
+    "priority_reason": "차마트 직영 장한평 1호 엄선 실매물",
+    "badge_chamart_owned": true,
+    "badge_priority": true,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0007",
@@ -644,14 +1085,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "가죽 스티어링 휠(열선)",
-      "하이패스/ECM 룸미러",
-      "내비게이션(정품)",
-      "스마트키/버튼시동",
-      "앞좌석 열선시트",
-      "블루투스 핸즈프리",
-      "후방카메라/감지센서"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -687,22 +1131,21 @@
         "category": "안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0008",
@@ -749,13 +1192,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 열선시트",
-      "앞좌석 통풍시트",
-      "차선이탈 경고/유지",
-      "하이패스/ECM 룸미러",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -787,22 +1230,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0009",
@@ -849,14 +1291,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "내비게이션(정품)",
-      "후방카메라/감지센서",
-      "스마트키/버튼시동",
-      "블루투스 핸즈프리",
-      "LED 헤드램프",
-      "앞좌석 통풍시트",
-      "가죽 스티어링 휠(열선)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -892,22 +1337,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0010",
@@ -954,14 +1398,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "내비게이션(정품)",
-      "앞좌석 통풍시트",
-      "LED 헤드램프",
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트",
-      "후방카메라/감지센서",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -997,22 +1440,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0011",
@@ -1059,11 +1501,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "차선이탈 경고/유지",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -1087,22 +1535,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0012",
@@ -1149,13 +1596,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 열선시트",
-      "내비게이션(정품)",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러",
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -1187,22 +1634,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0013",
@@ -1249,12 +1695,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "LED 헤드램프",
-      "내비게이션(정품)",
-      "블루투스 핸즈프리",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -1282,22 +1733,21 @@
         "category": "안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0014",
@@ -1344,14 +1794,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "후방카메라/감지센서",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러",
-      "앞좌석 열선시트",
-      "스마트키/버튼시동",
-      "내비게이션(정품)",
-      "LED 헤드램프"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -1387,22 +1836,21 @@
         "category": "외관/휠"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0015",
@@ -1449,12 +1897,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "스마트키/버튼시동",
-      "가죽 스티어링 휠(열선)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -1482,22 +1935,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "OWNED",
+    "is_chamart_owned": true,
+    "is_priority_exposure": false,
+    "priority_rank": 50,
+    "priority_reason": "차마트 직접 보유 실차",
+    "badge_chamart_owned": true,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0016",
@@ -1544,11 +1996,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "스마트키/버튼시동",
-      "후방카메라/감지센서",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -1572,22 +2026,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0017",
@@ -1634,12 +2087,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "LED 헤드램프"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -1667,22 +2125,21 @@
         "category": "외관/휠"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0018",
@@ -1729,14 +2186,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "스마트키/버튼시동",
-      "앞좌석 열선시트",
-      "블루투스 핸즈프리",
-      "하이패스/ECM 룸미러",
-      "후방카메라/감지센서",
-      "앞좌석 통풍시트",
-      "가죽 스티어링 휠(열선)",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -1772,22 +2228,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0019",
@@ -1834,14 +2289,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "블루투스 핸즈프리",
-      "후방카메라/감지센서",
-      "스마트키/버튼시동",
-      "차선이탈 경고/유지",
-      "앞좌석 통풍시트",
-      "LED 헤드램프",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -1877,22 +2335,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0020",
@@ -1939,14 +2396,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "스마트키/버튼시동",
-      "블루투스 핸즈프리",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 통풍시트",
-      "앞좌석 열선시트",
-      "내비게이션(정품)",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -1982,22 +2438,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0021",
@@ -2044,11 +2499,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "블루투스 핸즈프리",
-      "가죽 스티어링 휠(열선)",
-      "LED 헤드램프",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -2072,22 +2533,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0022",
@@ -2134,12 +2594,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "내비게이션(정품)",
-      "블루투스 핸즈프리",
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동",
-      "LED 헤드램프"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -2167,22 +2628,21 @@
         "category": "외관/휠"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0023",
@@ -2229,12 +2689,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "후방카메라/감지센서",
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "하이패스/ECM 룸미러",
-      "앞좌석 통풍시트",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -2262,22 +2727,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0024",
@@ -2324,14 +2788,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "내비게이션(정품)",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "블루투스 핸즈프리",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 통풍시트",
-      "후방카메라/감지센서",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -2367,22 +2830,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0025",
@@ -2429,12 +2891,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -2462,22 +2929,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0026",
@@ -2524,12 +2990,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "후방카메라/감지센서",
-      "차선이탈 경고/유지",
-      "가죽 스티어링 휠(열선)",
-      "내비게이션(정품)",
-      "앞좌석 통풍시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -2557,22 +3024,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0027",
@@ -2619,12 +3085,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "가죽 스티어링 휠(열선)",
-      "LED 헤드램프",
-      "내비게이션(정품)",
-      "하이패스/ECM 룸미러",
-      "후방카메라/감지센서"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -2652,22 +3123,21 @@
         "category": "안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0028",
@@ -2714,14 +3184,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "하이패스/ECM 룸미러",
-      "LED 헤드램프",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "앞좌석 열선시트",
-      "내비게이션(정품)",
-      "앞좌석 통풍시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -2757,22 +3226,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0029",
@@ -2819,14 +3287,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "스마트키/버튼시동",
-      "내비게이션(정품)",
-      "후방카메라/감지센서",
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "하이패스/ECM 룸미러",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -2862,22 +3333,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0030",
@@ -2924,13 +3394,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "스마트키/버튼시동",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "앞좌석 통풍시트",
-      "후방카메라/감지센서",
-      "하이패스/ECM 룸미러",
-      "가죽 스티어링 휠(열선)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -2962,22 +3432,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "PARTNER_CONFIRMED",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0031",
@@ -3024,14 +3493,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "차선이탈 경고/유지",
-      "하이패스/ECM 룸미러",
-      "내비게이션(정품)",
-      "앞좌석 열선시트",
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동",
-      "가죽 스티어링 휠(열선)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -3067,22 +3539,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0032",
@@ -3129,11 +3600,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "후방카메라/감지센서",
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -3157,22 +3630,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0033",
@@ -3219,11 +3691,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "앞좌석 열선시트",
-      "가죽 스티어링 휠(열선)",
-      "블루투스 핸즈프리",
-      "스마트키/버튼시동"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -3247,22 +3725,21 @@
         "category": "편의/안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0034",
@@ -3309,11 +3786,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "스마트키/버튼시동",
-      "앞좌석 통풍시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -3337,22 +3816,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0035",
@@ -3399,13 +3877,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "가죽 스티어링 휠(열선)",
-      "블루투스 핸즈프리",
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동",
-      "후방카메라/감지센서",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -3437,22 +3919,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0036",
@@ -3499,11 +3980,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "내비게이션(정품)",
-      "블루투스 핸즈프리",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 열선시트",
-      "앞좌석 통풍시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -3527,22 +4010,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0037",
@@ -3589,13 +4071,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "앞좌석 열선시트",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "가죽 스티어링 휠(열선)",
-      "차선이탈 경고/유지",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -3627,22 +4113,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0038",
@@ -3689,13 +4174,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "차선이탈 경고/유지",
-      "내비게이션(정품)",
-      "후방카메라/감지센서",
-      "LED 헤드램프",
-      "하이패스/ECM 룸미러",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -3727,22 +4212,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0039",
@@ -3789,11 +4273,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "가죽 스티어링 휠(열선)",
-      "스마트키/버튼시동",
-      "앞좌석 통풍시트",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -3817,22 +4307,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0040",
@@ -3879,13 +4368,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "하이패스/ECM 룸미러",
-      "가죽 스티어링 휠(열선)",
-      "블루투스 핸즈프리",
-      "차선이탈 경고/유지",
-      "내비게이션(정품)",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -3917,22 +4406,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0041",
@@ -3979,13 +4467,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "앞좌석 통풍시트",
-      "LED 헤드램프",
-      "앞좌석 열선시트",
-      "스마트키/버튼시동",
-      "가죽 스티어링 휠(열선)",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -4017,22 +4509,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0042",
@@ -4079,14 +4570,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "가죽 스티어링 휠(열선)",
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "LED 헤드램프"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -4122,22 +4612,21 @@
         "category": "외관/휠"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0043",
@@ -4184,13 +4673,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "LED 헤드램프",
-      "내비게이션(정품)",
-      "앞좌석 열선시트",
-      "스마트키/버튼시동",
-      "후방카메라/감지센서",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -4222,22 +4715,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0044",
@@ -4284,12 +4776,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 열선시트",
-      "차선이탈 경고/유지",
-      "LED 헤드램프",
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동",
-      "후방카메라/감지센서"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -4317,22 +4810,21 @@
         "category": "안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0045",
@@ -4379,11 +4871,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -4407,22 +4905,21 @@
         "category": "편의/안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0046",
@@ -4469,11 +4966,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "내비게이션(정품)",
-      "가죽 스티어링 휠(열선)",
-      "LED 헤드램프",
-      "앞좌석 통풍시트",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -4497,22 +4996,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0047",
@@ -4559,14 +5057,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 열선시트",
-      "내비게이션(정품)",
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "블루투스 핸즈프리",
-      "가죽 스티어링 휠(열선)",
-      "후방카메라/감지센서",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -4602,22 +5103,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0048",
@@ -4664,12 +5164,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "LED 헤드램프",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -4697,22 +5198,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0049",
@@ -4759,14 +5259,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "차선이탈 경고/유지",
-      "LED 헤드램프",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "하이패스/ECM 룸미러",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -4802,22 +5305,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0050",
@@ -4864,12 +5366,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "가죽 스티어링 휠(열선)",
-      "내비게이션(정품)",
-      "하이패스/ECM 룸미러",
-      "후방카메라/감지센서",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -4897,22 +5400,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0051",
@@ -4959,12 +5461,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "스마트키/버튼시동",
-      "내비게이션(정품)",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -4992,22 +5499,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0052",
@@ -5054,14 +5560,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동",
-      "차선이탈 경고/유지",
-      "내비게이션(정품)",
-      "앞좌석 열선시트",
-      "후방카메라/감지센서",
-      "하이패스/ECM 룸미러",
-      "가죽 스티어링 휠(열선)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -5097,22 +5602,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0053",
@@ -5159,14 +5663,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "블루투스 핸즈프리",
-      "스마트키/버튼시동",
-      "하이패스/ECM 룸미러",
-      "앞좌석 열선시트",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -5202,22 +5709,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0054",
@@ -5264,12 +5770,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "스마트키/버튼시동",
-      "차선이탈 경고/유지",
-      "앞좌석 열선시트",
-      "블루투스 핸즈프리",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -5297,22 +5804,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0055",
@@ -5359,13 +5865,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "LED 헤드램프",
-      "가죽 스티어링 휠(열선)",
-      "하이패스/ECM 룸미러",
-      "내비게이션(정품)",
-      "차선이탈 경고/유지",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -5397,22 +5907,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0056",
@@ -5459,13 +5968,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "LED 헤드램프",
-      "내비게이션(정품)",
-      "스마트키/버튼시동",
-      "앞좌석 열선시트",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 통풍시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -5497,22 +6006,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0057",
@@ -5559,11 +6067,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "앞좌석 통풍시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -5587,22 +6101,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0058",
@@ -5649,13 +6162,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "차선이탈 경고/유지",
-      "가죽 스티어링 휠(열선)",
-      "내비게이션(정품)",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -5687,22 +6200,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0059",
@@ -5749,11 +6261,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트",
-      "스마트키/버튼시동",
-      "차선이탈 경고/유지",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -5777,22 +6295,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0060",
@@ -5839,13 +6356,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "스마트키/버튼시동",
-      "후방카메라/감지센서",
-      "LED 헤드램프",
-      "내비게이션(정품)",
-      "차선이탈 경고/유지",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -5877,22 +6394,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0061",
@@ -5939,12 +6455,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "앞좌석 통풍시트",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 열선시트",
-      "내비게이션(정품)",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -5972,22 +6493,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0062",
@@ -6034,14 +6554,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "후방카메라/감지센서",
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "블루투스 핸즈프리",
-      "내비게이션(정품)",
-      "가죽 스티어링 휠(열선)",
-      "차선이탈 경고/유지",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -6077,22 +6596,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0063",
@@ -6139,11 +6657,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "앞좌석 통풍시트",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 열선시트",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -6167,22 +6691,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0064",
@@ -6229,14 +6752,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "앞좌석 통풍시트",
-      "내비게이션(정품)",
-      "앞좌석 열선시트",
-      "하이패스/ECM 룸미러",
-      "스마트키/버튼시동",
-      "후방카메라/감지센서",
-      "LED 헤드램프"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -6272,22 +6794,21 @@
         "category": "외관/휠"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0065",
@@ -6334,13 +6855,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "가죽 스티어링 휠(열선)",
-      "스마트키/버튼시동",
-      "차선이탈 경고/유지",
-      "하이패스/ECM 룸미러",
-      "후방카메라/감지센서",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -6372,22 +6897,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0066",
@@ -6434,11 +6958,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "후방카메라/감지센서",
-      "LED 헤드램프",
-      "앞좌석 열선시트",
-      "하이패스/ECM 룸미러",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -6462,22 +6988,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0067",
@@ -6524,13 +7049,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "내비게이션(정품)",
-      "가죽 스티어링 휠(열선)",
-      "하이패스/ECM 룸미러",
-      "후방카메라/감지센서",
-      "스마트키/버튼시동",
-      "앞좌석 통풍시트",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -6562,22 +7091,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0068",
@@ -6624,11 +7152,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "내비게이션(정품)",
-      "블루투스 핸즈프리",
-      "후방카메라/감지센서",
-      "LED 헤드램프",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -6652,22 +7182,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0069",
@@ -6714,11 +7243,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "스마트키/버튼시동",
-      "앞좌석 통풍시트",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -6742,22 +7277,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0070",
@@ -6804,13 +7338,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "앞좌석 열선시트",
-      "후방카메라/감지센서",
-      "블루투스 핸즈프리",
-      "가죽 스티어링 휠(열선)",
-      "LED 헤드램프",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -6842,22 +7376,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0071",
@@ -6904,11 +7437,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "앞좌석 통풍시트",
-      "후방카메라/감지센서",
-      "차선이탈 경고/유지"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -6932,22 +7471,21 @@
         "category": "주행보조"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0072",
@@ -6994,14 +7532,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "앞좌석 열선시트",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "LED 헤드램프",
-      "가죽 스티어링 휠(열선)",
-      "블루투스 핸즈프리",
-      "스마트키/버튼시동"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -7037,22 +7574,21 @@
         "category": "편의/안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0073",
@@ -7099,13 +7635,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 통풍시트",
-      "앞좌석 열선시트",
-      "스마트키/버튼시동",
-      "하이패스/ECM 룸미러",
-      "후방카메라/감지센서",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -7137,22 +7677,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0074",
@@ -7199,12 +7738,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "후방카메라/감지센서",
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -7232,22 +7772,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0075",
@@ -7294,12 +7833,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "하이패스/ECM 룸미러",
-      "앞좌석 열선시트",
-      "가죽 스티어링 휠(열선)",
-      "내비게이션(정품)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -7327,22 +7871,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0076",
@@ -7389,12 +7932,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "내비게이션(정품)",
-      "앞좌석 열선시트",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -7422,22 +7966,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0077",
@@ -7484,13 +8027,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "후방카메라/감지센서",
-      "스마트키/버튼시동",
-      "내비게이션(정품)",
-      "앞좌석 통풍시트",
-      "LED 헤드램프",
-      "차선이탈 경고/유지",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -7522,22 +8069,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0078",
@@ -7584,14 +8130,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "스마트키/버튼시동",
-      "앞좌석 통풍시트",
-      "가죽 스티어링 휠(열선)",
-      "내비게이션(정품)",
-      "차선이탈 경고/유지",
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -7627,22 +8172,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0079",
@@ -7689,12 +8233,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "LED 헤드램프",
-      "가죽 스티어링 휠(열선)",
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트",
-      "하이패스/ECM 룸미러",
-      "스마트키/버튼시동"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -7722,22 +8271,21 @@
         "category": "편의/안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0080",
@@ -7784,11 +8332,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "하이패스/ECM 룸미러",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -7812,22 +8362,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0081",
@@ -7874,13 +8423,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "가죽 스티어링 휠(열선)",
-      "LED 헤드램프",
-      "하이패스/ECM 룸미러",
-      "후방카메라/감지센서",
-      "차선이탈 경고/유지",
-      "스마트키/버튼시동"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -7912,22 +8465,21 @@
         "category": "편의/안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0082",
@@ -7974,14 +8526,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "후방카메라/감지센서",
-      "스마트키/버튼시동",
-      "하이패스/ECM 룸미러",
-      "가죽 스티어링 휠(열선)",
-      "차선이탈 경고/유지",
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -8017,22 +8568,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0083",
@@ -8079,11 +8629,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러",
-      "앞좌석 열선시트",
-      "차선이탈 경고/유지",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -8107,22 +8663,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0084",
@@ -8169,11 +8724,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "내비게이션(정품)",
-      "후방카메라/감지센서",
-      "앞좌석 통풍시트",
-      "앞좌석 열선시트",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -8197,22 +8754,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 5
   },
   {
     "id": "UI-0085",
@@ -8259,11 +8815,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "가죽 스티어링 휠(열선)",
-      "스마트키/버튼시동",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -8287,22 +8849,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 5
   },
   {
     "id": "UI-0086",
@@ -8341,13 +8902,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "하이패스/ECM 룸미러",
-      "LED 헤드램프",
-      "스마트키/버튼시동",
-      "앞좌석 열선시트",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -8379,22 +8940,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0087",
@@ -8433,11 +8993,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "후방카메라/감지센서",
-      "스마트키/버튼시동",
-      "앞좌석 통풍시트",
-      "LED 헤드램프",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -8461,22 +9027,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0088",
@@ -8515,12 +9080,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 열선시트",
-      "앞좌석 통풍시트",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "스마트키/버튼시동",
-      "가죽 스티어링 휠(열선)"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -8548,22 +9114,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0089",
@@ -8602,14 +9167,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "앞좌석 열선시트",
-      "가죽 스티어링 휠(열선)",
-      "하이패스/ECM 룸미러",
-      "내비게이션(정품)",
-      "블루투스 핸즈프리",
-      "LED 헤드램프"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -8645,22 +9213,21 @@
         "category": "외관/휠"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 3
   },
   {
     "id": "UI-0090",
@@ -8699,12 +9266,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "스마트키/버튼시동",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "차선이탈 경고/유지",
-      "LED 헤드램프",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -8732,22 +9300,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0091",
@@ -8786,13 +9353,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "블루투스 핸즈프리",
-      "앞좌석 열선시트",
-      "후방카메라/감지센서",
-      "차선이탈 경고/유지",
-      "가죽 스티어링 휠(열선)",
-      "하이패스/ECM 룸미러",
-      "앞좌석 통풍시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -8824,22 +9395,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0092",
@@ -8878,13 +9448,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "LED 헤드램프",
-      "스마트키/버튼시동",
-      "가죽 스티어링 휠(열선)",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "앞좌석 통풍시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -8916,22 +9486,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0093",
@@ -8970,13 +9539,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "스마트키/버튼시동",
-      "가죽 스티어링 휠(열선)",
-      "블루투스 핸즈프리",
-      "내비게이션(정품)",
-      "차선이탈 경고/유지",
-      "앞좌석 통풍시트",
-      "후방카메라/감지센서"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -9008,22 +9581,21 @@
         "category": "안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 3
   },
   {
     "id": "UI-0094",
@@ -9062,13 +9634,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "내비게이션(정품)",
-      "스마트키/버튼시동",
-      "블루투스 핸즈프리",
-      "앞좌석 통풍시트",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -9100,22 +9672,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0095",
@@ -9154,14 +9725,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 열선시트",
-      "LED 헤드램프",
-      "블루투스 핸즈프리",
-      "앞좌석 통풍시트",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "스마트키/버튼시동"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -9197,22 +9771,21 @@
         "category": "편의/안전"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0096",
@@ -9251,14 +9824,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "하이패스/ECM 룸미러",
-      "앞좌석 열선시트",
-      "가죽 스티어링 휠(열선)",
-      "스마트키/버튼시동",
-      "차선이탈 경고/유지",
-      "후방카메라/감지센서",
-      "LED 헤드램프",
-      "앞좌석 통풍시트"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -9294,22 +9866,21 @@
         "category": "시트"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0097",
@@ -9348,12 +9919,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "블루투스 핸즈프리",
-      "앞좌석 통풍시트",
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -9381,22 +9957,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "단순수리 (외판 교환 1건, 골격 이상 없음)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "SIMPLE_REPAIR",
+    "photo_count": 3
   },
   {
     "id": "UI-0098",
@@ -9435,12 +10010,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "차선이탈 경고/유지",
-      "가죽 스티어링 휠(열선)",
-      "스마트키/버튼시동",
-      "LED 헤드램프",
-      "내비게이션(정품)",
-      "블루투스 핸즈프리"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -9468,22 +10044,21 @@
         "category": "미디어"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0099",
@@ -9522,11 +10097,17 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "내비게이션(정품)",
-      "앞좌석 통풍시트",
-      "블루투스 핸즈프리",
-      "차선이탈 경고/유지",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스",
+      "선루프",
+      "어라운드뷰",
+      "HUD",
+      "어댑티브크루즈"
     ],
     "options_structured": [
       {
@@ -9550,22 +10131,21 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   },
   {
     "id": "UI-0100",
@@ -9604,14 +10184,13 @@
     "plate_number": null,
     "vin": null,
     "options": [
-      "앞좌석 통풍시트",
-      "LED 헤드램프",
-      "후방카메라/감지센서",
-      "내비게이션(정품)",
-      "차선이탈 경고/유지",
-      "가죽 스티어링 휠(열선)",
-      "앞좌석 열선시트",
-      "하이패스/ECM 룸미러"
+      "스마트키",
+      "내비게이션",
+      "후방카메라",
+      "통풍시트",
+      "열선시트",
+      "열선핸들",
+      "하이패스"
     ],
     "options_structured": [
       {
@@ -9647,21 +10226,20 @@
         "category": "편의"
       }
     ],
-    "accident_summary": {
-      "document_status": "DEMO",
-      "frame_status": "UNKNOWN",
-      "body_panel_status": "UNKNOWN",
-      "outer_damage_count": 0,
-      "frame_damage_count": 0,
-      "oil_leak_status": "UNKNOWN",
-      "flood_history_status": "UNKNOWN",
-      "insurance_history_status": "UNKNOWN",
-      "note": "디자인 시안용 가상 제원"
-    },
+    "accident_summary": "완전 무사고 (단순교환 없음, 1인 신조)",
     "dealer_info": {
       "name": "차마트 제휴 전시장 (장한평)",
       "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
       "phone": null
-    }
+    },
+    "listing_ownership_type": "EXTERNAL",
+    "is_chamart_owned": false,
+    "is_priority_exposure": false,
+    "priority_rank": 0,
+    "priority_reason": null,
+    "badge_chamart_owned": false,
+    "badge_priority": false,
+    "accident_type": "NO_ACCIDENT",
+    "photo_count": 3
   }
 ]

@@ -166,97 +166,8 @@
         </div>
     </header>
 
-    <!-- 1.5 공식 브랜드 히어로 배너 (5장 3초 자동 슬라이드 & 5번->1번 무한 순환 캐러셀) -->
-    <section class="bg-white border-b border-[#E5E8EC]">
-        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-3">
-            <div id="chamartHeroCarousel" class="group relative w-full rounded-2xl overflow-hidden bg-white border border-slate-200/90 shadow-xs select-none aspect-[16/7] sm:aspect-[2.1/1] md:aspect-[2.35/1] max-h-[340px]">
-                <!-- 슬라이드 트랙 (루프를 위해 5번 복제 + 1~5번 + 1번 복제 총 7개 구성) -->
-                <div id="heroTrack" class="flex h-full will-change-transform" style="transform: translateX(-100%);">
-                    <!-- Clone of Slide 5 (자연스러운 역방향 루프용) -->
-                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
-                        <picture class="w-full h-full flex items-center justify-center">
-                            <source srcset="/static/img/chamart_slide_05.webp" type="image/webp">
-                            <img src="/static/img/chamart_slide_05.jpg" alt="차마트 장한평 5번 배너" class="w-full h-full object-contain object-center" />
-                        </picture>
-                    </div>
-
-                    <!-- Slide 1: 차 한 대 보려고, 수원·인천까지 가시나요? -->
-                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
-                        <picture class="w-full h-full flex items-center justify-center">
-                            <source srcset="/static/img/chamart_slide_01.webp" type="image/webp">
-                            <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-contain object-center" />
-                        </picture>
-                    </div>
-
-                    <!-- Slide 2: 잠깐! 서울은 다 둘러보셨나요? -->
-                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
-                        <picture class="w-full h-full flex items-center justify-center">
-                            <source srcset="/static/img/chamart_slide_02.webp" type="image/webp">
-                            <img src="/static/img/chamart_slide_02.png" alt="잠깐! 서울은 다 둘러보셨나요?" class="w-full h-full object-contain object-center" />
-                        </picture>
-                    </div>
-
-                    <!-- Slide 3: 중고차의 중심, 서울 장한평. -->
-                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
-                        <picture class="w-full h-full flex items-center justify-center">
-                            <source srcset="/static/img/chamart_slide_03.webp" type="image/webp">
-                            <img src="/static/img/chamart_slide_03.png" alt="중고차의 중심, 서울 장한평" class="w-full h-full object-contain object-center" />
-                        </picture>
-                    </div>
-
-                    <!-- Slide 4: 차를 보는 기준은, 25년 경험에서 나옵니다. -->
-                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
-                        <picture class="w-full h-full flex items-center justify-center">
-                            <source srcset="/static/img/chamart_slide_04.webp" type="image/webp">
-                            <img src="/static/img/chamart_slide_04.jpg" alt="차를 보는 기준은, 25년 경험에서 나옵니다" class="w-full h-full object-contain object-center" />
-                        </picture>
-                    </div>
-
-                    <!-- Slide 5: 멀리 가지 마세요. 서울 장한평에서 만나겠습니다. -->
-                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
-                        <picture class="w-full h-full flex items-center justify-center">
-                            <source srcset="/static/img/chamart_slide_05.webp" type="image/webp">
-                            <img src="/static/img/chamart_slide_05.jpg" alt="멀리 가지 마세요. 서울 장한평에서 만나겠습니다" class="w-full h-full object-contain object-center" />
-                        </picture>
-                    </div>
-
-                    <!-- Clone of Slide 1 (5번에서 1번으로 끊김 없는 순방향 무한 루프용) -->
-                    <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
-                        <picture class="w-full h-full flex items-center justify-center">
-                            <source srcset="/static/img/chamart_slide_01.webp" type="image/webp">
-                            <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-contain object-center" />
-                        </picture>
-                    </div>
-                </div>
-
-                <!-- 이전 / 다음 화살표 버튼 -->
-                <button id="heroPrevBtn" type="button" aria-label="이전 배너" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/75 text-white backdrop-blur-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 cursor-pointer shadow-md">
-                    <i data-lucide="chevron-left" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                </button>
-                <button id="heroNextBtn" type="button" aria-label="다음 배너" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/75 text-white backdrop-blur-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 cursor-pointer shadow-md">
-                    <i data-lucide="chevron-right" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                </button>
-
-                <!-- 우측 하단 카운터 배지 및 재생/일시정지 토글 -->
-                <div class="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] sm:text-xs font-medium shadow-sm">
-                    <span id="heroSlideCounter" class="font-bold tracking-wider font-mono">1 / 5</span>
-                    <span class="text-white/40 text-[10px]">|</span>
-                    <button id="heroAutoToggleBtn" type="button" aria-label="자동 재생 일시정지" class="hover:text-[#C8FF3D] transition-colors cursor-pointer flex items-center">
-                        <i id="heroPlayPauseIcon" data-lucide="pause" class="w-3 h-3"></i>
-                    </button>
-                </div>
-
-                <!-- 중앙 하단 도트(dot) 인디케이터 바 -->
-                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-xs shadow-xs">
-                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-[#C8FF3D] scale-125" data-idx="1" aria-label="슬라이드 1"></button>
-                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="2" aria-label="슬라이드 2"></button>
-                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="3" aria-label="슬라이드 3"></button>
-                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="4" aria-label="슬라이드 4"></button>
-                    <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="5" aria-label="슬라이드 5"></button>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- 고정 헤더 높이만큼 여백 확보 (Spacer) -->
+    <div class="h-[68px] w-full shrink-0"></div>
 
     <!-- 2. 상단 간결한 검색 인터페이스 + 와디즈식 실시간 인기 검색어 -->
     <div class="bg-white border-b border-[#E5E8EC]">
@@ -298,90 +209,272 @@
         <section id="view-home">
             <div class="cm-listing-layout">
 
-                <!-- [좌측: 엔카 다단계 정밀 필터 패널 (폭 238px)] -->
+                <!-- [좌측: 엔카 다단계 정밀 필터 패널 (폭 260px)] -->
                 <aside class="cm-filter-panel" aria-label="차량 검색 조건">
                     <div class="cm-filter-panel__header">
-                        <strong>상세 검색</strong>
+                        <strong class="text-sm font-bold text-[#171B1E]">엔카급 상세 검색</strong>
                         <button type="button" id="resetAllFilters" class="cm-filter-panel__reset" onclick="resetAllFilters()">
                             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 초기화
                         </button>
                     </div>
 
-                    <div id="cmExistingFilterMount" class="pt-4 space-y-5">
+                    <div id="cmExistingFilterMount" class="pt-3 space-y-4 text-xs">
+                        <!-- 0. 차마트 보유 / 우선 매물 특화 필터 (라임 하이라이트) -->
+                        <div class="p-2.5 rounded-lg bg-[#171B1E] text-white space-y-2 shadow-xs">
+                            <div class="text-[11px] font-bold text-[#C8FF3D] flex items-center justify-between">
+                                <span class="flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-[#C8FF3D] animate-ping"></span>
+                                    차마트 안심 매물
+                                </span>
+                                <span class="text-[10px] text-slate-300">직영 보증</span>
+                            </div>
+                            <label class="flex items-center space-x-2 text-xs text-white cursor-pointer select-none">
+                                <input type="checkbox" id="checkOnlyChamartOwned" onchange="toggleChamartOwnedFilter(this.checked)" class="rounded border-slate-600 text-[#C8FF3D] focus:ring-0 w-3.5 h-3.5 accent-[#C8FF3D]">
+                                <span class="font-bold text-[#C8FF3D]">차마트 보유 차량만 보기</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-[11px] text-slate-200 cursor-pointer select-none">
+                                <input type="checkbox" id="checkOnlyPriority" onchange="togglePriorityFilter(this.checked)" class="rounded border-slate-600 text-[#C8FF3D] focus:ring-0 w-3.5 h-3.5 accent-[#C8FF3D]">
+                                <span>차마트 우선 추천 매물만</span>
+                            </label>
+                        </div>
+
                         <!-- 1. 국산차 / 수입차 탭 -->
                         <div>
-                            <div class="text-xs font-bold text-slate-700 mb-2">구분</div>
+                            <div class="text-xs font-bold text-slate-800 mb-1.5">차량 구분</div>
                             <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-lg">
-                                <button id="sideTabDomestic" onclick="setOriginFilter('DOMESTIC')" class="py-1.5 text-xs font-bold rounded bg-white text-[#171B1E] shadow-2xs transition-all">국산차</button>
-                                <button id="sideTabImport" onclick="setOriginFilter('IMPORT')" class="py-1.5 text-xs font-medium rounded text-slate-500 hover:text-slate-800 transition-all">수입차</button>
+                                <button type="button" id="sideTabDomestic" onclick="setOriginFilter('DOMESTIC')" class="py-1.5 text-xs font-bold rounded bg-white text-[#171B1E] shadow-2xs transition-all">국산차</button>
+                                <button type="button" id="sideTabImport" onclick="setOriginFilter('IMPORT')" class="py-1.5 text-xs font-medium rounded text-slate-500 hover:text-slate-800 transition-all">수입차</button>
                             </div>
                         </div>
 
-                        <!-- 2. 제조사 선택 아코디언 -->
+                        <!-- 2. 제조사 다중 선택 -->
                         <div>
-                            <div class="text-xs font-bold text-slate-700 mb-2">제조사</div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="font-bold text-slate-800">제조사</span>
+                                <span id="mfgSelectedCount" class="text-[10px] text-slate-400">전체</span>
+                            </div>
                             <div id="sideMakerList" class="space-y-1 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                                <!-- JS로 동적 렌더링 -->
+                                <!-- JS로 제조사 체크박스 동적 렌더링 -->
                             </div>
                         </div>
 
                         <!-- 3. 선택된 제조사의 세부 모델 -->
                         <div id="sideModelSection" class="hidden">
-                            <div class="text-xs font-bold text-slate-700 mb-2">모델명</div>
-                            <div id="sideModelList" class="space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1">
-                                <!-- JS로 동적 렌더링 -->
+                            <div class="text-xs font-bold text-slate-800 mb-1.5">세부 모델명</div>
+                            <div id="sideModelList" class="space-y-1 max-h-36 overflow-y-auto custom-scrollbar pr-1">
+                                <!-- JS로 모델 목록 동적 렌더링 -->
                             </div>
                         </div>
 
-                        <!-- 4. 가격대 퀵 버튼 -->
+                        <!-- 4. 가격 범위 (직접 입력 + 빠른 선택) -->
                         <div>
-                            <div class="text-xs font-bold text-slate-700 mb-2">가격대</div>
-                            <div class="grid grid-cols-2 gap-1.5 text-xs">
-                                <button onclick="setPriceFilter('')" id="sidePriceAll" class="px-2 py-1.5 rounded border border-slate-200 bg-[#171B1E] text-white text-left font-bold">전체 가격</button>
-                                <button onclick="setPriceFilter('1500')" id="sidePrice1500" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">~ 1,500만</button>
-                                <button onclick="setPriceFilter('2500')" id="sidePrice2500" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">~ 2,500만</button>
-                                <button onclick="setPriceFilter('3500')" id="sidePrice3500" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">~ 3,500만</button>
-                                <button onclick="setPriceFilter('over3500')" id="sidePriceOver3500" class="col-span-2 px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">3,500만원 초과</button>
+                            <div class="text-xs font-bold text-slate-800 mb-1.5">가격 범위 (만원)</div>
+                            <div class="flex items-center gap-1.5 mb-2">
+                                <input type="number" id="inputMinPrice" placeholder="최소" class="w-full h-8 px-2 bg-slate-50 border border-slate-200 rounded text-xs text-[#171B1E] focus:bg-white focus:border-[#171B1E]" onchange="applyCustomPriceFilter()">
+                                <span class="text-slate-400">~</span>
+                                <input type="number" id="inputMaxPrice" placeholder="최대" class="w-full h-8 px-2 bg-slate-50 border border-slate-200 rounded text-xs text-[#171B1E] focus:bg-white focus:border-[#171B1E]" onchange="applyCustomPriceFilter()">
+                            </div>
+                            <div class="grid grid-cols-2 gap-1 text-[11px]">
+                                <button type="button" onclick="setPriceFilter('')" id="sidePriceAll" class="px-2 py-1.5 rounded border border-slate-200 bg-[#171B1E] text-white text-left font-bold">전체 가격</button>
+                                <button type="button" onclick="setPriceFilter('1500')" id="sidePrice1500" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">~ 1,500만</button>
+                                <button type="button" onclick="setPriceFilter('2500')" id="sidePrice2500" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">~ 2,500만</button>
+                                <button type="button" onclick="setPriceFilter('3500')" id="sidePrice3500" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">~ 3,500만</button>
+                                <button type="button" onclick="setPriceFilter('over3500')" id="sidePriceOver3500" class="col-span-2 px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">3,500만원 초과</button>
                             </div>
                         </div>
 
-                        <!-- 5. 연식 필터 -->
+                        <!-- 5. 주행거리 범위 -->
                         <div>
-                            <div class="text-xs font-bold text-slate-700 mb-2">최소 연식</div>
-                            <div class="grid grid-cols-2 gap-1.5 text-xs">
-                                <button onclick="setYearFilter('')" id="sideYearAll" class="px-2 py-1.5 rounded border border-slate-200 bg-[#171B1E] text-white text-left font-bold">전체 연식</button>
-                                <button onclick="setYearFilter('2024')" id="sideYear2024" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">2024년 이후</button>
-                                <button onclick="setYearFilter('2022')" id="sideYear2022" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">2022년 이후</button>
-                                <button onclick="setYearFilter('2020')" id="sideYear2020" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium">2020년 이후</button>
+                            <div class="text-xs font-bold text-slate-800 mb-1.5">주행거리</div>
+                            <div class="grid grid-cols-2 gap-1 text-[11px]">
+                                <button type="button" onclick="setMileageFilter('')" id="sideMilAll" class="px-2 py-1 rounded border border-slate-200 bg-[#171B1E] text-white font-bold">전체</button>
+                                <button type="button" onclick="setMileageFilter('30000')" id="sideMil30k" class="px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium">~ 3만km</button>
+                                <button type="button" onclick="setMileageFilter('60000')" id="sideMil60k" class="px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium">~ 6만km</button>
+                                <button type="button" onclick="setMileageFilter('100000')" id="sideMil100k" class="px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium">~ 10만km</button>
                             </div>
                         </div>
 
-                        <!-- 6. 연료 타입 -->
+                        <!-- 6. 최소 연식 -->
                         <div>
-                            <div class="text-xs font-bold text-slate-700 mb-2">연료</div>
-                            <div class="flex flex-wrap gap-1.5 text-xs">
-                                <button onclick="setFuelFilter('')" id="sideFuelAll" class="px-2.5 py-1 rounded bg-[#171B1E] text-white font-bold">전체</button>
-                                <button onclick="setFuelFilter('가솔린')" id="sideFuelGas" class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">가솔린</button>
-                                <button onclick="setFuelFilter('하이브리드')" id="sideFuelHev" class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">하이브리드</button>
-                                <button onclick="setFuelFilter('디젤')" id="sideFuelDiesel" class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">디젤</button>
-                                <button onclick="setFuelFilter('전기')" id="sideFuelEv" class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">전기</button>
+                            <div class="text-xs font-bold text-slate-800 mb-1.5">최소 연식</div>
+                            <div class="grid grid-cols-2 gap-1 text-[11px]">
+                                <button type="button" onclick="setYearFilter('')" id="sideYearAll" class="px-2 py-1.5 rounded border border-slate-200 bg-[#171B1E] text-white font-bold">전체 연식</button>
+                                <button type="button" onclick="setYearFilter('2024')" id="sideYear2024" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium">2024년 이후</button>
+                                <button type="button" onclick="setYearFilter('2022')" id="sideYear2022" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium">2022년 이후</button>
+                                <button type="button" onclick="setYearFilter('2020')" id="sideYear2020" class="px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 font-medium">2020년 이후</button>
                             </div>
                         </div>
 
-                        <!-- 7. 안심 진단 옵션 -->
-                        <div class="pt-3 border-t border-slate-100 space-y-2">
+                        <!-- 7. 연료 타입 -->
+                        <div>
+                            <div class="text-xs font-bold text-slate-800 mb-1.5">연료</div>
+                            <div class="flex flex-wrap gap-1 text-[11px]">
+                                <button type="button" onclick="setFuelFilter('')" id="sideFuelAll" class="px-2.5 py-1 rounded bg-[#171B1E] text-white font-bold">전체</button>
+                                <button type="button" onclick="setFuelFilter('가솔린')" id="sideFuelGas" class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">가솔린</button>
+                                <button type="button" onclick="setFuelFilter('하이브리드')" id="sideFuelHev" class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">하이브리드</button>
+                                <button type="button" onclick="setFuelFilter('디젤')" id="sideFuelDiesel" class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">디젤</button>
+                                <button type="button" onclick="setFuelFilter('전기')" id="sideFuelEv" class="px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">전기</button>
+                            </div>
+                        </div>
+
+                        <!-- 8. 차량 형태 (차종) -->
+                        <div>
+                            <div class="text-xs font-bold text-slate-800 mb-1.5">차량 형태</div>
+                            <div class="grid grid-cols-3 gap-1 text-[11px]">
+                                <button type="button" onclick="setBodyTypeFilter('')" id="sideBodyAll" class="px-2 py-1 rounded bg-[#171B1E] text-white font-bold">전체</button>
+                                <button type="button" onclick="setBodyTypeFilter('세단')" id="sideBodySedan" class="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">세단</button>
+                                <button type="button" onclick="setBodyTypeFilter('SUV')" id="sideBodySuv" class="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">SUV</button>
+                                <button type="button" onclick="setBodyTypeFilter('경차')" id="sideBodyCompact" class="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">경차</button>
+                                <button type="button" onclick="setBodyTypeFilter('RV')" id="sideBodyRv" class="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200">RV/승합</button>
+                            </div>
+                        </div>
+
+                        <!-- 9. 사고 및 상태 필터 (DIRECTIVE 071 TASK 2-B) -->
+                        <div class="pt-2 border-t border-slate-100 space-y-1.5">
+                            <div class="text-xs font-bold text-slate-800">사고 및 점검 상태</div>
                             <label class="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer select-none">
-                                <input type="checkbox" id="sideCheckAccidentFree" onchange="toggleAccidentFreeFilter(this.checked)" class="rounded border-slate-300 text-[#171B1E] focus:ring-0 w-3.5 h-3.5">
-                                <span class="font-medium">무사고 진단 매물만 보기</span>
+                                <input type="checkbox" id="sideCheckAccidentFree" onchange="toggleAccidentFilter('NO_ACCIDENT', this.checked)" class="rounded border-slate-300 text-[#171B1E] focus:ring-0 w-3.5 h-3.5">
+                                <span class="font-medium">완전 무사고 매물만</span>
                             </label>
+                            <label class="flex items-center space-x-2 text-xs text-slate-700 cursor-pointer select-none">
+                                <input type="checkbox" id="sideCheckInspectionDoc" onchange="toggleInspectionFilter(this.checked)" class="rounded border-slate-300 text-[#171B1E] focus:ring-0 w-3.5 h-3.5">
+                                <span class="font-medium">성능점검 기록부 확인 완료</span>
+                            </label>
+                        </div>
+
+                        <!-- 10. 주요 편의 옵션 다중 선택 (DIRECTIVE 071 TASK 2-C) -->
+                        <div class="pt-2 border-t border-slate-100 space-y-1.5">
+                            <div class="text-xs font-bold text-slate-800 mb-1">주요 편의 옵션 (다중 선택)</div>
+                            <div class="grid grid-cols-2 gap-1 text-[11px]">
+                                <label class="flex items-center space-x-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" value="스마트키" onchange="toggleOptionFilter(this.value, this.checked)" class="filter-opt-chk rounded border-slate-300 text-[#171B1E] w-3 h-3">
+                                    <span>스마트키</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" value="통풍시트" onchange="toggleOptionFilter(this.value, this.checked)" class="filter-opt-chk rounded border-slate-300 text-[#171B1E] w-3 h-3">
+                                    <span>통풍시트</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" value="열선시트" onchange="toggleOptionFilter(this.value, this.checked)" class="filter-opt-chk rounded border-slate-300 text-[#171B1E] w-3 h-3">
+                                    <span>열선시트</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" value="선루프" onchange="toggleOptionFilter(this.value, this.checked)" class="filter-opt-chk rounded border-slate-300 text-[#171B1E] w-3 h-3">
+                                    <span>선루프</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" value="어라운드뷰" onchange="toggleOptionFilter(this.value, this.checked)" class="filter-opt-chk rounded border-slate-300 text-[#171B1E] w-3 h-3">
+                                    <span>360도 카메라</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" value="HUD" onchange="toggleOptionFilter(this.value, this.checked)" class="filter-opt-chk rounded border-slate-300 text-[#171B1E] w-3 h-3">
+                                    <span>HUD</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" value="어댑티브크루즈" onchange="toggleOptionFilter(this.value, this.checked)" class="filter-opt-chk rounded border-slate-300 text-[#171B1E] w-3 h-3">
+                                    <span>어댑티브 크루즈</span>
+                                </label>
+                                <label class="flex items-center space-x-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" value="하이패스" onchange="toggleOptionFilter(this.value, this.checked)" class="filter-opt-chk rounded border-slate-300 text-[#171B1E] w-3 h-3">
+                                    <span>하이패스</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </aside>
 
-                <!-- [우측 메인: 엔카 매물 결과 섹션] (DIRECTIVE 069 Part B) -->
-                <section class="cm-listing-results">
+                <!-- [우측 메인: 엔카 매물 결과 섹션] (DIRECTIVE 069 & 071) -->
+                <section class="cm-listing-results space-y-3.5">
                     
-                    <!-- 툴바 (총 건수 + 정렬 + 보기 방식 토글) -->
+                    <!-- [우측 상단: 브랜드 히어로 배너 (우측 컬럼 상단 100% 풀 배치)] -->
+                    <div id="chamartHeroCarousel" class="group relative w-full rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-xs select-none aspect-[2.4/1] sm:aspect-[2.8/1] md:aspect-[3.2/1] max-h-[260px]">
+                        <!-- 슬라이드 트랙 (루프를 위해 5번 복제 + 1~5번 + 1번 복제 총 7개 구성) -->
+                        <div id="heroTrack" class="flex h-full will-change-transform" style="transform: translateX(-100%);">
+                            <!-- Clone of Slide 5 (자연스러운 역방향 루프용) -->
+                            <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                                <picture class="w-full h-full flex items-center justify-center">
+                                    <source srcset="/static/img/chamart_slide_05.webp" type="image/webp">
+                                    <img src="/static/img/chamart_slide_05.jpg" alt="차마트 장한평 5번 배너" class="w-full h-full object-contain object-center" />
+                                </picture>
+                            </div>
+
+                            <!-- Slide 1: 차 한 대 보려고, 수원·인천까지 가시나요? -->
+                            <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                                <picture class="w-full h-full flex items-center justify-center">
+                                    <source srcset="/static/img/chamart_slide_01.webp" type="image/webp">
+                                    <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-contain object-center" />
+                                </picture>
+                            </div>
+
+                            <!-- Slide 2: 잠깐! 서울은 다 둘러보셨나요? -->
+                            <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                                <picture class="w-full h-full flex items-center justify-center">
+                                    <source srcset="/static/img/chamart_slide_02.webp" type="image/webp">
+                                    <img src="/static/img/chamart_slide_02.png" alt="잠깐! 서울은 다 둘러보셨나요?" class="w-full h-full object-contain object-center" />
+                                </picture>
+                            </div>
+
+                            <!-- Slide 3: 중고차의 중심, 서울 장한평. -->
+                            <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                                <picture class="w-full h-full flex items-center justify-center">
+                                    <source srcset="/static/img/chamart_slide_03.webp" type="image/webp">
+                                    <img src="/static/img/chamart_slide_03.png" alt="중고차의 중심, 서울 장한평" class="w-full h-full object-contain object-center" />
+                                </picture>
+                            </div>
+
+                            <!-- Slide 4: 차를 보는 기준은, 25년 경험에서 나옵니다. -->
+                            <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                                <picture class="w-full h-full flex items-center justify-center">
+                                    <source srcset="/static/img/chamart_slide_04.webp" type="image/webp">
+                                    <img src="/static/img/chamart_slide_04.jpg" alt="차를 보는 기준은, 25년 경험에서 나옵니다" class="w-full h-full object-contain object-center" />
+                                </picture>
+                            </div>
+
+                            <!-- Slide 5: 멀리 가지 마세요. 서울 장한평에서 만나겠습니다. -->
+                            <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                                <picture class="w-full h-full flex items-center justify-center">
+                                    <source srcset="/static/img/chamart_slide_05.webp" type="image/webp">
+                                    <img src="/static/img/chamart_slide_05.jpg" alt="멀리 가지 마세요. 서울 장한평에서 만나겠습니다" class="w-full h-full object-contain object-center" />
+                                </picture>
+                            </div>
+
+                            <!-- Clone of Slide 1 (5번에서 1번으로 끊김 없는 순방향 무한 루프용) -->
+                            <div class="w-full h-full shrink-0 flex items-center justify-center bg-white">
+                                <picture class="w-full h-full flex items-center justify-center">
+                                    <source srcset="/static/img/chamart_slide_01.webp" type="image/webp">
+                                    <img src="/static/img/chamart_slide_01.jpg" alt="차 한 대 보려고, 수원·인천까지 가시나요?" class="w-full h-full object-contain object-center" />
+                                </picture>
+                            </div>
+                        </div>
+
+                        <!-- 이전 / 다음 화살표 버튼 -->
+                        <button id="heroPrevBtn" type="button" aria-label="이전 배너" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/75 text-white backdrop-blur-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 cursor-pointer shadow-md">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                        </button>
+                        <button id="heroNextBtn" type="button" aria-label="다음 배너" class="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 hover:bg-black/75 text-white backdrop-blur-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 cursor-pointer shadow-md">
+                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        </button>
+
+                        <!-- 우측 하단 카운터 배지 및 재생/일시정지 토글 -->
+                        <div class="absolute right-2.5 bottom-2.5 z-20 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] font-medium shadow-sm">
+                            <span id="heroSlideCounter" class="font-bold tracking-wider font-mono">1 / 5</span>
+                            <span class="text-white/40 text-[10px]">|</span>
+                            <button id="heroAutoToggleBtn" type="button" aria-label="자동 재생 일시정지" class="hover:text-[#C8FF3D] transition-colors cursor-pointer flex items-center">
+                                <i id="heroPlayPauseIcon" data-lucide="pause" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+
+                        <!-- 중앙 하단 도트(dot) 인디케이터 바 -->
+                        <div class="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/35 backdrop-blur-xs shadow-xs">
+                            <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-[#C8FF3D] scale-125" data-idx="1" aria-label="슬라이드 1"></button>
+                            <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="2" aria-label="슬라이드 2"></button>
+                            <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="3" aria-label="슬라이드 3"></button>
+                            <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="4" aria-label="슬라이드 4"></button>
+                            <button type="button" class="hero-dot w-2 h-2 rounded-full transition-all duration-300 bg-white/50 hover:bg-white" data-idx="5" aria-label="슬라이드 5"></button>
+                        </div>
+                    </div>
+                    
+                    <!-- 툴바 (총 건수 + 차마트 추천순 기본 정렬 + 보기 방식 토글) -->
                     <div class="cm-listing-toolbar">
                         <h2>
                             판매 차량
@@ -389,12 +482,20 @@
                         </h2>
 
                         <div class="cm-listing-actions">
-                            <!-- 정렬 셀렉트 -->
+                            <!-- 관리자 전용 부위별 사진 등록 바로가기 버튼 -->
+                            <button type="button" onclick="openAdminPhotoMatrixModal()" class="hidden sm:inline-flex items-center text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded border border-slate-300 transition-colors cursor-pointer" title="차량 부위별 전문 사진 관리">
+                                <i data-lucide="camera" class="w-3.5 h-3.5 mr-1 text-slate-600"></i>
+                                <span>부위별 사진 관리</span>
+                            </button>
+
+                            <!-- DIRECTIVE 071 TASK 3: 차마트 추천순 기본 정렬 셀렉트 -->
                             <select id="sortSelect" class="cm-sort-select" aria-label="정렬 순서" onchange="sortVehicles()">
-                                <option value="latest">최신 등록순</option>
+                                <option value="chamart_recommended" selected>차마트 추천순 (기본)</option>
                                 <option value="price_low">낮은 가격순</option>
                                 <option value="price_high">높은 가격순</option>
+                                <option value="latest">최신 등록순</option>
                                 <option value="mileage">짧은 주행거리순</option>
+                                <option value="year_desc">최신 연식순</option>
                             </select>
 
                             <!-- 엔카 뷰 모드 전환 버튼 (목록형 vs 앨범형) -->
@@ -409,8 +510,8 @@
                         </div>
                     </div>
 
-                    <!-- 선택된 필터 태그 칩 바 -->
-                    <div id="appliedFilterChips" class="flex flex-wrap items-center gap-1.5 py-2.5 border-b border-slate-100 hidden">
+                    <!-- 선택된 필터 태그 칩 바 (DIRECTIVE 071 TASK 2 필수 UX) -->
+                    <div id="appliedFilterChips" class="flex flex-wrap items-center gap-1.5 py-2.5 border-b border-slate-100">
                         <!-- JS로 선택된 필터 칩 렌더링 -->
                     </div>
 
@@ -691,6 +792,81 @@
                         확인 닫기
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIRECTIVE 071 TASK 4/5: 관리자 차량 부위별 전문 사진 등록 및 우선노출 설정 모달 -->
+    <div id="adminPhotoModal" class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+            <!-- 모달 헤더 -->
+            <div class="bg-[#171B1E] text-white p-4 sm:p-5 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#C8FF3D] animate-ping"></span>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold flex items-center gap-2">
+                            <span>차량 부위별 전문 사진 관리 시스템</span>
+                            <span class="text-xs bg-white/10 text-[#C8FF3D] border border-[#C8FF3D]/40 px-2 py-0.5 rounded font-mono">45 SLOTS SSOT</span>
+                        </h3>
+                        <p class="text-xs text-slate-300">엔카 표준 45개 촬영 부위별 사진 슬롯 등록, EXIF 제거, 대표 사진 지정 및 우선노출 제어</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAdminPhotoMatrixModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- 차량 선택 및 우선순위 설정 바 -->
+            <div class="bg-slate-50 border-b border-slate-200 p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+                <div class="flex items-center space-x-2 flex-1">
+                    <span class="font-bold text-slate-700 shrink-0">대상 차량:</span>
+                    <select id="adminVehicleSelect" onchange="loadAdminPhotoMatrixForSelectedVehicle()" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 font-semibold text-[#171B1E] flex-1 max-w-sm">
+                        <!-- JS로 차량 옵션 채움 -->
+                    </select>
+                </div>
+                <!-- 우선노출 설정 토글 -->
+                <div class="flex items-center space-x-3 bg-white px-3 py-1.5 rounded border border-slate-200 shrink-0">
+                    <label class="flex items-center space-x-1.5 cursor-pointer font-bold text-slate-800">
+                        <input type="checkbox" id="adminTogglePriority" onchange="saveAdminPrioritySetting()" class="accent-[#171B1E] w-4 h-4">
+                        <span>우선노출 ON</span>
+                    </label>
+                    <span class="text-slate-300">|</span>
+                    <span class="text-slate-600">소유:</span>
+                    <select id="adminOwnershipSelect" onchange="saveAdminPrioritySetting()" class="bg-slate-50 border border-slate-200 rounded px-1.5 py-1 font-bold text-slate-800">
+                        <option value="OWNED">차마트 직접 보유 (OWNED)</option>
+                        <option value="PARTNER_CONFIRMED">파트너 승인 (PARTNER_CONFIRMED)</option>
+                        <option value="BROKERAGE">알선 (BROKERAGE)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 부위별 카테고리 탭 (외관 / 외판 / 실내 / 엔진·하부 / 옵션 / 서류) -->
+            <div class="flex items-center gap-1 overflow-x-auto px-4 pt-3 pb-2 border-b border-slate-200 text-xs font-semibold custom-scrollbar bg-white">
+                <button type="button" onclick="filterAdminMatrixCategory('ALL')" id="adminTabALL" class="px-3 py-1.5 rounded-lg bg-[#171B1E] text-white font-bold cursor-pointer shrink-0">전체 부위 (45)</button>
+                <button type="button" onclick="filterAdminMatrixCategory('EXTERIOR_FULL')" id="adminTabEXTERIOR_FULL" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">외관 전체 (9)</button>
+                <button type="button" onclick="filterAdminMatrixCategory('EXTERIOR_PANEL')" id="adminTabEXTERIOR_PANEL" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">외판 상세 (13)</button>
+                <button type="button" onclick="filterAdminMatrixCategory('INTERIOR')" id="adminTabINTERIOR" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">실내 (10)</button>
+                <button type="button" onclick="filterAdminMatrixCategory('ENGINE_MECHANICAL')" id="adminTabENGINE_MECHANICAL" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">엔진·하부 (6)</button>
+                <button type="button" onclick="filterAdminMatrixCategory('OPTION_FEATURE')" id="adminTabOPTION_FEATURE" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">옵션·특이사항 (5)</button>
+                <button type="button" onclick="filterAdminMatrixCategory('DOCUMENT')" id="adminTabDOCUMENT" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">성능점검 서류 (2)</button>
+            </div>
+
+            <!-- 슬롯 그리드 본문 -->
+            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50">
+                <div id="adminPhotoSlotsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <!-- JS로 45개 표준 슬롯 렌더링 -->
+                </div>
+            </div>
+
+            <!-- 모달 푸터 -->
+            <div class="p-3 sm:p-4 bg-white border-t border-slate-200 flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2 text-slate-500">
+                    <span id="adminMatrixStat" class="font-bold text-slate-800">등록 완료: 35 / 45 슬롯</span>
+                    <span>· 미등록 부위는 고객 화면에서 '준비 중'으로 정직하게 안내됩니다.</span>
+                </div>
+                <button type="button" onclick="closeAdminPhotoMatrixModal()" class="px-4 py-2 bg-[#171B1E] hover:bg-black text-white font-bold rounded-lg cursor-pointer transition-colors shadow-xs">
+                    확인 및 닫기
+                </button>
             </div>
         </div>
     </div>
@@ -1202,46 +1378,138 @@
             if (window.lucide) window.lucide.createIcons();
         }
 
+        // DIRECTIVE 071: 엔카급 상세 검색 및 차마트 보유 매물 우선순위 정렬 상태 관리
+        let filterState = {
+            origin: 'DOMESTIC',       // 'DOMESTIC', 'IMPORT', 'ALL'
+            manufacturers: [],        // ['현대', '기아'] 등
+            model: '',
+            priceQuick: '',           // '1500', '2500', '3500', 'over3500'
+            minPrice: null,
+            maxPrice: null,
+            mileageQuick: '',         // '30000', '60000', '100000'
+            year: '',
+            fuel: '',
+            bodyType: '',
+            accidentFree: false,
+            inspectionDoc: false,
+            selectedOptions: [],      // ['스마트키', '통풍시트', ...]
+            onlyChamartOwned: false,  // 차마트 직영 보유 차량만
+            onlyPriority: false,      // 우선추천 매물만
+            sort: 'chamart_recommended' // 기본값: 차마트 추천순
+        };
+
         function getFilteredVehicles() {
             const searchVal = (document.getElementById('homeSearchInput')?.value || '').toLowerCase().trim();
-            const priceVal = filterState.price || mbFilterState.price || '';
-            const makerVal = filterState.maker || mbFilterState.maker || '';
-            const modelVal = filterState.model || mbFilterState.model || '';
-            const yearVal = filterState.year ? parseInt(filterState.year, 10) : (mbFilterState.year ? parseInt(mbFilterState.year, 10) : 0);
-            const fuelVal = filterState.fuel || mbFilterState.fuel || '';
-            const isAccidentFreeOnly = filterState.accidentFree;
             const favIds = showFavoritesOnly ? getFavoriteIds() : null;
 
-            return publicVehicles.filter(v => {
+            let result = publicVehicles.filter(v => {
                 if (favIds && !favIds.includes(v.id)) return false;
 
-                const matchText = (v.model_name + ' ' + (v.plate_number || '') + ' ' + (v.manufacturer || '')).toLowerCase();
+                // 텍스트 검색어
+                const matchText = (v.model_name + ' ' + (v.plate_number || '') + ' ' + (v.manufacturer || '') + ' ' + (v.trim || '')).toLowerCase();
                 if (searchVal && !matchText.includes(searchVal)) return false;
 
+                // 국산 / 수입
                 const m = v.manufacturer || '기타';
-                const isImport = ['벤츠', 'BMW', '아우디', '폭스바겐', '볼보', '포르쉐', '렉서스', '테슬라'].some(b => m.includes(b));
-                if (currentOriginFilter === 'DOMESTIC' && isImport) return false;
-                if (currentOriginFilter === 'IMPORT' && !isImport) return false;
+                const isImport = ['벤츠', 'BMW', '아우디', '폭스바겐', '볼보', '포르쉐', '렉서스', '테슬라', '미니', '지프', '포드'].some(b => m.includes(b));
+                if (filterState.origin === 'DOMESTIC' && isImport) return false;
+                if (filterState.origin === 'IMPORT' && !isImport) return false;
 
-                if (makerVal && !m.includes(makerVal)) return false;
-                if (modelVal && !(v.model_name || '').includes(modelVal)) return false;
-                if (yearVal && (v.year || 0) < yearVal) return false;
-                if (fuelVal && !(v.fuel_type || '').includes(fuelVal)) return false;
+                // 제조사 다중 선택
+                if (filterState.manufacturers.length > 0 && !filterState.manufacturers.some(maker => m.includes(maker))) return false;
 
-                if (isAccidentFreeOnly) {
-                    const acc = v.accident_summary || v.accident_history || {};
-                    const frameDmg = acc.frame_damage_count || 0;
-                    if (frameDmg > 0) return false;
+                // 모델명
+                if (filterState.model && !(v.model_name || '').includes(filterState.model)) return false;
+
+                // 연식
+                const yr = v.year || 0;
+                if (filterState.year && yr < parseInt(filterState.year, 10)) return false;
+
+                // 연료
+                if (filterState.fuel && !(v.fuel_type || '').includes(filterState.fuel)) return false;
+
+                // 차종 (세단, SUV 등)
+                if (filterState.bodyType && !(v.body_type || '').includes(filterState.bodyType)) return false;
+
+                // 가격 범위
+                const price = v.target_price || 0;
+                if (filterState.minPrice !== null && price < filterState.minPrice) return false;
+                if (filterState.maxPrice !== null && price > filterState.maxPrice) return false;
+                if (filterState.priceQuick === '1500' && price > 1500) return false;
+                if (filterState.priceQuick === '2500' && price > 2500) return false;
+                if (filterState.priceQuick === '3500' && price > 3500) return false;
+                if (filterState.priceQuick === 'over3500' && price <= 3500) return false;
+
+                // 주행거리
+                const mil = v.mileage || 0;
+                if (filterState.mileageQuick && mil > parseInt(filterState.mileageQuick, 10)) return false;
+
+                // 사고/상태 필터
+                if (filterState.accidentFree) {
+                    const accType = v.accident_type || '';
+                    const accSummary = v.accident_summary || '';
+                    if (accType === 'SIMPLE_REPAIR' || accType === 'MAJOR_ACCIDENT') return false;
+                    if (accSummary.includes('단순수리') || accSummary.includes('주요사고') || (accSummary.includes('사고') && !accSummary.includes('무사고'))) return false;
                 }
 
-                const price = v.target_price || 0;
-                if (priceVal === '1500' && price > 1500) return false;
-                if (priceVal === '2500' && price > 2500) return false;
-                if (priceVal === '3500' && price > 3500) return false;
-                if (priceVal === 'over3500' && price <= 3500) return false;
+                if (filterState.inspectionDoc) {
+                    const hasDoc = v.inspection_status || v.accident_summary || (v.photos && v.photos.some(p => (p.category_code === 'DOCUMENT' || p.view_code === 'DOC_INSPECTION_RECORD')));
+                    if (!hasDoc) return false;
+                }
+
+                // 편의 옵션 다중 선택 (AND 매칭)
+                if (filterState.selectedOptions.length > 0) {
+                    const optList = v.options || [];
+                    const optStr = JSON.stringify(optList) + (v.options_structured_json || '');
+                    const hasAll = filterState.selectedOptions.every(opt => optStr.includes(opt));
+                    if (!hasAll) return false;
+                }
+
+                // 매물 조건 (차마트 직영 보유 / 우선추천)
+                const isOwned = Boolean(v.is_chamart_owned || v.listing_ownership_type === 'OWNED' || v.ownership_type === 'CHAMART_OWNED');
+                if (filterState.onlyChamartOwned && !isOwned) return false;
+                if (filterState.onlyPriority && !v.is_priority_exposure) return false;
 
                 return true;
             });
+
+            // DIRECTIVE 071 TASK 3: 정렬 적용
+            const sortMode = filterState.sort || 'chamart_recommended';
+            if (sortMode === 'chamart_recommended') {
+                // 기본 추천순:
+                // 1순위: 차마트 직접 보유(OWNED) & 우선노출 지정 매물 (가격이 더 높아도 최우선)
+                // 2순위: 일반 차마트 직접 보유(OWNED) 매물
+                // 3순위: 파트너 승인 매물 중 우선지정 매물
+                // 4순위: 일반 정상 매물
+                result.sort((a, b) => {
+                    const aOwned = Boolean(a.is_chamart_owned || a.listing_ownership_type === 'OWNED');
+                    const bOwned = Boolean(b.is_chamart_owned || b.listing_ownership_type === 'OWNED');
+                    const aPriority = Boolean(a.is_priority_exposure);
+                    const bPriority = Boolean(b.is_priority_exposure);
+
+                    const aScore = (aOwned && aPriority) ? 400 : (aOwned ? 300 : (aPriority ? 200 : 100));
+                    const bScore = (bOwned && bPriority) ? 400 : (bOwned ? 300 : (bPriority ? 200 : 100));
+
+                    if (aScore !== bScore) return bScore - aScore;
+                    // 동점일 때 우선순위 랭크 -> 최신 연식 순
+                    if ((a.priority_rank || 0) !== (b.priority_rank || 0)) {
+                        return (b.priority_rank || 0) - (a.priority_rank || 0);
+                    }
+                    return (b.year || 0) - (a.year || 0);
+                });
+            } else if (sortMode === 'price_low') {
+                result.sort((a, b) => (a.target_price || 0) - (b.target_price || 0));
+            } else if (sortMode === 'price_high') {
+                result.sort((a, b) => (b.target_price || 0) - (a.target_price || 0));
+            } else if (sortMode === 'latest') {
+                result.sort((a, b) => (b.year || 0) - (a.year || 0));
+            } else if (sortMode === 'mileage') {
+                result.sort((a, b) => (a.mileage || 0) - (b.mileage || 0));
+            } else if (sortMode === 'year_desc') {
+                result.sort((a, b) => (b.year || 0) - (a.year || 0));
+            }
+
+            return result;
         }
 
         function updateMbFilterCount() {
@@ -1619,8 +1887,17 @@
             const year = params.get('year') || '';
             const fuel = params.get('fuel') || '';
             const q = params.get('q') || '';
+            const sort = params.get('sort') || '';
+            const owned = params.get('owned') === 'true';
 
-            filterState = { maker, model, price, year, fuel, accidentFree: false };
+            if (maker) filterState.manufacturers = [maker];
+            if (model) filterState.model = model;
+            if (price) filterState.priceQuick = price;
+            if (year) filterState.year = year;
+            if (fuel) filterState.fuel = fuel;
+            if (sort) filterState.sort = sort;
+            if (owned) filterState.onlyChamartOwned = true;
+
             mbFilterState = { ...filterState };
 
             if (q) {
@@ -1668,6 +1945,9 @@
             const titleParts = formatVehicleTitleParts(v.model_name, v.trim);
             const isFav = favorites.includes(v.id);
             const isComp = compareIds.includes(v.id);
+            const isOwned = Boolean(v.is_chamart_owned || v.listing_ownership_type === 'OWNED' || v.ownership_type === 'CHAMART_OWNED');
+            const isPriority = Boolean(v.is_priority_exposure);
+            const photoCount = v.photo_count || (v.photos ? v.photos.length : 0);
 
             return `
                 <article class="cm-vehicle-row" onclick="openVehicleDetail('${v.id}')">
@@ -1676,9 +1956,14 @@
                         <span class="cm-vehicle-row__badge">${v.is_demo_asset ? 'UI검수' : '실차인증'}</span>
                     </div>
                     <div class="cm-vehicle-row__information">
+                        <div class="flex items-center flex-wrap gap-1 mb-1">
+                            ${isOwned ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-black bg-[#C8FF3D] text-[#171B1E] shadow-2xs">차마트 보유</span>' : ''}
+                            ${isPriority ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#171B1E] text-white">우선매물</span>' : ''}
+                            ${photoCount > 0 ? `<span class="inline-flex items-center text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">📷 ${photoCount}장 부위별</span>` : ''}
+                        </div>
                         <h3 class="cm-vehicle-row__title">${titleParts.mainTitle} ${titleParts.subTrim ? `<span style="font-weight:400;color:var(--cm-muted);font-size:14px;">${titleParts.subTrim}</span>` : ''}</h3>
                         <div class="cm-vehicle-row__specs">
-                            <span>${v.year}년식</span> · <span>${mileageFormatted}</span> · <span>${v.fuel_type || '가솔린'}</span> · <span>${v.branch_location || '장한평 전시장'}</span>
+                            <span>${v.year}년식</span> · <span>${mileageFormatted}</span> · <span>${v.fuel_type || '가솔린'}</span> · <span>${v.branch_location || '차마트 장한평 직영'}</span>
                         </div>
                         <div class="cm-vehicle-row__extras">
                             <span class="cm-tag-verified">무사고 진단</span>
@@ -1882,15 +2167,12 @@
 
         function sortVehicles() {
             currentPage = 1;
-            const val = document.getElementById('sortSelect')?.value;
-            if (val === 'price_low') {
-                publicVehicles.sort((a, b) => (a.target_price || 0) - (b.target_price || 0));
-            } else if (val === 'price_high') {
-                publicVehicles.sort((a, b) => (b.target_price || 0) - (a.target_price || 0));
-            } else if (val === 'mileage') {
-                publicVehicles.sort((a, b) => (a.mileage || 0) - (b.mileage || 0));
+            const select = document.getElementById('sortSelect');
+            if (select) {
+                filterState.sort = select.value;
+                renderVehiclesList();
+                syncUrlParams();
             }
-            renderVehiclesList();
         }
 
         function openVehicleDetail(vid) {
@@ -2091,8 +2373,236 @@
                 closePolicyModal();
                 closeCompareModal();
                 closeMobileFilterBottomSheet();
+                closeAdminPhotoMatrixModal();
             }
         });
+
+        // DIRECTIVE 071 TASK 4/5: 관리자 부위별 사진 등록 및 우선노출 모달 제어 함수
+        let currentAdminMatrixSlots = [];
+        let currentAdminMatrixCat = 'ALL';
+
+        function openAdminPhotoMatrixModal() {
+            const modal = document.getElementById('adminPhotoModal');
+            const select = document.getElementById('adminVehicleSelect');
+            if (!modal || !select) return;
+
+            // 차량 선택 드롭다운 채우기
+            select.innerHTML = publicVehicles.map(v => `
+                <option value="${v.id}">${v.model_name} (${v.plate_number || '번호미상'}) - ${v.target_price}만원 [${v.is_chamart_owned ? '차마트보유' : '일반'}]</option>
+            `).join('');
+
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            loadAdminPhotoMatrixForSelectedVehicle();
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        function closeAdminPhotoMatrixModal() {
+            const modal = document.getElementById('adminPhotoModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        async function loadAdminPhotoMatrixForSelectedVehicle() {
+            const select = document.getElementById('adminVehicleSelect');
+            const grid = document.getElementById('adminPhotoSlotsGrid');
+            const stat = document.getElementById('adminMatrixStat');
+            const chkPriority = document.getElementById('adminTogglePriority');
+            const selOwnership = document.getElementById('adminOwnershipSelect');
+            if (!select || !grid) return;
+
+            const vehicleId = select.value;
+            const currentVehicle = publicVehicles.find(v => v.id === vehicleId) || {};
+
+            if (chkPriority) chkPriority.checked = Boolean(currentVehicle.is_priority_exposure);
+            if (selOwnership) selOwnership.value = currentVehicle.listing_ownership_type || 'OWNED';
+
+            grid.innerHTML = `
+                <div class="col-span-full py-12 text-center text-slate-400">
+                    <div class="inline-block animate-spin w-6 h-6 border-2 border-slate-300 border-t-[#171B1E] rounded-full mb-2"></div>
+                    <p class="text-xs">45개 표준 촬영 부위별 슬롯을 불러오는 중입니다...</p>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`/api/admin/vehicles/${vehicleId}/photo-matrix`);
+                if (!res.ok) throw new Error('슬롯 매트릭스 로드 실패');
+                const matrix = await res.json();
+                currentAdminMatrixSlots = matrix.slots || [];
+
+                if (stat) {
+                    stat.textContent = `등록 완료: ${matrix.registered_photos_count} / ${matrix.total_slots} 슬롯`;
+                }
+
+                renderAdminMatrixSlots();
+            } catch (err) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-8 text-center text-rose-500 bg-white rounded-lg border border-rose-200">
+                        <p class="font-bold text-xs">사진 슬롯을 불러올 수 없습니다: ${err.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function filterAdminMatrixCategory(cat) {
+            currentAdminMatrixCat = cat;
+            const cats = ['ALL', 'EXTERIOR_FULL', 'EXTERIOR_PANEL', 'INTERIOR', 'ENGINE_MECHANICAL', 'OPTION_FEATURE', 'DOCUMENT'];
+            cats.forEach(c => {
+                const btn = document.getElementById(`adminTab${c}`);
+                if (btn) {
+                    btn.className = (c === cat)
+                        ? "px-3 py-1.5 rounded-lg bg-[#171B1E] text-white font-bold cursor-pointer shrink-0"
+                        : "px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0";
+                }
+            });
+            renderAdminMatrixSlots();
+        }
+
+        function renderAdminMatrixSlots() {
+            const grid = document.getElementById('adminPhotoSlotsGrid');
+            if (!grid) return;
+
+            const filteredSlots = currentAdminMatrixSlots.filter(s => {
+                if (currentAdminMatrixCat === 'ALL') return true;
+                return s.category_code === currentAdminMatrixCat;
+            });
+
+            if (filteredSlots.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-8 text-center text-xs text-slate-400">해당 카테고리의 슬롯이 없습니다.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filteredSlots.map(s => {
+                const hasPhoto = s.photos && s.photos.length > 0;
+                const photo = hasPhoto ? s.photos[0] : null;
+
+                return `
+                    <div class="bg-white rounded-lg border ${hasPhoto ? 'border-slate-300 shadow-2xs' : 'border-dashed border-slate-300'} p-3 flex flex-col justify-between space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-800 flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full ${hasPhoto ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+                                ${s.label}
+                            </span>
+                            <span class="text-[10px] ${s.is_required ? 'text-rose-500 font-bold' : 'text-slate-400'} font-mono">${s.is_required ? '필수' : '선택'}</span>
+                        </div>
+
+                        <!-- 썸네일 미리보기 영역 -->
+                        <div class="relative w-full aspect-[5/3] bg-slate-100 rounded overflow-hidden flex items-center justify-center border border-slate-200">
+                            ${hasPhoto ? `
+                                <img src="${photo.thumb_url || photo.photo_url}" alt="${s.label}" class="w-full h-full object-cover">
+                                ${photo.is_primary ? '<span class="absolute top-1 left-1 bg-[#171B1E] text-[#C8FF3D] text-[9px] font-black px-1.5 py-0.5 rounded">대표</span>' : ''}
+                            ` : `
+                                <div class="text-center p-2 text-slate-400">
+                                    <i data-lucide="image-plus" class="w-6 h-6 mx-auto mb-1 text-slate-300"></i>
+                                    <span class="text-[10px] block">미등록</span>
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- 부위 설명 및 조작 버튼 -->
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+                            <span class="text-[10px] text-slate-400 truncate max-w-[120px] font-mono">${s.view_code}</span>
+                            <div class="flex items-center space-x-1">
+                                <input type="file" id="fileSlot_${s.view_code}" accept="image/*" class="hidden" onchange="uploadAdminSlotPhoto(this, '${s.view_code}', '${s.category_code}', '${s.label}')">
+                                <button type="button" onclick="document.getElementById('fileSlot_${s.view_code}').click()" class="px-2 py-1 text-[11px] font-bold rounded bg-slate-100 hover:bg-[#171B1E] hover:text-white transition-colors cursor-pointer">
+                                    ${hasPhoto ? '변경' : '등록'}
+                                </button>
+                                ${hasPhoto ? `
+                                    <button type="button" onclick="deleteAdminPhoto('${photo.id}')" class="p-1 text-slate-400 hover:text-rose-600 cursor-pointer" title="삭제">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        async function uploadAdminSlotPhoto(input, viewCode, categoryCode, displayLabel) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            const select = document.getElementById('adminVehicleSelect');
+            if (!select) return;
+            const vehicleId = select.value;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('view_code', viewCode);
+            formData.append('category_code', categoryCode);
+            formData.append('display_label', displayLabel);
+            formData.append('is_primary', viewCode === 'EXT_FRONT');
+
+            try {
+                const res = await fetch(`/api/admin/vehicles/${vehicleId}/photos`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || '업로드 실패');
+                alert(`[${displayLabel}] 사진이 성공적으로 등록되었습니다.`);
+                loadAdminPhotoMatrixForSelectedVehicle();
+            } catch (err) {
+                alert('업로드 오류: ' + err.message);
+            }
+        }
+
+        async function deleteAdminPhoto(photoId) {
+            if (!confirm('해당 부위 사진을 삭제하시겠습니까?')) return;
+            const select = document.getElementById('adminVehicleSelect');
+            if (!select) return;
+            const vehicleId = select.value;
+
+            try {
+                const res = await fetch(`/api/admin/vehicles/${vehicleId}/photos/${photoId}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok) throw new Error('삭제 실패');
+                loadAdminPhotoMatrixForSelectedVehicle();
+            } catch (err) {
+                alert('삭제 오류: ' + err.message);
+            }
+        }
+
+        async function saveAdminPrioritySetting() {
+            const select = document.getElementById('adminVehicleSelect');
+            const chkPriority = document.getElementById('adminTogglePriority');
+            const selOwnership = document.getElementById('adminOwnershipSelect');
+            if (!select) return;
+
+            const vehicleId = select.value;
+            const payload = {
+                is_priority_exposure: Boolean(chkPriority && chkPriority.checked),
+                listing_ownership_type: selOwnership ? selOwnership.value : 'OWNED',
+                priority_rank: chkPriority && chkPriority.checked ? 100 : 0,
+                priority_reason: chkPriority && chkPriority.checked ? '관리자 지정 차마트 직영 우선추천' : null
+            };
+
+            try {
+                const res = await fetch(`/api/admin/vehicles/${vehicleId}/priority`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || '설정 갱신 실패');
+                
+                // 메모리 객체 동기화
+                const v = publicVehicles.find(x => x.id === vehicleId);
+                if (v) {
+                    v.is_priority_exposure = payload.is_priority_exposure;
+                    v.listing_ownership_type = payload.listing_ownership_type;
+                    v.is_chamart_owned = (payload.listing_ownership_type === 'OWNED');
+                }
+                renderVehiclesList();
+            } catch (err) {
+                console.error('Priority update error:', err);
+            }
+        }
 
         // 1.5 히어로 배너 5장 3초 무한 루프 캐러셀 컨트롤러 (5번 -> 1번 자연스러운 무한 순환)
         (function initChamartCarousel() {
