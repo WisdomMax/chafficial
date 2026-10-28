@@ -121,10 +121,13 @@
     <!-- 1. 상용급 차마트 전문 헤더 (DIRECTIVE 069: 높이 68px, 로고 가시 폭 155px, 화이트/차콜/라임) -->
     <header class="bg-white border-b border-[#E5E8EC] sticky top-0 z-40">
         <div class="max-w-[1320px] mx-auto px-4 sm:px-6 h-[68px] flex items-center justify-between">
-            <!-- 좌측: 차마트 공식 로고 (임의의 네모 상자 없이 가시 폭 160px 확보) -->
+            <!-- 좌측: 차마트 공식 로고 + 장한평 직영점 뱃지 -->
             <div class="flex items-center space-x-6 sm:space-x-8 shrink-0">
                 <a href="/chamart" onclick="navigateHome(event)" class="flex items-center shrink-0 group">
-                    <img src="/static/img/chamart_official_logo.png?v=20261029_0445" alt="차마트" class="w-[125px] sm:w-[160px] h-auto object-contain shrink-0" />
+                    <img src="/static/img/chamart_official_logo.png?v=20261029_final070" alt="차마트" class="w-[120px] sm:w-[155px] h-auto object-contain shrink-0" />
+                    <span class="hidden sm:inline-flex items-center ml-2.5 px-2 py-0.5 rounded bg-[#171B1E] text-[#C8FF3D] text-[10px] font-black tracking-tight border border-[#C8FF3D]/50 shadow-2xs">
+                        장한평 직영점
+                    </span>
                 </a>
 
                 <!-- 엔카 스타일 메인 네비게이션 -->
@@ -151,45 +154,43 @@
         </div>
     </header>
 
-    <!-- 1.5 공식 브랜드 히어로 배너 (장한평 중고차 전문점 브랜드 아이덴티티 전면 강조) -->
+    <!-- 1.5 공식 브랜드 히어로 배너 (와디즈 크라우드펀딩 스타일: 강렬한 시선 집중 훅 + 장한평 직영 독점) -->
     <section class="bg-white border-b border-[#E5E8EC]">
         <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-3">
-            <div class="relative w-full rounded-2xl overflow-hidden bg-[#171B1E] border border-slate-200/80 shadow-xs flex items-center min-h-[148px] sm:min-h-[175px] lg:min-h-[195px]">
+            <div class="relative w-full rounded-2xl overflow-hidden bg-[#171B1E] border border-slate-200/80 shadow-xs flex items-center min-h-[155px] sm:min-h-[185px] lg:min-h-[205px]">
                 <!-- 배경 실차 도열 파노라마 이미지 (아반떼·레이·모닝 & 서울 전경) -->
                 <img src="/static/img/chamart_hero_banner.webp?v=20261029_0455" onerror="this.src='/static/img/chamart_hero_banner.png?v=20261029_0455'" alt="차마트 장한평 실차 전시장" class="absolute inset-0 w-full h-full object-cover object-right pointer-events-none select-none" />
                 
                 <!-- 왼쪽 다크 차콜 그라데이션 오버레이 (텍스트 시인성 완벽 보장) -->
-                <div class="absolute inset-0 bg-gradient-to-r from-[#171B1E] via-[#171B1E]/95 sm:via-[#171B1E]/85 to-transparent w-full sm:w-[68%] pointer-events-none"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-[#171B1E] via-[#171B1E]/95 sm:via-[#171B1E]/85 to-transparent w-full sm:w-[70%] pointer-events-none"></div>
 
-                <!-- 배너 헤드카피 (장한평 자동차 매매단지 직영 전문점 강조) -->
-                <div class="relative z-10 p-4 sm:p-6 lg:p-7 max-w-[620px] text-white">
-                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 text-[11px] sm:text-xs font-bold text-[#C8FF3D] mb-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-[#C8FF3D] animate-pulse"></span>
-                        대한민국 중고차의 성지 · 장한평 자동차 매매단지 공식 직영
+                <!-- 배너 헤드카피 (와디즈 스타일 도발 + 장한평 직영 1등 실매물) -->
+                <div class="relative z-10 p-4 sm:p-6 lg:p-7 max-w-[640px] text-white">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-[#C8FF3D]/40 text-[11px] sm:text-xs font-black text-[#C8FF3D] mb-2 shadow-2xs">
+                        <span class="w-2 h-2 rounded-full bg-[#C8FF3D] animate-ping"></span>
+                        🔥 45년 장한평 역사상 최초 · 온라인 직영 실매물 독점 오픈
                     </div>
                     <h2 class="text-xl sm:text-2xl lg:text-[27px] font-black tracking-tight text-white leading-tight">
-                        <span class="text-[#C8FF3D]">장한평 중고차 전문점</span> 차마트<br />
-                        <span class="text-white text-base sm:text-xl lg:text-[22px] font-bold">허위매물 없는 장한평 매매단지 직영 실차 쇼룸</span>
+                        <span class="text-white text-base sm:text-xl font-extrabold block mb-1">“아직도 딜러 말만 믿고 중고차 사시나요?”</span>
+                        <span class="text-[#C8FF3D]">대한민국 1등 성지, 장한평이 직접 깝니다!</span>
                     </h2>
-                    <p class="text-slate-200 text-xs sm:text-xs mt-2 font-medium hidden sm:flex items-center gap-2">
-                        <span>📍 서울 성동구 장한평 현장 직영</span>
-                        <span class="text-white/40">·</span>
-                        <span>45년 역사 자동차 시장 실차 전수 점검</span>
-                        <span class="text-white/40">·</span>
-                        <span class="text-[#C8FF3D] font-bold">100% 실매물 안심 정찰제</span>
+                    <p class="text-slate-200 text-xs sm:text-xs mt-2.5 font-medium hidden sm:flex items-center gap-2 flex-wrap">
+                        <span class="bg-white/15 px-2 py-0.5 rounded text-[11px] font-bold text-white">📍 장한평 매매단지 직영</span>
+                        <span class="bg-white/15 px-2 py-0.5 rounded text-[11px] font-bold text-white">헛걸음 시 100만원 현장 보상</span>
+                        <span class="bg-[#C8FF3D] px-2 py-0.5 rounded text-[11px] font-black text-[#171B1E]">허위매물 0% 실차보증</span>
                     </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 2. 상단 간결한 검색 인터페이스 (DIRECTIVE 069: 높이 48px 컴팩트 한 줄 검색 바, 상하 여백 14px) -->
+    <!-- 2. 상단 간결한 검색 인터페이스 + 와디즈식 실시간 인기 검색어 -->
     <div class="bg-white border-b border-[#E5E8EC]">
-        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-3.5">
+        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 py-3.5 space-y-2">
             <div class="flex items-center gap-2">
                 <div class="relative flex-1">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
-                    <input type="text" id="homeSearchInput" onkeyup="handleHomeSearch(event)" placeholder="차종명 또는 차량번호 검색 (예: 그랜저, 88오 5001)" 
+                    <input type="text" id="homeSearchInput" onkeyup="handleHomeSearch(event)" placeholder="장한평 직영 실매물 검색 (예: 아반떼, 레이, 88오 5001)" 
                            class="w-full h-12 pl-11 pr-4 bg-[#F8F9FA] border border-[#E5E7EB] rounded-lg text-sm text-[#171B1E] placeholder-slate-400 focus:outline-none focus:border-[#171B1E] focus:bg-white transition-colors">
                 </div>
                 <!-- 모바일 전용 상세 필터 열기 버튼 -->
@@ -201,6 +202,17 @@
                 <button onclick="renderVehiclesList()" class="h-12 bg-[#171B1E] hover:bg-black text-white text-sm font-bold px-6 rounded-lg transition-colors cursor-pointer shrink-0 shadow-xs">
                     검색
                 </button>
+            </div>
+            <!-- 와디즈식 장한평 실시간 인기 검색 키워드 태그 바 -->
+            <div class="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 overflow-x-auto pb-0.5">
+                <span class="font-bold text-[#171B1E] shrink-0 flex items-center">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5 animate-pulse"></span>
+                    장한평 실시간 핫매물:
+                </span>
+                <button type="button" onclick="quickSearchKeyword('아반떼')" class="px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">#장한평_무사고_아반떼</button>
+                <button type="button" onclick="quickSearchKeyword('레이')" class="px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">#장한평_공간깡패_레이</button>
+                <button type="button" onclick="quickSearchKeyword('모닝')" class="px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">#장한평_가성비첫차_모닝</button>
+                <button type="button" onclick="quickSearchKeyword('캐스퍼')" class="px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer">#장한평_신차급_캐스퍼</button>
             </div>
         </div>
     </div>
@@ -1614,20 +1626,28 @@
             if (publicVehicles.length === 0) {
                 container.className = 'cm-vehicle-results is-empty';
                 container.innerHTML = `
-                    <div class="py-20 px-6 text-center bg-white rounded-xl border border-[#E5E8EC] space-y-4 max-w-xl mx-auto my-8 shadow-2xs">
-                        <div class="w-16 h-16 mx-auto rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-[#171B1E] mb-1">
-                            <i data-lucide="shield-check" class="w-8 h-8"></i>
+                    <div class="py-12 sm:py-16 px-6 text-center bg-white rounded-2xl border border-[#E5E8EC] space-y-4 max-w-xl mx-auto my-6 shadow-sm">
+                        <div class="w-16 h-16 mx-auto rounded-2xl bg-[#171B1E] flex items-center justify-center text-[#C8FF3D] mb-1 shadow-md">
+                            <i data-lucide="wrench" class="w-8 h-8"></i>
                         </div>
-                        <div class="space-y-1.5">
-                            <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#C8FF3D] text-[#171B1E]">실차 안심 보증</span>
-                            <h3 class="text-xl font-bold text-[#171B1E] tracking-tight">
-                                실차 검증 입고 준비 중입니다
+                        <div class="space-y-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[#C8FF3D] text-[#171B1E] shadow-2xs">
+                                <span class="w-2 h-2 rounded-full bg-[#171B1E] animate-pulse"></span>
+                                🔥 장한평 현장 리프트 1:1 실차 전수 검증 중
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-black text-[#171B1E] tracking-tight leading-snug">
+                                “장한평 45년 노하우로 깐깐하게 골랐습니다.”
                             </h3>
                         </div>
-                        <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-                            차마트는 허위 매물을 원천 차단하기 위해 100% 현장 실차 진단과 성능점검부를 마친 실차만을 투명 정찰가로 등록합니다.<br class="hidden sm:inline">
-                            새로운 실차 검증 매물이 입고되는 즉시 등록됩니다.
+                        <p class="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                            허위매물 원천 차단을 위해 성능점검표 1:1 원본 대조와 하부 리프트 검사를 통과한 <strong>진짜 장한평 무사고 실차</strong>만 엄선하여 순차 공개 중입니다.
                         </p>
+                        <div class="pt-2">
+                            <a href="/staging/chamart" class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-[#171B1E] hover:bg-black text-[#C8FF3D] font-bold text-xs sm:text-sm transition-all shadow-md group">
+                                <span>🔥 장한평 100대 실매물 쇼룸 미리 체험하기</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1"></i>
+                            </a>
+                        </div>
                     </div>
                 `;
                 if (window.lucide) window.lucide.createIcons();
@@ -1673,6 +1693,17 @@
             if (window.lucide) window.lucide.createIcons();
             updateAllFavoritesUi();
             updateCompareFloatingBar();
+        }
+
+        function quickSearchKeyword(kw) {
+            const input = document.getElementById('homeSearchInput');
+            if (input) {
+                input.value = kw;
+                renderVehiclesList();
+                syncUrlParams();
+                const sec = document.querySelector('.cm-listing-results');
+                if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         function handleHomeSearch(e) {
