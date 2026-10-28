@@ -485,3 +485,89 @@
     gap: 14px;
   }
 }
+
+/* ==========================================================================
+   엔카 스타일 20대 단위 페이지네이션 컴포넌트 (DIRECTIVE 070)
+   ========================================================================== */
+.cm-pagination-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 0 16px 0;
+  margin-top: 16px;
+  border-top: 1px solid var(--cm-border);
+}
+
+.cm-pagination-info {
+  font-size: 13px;
+  color: var(--cm-muted);
+  font-weight: 500;
+}
+
+.cm-pagination-info strong {
+  color: var(--cm-ink);
+  font-weight: 700;
+}
+
+.cm-pagination-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cm-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--cm-border);
+  background: #ffffff;
+  color: var(--cm-ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cm-page-btn:hover:not(:disabled):not(.is-active) {
+  background: #f3f4f6;
+  border-color: #cbd5e1;
+}
+
+.cm-page-btn.is-active {
+  background: var(--cm-ink);
+  color: #ffffff;
+  border-color: var(--cm-ink);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.cm-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: #f9fafb;
+}
+
+@media (max-width: 640px) {
+  .cm-pagination-wrapper {
+    padding: 24px 0 8px 0;
+    gap: 10px;
+  }
+  .cm-page-btn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 12px;
+    padding: 0 6px;
+  }
+}
+

@@ -311,6 +311,9 @@
                             <p class="text-xs">실차 검증 매물을 불러오는 중입니다...</p>
                         </div>
                     </div>
+
+                    <!-- 20대 단위 페이지네이션 마운트 (DIRECTIVE 070) -->
+                    <div id="cmPaginationMount"></div>
                 </section>
             </div>
                     </div>
@@ -603,6 +606,27 @@
         window.publicVehicles = publicVehicles;
         let currentDetailRenderer = null;
         let mbFilterState = { maker: '', model: '', price: '', year: '' };
+        // DIRECTIVE 070: 20대 단위 페이지네이션 상태
+        let currentPage = 1;
+        const PAGE_SIZE = 20;
+
+        function syncUrlParams() {
+            try {
+                const params = new URLSearchParams();
+                if (filterState.maker) params.set('maker', filterState.maker);
+                if (filterState.model) params.set('model', filterState.model);
+                if (filterState.price) params.set('price', filterState.price);
+                if (filterState.year) params.set('year', filterState.year);
+                if (filterState.fuel) params.set('fuel', filterState.fuel);
+                const searchVal = document.getElementById('homeSearchInput')?.value?.trim();
+                if (searchVal) params.set('q', searchVal);
+                const newQuery = params.toString();
+                const newUrl = newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            } catch (err) {
+                console.debug('URL sync skipped:', err);
+            }
+        }
 
         // DIRECTIVE 059 P0: 차량명 및 트림 중복 렌더링 방지 헬퍼
         function formatVehicleTitleParts(modelName, trim) {
@@ -714,7 +738,11 @@
                 ? publicVehicles.filter(v => (v.manufacturer || '').includes(mbFilterState.maker))
                 : publicVehicles;
 
-            const uniqueModels = Array.from(new Set(relevantVehicles.map(v => (v.model_name || '').split(' ')[0]))).filter(Boolean);
+            const uniqueModels = Array.from(new Set(relevantVehicles.map(v => {
+                const name = v.model_name || '';
+                const m = v.manufacturer || '';
+                return name.replace(m, '').trim() || name;
+            }))).filter(Boolean);
 
             if (uniqueModels.length === 0) {
                 container.innerHTML = '<span class="text-slate-400 text-[11px]">해당 조건의 세부 모델이 없습니다.</span>';
@@ -1112,6 +1140,7 @@
 
         function applyMobileFilters() {
             closeMobileFilterBottomSheet();
+            currentPage = 1;
             renderVehiclesList();
             updateFilterBadge();
             syncUrlParams();
@@ -1145,15 +1174,16 @@
             currentOriginFilter = origin;
             filterState.maker = '';
             filterState.model = '';
+            currentPage = 1;
             const tabDom = document.getElementById('sideTabDomestic');
             const tabImp = document.getElementById('sideTabImport');
 
             if (origin === 'DOMESTIC') {
-                if (tabDom) tabDom.className = "py-1.5 text-xs font-bold rounded bg-white text-[#171C24] shadow-2xs transition-all";
+                if (tabDom) tabDom.className = "py-1.5 text-xs font-bold rounded bg-white text-[#171B1E] shadow-2xs transition-all";
                 if (tabImp) tabImp.className = "py-1.5 text-xs font-medium rounded text-slate-500 hover:text-slate-800 transition-all";
             } else {
                 if (tabDom) tabDom.className = "py-1.5 text-xs font-medium rounded text-slate-500 hover:text-slate-800 transition-all";
-                if (tabImp) tabImp.className = "py-1.5 text-xs font-bold rounded bg-white text-[#171C24] shadow-2xs transition-all";
+                if (tabImp) tabImp.className = "py-1.5 text-xs font-bold rounded bg-white text-[#171B1E] shadow-2xs transition-all";
             }
             renderSideFilterUi();
             renderVehiclesList();
@@ -1162,12 +1192,13 @@
 
         function setPriceFilter(price) {
             filterState.price = price;
+            currentPage = 1;
             ['All', '1500', '2500', '3500', 'Over3500'].forEach(key => {
                 const btn = document.getElementById(`sidePrice${key}`);
                 if (!btn) return;
                 const match = (key === 'All' && !price) || (key.toLowerCase() === price.toLowerCase());
                 btn.className = match
-                    ? "px-2 py-1.5 rounded border border-[#101A2A] bg-[#101A2A] text-white text-left font-bold"
+                    ? "px-2 py-1.5 rounded border border-[#171B1E] bg-[#171B1E] text-white text-left font-bold"
                     : "px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium";
             });
             renderVehiclesList();
@@ -1176,12 +1207,13 @@
 
         function setYearFilter(year) {
             filterState.year = year;
+            currentPage = 1;
             ['All', '2024', '2022', '2020'].forEach(key => {
                 const btn = document.getElementById(`sideYear${key}`);
                 if (!btn) return;
                 const match = (key === 'All' && !year) || (key === year);
                 btn.className = match
-                    ? "px-2 py-1.5 rounded border border-[#101A2A] bg-[#101A2A] text-white text-left font-bold"
+                    ? "px-2 py-1.5 rounded border border-[#171B1E] bg-[#171B1E] text-white text-left font-bold"
                     : "px-2 py-1.5 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 text-left font-medium";
             });
             renderVehiclesList();
@@ -1190,12 +1222,13 @@
 
         function setFuelFilter(fuel) {
             filterState.fuel = fuel;
+            currentPage = 1;
             const fuelMap = { '': 'sideFuelAll', '가솔린': 'sideFuelGas', '하이브리드': 'sideFuelHev', '디젤': 'sideFuelDiesel', '전기': 'sideFuelEv' };
             Object.entries(fuelMap).forEach(([f, id]) => {
                 const btn = document.getElementById(id);
                 if (!btn) return;
                 btn.className = (f === fuel)
-                    ? "px-2.5 py-1 rounded bg-[#101A2A] text-white font-bold"
+                    ? "px-2.5 py-1 rounded bg-[#171B1E] text-white font-bold"
                     : "px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200";
             });
             renderVehiclesList();
@@ -1204,6 +1237,7 @@
 
         function toggleAccidentFreeFilter(checked) {
             filterState.accidentFree = checked;
+            currentPage = 1;
             renderVehiclesList();
             syncUrlParams();
         }
@@ -1211,6 +1245,7 @@
         function resetAllFilters() {
             filterState = { maker: '', model: '', price: '', year: '', fuel: '', accidentFree: false };
             mbFilterState = { ...filterState };
+            currentPage = 1;
             const input = document.getElementById('homeSearchInput');
             if (input) input.value = '';
             const check = document.getElementById('sideCheckAccidentFree');
@@ -1248,16 +1283,16 @@
             }
 
             sideMakerList.innerHTML = `
-                <button onclick="selectMakerFilter('')" class="w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between transition-colors ${!filterState.maker ? 'bg-teal-50 text-[#176B68] font-bold' : 'text-slate-700 hover:bg-slate-50'}">
+                <button onclick="selectMakerFilter('')" class="w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between transition-colors ${!filterState.maker ? 'bg-slate-100 text-[#171B1E] font-bold' : 'text-slate-700 hover:bg-slate-50'}">
                     <span>전체 제조사</span>
-                    <span class="text-[11px] text-slate-400">${publicVehicles.length}</span>
+                    <span class="text-[11px] text-slate-400 font-mono">${publicVehicles.length}</span>
                 </button>
                 ` + makerKeys.map(m => {
                     const isSelected = filterState.maker === m;
                     return `
-                        <button onclick="selectMakerFilter('${m}')" class="w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between transition-colors ${isSelected ? 'bg-teal-50 text-[#176B68] font-bold' : 'text-slate-700 hover:bg-slate-50'}">
+                        <button onclick="selectMakerFilter('${m}')" class="w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between transition-colors ${isSelected ? 'bg-slate-100 text-[#171B1E] font-bold' : 'text-slate-700 hover:bg-slate-50'}">
                             <span>${m}</span>
-                            <span class="text-[11px] ${isSelected ? 'text-[#176B68]' : 'text-slate-400'}">${makersCount[m]}</span>
+                            <span class="text-[11px] font-mono ${isSelected ? 'text-[#171B1E] font-bold' : 'text-slate-400'}">${makersCount[m]}</span>
                         </button>
                     `;
                 }).join('');
@@ -1265,16 +1300,29 @@
             // 선택된 제조사가 있으면 세부 모델 목록 렌더링
             if (filterState.maker && sideModelSection && sideModelList) {
                 sideModelSection.classList.remove('hidden');
-                const models = [...new Set(publicVehicles.filter(v => (v.manufacturer || '').includes(filterState.maker)).map(v => v.model_name))];
+                
+                const modelCounts = {};
+                const models = [];
+                publicVehicles.filter(v => (v.manufacturer || '').includes(filterState.maker)).forEach(v => {
+                    const shortName = (v.model_name || '').replace(filterState.maker, '').trim();
+                    if (!modelCounts[shortName]) {
+                        modelCounts[shortName] = 0;
+                        models.push(shortName);
+                    }
+                    modelCounts[shortName]++;
+                });
+
                 sideModelList.innerHTML = `
-                    <button onclick="selectModelFilter('')" class="w-full text-left px-2 py-1 rounded text-xs transition-colors ${!filterState.model ? 'text-[#176B68] font-bold' : 'text-slate-600 hover:text-black'}">
-                        전체 모델
+                    <button onclick="selectModelFilter('')" class="w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between transition-colors ${!filterState.model ? 'bg-slate-100 text-[#171B1E] font-bold' : 'text-slate-600 hover:text-black'}">
+                        <span>전체 모델</span>
+                        <span class="text-[11px] font-mono text-slate-400">${publicVehicles.filter(v => (v.manufacturer || '').includes(filterState.maker)).length}</span>
                     </button>
                     ` + models.map(mdl => {
                         const isMdlSelected = filterState.model === mdl;
                         return `
-                            <button onclick="selectModelFilter('${mdl}')" class="w-full text-left px-2 py-1 rounded text-xs truncate transition-colors ${isMdlSelected ? 'text-[#176B68] font-bold' : 'text-slate-600 hover:text-black'}">
-                                ${mdl}
+                            <button onclick="selectModelFilter('${mdl}')" class="w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between transition-colors ${isMdlSelected ? 'bg-slate-100 text-[#171B1E] font-bold' : 'text-slate-600 hover:text-black'}">
+                                <span>${mdl}</span>
+                                <span class="text-[11px] font-mono ${isMdlSelected ? 'text-[#171B1E] font-bold' : 'text-slate-400'}">${modelCounts[mdl]}</span>
                             </button>
                         `;
                     }).join('');
@@ -1286,6 +1334,7 @@
         function selectMakerFilter(maker) {
             filterState.maker = maker;
             filterState.model = '';
+            currentPage = 1;
             renderSideFilterUi();
             renderVehiclesList();
             syncUrlParams();
@@ -1293,6 +1342,7 @@
 
         function selectModelFilter(model) {
             filterState.model = model;
+            currentPage = 1;
             renderSideFilterUi();
             renderVehiclesList();
             syncUrlParams();
@@ -1416,10 +1466,10 @@
             }
         }
 
-        // 고객용 공개 실차 목록 로드 및 필터 렌더링 (DIRECTIVE 065: 운영 전용 API 호출)
+        // 고객용 공개 실차 목록 로드 및 필터 렌더링 (DIRECTIVE 070: 100대 가상 UI Fixture API 호출)
         async function loadPublicVehicles() {
             try {
-                const res = await fetch('/api/staging/chamart/vehicles');
+                const res = await fetch('/api/staging/ui-fixtures/vehicles');
                 if (!res.ok) throw new Error('매물 목록 조회 실패');
                 publicVehicles = await res.json();
                 window.publicVehicles = publicVehicles;
@@ -1575,6 +1625,7 @@
 
         function renderVehiclesList() {
             const container = document.getElementById('vehicleGrid');
+            const paginationMount = document.getElementById('cmPaginationMount');
             if (!container) return;
 
             renderSideFilterUi();
@@ -1582,9 +1633,10 @@
 
             const filtered = getFilteredVehicles();
             const badge = document.getElementById('vehicleCountBadge');
-            if (badge) badge.textContent = `${filtered.length}대`;
+            const totalCount = filtered.length;
+            if (badge) badge.textContent = `${totalCount}대`;
 
-            if (filtered.length === 0) {
+            if (totalCount === 0) {
                 container.className = "cm-vehicle-results is-empty";
                 container.innerHTML = `
                     <div class="py-16 px-6 text-center bg-white rounded-xl border border-[#E5E8EC] space-y-3.5">
@@ -1605,34 +1657,103 @@
                         </div>
                     </div>
                 `;
+                if (paginationMount) paginationMount.innerHTML = '';
                 if (window.lucide) window.lucide.createIcons();
                 return;
             }
+
+            // DIRECTIVE 070: 20대 단위 페이지네이션 슬라이스
+            const totalPages = Math.ceil(totalCount / PAGE_SIZE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * PAGE_SIZE;
+            const endIndex = Math.min(startIndex + PAGE_SIZE, totalCount);
+            const pagedList = filtered.slice(startIndex, endIndex);
 
             const favorites = getFavoriteIds();
             const compareIds = window.compareVehicleIds || [];
 
             if (currentViewMode === 'grid' || currentViewMode === 'album') {
                 container.className = "cm-vehicle-results is-album";
-                container.innerHTML = filtered.map(v => createVehicleAlbumCard(v, favorites, compareIds)).join('');
+                container.innerHTML = pagedList.map(v => createVehicleAlbumCard(v, favorites, compareIds)).join('');
             } else {
                 container.className = "cm-vehicle-results is-list";
-                container.innerHTML = filtered.map(v => createVehicleListRow(v, favorites, compareIds)).join('');
+                container.innerHTML = pagedList.map(v => createVehicleListRow(v, favorites, compareIds)).join('');
             }
+
+            // 페이지네이션 렌더링
+            renderPagination(totalCount, totalPages, currentPage, startIndex, endIndex);
 
             if (window.lucide) window.lucide.createIcons();
             updateAllFavoritesUi();
             updateCompareFloatingBar();
         }
 
+        function renderPagination(totalCount, totalPages, curPage, startIndex, endIndex) {
+            const mount = document.getElementById('cmPaginationMount');
+            if (!mount) return;
+
+            if (totalPages <= 1) {
+                mount.innerHTML = '';
+                return;
+            }
+
+            let pageButtons = '';
+            for (let i = 1; i <= totalPages; i++) {
+                const isActive = (i === curPage);
+                pageButtons += `
+                    <li>
+                        <button type="button" onclick="goToPage(${i})" class="cm-page-btn ${isActive ? 'is-active' : ''}" aria-label="${i}페이지"${isActive ? ' aria-current="page"' : ''}>
+                            ${i}
+                        </button>
+                    </li>
+                `;
+            }
+
+            mount.innerHTML = `
+                <div class="cm-pagination-wrapper">
+                    <div class="cm-pagination-info">
+                        전체 <strong>${totalCount}</strong>대 매물 중 <strong>${startIndex + 1} - ${endIndex}</strong>대 표시
+                    </div>
+                    <nav aria-label="차량 목록 페이지 이동">
+                        <ul class="cm-pagination-list">
+                            <li>
+                                <button type="button" onclick="goToPage(${curPage - 1})" class="cm-page-btn" ${curPage === 1 ? 'disabled' : ''} aria-label="이전 페이지">
+                                    ‹
+                                </button>
+                            </li>
+                            ${pageButtons}
+                            <li>
+                                <button type="button" onclick="goToPage(${curPage + 1})" class="cm-page-btn" ${curPage === totalPages ? 'disabled' : ''} aria-label="다음 페이지">
+                                    ›
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            `;
+        }
+
+        function goToPage(p) {
+            currentPage = p;
+            renderVehiclesList();
+            const resultsSec = document.querySelector('.cm-listing-results') || document.getElementById('vehicleGrid');
+            if (resultsSec) {
+                resultsSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
         function handleHomeSearch(e) {
             if (e.key === 'Enter') {
+                currentPage = 1;
                 renderVehiclesList();
                 syncUrlParams();
             }
         }
 
         function sortVehicles() {
+            currentPage = 1;
             const val = document.getElementById('sortSelect')?.value;
             if (val === 'price_low') {
                 publicVehicles.sort((a, b) => (a.target_price || 0) - (b.target_price || 0));
@@ -1657,7 +1778,7 @@
             window.scrollTo(0, 0);
 
             try {
-                const res = await fetch(`/api/staging/chamart/vehicles/${vid}`);
+                const res = await fetch(`/api/staging/ui-fixtures/vehicles/${vid}`);
                 if (!res.ok) {
                     if (res.status === 404) {
                         alert('존재하지 않거나 비공개 격리된 매물입니다.');

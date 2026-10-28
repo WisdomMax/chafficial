@@ -237,10 +237,10 @@
   <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
     <!-- 상단 글로벌 헤더 -->
     <header class="h-16 bg-white border-b border-[#D8E2EA] flex items-center justify-between px-6 sticky top-0 z-30">
-      <div class="flex items-center space-x-4 min-w-0">
-        <!-- 모바일 햄버거 버튼 -->
-        <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-600 hover:text-slate-900 p-1 rounded-md">
-          <i data-lucide="menu" class="w-5 h-5"></i>
+      <div class="flex items-center space-x-3 min-w-0">
+        <!-- 사이드바 접기/펼치기 토글 버튼 (모바일 햄버거 + 태블릿/데스크톱 사이드바 토글) -->
+        <button onclick="toggleSidebarCollapse()" class="text-slate-600 hover:text-slate-900 hover:bg-slate-100 p-1.5 rounded-lg transition-colors" title="사이드바 열기/닫기">
+          <i data-lucide="menu" id="sidebarToggleIcon" class="w-5 h-5"></i>
         </button>
         <div>
           <h1 id="pageHeaderTitle" class="text-lg font-bold text-[#172337] truncate">대시보드</h1>
@@ -563,9 +563,15 @@
               <button onclick="filterVehicles('MARKET_OBSERVED')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">장한평 시장 관측</button>
               <button onclick="filterVehicles('FOR_SALE')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">판매 중</button>
             </div>
-            <!-- 검색 건수 -->
-            <div class="text-xs text-slate-500">
-              총 <span id="vehicleCountDisplay" class="font-bold text-[#172337]">-</span>대 매물 <span class="text-[11px] text-slate-400 ml-1">(더블클릭 또는 상세보기로 상세 마스터 조회)</span>
+            <!-- 검색 건수 및 태블릿 스크롤 안내 -->
+            <div class="flex items-center justify-between text-xs text-slate-500 w-full sm:w-auto gap-4">
+              <div>
+                총 <span id="vehicleCountDisplay" class="font-bold text-[#172337]">-</span>대 매물 <span class="text-[11px] text-slate-400 ml-1">(더블클릭 또는 상세보기로 상세 마스터 조회)</span>
+              </div>
+              <div class="xl:hidden text-[11px] text-slate-400 flex items-center shrink-0">
+                <i data-lucide="arrow-left-right" class="w-3.5 h-3.5 mr-1 text-slate-400"></i>
+                좌우 스크롤로 전체 항목 확인
+              </div>
             </div>
           </div>
         </div>
@@ -573,23 +579,23 @@
         <!-- 차량 데이터 테이블 (DIRECTIVE 046-D 심플 목록 & 더블클릭 상세 지원) -->
         <div class="bg-white border border-[#D8E2EA] rounded-xl shadow-sm overflow-hidden">
           <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold">
+            <table class="min-w-[1060px] w-full text-left text-sm divide-y divide-slate-100">
+              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold whitespace-nowrap">
                 <tr>
-                  <th class="py-3 px-3 text-center w-14">사진</th>
-                  <th onclick="sortVehicles('model_name')" class="py-3 px-4 sortable-th">
+                  <th class="py-3 px-3 text-center w-14 shrink-0">사진</th>
+                  <th onclick="sortVehicles('model_name')" class="py-3 px-4 sortable-th min-w-[220px]">
                     차량명·트림 <span id="sort-v-model_name" class="text-slate-400">↕</span>
                   </th>
-                  <th onclick="sortVehicles('year')" class="py-3 px-4 sortable-th">
+                  <th onclick="sortVehicles('year')" class="py-3 px-4 sortable-th min-w-[120px]">
                     연식·주행거리 <span id="sort-v-year" class="text-slate-400">↕</span>
                   </th>
-                  <th onclick="sortVehicles('target_price')" class="py-3 px-4 sortable-th text-right">
+                  <th onclick="sortVehicles('target_price')" class="py-3 px-4 sortable-th text-right min-w-[105px]">
                     광고가격 <span id="sort-v-target_price" class="text-slate-400">↕</span>
                   </th>
-                  <th class="py-3 px-4">소유 구분 및 딜러</th>
-                  <th class="py-3 px-3 text-center">매물 상태</th>
-                  <th class="py-3 px-3 text-center">차마트 영상</th>
-                  <th class="py-3 px-3 text-center">관리</th>
+                  <th class="py-3 px-4 min-w-[140px]">소유 구분 및 딜러</th>
+                  <th class="py-3 px-3 text-center min-w-[85px]">매물 상태</th>
+                  <th class="py-3 px-3 text-center min-w-[85px]">차마트 영상</th>
+                  <th class="py-3 px-3 text-center min-w-[240px]">관리</th>
                 </tr>
               </thead>
               <tbody id="vehicleTableBody" class="divide-y divide-slate-100">
@@ -639,8 +645,8 @@
         <!-- 고객 데이터 테이블 -->
         <div class="bg-white border border-[#D8E2EA] rounded-xl shadow-sm overflow-hidden">
           <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold">
+            <table class="min-w-[880px] w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold whitespace-nowrap">
                 <tr>
                   <th onclick="sortCustomers('name')" class="py-3 px-4 sortable-th">
                     고객명 <span id="sort-c-name" class="text-slate-400">↕</span>
@@ -686,8 +692,8 @@
 
         <div class="bg-white border border-[#D8E2EA] rounded-xl shadow-sm overflow-hidden">
           <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold">
+            <table class="min-w-[800px] w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold whitespace-nowrap">
                 <tr>
                   <th class="py-3 px-4">거래 ID</th>
                   <th class="py-3 px-4">유형</th>
@@ -722,8 +728,8 @@
 
         <div class="bg-white border border-[#D8E2EA] rounded-xl shadow-sm overflow-hidden">
           <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold">
+            <table class="min-w-[850px] w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold whitespace-nowrap">
                 <tr>
                   <th class="py-3 px-4">서류 ID</th>
                   <th class="py-3 px-4">파일명</th>
@@ -828,8 +834,8 @@
         <!-- 관측 매물 테이블 -->
         <div class="bg-white border border-[#D8E2EA] rounded-xl shadow-sm overflow-hidden">
           <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold">
+            <table class="min-w-[1020px] w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold whitespace-nowrap">
                 <tr>
                   <th class="py-3 px-3 text-center">플랫폼</th>
                   <th class="py-3 px-4">매물 및 식별자</th>
@@ -1039,8 +1045,8 @@
             <span class="text-xs text-slate-400">자연 판매와 AI 영상 기여를 엄격히 분리 계산합니다.</span>
           </div>
           <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold">
+            <table class="min-w-[880px] w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold whitespace-nowrap">
                 <tr>
                   <th class="py-3 px-4">거래일자</th>
                   <th class="py-3 px-4">차량 정보</th>
@@ -1124,8 +1130,8 @@
             <span class="text-xs text-slate-400">Data Leakage 차단: 의사결정 시점 관측치만 State에 포함됩니다.</span>
           </div>
           <div class="overflow-x-auto custom-scrollbar">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold">
+            <table class="min-w-[880px] w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-600 border-b border-[#D8E2EA] text-xs font-semibold whitespace-nowrap">
                 <tr>
                   <th class="py-3 px-3">결정일시</th>
                   <th class="py-3 px-3">대상차량</th>
@@ -3859,18 +3865,31 @@
       lucide.createIcons();
     }
 
-    function toggleMobileSidebar() {
+    function toggleSidebarCollapse() {
       const sidebar = document.getElementById('mainSidebar');
       const backdrop = document.getElementById('mobileSidebarBackdrop');
-      sidebar.classList.toggle('-translate-x-full');
-      backdrop.classList.toggle('hidden');
+      const isMobile = window.innerWidth < 768;
+
+      if (isMobile) {
+        sidebar.classList.toggle('-translate-x-full');
+        backdrop.classList.toggle('hidden');
+      } else {
+        // 태블릿 및 데스크톱: 사이드바 접기/펼치기 토글
+        sidebar.classList.toggle('hidden');
+      }
+    }
+
+    function toggleMobileSidebar() {
+      toggleSidebarCollapse();
     }
 
     function closeMobileSidebar() {
       const sidebar = document.getElementById('mainSidebar');
       const backdrop = document.getElementById('mobileSidebarBackdrop');
-      sidebar.classList.add('-translate-x-full');
-      backdrop.classList.add('hidden');
+      if (window.innerWidth < 768) {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
     }
 
     // ----------------------------------------------------
@@ -4035,29 +4054,29 @@
     function getOwnershipBadge(type, dealership) {
       switch (type) {
         case 'CHAMART_OWNED':
-          return '<span class="text-[11px] font-bold bg-[#101A2A] text-white px-2 py-0.5 rounded shadow-xs">차마트 직영</span>';
+          return '<span class="text-[11px] font-bold bg-[#101A2A] text-white px-2 py-0.5 rounded shadow-xs whitespace-nowrap inline-flex items-center shrink-0">차마트 직영</span>';
         case 'PARTNER_APPROVED':
-          return `<span class="text-[11px] font-bold bg-teal-50 text-[#247D7C] border border-teal-300 px-2 py-0.5 rounded">[제휴승인] ${dealership || '제휴상사'}</span>`;
+          return `<span class="text-[11px] font-bold bg-teal-50 text-[#247D7C] border border-teal-300 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">[제휴승인] ${dealership || '제휴상사'}</span>`;
         case 'PARTNER_CANDIDATE':
-          return `<span class="text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300 px-2 py-0.5 rounded">[협력검토] ${dealership || '타딜러'}</span>`;
+          return `<span class="text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">[협력검토] ${dealership || '타딜러'}</span>`;
         case 'MARKET_OBSERVED':
-          return '<span class="text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-300 px-2 py-0.5 rounded">[시장관측] 엔카/KB</span>';
+          return '<span class="text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-300 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">[시장관측] 엔카/KB</span>';
         default:
-          return '<span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded">일반</span>';
+          return '<span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">일반</span>';
       }
     }
 
     function getVideoStatusBadge(status) {
       switch (status) {
         case 'IN_PRODUCTION':
-          return '<span class="text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded">제작 중</span>';
+          return '<span class="text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">제작 중</span>';
         case 'REQUESTED':
-          return '<span class="text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded">제작 요청</span>';
+          return '<span class="text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">제작 요청</span>';
         case 'COMPLETED':
         case 'PUBLISHED':
-          return '<span class="text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded">게시 완료</span>';
+          return '<span class="text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">게시 완료</span>';
         default:
-          return '<span class="text-[11px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60">미제작</span>';
+          return '<span class="text-[11px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60 whitespace-nowrap inline-flex items-center shrink-0">미제작</span>';
       }
     }
 
@@ -4142,34 +4161,34 @@
 
         return `
           <tr onclick="${rowDblClick}" class="hover:bg-teal-50/40 cursor-pointer transition-colors group">
-            <td class="py-3 px-3 text-center">
+            <td class="py-3 px-3 text-center shrink-0 w-14">
               ${thumbImg}
             </td>
-            <td class="py-3 px-4">
-              <div class="font-bold text-[#172337] group-hover:text-[#247D7C] transition-colors">${v.model_name}</div>
-              <div class="text-xs text-slate-400 mt-0.5">${v.plate_number || '번호판 미기재'}</div>
+            <td class="py-3 px-4 min-w-[220px] max-w-[300px]">
+              <div class="font-bold text-[#172337] group-hover:text-[#247D7C] transition-colors break-keep line-clamp-2 leading-snug">${v.model_name}</div>
+              <div class="text-xs text-slate-400 mt-0.5 font-medium whitespace-nowrap">${v.plate_number || '번호판 미기재'}</div>
             </td>
-            <td class="py-3 px-4 text-xs text-slate-600">
+            <td class="py-3 px-4 text-xs text-slate-600 whitespace-nowrap min-w-[120px]">
               <div class="font-semibold text-slate-800">${v.year}년식</div>
-              <div class="text-slate-400">${formattedMileage}</div>
+              <div class="text-slate-400 mt-0.5">${formattedMileage}</div>
             </td>
-            <td class="py-3 px-4 text-sm font-bold text-right text-[#247D7C]">${formattedPrice}</td>
-            <td class="py-3 px-4">${ownershipBadge}</td>
-            <td class="py-3 px-3 text-center">${statusBadge}</td>
-            <td class="py-3 px-3 text-center">${videoBadge}</td>
-            <td class="py-3 px-3 text-center">
-              <div class="flex items-center justify-center space-x-1" onclick="event.stopPropagation()">
-                <button onclick="${btnDetailClick}" class="px-2 py-1 text-xs bg-[#247D7C] hover:bg-[#1D6665] text-white rounded font-medium shadow-xs" title="엔카급 전폭 상세 화면">
+            <td class="py-3 px-4 text-sm font-bold text-right text-[#247D7C] whitespace-nowrap min-w-[105px]">${formattedPrice}</td>
+            <td class="py-3 px-4 whitespace-nowrap min-w-[140px]">${ownershipBadge}</td>
+            <td class="py-3 px-3 text-center whitespace-nowrap min-w-[85px]">${statusBadge}</td>
+            <td class="py-3 px-3 text-center whitespace-nowrap min-w-[85px]">${videoBadge}</td>
+            <td class="py-3 px-3 text-center whitespace-nowrap min-w-[240px]">
+              <div class="flex items-center justify-center space-x-1 shrink-0 whitespace-nowrap" onclick="event.stopPropagation()">
+                <button onclick="${btnDetailClick}" class="px-2.5 py-1 text-xs bg-[#247D7C] hover:bg-[#1D6665] text-white rounded font-medium shadow-xs shrink-0 whitespace-nowrap transition-colors" title="엔카급 전폭 상세 화면">
                   상세보기
                 </button>
-                <button onclick="openVehicleDetailFullView('${v.id}', ${!isGuest})" class="px-2 py-1 text-xs border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded font-bold shadow-xs" title="차마트 고객 공통 고급 상세페이지">
+                <button onclick="openVehicleDetailFullView('${v.id}', ${!isGuest})" class="px-2.5 py-1 text-xs border border-emerald-600 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded font-bold shadow-xs shrink-0 whitespace-nowrap transition-colors" title="차마트 고객 공통 고급 상세페이지">
                   공통상세
                 </button>
                 ${!isGuest ? `
-                  <button onclick="openVehicleModal('${v.id}')" class="px-2 py-1 text-xs border border-teal-600 text-teal-700 bg-teal-50/50 hover:bg-teal-100/60 rounded font-medium shadow-xs">
+                  <button onclick="openVehicleModal('${v.id}')" class="px-2.5 py-1 text-xs border border-teal-600 text-teal-700 bg-teal-50/50 hover:bg-teal-100/60 rounded font-medium shadow-xs shrink-0 whitespace-nowrap transition-colors">
                     마스터 수정
                   </button>
-                  <button onclick="changeVehicleStatusPrompt('${v.id}', '${v.status}')" class="px-2 py-1 text-xs border border-[#D8E2EA] rounded hover:bg-slate-100 text-slate-600 font-medium">
+                  <button onclick="changeVehicleStatusPrompt('${v.id}', '${v.status}')" class="px-2.5 py-1 text-xs border border-[#D8E2EA] rounded hover:bg-slate-100 text-slate-600 font-medium shrink-0 whitespace-nowrap transition-colors">
                     상태
                   </button>
                 ` : ''}
@@ -5330,11 +5349,11 @@
 
     function getVehicleStatusBadge(status) {
       switch (status) {
-        case 'FOR_SALE': return '<span class="text-[11px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">판매 중</span>';
-        case 'DETAILING': return '<span class="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">상품화 중</span>';
-        case 'CONTRACTING': return '<span class="text-[11px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">계약 진행</span>';
-        case 'SOLD': return '<span class="text-[11px] font-semibold bg-purple-100 text-purple-800 px-2 py-0.5 rounded">판매 완료</span>';
-        default: return `<span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded">${status}</span>`;
+        case 'FOR_SALE': return '<span class="text-[11px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">판매 중</span>';
+        case 'DETAILING': return '<span class="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">상품화 중</span>';
+        case 'CONTRACTING': return '<span class="text-[11px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">계약 진행</span>';
+        case 'SOLD': return '<span class="text-[11px] font-semibold bg-purple-100 text-purple-800 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">판매 완료</span>';
+        default: return `<span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded whitespace-nowrap inline-flex items-center shrink-0">${status}</span>`;
       }
     }
 

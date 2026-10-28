@@ -1409,6 +1409,40 @@ def get_staging_chamart_vehicle_detail(
     return detail
 
 
+@app.get("/api/staging/ui-fixtures/vehicles")
+def get_staging_ui_fixture_vehicles() -> list[dict[str, Any]]:
+    """DIRECTIVE 070: 100대 가상 UI 디자인 검수용 피스처 매물 목록 API (운영 DB 비접근, 순수 JSON 서빙)."""
+    fixture_path = Path("reports/ui_fixtures/chamart_100.json")
+    if not fixture_path.exists():
+        return []
+    try:
+        with open(fixture_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load UI fixture vehicles: {e}")
+        return []
+
+
+@app.get("/api/staging/ui-fixtures/vehicles/{vehicle_id}")
+def get_staging_ui_fixture_vehicle_detail(vehicle_id: str) -> dict[str, Any]:
+    """DIRECTIVE 070: 100대 가상 UI 디자인 검수용 피스처 매물 상세 API."""
+    fixture_path = Path("reports/ui_fixtures/chamart_100.json")
+    if not fixture_path.exists():
+        raise HTTPException(status_code=404, detail="UI 피스처 데이터를 찾을 수 없습니다.")
+    try:
+        with open(fixture_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for item in data:
+            if item.get("id") == vehicle_id:
+                return item
+        raise HTTPException(status_code=404, detail="해당 시연 차량을 찾을 수 없습니다.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get UI fixture vehicle detail for {vehicle_id}: {e}")
+        raise HTTPException(status_code=500, detail="피스처 데이터 로드 중 오류가 발생했습니다.")
+
+
 @app.post("/api/chamart/consultations")
 def create_chamart_public_consultation(
     req: dict[str, Any],
@@ -1416,6 +1450,14 @@ def create_chamart_public_consultation(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """차마트 웹사이트 고객 문의 및 방문 예약 신청 (스팸 방어 및 개인정보 동의 검증)."""
+    v_id = str(req.get("vehicle_id") or "")
+    if v_id.startswith("UI-"):
+        # DIRECTIVE 070: 가상 100대 시연 매물의 방문 예약은 운영 CRM DB에 저장하지 않고 모의 정상 반환
+        return {
+            "success": True,
+            "consultation_id": "DEMO-070",
+            "message": "UI 시연 매물에 대한 방문 예약 모의 접수가 완료되었습니다. (운영 DB 격리)",
+        }
     client_ip = get_client_ip(request)
     phone_raw = (req.get("phone") or "").strip()
     phone_key = re.sub(r"[^0-9]", "", phone_raw)

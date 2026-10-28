@@ -1,0 +1,33 @@
+{
+  "아반떼": [
+    "/static/img/ui_fixtures/아반떼_01.jpg",
+    "/static/img/ui_fixtures/아반떼_02.jpg",
+    "/static/img/ui_fixtures/아반떼_03.jpg",
+    "/static/img/ui_fixtures/아반떼_04.jpg",
+    "/static/img/ui_fixtures/아반떼_05.jpg"
+  ],
+  "레이": [
+    "/static/img/ui_fixtures/레이_01.jpg",
+    "/static/img/ui_fixtures/레이_02.jpg",
+    "/static/img/ui_fixtures/레이_03.jpg",
+    "/static/img/ui_fixtures/레이_04.jpg",
+    "/static/img/ui_fixtures/레이_05.jpg"
+  ],
+  "모닝": [
+    "/static/img/ui_fixtures/모닝_01.jpg",
+    "/static/img/ui_fixtures/모닝_02.jpg",
+    "/static/img/ui_fixtures/모닝_03.jpg",
+    "/static/img/ui_fixtures/모닝_04.jpg",
+    "/static/img/ui_fixtures/모닝_05.jpg"
+  ],
+  "캐스퍼": [
+    "/static/img/ui_fixtures/캐스퍼_01.jpg",
+    "/static/img/ui_fixtures/캐스퍼_02.jpg",
+    "/static/img/ui_fixtures/캐스퍼_03.jpg"
+  ],
+  "K3": [
+    "/static/img/ui_fixtures/K3_01.jpg",
+    "/static/img/ui_fixtures/K3_02.jpg",
+    "/static/img/ui_fixtures/K3_03.jpg"
+  ]
+}

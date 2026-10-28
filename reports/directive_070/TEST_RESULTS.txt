@@ -1,0 +1,73 @@
+================================================================================
+CHA-FICIAL DIRECTIVE 070 AUTOMATED TEST RESULTS
+================================================================================
+Execution Time: 2026-10-29 04:18:10 KST
+Target Environment: http://localhost:8501/staging/chamart
+Isolated Fixtures: reports/ui_fixtures/chamart_100.json (100 vehicles)
+Status: ALL TESTS PASSED (100% SUCCESS)
+
+[PART 1. 100-VEHICLE DATA INTEGRITY & API ISOLATION]
+- Production Vehicle Table Check (/api/chamart/vehicles): 0 vehicles (ISOLATED & HONEST)
+- Staging UI Fixture API Check (/api/staging/ui-fixtures/vehicles): 100 vehicles (PASS)
+- Vehicle Distribution Check:
+  * 현대 아반떼: 35대 (Target: 35) -> MATCH
+  * 기아 레이: 25대 (Target: 25) -> MATCH
+  * 기아 모닝: 25대 (Target: 25) -> MATCH
+  * 현대 캐스퍼: 10대 (Target: 10) -> MATCH
+  * 기아 K3: 5대 (Target: 5) -> MATCH
+  * Total: 100대 -> MATCH
+- Photo Assets Normalization:
+  * 21 unique curated studio vehicle photos (Wikimedia Commons CC/PD)
+  * Normalized to 5:3 ratio (800x480)
+  * photo_manifest.json created and linked
+- Single Vehicle Detail API Check (/api/staging/ui-fixtures/vehicles/UI-0001):
+  * Target Price: 19,580,000 KRW
+  * Monthly Estimate: 370,000 KRW (60 months, 5.9%)
+  * Options: 7 items structured
+  * Photos: 5 photos in gallery
+  * Inspection: DEMO_UNVERIFIED (No fake inspection badge) -> PASS
+
+[PART 2. PLAYWRIGHT 12-SCENARIO VISUAL VERIFICATION]
+1. PC 1440x900 List Page 1 (20 items): PASS
+   - Total Badge: 100대
+   - Displayed Rows: 20
+   - Pagination Info: "전체 100대 매물 중 1 - 20대 표시"
+   - Horizontal Scroll: 0px (No overflow)
+2. Hyundai Avante Filter (35 items): PASS
+   - Filter Badge: 35대
+   - Page 1 Rows: 20
+3. Kia Ray Filter (25 items): PASS
+   - Filter Badge: 25대
+   - Page 1 Rows: 20
+4. Kia Morning Filter (25 items): PASS
+   - Filter Badge: 25대
+   - Page 1 Rows: 20
+5. PC 1440x900 Album Grid (20 items): PASS
+   - Cards Count: 20
+6. PC Vehicle Detail (UI-0001): PASS
+   - High-res photo & 350px right consultation panel rendered
+7. Mobile 390x844 List: PASS
+   - Single column vertical stack
+   - Horizontal Overflow: FALSE (0px)
+8. Mobile 390x844 Detail: PASS
+   - Bottom floating consultation bar rendered
+   - Horizontal Overflow: FALSE (0px)
+9. Mobile Filter Bottomsheet: PASS
+   - Chips: 아반떼, 캐스퍼, 레이, 모닝, K3 dynamic chips rendered
+10. 3-Car Comparison Modal: PASS
+    - 3 cars selected and comparison table rendered cleanly
+11. Pagination Page 5 (Vehicles 81-100): PASS
+    - Info: "전체 100대 매물 중 81 - 100대 표시"
+    - Rows: 20
+12. Empty Search Result: PASS
+    - Badge: 0대
+    - Friendly reset guide card rendered
+
+[PART 3. HORIZONTAL SCROLL & OVERFLOW AUDIT]
+- Viewport 1440x900: scrollWidth (1440) == clientWidth (1440) -> PASS
+- Viewport 390x844: scrollWidth (390) == clientWidth (390) -> PASS
+- Overflow Violations Count: 0
+
+================================================================================
+CONCLUSION: DIRECTIVE 070 REQUIREMENTS MET WITH ZERO DEFECTS
+================================================================================
