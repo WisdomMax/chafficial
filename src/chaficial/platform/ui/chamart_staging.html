@@ -27,18 +27,17 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #F1F5F9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
         
-        /* DIRECTIVE 062: 실차 예상 구매비용 안내서 A4 정밀 인쇄 및 PDF 저장 CSS */
-                /* DIRECTIVE 065 P1: 실차 예상 구매비용 안내서 A4 단 1페이지 정밀 인쇄 및 PDF 저장 CSS */
+        /* DIRECTIVE 066 P1: 실차 예상 구매비용 안내서 A4 단 1페이지 내용 보존 및 무결 인쇄 CSS */
         @media print {
             html, body {
-                height: 100% !important;
-                max-height: 100% !important;
-                overflow: hidden !important;
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
                 background: white !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
-            header, nav, footer, #view-home, #compareModal, #policyModal, #compareFloatingBar, #mobileFilterBottomSheet {
+            header, nav, footer, #view-home, #compareModal, #policyModal, #compareFloatingBar, #mobileFilterBottomSheet, aside {
                 display: none !important;
             }
             #view-detail > *:not(#vdrEstimatePrintModal) {
@@ -46,9 +45,7 @@
             }
             #vdrEstimatePrintModal {
                 display: block !important;
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
+                position: static !important;
                 width: 100% !important;
                 max-width: 100% !important;
                 height: auto !important;
@@ -57,7 +54,7 @@
                 background: white !important;
                 border: none !important;
                 box-shadow: none !important;
-                z-index: 999999 !important;
+                z-index: auto !important;
             }
             #vdrEstimatePrintModal > div {
                 max-width: 100% !important;
@@ -66,13 +63,20 @@
                 box-shadow: none !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                overflow: visible !important;
             }
-            #vdrEstimatePrintModal button {
+            #vdrEstimatePrintModal .no-print {
                 display: none !important;
+            }
+            #vdrPrintableEstimateSheet {
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
+                padding: 0 !important;
             }
             @page {
                 size: A4 portrait;
-                margin: 10mm 12mm;
+                margin: 12mm 15mm;
             }
         }
     </style>
@@ -208,39 +212,37 @@
                 </div>
             </div>
 
-            <!-- 전시장 안내 섹션 (White 80% / Deep Charcoal 15% / Electric Lime 5%) -->
+            <!-- 전시장 및 고객지원 안내 섹션 (DIRECTIVE 066 P0: 정직한 거점 및 온라인 상담 안내) -->
             <div id="showroom" class="bg-white rounded-xl p-6 sm:p-8 border border-[#E2E6EA] grid grid-cols-1 md:grid-cols-2 gap-8 items-center mt-12">
                 <div class="space-y-4">
-                    <span class="text-xs font-bold text-[#171B1E] bg-[#C8FF3D]/25 px-2.5 py-1 rounded border border-[#C8FF3D]/60">오프라인 쇼룸</span>
-                    <h3 class="text-xl sm:text-2xl font-bold text-[#171B1E]">차마트 장한평 본사 전시장</h3>
+                    <span class="text-xs font-bold text-[#171B1E] bg-[#C8FF3D]/25 px-2.5 py-1 rounded border border-[#C8FF3D]/60">쇼룸 & 거점 안내</span>
+                    <h3 class="text-xl sm:text-2xl font-bold text-[#171B1E]">차마트(CHAMART) 고객지원센터</h3>
                     <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                        대한민국 중고차의 중심 장한평 매매단지에서 실차를 직접 확인하고 시승해보실 수 있습니다. 성능점검기록부 실물 대조 및 하체 리프트 무상 점검을 지원합니다.
+                        차마트는 실차 성능점검기록부 대조 및 투명 정찰가 시스템을 기반으로 운영됩니다.
+                        스테이징 화면의 시연 매물은 UI/UX 레이아웃 검수용이며, 정식 실차 입고 시 순차적으로 공개됩니다.
                     </p>
                     <div class="space-y-2 text-xs sm:text-sm text-slate-700 pt-1">
                         <div class="flex items-center space-x-2">
                             <i data-lucide="map-pin" class="w-4 h-4 text-slate-400 shrink-0"></i>
-                            <span>서울특별시 동대문구 천호대로 329 (장한평 매매단지 가온모터스)</span>
+                            <span>서울특별시 성동구 자동차시장1길 70 (용답동)</span>
                         </div>
                         <div class="flex items-center space-x-2">
                             <i data-lucide="clock" class="w-4 h-4 text-slate-400 shrink-0"></i>
-                            <span>운영시간: 09:00 ~ 19:00 (사전 예약 시 실차 확인 가능)</span>
+                            <span>운영시간: 평일 09:00 ~ 18:00 (온라인 고객지원)</span>
                         </div>
                         <div class="flex items-center space-x-2">
                             <i data-lucide="phone" class="w-4 h-4 text-[#171B1E] shrink-0"></i>
-                            <span class="font-bold text-[#171B1E]">상담창구: 1:1 온라인 방문 예약</span>
+                            <span class="font-bold text-[#171B1E]">상담창구: 1:1 온라인 문의 접수</span>
                         </div>
                     </div>
                 </div>
                 <div class="bg-[#F5F6F4] rounded-xl p-6 border border-[#E2E6EA] space-y-3 text-center sm:text-left">
-                    <h4 class="font-bold text-[#171B1E] text-sm">사전 예약 방문 고객 안내</h4>
+                    <h4 class="font-bold text-[#171B1E] text-sm">실차 검증 원칙</h4>
                     <p class="text-xs text-slate-600 leading-relaxed">
-                        방문 예약 시 전담 매니저가 1:1로 실차 대기 및 성능기록부 실물 대조를 준비해 드립니다.
+                        소유권과 성능기록부가 100% 일치하고 실제 촬영본 검증을 마친 실매물만을 투명 정찰가로 등록합니다.
                     </p>
-                    <div class="pt-2">
-                        <button onclick="scrollToConsultation()" class="w-full sm:w-auto inline-flex items-center justify-center bg-[#C8FF3D] hover:bg-[#B5F028] text-[#171B1E] text-xs font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer border border-[#AEEB20]/60 shadow-xs">
-                            <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1.5 text-[#171B1E]"></i>
-                            방문 시승 예약 신청
-                        </button>
+                    <div class="text-[11px] text-slate-500 pt-1">
+                        ※ 스테이징 환경은 디자인 검수 및 기능 시연용 모드입니다.
                     </div>
                 </div>
             </div>
@@ -290,13 +292,13 @@
                 <div class="flex flex-wrap gap-5 text-xs text-slate-600">
                     <button onclick="openPolicyModal('terms')" class="hover:text-slate-900 transition-colors cursor-pointer">이용약관</button>
                     <button onclick="openPolicyModal('privacy')" class="hover:text-slate-900 transition-colors font-bold text-slate-800 cursor-pointer">개인정보처리방침</button>
-                    <a href="#showroom" onclick="scrollToShowroom(event)" class="hover:text-slate-900 transition-colors">전시장 오시는 길</a>
-                    <a href="#consultation" onclick="scrollToConsultation()" class="hover:text-slate-900 transition-colors">1:1 온라인 방문 상담 접수</a>
+                    <a href="#showroom" onclick="scrollToShowroom(event)" class="hover:text-slate-900 transition-colors">고객지원센터</a>
+                    <a href="#guide" onclick="scrollToGuide(event)" class="hover:text-slate-900 transition-colors">투명 구매 가이드</a>
                 </div>
             </div>
 
             <div class="space-y-1.5 text-slate-400 text-[11px] leading-relaxed">
-                <p>상호: 차마트 (CHAMART) | 제휴 전시장: 서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지 | 문의: 1:1 온라인 상담 접수</p>
+                <p>상호: 차마트 (CHAMART) | [스테이징 검수 환경] | 고객지원: 서울특별시 성동구 자동차시장1길 70 (용답동) | 문의: 온라인 고객센터</p>
                 <p>전자상거래 소비자보호 및 중고차 실매물 확인 서비스 | 통신판매업 및 사업자 등록 전산 실사 중</p>
                 <p class="pt-2 text-slate-400">
                     ※ 차마트에 등록된 모든 차량은 자동차관리법에 따른 성능·상태점검기록부가 대조된 실매물이며, 허위매물 방지를 위해 상시 모니터링을 실시하고 있습니다.
@@ -417,8 +419,8 @@
 
             <!-- 비교 테이블 컨테이너 (DIRECTIVE 064: 모바일 가로스크롤 힌트 추가) -->
             <div class="relative flex-1 overflow-hidden flex flex-col">
-                <!-- 모바일 가로스크롤 유도 힌트 바 -->
-                <div class="sm:hidden flex items-center justify-between px-2 py-1.5 bg-slate-100 border-b border-slate-200 text-[11px] text-slate-600">
+                <!-- 모바일 가로스크롤 유도 힌트 바 (DIRECTIVE 064/066) -->
+                <div id="compareScrollHintBar" class="sm:hidden flex items-center justify-between px-2 py-1.5 bg-slate-100 border-b border-slate-200 text-[11px] text-slate-600">
                     <span class="flex items-center font-medium">
                         <i data-lucide="chevrons-right" class="w-3.5 h-3.5 text-slate-500 mr-1 animate-pulse"></i>
                         좌우로 밀어서 3대 차량 상세 비교
@@ -470,6 +472,7 @@
     <!-- 자바스크립트 클라이언트 라우팅 및 렌더링 -->
     <script>
         let publicVehicles = [];
+        window.publicVehicles = publicVehicles;
         let currentDetailRenderer = null;
         let mbFilterState = { maker: '', model: '', price: '', year: '' };
 
@@ -1065,6 +1068,7 @@
                 const res = await fetch('/api/staging/chamart/vehicles');
                 if (!res.ok) throw new Error('매물 목록 조회 실패');
                 publicVehicles = await res.json();
+                window.publicVehicles = publicVehicles;
 
                 // URL 쿼리 파라미터로부터 필터 복원
                 initFiltersFromUrl();

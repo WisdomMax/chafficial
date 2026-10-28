@@ -613,10 +613,10 @@ engine = create_engine(DEMO_DB_URL, echo=False, connect_args={"check_same_thread
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def migrate_db_schema() -> None:
+def migrate_db_schema(target_db_file: Optional[str] = None) -> None:
     """기존 SQLite DB 테이블에 DIRECTIVE 046-D / 047 확장 컬럼 및 신규 테이블을 안전하게 마이그레이션."""
     import sqlite3
-    db_file = DEMO_DB_URL.replace("sqlite:///", "")
+    db_file = target_db_file or DEMO_DB_URL.replace("sqlite:///", "")
     if not os.path.exists(db_file):
         return
 

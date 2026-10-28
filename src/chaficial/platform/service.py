@@ -630,7 +630,7 @@ class PlatformService:
                 "target_price": v.target_price,
                 "monthly_payment_estimate": monthly_est,
                 "primary_photo_url": v.primary_photo_url or "/static/img/car_placeholder.jpg",
-                "branch_name": "차마트 제휴 전시장 (장한평)",
+                "branch_name": "차마트 장한평 거점",
                 "status": v.status,
                 "publishing_status": getattr(v, "publishing_status", "PUBLISHED"),
                 "is_demo_asset": allow_demo,
@@ -732,15 +732,15 @@ class PlatformService:
                 "caption": v.model_name,
             })
 
-        # 5. 판매자 및 전시장 정보 (DIRECTIVE 065: 1544 제거 및 단일 제휴 전시장 정보 정직화)
+        # 5. 판매자 및 전시장 정보 (DIRECTIVE 066 P0: 미확인 제휴 표현 제거 및 온라인 상담 정직화)
         raw_phone = v.dealer.phone if v.dealer else None
         valid_phone = raw_phone if (raw_phone and not raw_phone.startswith("1544") and len(raw_phone) >= 8) else None
         dealer_info = {
-            "name": v.dealer.name if v.dealer else "차마트 제휴 전시장 담당팀",
-            "dealership_name": "차마트 제휴 전시장 (장한평)",
+            "name": v.dealer.name if v.dealer else "차마트 고객상담팀",
+            "dealership_name": "차마트 온라인 쇼룸",
             "phone": valid_phone,
-            "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지",
-            "showroom_detail": "장한평 자동차매매단지 제휴 전시장 (사전 1:1 방문 예약 필수)",
+            "showroom_location": "서울특별시 성동구 자동차시장1길 70 (용답동)",
+            "showroom_detail": "온라인 상담 문의 전용 (오프라인 전시장 방문은 제휴 매매단지 정식 확정 후 순차 안내 예정)",
         }
 
         # 6. 시세 비교 및 부대비용 가이드 (P0-3: 1.05배 가짜 평균 시세 전면 제거)

@@ -752,8 +752,8 @@ class VehicleDetailRenderer {
       <!-- 예상 구매비용 안내서 (견적서) 인쇄/저장 모달 (DIRECTIVE 062) -->
       <div id="vdrEstimatePrintModal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
         <div class="bg-white rounded-xl max-w-2xl w-full max-h-[92vh] flex flex-col p-6 shadow-2xl space-y-4 overflow-hidden border border-[#E7E9E5]">
-          <!-- 모달 상단 헤더 -->
-          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <!-- 모달 상단 헤더 (화면용 / 인쇄 시 숨김) -->
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3 no-print">
             <div class="flex items-center space-x-2">
               <i data-lucide="calculator" class="w-5 h-5 text-[#171B1E]"></i>
               <div>
@@ -767,11 +767,14 @@ class VehicleDetailRenderer {
           </div>
 
           <!-- A4 인쇄 대상 본문 영역 -->
-          <div id="vdrPrintableEstimateSheet" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 text-xs text-slate-700 pr-1 p-2 bg-white">
+          <div id="vdrPrintableEstimateSheet" class="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 text-xs text-slate-700 pr-1 p-2 bg-white">
             <div class="border-b-2 border-[#171B1E] pb-3 flex justify-between items-end">
               <div>
-                <span class="text-xs font-bold text-slate-500">차마트 모빌리티</span>
-                <h2 class="text-xl font-bold text-[#171B1E] mt-0.5">${escapeHtml(displayTitle)} ${displayTrim ? escapeHtml(displayTrim) : ''}</h2>
+                <div class="flex items-center space-x-2 mb-1">
+                  <span class="text-xs font-bold text-slate-500">차마트</span>
+                  <span class="inline-block bg-[#171B1E] text-[#C8FF3D] font-mono text-[10px] font-bold px-2 py-0.5 rounded border border-[#C8FF3D]/40">[시연용 견적서]</span>
+                </div>
+                <h2 class="text-xl font-bold text-[#171B1E] mt-0.5 leading-snug">${escapeHtml(displayTitle)} ${displayTrim ? escapeHtml(displayTrim) : ''}</h2>
                 <span class="text-xs text-slate-500">${escapeHtml(d.plate_number || '차량번호 미기재')} · ${d.year ? d.year + '년식' : '연식미확인'} · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '주행거리 미확인'}</span>
               </div>
               <div class="text-right">
@@ -827,17 +830,18 @@ class VehicleDetailRenderer {
               </div>
             </div>
 
-            <!-- 투명 고지 문구 (DIRECTIVE 062 P2) -->
+            <!-- 투명 고지 문구 (DIRECTIVE 066 P1: 시연용 고지 명시 및 내용 보존) -->
             <div class="text-[11px] text-slate-500 leading-relaxed bg-[#F5F6F4] p-3 rounded space-y-1 border border-[#E7E9E5]">
+              <p class="font-bold text-red-600">※ [시연용 안내] 본 견적서는 화면 검수용 시연 데이터이며 실제 판매 계약 효력이 없습니다.</p>
               <p>※ 본 안내서는 고객님의 구매 예산 수립을 돕기 위해 공식 정찰가와 표준 취득세율을 기초로 산출된 실차 사전 예상 구매비용 안내서입니다.</p>
               <p>※ 취득세 감면 대상 여부 및 지자체별 공채 할인율에 따라 세금·공채·부대비용 변동 가능성이 있습니다.</p>
               <p>※ 금융 할부 시뮬레이션은 표준 예시 조건이며, 실제 금융사 심사 결과와 다를 수 있습니다.</p>
             </div>
           </div>
 
-          <!-- 모달 하단 액션 버튼 -->
-          <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
-            <span class="text-xs text-slate-400">전시장: ${escapeHtml(showroomLoc)}</span>
+          <!-- 모달 하단 액션 버튼 (화면용 / 인쇄 시 숨김) -->
+          <div class="pt-3 border-t border-slate-200 flex items-center justify-between no-print">
+            <span class="text-xs text-slate-400">문의: ${escapeHtml(showroomLoc || '차마트 온라인 고객상담')}</span>
             <div class="flex items-center space-x-2">
               <button onclick="window.__vdrInstance.closeEstimateModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer">
                 닫기
