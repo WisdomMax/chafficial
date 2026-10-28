@@ -154,16 +154,19 @@
                 padding-bottom: 0 !important;
             }
 
-            /* 좌측 상세 검색 패널: 제자리 완전 고정 (필요시 내부 스크롤) */
+            /* 좌측 상세 검색 패널: 제자리 완전 고정 (필요시 내부 스크롤) - 배경 불투명 및 z-index 부여 */
             .cm-filter-panel {
                 height: 100% !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
                 padding-right: 14px !important;
                 padding-bottom: 30px !important;
+                background-color: #F5F6F4 !important;
+                position: relative !important;
+                z-index: 10 !important;
             }
 
-            /* 우측 메인 프레임: 배너 + 툴바 + 차량목록 통째로 독립 스크롤 */
+            /* 우측 메인 프레임: 배너 + 툴바 + 차량목록 + 쇼룸 + 푸터 통째로 독립 스크롤 */
             .cm-listing-results {
                 height: 100% !important;
                 overflow-y: auto !important;
@@ -171,6 +174,14 @@
                 padding-right: 8px !important;
                 padding-bottom: 40px !important;
                 scroll-behavior: smooth !important;
+            }
+
+            /* 상세 뷰 독립 스크롤 지원 */
+            #view-detail {
+                height: 100% !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                padding-bottom: 40px !important;
             }
         }
     </style>
@@ -559,77 +570,99 @@
                             <p class="text-xs">실차 검증 매물을 불러오는 중입니다...</p>
                         </div>
                     </div>
+
+                    <!-- 전시장 및 고객지원 안내 섹션 (우측 스크롤 프레임 내부 하단) -->
+                    <div class="w-full mt-10 space-y-4">
+                        <div id="showroom" class="bg-white rounded-xl p-5 sm:p-6 border border-[#E5E7EB] grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                            <div class="space-y-3">
+                                <span class="text-[11px] font-bold text-[#171B1E] bg-[#F8F9FA] px-2.5 py-1 rounded border border-[#E5E7EB]">쇼룸 & 고객지원 센터</span>
+                                <h3 class="text-lg sm:text-xl font-bold text-[#171B1E]">차마트(CHAMART) 고객안심센터</h3>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    차마트는 성능·상태점검기록부 1:1 원본 대조와 허위매물 0% 투명 정찰가 시스템을 엄격히 준수합니다.
+                                    장한평 직영 전시장에 실입고된 차량만을 선별하여 고객님께 투명하게 제공합니다.
+                                </p>
+                                <div class="space-y-1.5 text-xs text-slate-700 pt-0.5">
+                                    <div class="flex items-center space-x-2">
+                                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                                        <span>서울특별시 성동구 자동차시장1길 70 (용답동 장한평 전시장)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                                        <span>운영시간: 평일 09:00 ~ 18:00 (온라인 1:1 상담 접수 상시 운영)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <i data-lucide="phone" class="w-3.5 h-3.5 text-[#171B1E] shrink-0"></i>
+                                        <span class="font-bold text-[#171B1E]">상담창구: 1:1 온라인 방문예약 및 매물 상담</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-[#F8F9FA] rounded-xl p-5 border border-[#E5E7EB] space-y-2 text-center sm:text-left">
+                                <h4 class="font-bold text-[#171B1E] text-xs sm:text-sm">실차 100% 안심 검증 원칙</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    소유권과 성능기록부가 100% 일치하고 실제 외관·실내 촬영본 검증을 마친 정식 실매물만을 투명 정찰가로 등록합니다.
+                                </p>
+                                <div class="text-[11px] text-slate-500 pt-1">
+                                    ※ 등록된 모든 차량은 자동차관리법에 따른 성능·상태점검기록부 대조 및 시운전 점검을 거칩니다.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 구매 가이드 섹션 (컴팩트 3단 카드) -->
+                        <div id="guide" class="bg-white rounded-xl p-5 sm:p-6 border border-[#E5E7EB] space-y-3">
+                            <h3 class="text-base font-bold text-[#171B1E] pb-2 border-b border-slate-100 flex items-center justify-between">
+                                <span>차마트 투명 안심 구매 가이드</span>
+                                <span class="text-xs font-normal text-slate-400">믿을 수 있는 3대 소비자 보호 약속</span>
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                <div class="p-3.5 rounded-lg bg-[#F8F9FA] border border-slate-200/80 space-y-1">
+                                    <div class="font-bold text-slate-800 flex items-center text-xs">
+                                        <i data-lucide="check-circle" class="w-3.5 h-3.5 text-[#171B1E] mr-1.5"></i>
+                                        1. 실매물 1:1 대조 확인
+                                    </div>
+                                    <p class="text-slate-500 leading-relaxed text-[11px]">소유권 확인이 완료된 장한평 실차만을 전시하며, 계약 전 성능점검표 원본을 1:1 대조합니다.</p>
+                                </div>
+                                <div class="p-3.5 rounded-lg bg-[#F8F9FA] border border-slate-200/80 space-y-1">
+                                    <div class="font-bold text-slate-800 flex items-center text-xs">
+                                        <i data-lucide="calculator" class="w-3.5 h-3.5 text-[#171B1E] mr-1.5"></i>
+                                        2. 투명한 정찰 판매가
+                                    </div>
+                                    <p class="text-slate-500 leading-relaxed text-[11px]">취등록세와 부대비용을 사전에 투명하게 안내하며, 불필요한 관리비용을 일절 청구하지 않습니다.</p>
+                                </div>
+                                <div class="p-3.5 rounded-lg bg-[#F8F9FA] border border-slate-200/80 space-y-1">
+                                    <div class="font-bold text-slate-800 flex items-center text-xs">
+                                        <i data-lucide="receipt" class="w-3.5 h-3.5 text-[#171B1E] mr-1.5"></i>
+                                        3. 의무 현금영수증 발행
+                                    </div>
+                                    <p class="text-slate-500 leading-relaxed text-[11px]">차량 대금 전액에 대해 세금계산서 또는 현금영수증을 수수료 없이 무료 의무 발행합니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 상용 푸터 (우측 스크롤 프레임 내부 최하단) -->
+                    <footer class="bg-white border border-[#E5E8EC] rounded-xl text-slate-500 text-xs py-7 px-5 sm:px-6 mt-10 space-y-6">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                            <div class="flex items-center space-x-2.5 shrink-0">
+                                <img src="/static/img/chamart_official_logo.png?v=20261029_final070" alt="차마트" class="h-7 sm:h-8 w-auto object-contain shrink-0" />
+                            </div>
+                            <div class="flex flex-wrap gap-4 text-xs text-slate-600">
+                                <button onclick="openPolicyModal('terms')" class="hover:text-slate-900 transition-colors cursor-pointer">이용약관</button>
+                                <button onclick="openPolicyModal('privacy')" class="hover:text-slate-900 transition-colors font-bold text-slate-800 cursor-pointer">개인정보처리방침</button>
+                                <a href="#showroom" onclick="scrollToShowroom(event)" class="hover:text-slate-900 transition-colors">고객지원센터</a>
+                                <a href="#guide" onclick="scrollToGuide(event)" class="hover:text-slate-900 transition-colors">투명 구매 가이드</a>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5 text-slate-400 text-[11px] leading-relaxed">
+                            <p>상호: 차마트 (CHAMART) | 대표전화: 온라인 고객센터 | 고객지원: 서울특별시 성동구 자동차시장1길 70 (용답동 장한평 전시장) | 사업자등록 전산 실사 완료</p>
+                            <p>전자상거래 소비자보호 및 중고차 실매물 확인 서비스 | 허위매물 신고센터 상시 운영 | 통신판매업 신고 완료</p>
+                            <p class="pt-2 text-slate-400">
+                                ※ 차마트에 등록된 모든 차량은 자동차관리법에 따른 성능·상태점검기록부와 실차 촬영본이 1:1 대조된 실매물이며, 허위매물 방지를 위해 상시 모니터링을 실시하고 있습니다.
+                            </p>
+                        </div>
+                    </footer>
                 </section>
             </div>
-
-            <!-- 전시장 및 고객지원 안내 섹션 (DIRECTIVE 069-R: 본문 폭 1320px 통일, 컴팩트 여백, 정직한 고객 안내문) -->
-            <div class="max-w-[1320px] mx-auto px-4 sm:px-6 mt-6 space-y-4">
-                <div id="showroom" class="bg-white rounded-xl p-5 sm:p-6 border border-[#E5E7EB] grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                    <div class="space-y-3">
-                        <span class="text-[11px] font-bold text-[#171B1E] bg-[#F8F9FA] px-2.5 py-1 rounded border border-[#E5E7EB]">쇼룸 & 고객지원 센터</span>
-                        <h3 class="text-lg sm:text-xl font-bold text-[#171B1E]">차마트(CHAMART) 고객안심센터</h3>
-                        <p class="text-xs text-slate-600 leading-relaxed">
-                            차마트는 성능·상태점검기록부 1:1 원본 대조와 허위매물 0% 투명 정찰가 시스템을 엄격히 준수합니다.
-                            장한평 직영 전시장에 실입고된 차량만을 선별하여 고객님께 투명하게 제공합니다.
-                        </p>
-                        <div class="space-y-1.5 text-xs text-slate-700 pt-0.5">
-                            <div class="flex items-center space-x-2">
-                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                                <span>서울특별시 성동구 자동차시장1길 70 (용답동 장한평 전시장)</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                                <span>운영시간: 평일 09:00 ~ 18:00 (온라인 1:1 상담 접수 상시 운영)</span>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <i data-lucide="phone" class="w-3.5 h-3.5 text-[#171B1E] shrink-0"></i>
-                                <span class="font-bold text-[#171B1E]">상담창구: 1:1 온라인 방문예약 및 매물 상담</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-[#F8F9FA] rounded-xl p-5 border border-[#E5E7EB] space-y-2 text-center sm:text-left">
-                        <h4 class="font-bold text-[#171B1E] text-xs sm:text-sm">실차 100% 안심 검증 원칙</h4>
-                        <p class="text-xs text-slate-600 leading-relaxed">
-                            소유권과 성능기록부가 100% 일치하고 실제 외관·실내 촬영본 검증을 마친 정식 실매물만을 투명 정찰가로 등록합니다.
-                        </p>
-                        <div class="text-[11px] text-slate-500 pt-1">
-                            ※ 등록된 모든 차량은 자동차관리법에 따른 성능·상태점검기록부 대조 및 시운전 점검을 거칩니다.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 구매 가이드 섹션 (컴팩트 3단 카드) -->
-                <div id="guide" class="bg-white rounded-xl p-5 sm:p-6 border border-[#E5E7EB] space-y-3">
-                    <h3 class="text-base font-bold text-[#171B1E] pb-2 border-b border-slate-100 flex items-center justify-between">
-                        <span>차마트 투명 안심 구매 가이드</span>
-                        <span class="text-xs font-normal text-slate-400">믿을 수 있는 3대 소비자 보호 약속</span>
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                        <div class="p-3.5 rounded-lg bg-[#F8F9FA] border border-slate-200/80 space-y-1">
-                            <div class="font-bold text-slate-800 flex items-center text-xs">
-                                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-[#171B1E] mr-1.5"></i>
-                                1. 실매물 1:1 대조 확인
-                            </div>
-                            <p class="text-slate-500 leading-relaxed text-[11px]">소유권 확인이 완료된 장한평 실차만을 전시하며, 계약 전 성능점검표 원본을 1:1 대조합니다.</p>
-                        </div>
-                        <div class="p-3.5 rounded-lg bg-[#F8F9FA] border border-slate-200/80 space-y-1">
-                            <div class="font-bold text-slate-800 flex items-center text-xs">
-                                <i data-lucide="calculator" class="w-3.5 h-3.5 text-[#171B1E] mr-1.5"></i>
-                                2. 투명한 정찰 판매가
-                            </div>
-                            <p class="text-slate-500 leading-relaxed text-[11px]">취등록세와 부대비용을 사전에 투명하게 안내하며, 불필요한 관리비용을 일절 청구하지 않습니다.</p>
-                        </div>
-                        <div class="p-3.5 rounded-lg bg-[#F8F9FA] border border-slate-200/80 space-y-1">
-                            <div class="font-bold text-slate-800 flex items-center text-xs">
-                                <i data-lucide="receipt" class="w-3.5 h-3.5 text-[#171B1E] mr-1.5"></i>
-                                3. 의무 현금영수증 발행
-                            </div>
-                            <p class="text-slate-500 leading-relaxed text-[11px]">차량 대금 전액에 대해 세금계산서 또는 현금영수증을 수수료 없이 무료 의무 발행합니다.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </section>
 
         <!-- [VIEW 2: 차량 상세 뷰] (/cars/{id}) -->
@@ -654,36 +687,11 @@
         </button>
 
         <!-- 3. 맨 위로 Top 버튼 -->
-        <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="w-14 h-12 bg-white border border-[#E5E8EC] hover:bg-slate-50 rounded-xl shadow-md flex flex-col items-center justify-center text-slate-500 hover:text-slate-800 transition-all cursor-pointer">
+        <button onclick="scrollToTopSmooth()" class="w-14 h-12 bg-white border border-[#E5E8EC] hover:bg-slate-50 rounded-xl shadow-md flex flex-col items-center justify-center text-slate-500 hover:text-slate-800 transition-all cursor-pointer">
             <i data-lucide="chevron-up" class="w-5 h-5"></i>
             <span class="text-[10px] font-medium">TOP</span>
         </button>
     </div>
-
-    <!-- 3. 상용 푸터 (내부 관리자 링크 완전 배제, 정직한 운영 정보 및 실제 약관 모달 연결) -->
-    <footer class="bg-white border-t border-[#E5E8EC] text-slate-500 text-xs py-8 sm:py-10 mt-12">
-        <div class="max-w-[1320px] mx-auto px-4 sm:px-6 space-y-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
-                <div class="flex items-center space-x-2.5 shrink-0">
-                    <img src="/static/img/chamart_official_logo.png?v=20261029_final070" alt="차마트" class="h-8 sm:h-9 w-auto object-contain shrink-0" />
-                </div>
-                <div class="flex flex-wrap gap-5 text-xs text-slate-600">
-                    <button onclick="openPolicyModal('terms')" class="hover:text-slate-900 transition-colors cursor-pointer">이용약관</button>
-                    <button onclick="openPolicyModal('privacy')" class="hover:text-slate-900 transition-colors font-bold text-slate-800 cursor-pointer">개인정보처리방침</button>
-                    <a href="#showroom" onclick="scrollToShowroom(event)" class="hover:text-slate-900 transition-colors">고객지원센터</a>
-                    <a href="#guide" onclick="scrollToGuide(event)" class="hover:text-slate-900 transition-colors">투명 구매 가이드</a>
-                </div>
-            </div>
-
-            <div class="space-y-1.5 text-slate-400 text-[11px] leading-relaxed">
-                <p>상호: 차마트 (CHAMART) | 대표전화: 온라인 고객센터 | 고객지원: 서울특별시 성동구 자동차시장1길 70 (용답동 장한평 전시장) | 사업자등록 전산 실사 완료</p>
-                <p>전자상거래 소비자보호 및 중고차 실매물 확인 서비스 | 허위매물 신고센터 상시 운영 | 통신판매업 신고 완료</p>
-                <p class="pt-2 text-slate-400">
-                    ※ 차마트에 등록된 모든 차량은 자동차관리법에 따른 성능·상태점검기록부와 실차 촬영본이 1:1 대조된 실매물이며, 허위매물 방지를 위해 상시 모니터링을 실시하고 있습니다.
-                </p>
-            </div>
-        </div>
-    </footer>
 
     <!-- 모바일 전용 매물 검색 필터 바텀시트 모달 (DIRECTIVE 061) -->
     <div id="mobileFilterBottomSheet" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end justify-center sm:hidden animate-in fade-in duration-150">
@@ -1977,6 +1985,14 @@
         function scrollToConsultation() {
             const el = document.getElementById('showroom');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function scrollToTopSmooth() {
+            const results = document.querySelector('.cm-listing-results');
+            if (results) {
+                results.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function updateNavActive(type) {
