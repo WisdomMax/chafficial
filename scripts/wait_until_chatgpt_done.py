@@ -62,7 +62,7 @@ async function run() {{
 await run();
 """
 
-print("[*] ChatGPT 응답 완료 대기 및 DIRECTIVE 057 텍스트 추출 시작...")
+print("[*] ChatGPT 응답 완료 대기 및 DIRECTIVE 059 텍스트 추출 시작...")
 res = subprocess.run(
     ["/Users/wisdom/.local/bin/aside", "--profile", TARGET_PROFILE, "repl", js_code],
     capture_output=True,
@@ -76,7 +76,7 @@ stdout = res.stdout
 if "===START===" in stdout and "===END===" in stdout:
     extracted_text = stdout.split("===START===")[1].split("===END===")[0].strip()
 
-with open("reports/DIRECTIVE_058_EXTRACTED.md", "w", encoding="utf-8") as f:
+with open("reports/DIRECTIVE_059_EXTRACTED.md", "w", encoding="utf-8") as f:
     f.write(extracted_text or stdout)
 
-print(f"[*] DIRECTIVE 058 저장 완료 (길이: {len(extracted_text)}자): reports/DIRECTIVE_058_EXTRACTED.md")
+print(f"[*] DIRECTIVE 059 저장 완료 (길이: {len(extracted_text)}자): reports/DIRECTIVE_059_EXTRACTED.md")

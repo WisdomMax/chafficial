@@ -105,8 +105,8 @@ class VehicleDetailRenderer {
         <div class="bg-[#152B3C] text-white border border-slate-700 p-4 rounded-lg mb-6 shadow-xs">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
             <div class="flex flex-wrap items-center gap-3">
-              <span class="inline-flex items-center px-2 py-0.5 rounded font-bold bg-[#176B68] text-white">
-                <i data-lucide="shield" class="w-3.5 h-3.5 mr-1"></i>차피셜 관리자 제어판
+              <span class="inline-flex items-center px-2 py-0.5 rounded font-bold bg-[#171B1E] text-white">
+                <i data-lucide="shield" class="w-3.5 h-3.5 mr-1 text-[#C8FF3D]"></i>차피셜 관리자 제어판
               </span>
               <span class="text-slate-300">소유: <strong class="text-white">${escapeHtml(d.ownership_type || 'CHAMART_OWNED')}</strong></span>
               <span class="text-slate-300">거점: <strong class="text-teal-300">${escapeHtml(d.branch_location || '장한평 본사')}</strong></span>
@@ -144,7 +144,19 @@ class VehicleDetailRenderer {
     // DIRECTIVE 058: 카카오 상담 채널 정직성 - 공식 채널 ID가 명시적으로 설정된 경우에만 버튼 노출
     const kakaoChannelId = d.kakao_channel_id || window.__CHAMART_KAKAO_CHANNEL_ID || '';
 
-    // 5. 엔카·K Car 급 상용 레이아웃 마운트
+    // DIRECTIVE 059 P0: 차량명 및 트림 중복 렌더링 방지 정규화
+    const rawModel = (d.model_name || '').trim();
+    const rawTrim = (d.trim || '').trim();
+    let displayTitle = rawModel;
+    let displayTrim = rawTrim;
+    if (rawTrim && rawModel.toLowerCase().includes(rawTrim.toLowerCase())) {
+      displayTrim = '';
+    } else if (rawTrim && rawTrim.toLowerCase().startsWith(rawModel.toLowerCase())) {
+      displayTitle = rawModel;
+      displayTrim = rawTrim.slice(rawModel.length).trim();
+    }
+
+    // 5. 엔카·K Car 급 상용 레이아웃 마운트 (White 80% / Deep Charcoal 15% / Electric Lime 5%)
     this.container.innerHTML = `
       <div class="w-full max-w-[1280px] mx-auto px-2 sm:px-4 py-3 sm:py-5 space-y-6">
         
@@ -153,12 +165,12 @@ class VehicleDetailRenderer {
 
         <!-- 네비게이션 뒤로가기 & 브레드크럼 -->
         <div class="flex items-center justify-between pb-2 border-b border-[#E5E8EC]">
-          <button id="vdrBtnBack" class="inline-flex items-center text-xs sm:text-sm font-semibold text-slate-600 hover:text-[#176B68] transition-colors py-1 px-2 rounded hover:bg-slate-100 cursor-pointer">
+          <button id="vdrBtnBack" class="inline-flex items-center text-xs sm:text-sm font-semibold text-slate-600 hover:text-[#171B1E] transition-colors py-1 px-2 rounded hover:bg-slate-100 cursor-pointer">
             <i data-lucide="arrow-left" class="w-4 h-4 mr-1.5"></i>
             매물 목록으로 돌아가기
           </button>
           <div class="text-xs text-slate-400 truncate max-w-[220px] sm:max-w-none">
-            차마트 &gt; <span class="text-slate-600">${escapeHtml(d.manufacturer || '국산')}</span> &gt; <strong class="text-slate-800">${escapeHtml(d.model_name)}</strong>
+            차마트 &gt; <span class="text-slate-600">${escapeHtml(d.manufacturer || '국산')}</span> &gt; <strong class="text-slate-800">${escapeHtml(displayTitle)}</strong>
           </div>
         </div>
 
@@ -168,14 +180,14 @@ class VehicleDetailRenderer {
             <div class="space-y-1.5">
               <div class="flex flex-wrap items-center gap-2">
                 ${this.isRealPhotoVerified 
-                  ? '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#176B68] text-white">실차인증</span>' 
-                  : '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">실차 준비 중 (예시 사진)</span>'}
+                  ? '<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#171B1E] text-[#C8FF3D] border border-[#C8FF3D]/40 shadow-xs">실차인증</span>' 
+                  : '<span class="px-2.5 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200">실차 준비 중 (예시 자료)</span>'}
                 <span class="text-xs text-slate-500 font-medium">
                   ${escapeHtml(d.plate_number || '차량번호 미기재')} · ${d.year}년식 · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '주행거리 미확인'} · ${escapeHtml(d.fuel_type || '가솔린')}
                 </span>
               </div>
-              <h1 class="text-2xl sm:text-[26px] font-bold text-[#171C24] tracking-tight leading-snug">
-                ${escapeHtml(d.model_name)} <span class="text-slate-600 font-normal text-xl sm:text-2xl">${escapeHtml(d.trim || '')}</span>
+              <h1 class="text-2xl sm:text-[26px] font-bold text-[#171B1E] tracking-tight leading-snug">
+                ${escapeHtml(displayTitle)} ${displayTrim ? `<span class="text-slate-500 font-normal text-xl sm:text-2xl">${escapeHtml(displayTrim)}</span>` : ''}
               </h1>
             </div>
 
@@ -234,7 +246,7 @@ class VehicleDetailRenderer {
               ${this.photos.length > 1 ? `
                 <div id="vdrThumbnailsContainer" class="flex gap-2 overflow-x-auto py-1 custom-scrollbar">
                   ${this.photos.map((p, idx) => `
-                    <button onclick="window.__vdrInstance.selectPhoto(${idx})" class="w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${idx === 0 ? 'border-[#176B68]' : 'border-[#E5E8EC] opacity-70 hover:opacity-100'}">
+                    <button onclick="window.__vdrInstance.selectPhoto(${idx})" class="w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${idx === 0 ? 'border-[#171B1E] ring-1 ring-[#C8FF3D]' : 'border-[#E5E8EC] opacity-70 hover:opacity-100'}">
                       <img src="${escapeHtml(p.url)}" alt="썸네일 ${idx+1}" class="w-full h-full object-cover" />
                     </button>
                   `).join('')}
@@ -405,7 +417,7 @@ class VehicleDetailRenderer {
                 </div>
                 <div class="flex justify-between py-2.5 bg-slate-50 px-3 rounded text-slate-900 font-bold text-sm sm:text-base border border-slate-200">
                   <span>총 예상 구매비용</span>
-                  <span class="text-[#176B68] text-base sm:text-lg">${totalPurchaseCostEst.toLocaleString('ko-KR')}만원</span>
+                  <span class="text-[#171B1E] text-base sm:text-lg font-bold">${totalPurchaseCostEst.toLocaleString('ko-KR')}만원</span>
                 </div>
                 <p class="text-[11px] text-slate-400">
                   ※ 취득세 감면 대상 및 지역별 공채 할인율에 따라 실제 이전비용은 차이가 발생할 수 있는 미확정 비용입니다.
@@ -422,7 +434,7 @@ class VehicleDetailRenderer {
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div>
                     <label class="block text-slate-500 mb-1">선수금 비율</label>
-                    <select id="vdrCalcDownPayment" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#176B68]">
+                    <select id="vdrCalcDownPayment" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#171B1E]">
                       <option value="0">0% (무보증 전액할부)</option>
                       <option value="10" selected>10% (${Math.round((d.target_price || 0) * 0.1).toLocaleString('ko-KR')}만원)</option>
                       <option value="20">20% (${Math.round((d.target_price || 0) * 0.2).toLocaleString('ko-KR')}만원)</option>
@@ -432,7 +444,7 @@ class VehicleDetailRenderer {
                   </div>
                   <div>
                     <label class="block text-slate-500 mb-1">할부 기간</label>
-                    <select id="vdrCalcMonths" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#176B68]">
+                    <select id="vdrCalcMonths" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#171B1E]">
                       <option value="24">24개월</option>
                       <option value="36">36개월</option>
                       <option value="48">48개월</option>
@@ -441,7 +453,7 @@ class VehicleDetailRenderer {
                   </div>
                   <div>
                     <label class="block text-slate-500 mb-1">가정한 예시 금리</label>
-                    <select id="vdrCalcRate" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#176B68]">
+                    <select id="vdrCalcRate" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#171B1E]">
                       <option value="0.045">연 4.5% (최저 우대금리 가정)</option>
                       <option value="0.055">연 5.5% (우대금리 가정)</option>
                       <option value="0.059" selected>연 5.9% (표준 예시금리)</option>
@@ -485,19 +497,19 @@ class VehicleDetailRenderer {
                 </div>
               </div>
 
-              <!-- 신뢰 보증 배지 목록 -->
+              <!-- 신뢰 보증 안내 목록 (정직한 서비스 고지) -->
               <div class="space-y-2 py-3 border-y border-slate-100 text-xs text-slate-600">
                 <div class="flex items-center space-x-2">
-                  <i data-lucide="check" class="w-4 h-4 text-[#176B68]"></i>
-                  <span>장한평 본사 실차 전시 및 100% 실매물</span>
+                  <i data-lucide="check" class="w-4 h-4 text-[#171B1E]"></i>
+                  <span>장한평 실차 전시장 입고 및 실매물 확인</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <i data-lucide="check" class="w-4 h-4 text-[#176B68]"></i>
-                  <span>성능점검기록부 실물 1:1 대조 보증</span>
+                  <i data-lucide="check" class="w-4 h-4 text-[#171B1E]"></i>
+                  <span>성능·상태점검기록부 실물 1:1 대조 확인</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                  <i data-lucide="check" class="w-4 h-4 text-[#176B68]"></i>
-                  <span>세금계산서·현금영수증 100% 무료 의무발행</span>
+                  <i data-lucide="check" class="w-4 h-4 text-[#171B1E]"></i>
+                  <span>세금계산서·현금영수증 의무 발행 (추가 수수료 없음)</span>
                 </div>
               </div>
 
@@ -505,7 +517,7 @@ class VehicleDetailRenderer {
               <div class="bg-slate-50 rounded p-3.5 border border-[#E5E8EC] space-y-1.5 text-xs">
                 <div class="font-bold text-slate-800 flex items-center justify-between">
                   <span>전시장 위치</span>
-                  <span class="text-[#176B68]">${escapeHtml(dealerName)}</span>
+                  <span class="text-[#171B1E] font-bold">${escapeHtml(dealerName)}</span>
                 </div>
                 <div class="text-slate-600 flex items-start space-x-1.5">
                   <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5"></i>
@@ -513,7 +525,7 @@ class VehicleDetailRenderer {
                 </div>
                 <div class="flex items-center space-x-1.5 pt-0.5">
                   <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
-                  <a href="tel:${escapeHtml(dealerPhone)}" class="text-[#176B68] font-bold hover:underline">${escapeHtml(dealerPhone)}</a>
+                  <a href="tel:${escapeHtml(dealerPhone)}" class="text-[#171B1E] font-bold hover:underline">${escapeHtml(dealerPhone)}</a>
                 </div>
               </div>
 
@@ -525,29 +537,29 @@ class VehicleDetailRenderer {
               </button>
               ` : ''}
 
-              <!-- 데스크톱 방문 예약 간편 폼 -->
+              <!-- 데스크톱 방문 예약 간편 폼 (일렉트릭 라임 CTA) -->
               <form id="vdrConsultForm" onsubmit="window.__vdrInstance.handleSubmitConsult(event, false)" class="space-y-3 pt-1">
                 <div class="text-xs font-bold text-slate-800">방문 시승 및 실차 확인 신청</div>
                 <div>
-                  <input type="text" id="vdrCustName" placeholder="고객 성함 *" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#176B68]" />
+                  <input type="text" id="vdrCustName" placeholder="고객 성함 *" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]" />
                 </div>
                 <div>
-                  <input type="tel" id="vdrCustPhone" placeholder="연락처 * (010-0000-0000)" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#176B68]" />
+                  <input type="tel" id="vdrCustPhone" placeholder="연락처 * (010-0000-0000)" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]" />
                 </div>
                 <div>
-                  <input type="date" id="vdrCustDate" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded text-slate-600 focus:outline-none focus:border-[#176B68]" />
+                  <input type="date" id="vdrCustDate" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded text-slate-600 focus:outline-none focus:border-[#171B1E]" />
                 </div>
                 <div>
-                  <textarea id="vdrCustMemo" rows="2" placeholder="문의 사항 (예: 시승 예약, 대차 상담 등)" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#176B68]"></textarea>
+                  <textarea id="vdrCustMemo" rows="2" placeholder="문의 사항 (예: 시승 예약, 대차 상담 등)" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]"></textarea>
                 </div>
                 <div class="flex items-start space-x-2 text-[11px] text-slate-500">
-                  <input type="checkbox" id="vdrPrivacyAgree" required class="mt-0.5 rounded text-[#176B68] focus:ring-0 cursor-pointer" />
+                  <input type="checkbox" id="vdrPrivacyAgree" required class="mt-0.5 rounded text-[#171B1E] focus:ring-0 cursor-pointer" />
                   <label for="vdrPrivacyAgree" class="cursor-pointer">
                     [필수] 방문 상담 예약을 위한 개인정보 수집·이용에 동의합니다.
                   </label>
                 </div>
-                <button type="submit" id="vdrBtnSubmitConsult" class="w-full py-2.5 bg-[#176B68] hover:bg-[#135754] text-white font-bold text-xs rounded transition-colors flex items-center justify-center cursor-pointer shadow-2xs">
-                  <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1.5"></i>
+                <button type="submit" id="vdrBtnSubmitConsult" class="w-full py-2.5 bg-[#C8FF3D] hover:bg-[#B5F028] text-[#171B1E] font-bold text-xs rounded transition-colors flex items-center justify-center cursor-pointer border border-[#AEEB20]/60 shadow-xs">
+                  <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1.5 text-[#171B1E]"></i>
                   방문 예약 신청하기
                 </button>
               </form>
@@ -562,11 +574,11 @@ class VehicleDetailRenderer {
       <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E5E8EC] p-2 sm:hidden shadow-md">
         <div class="flex items-center space-x-2 max-w-md mx-auto">
           <a href="tel:${escapeHtml(dealerPhone)}" class="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded flex items-center justify-center border border-slate-200">
-            <i data-lucide="phone" class="w-3.5 h-3.5 mr-1 text-[#176B68]"></i>
+            <i data-lucide="phone" class="w-3.5 h-3.5 mr-1 text-[#171B1E]"></i>
             전화 상담
           </a>
-          <button onclick="window.__vdrInstance.openBottomSheet()" class="flex-1 py-2.5 px-3 bg-[#176B68] hover:bg-[#135754] text-white font-bold text-xs rounded flex items-center justify-center shadow-2xs cursor-pointer">
-            <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1"></i>
+          <button onclick="window.__vdrInstance.openBottomSheet()" class="flex-1 py-2.5 px-3 bg-[#C8FF3D] hover:bg-[#B5F028] text-[#171B1E] font-bold text-xs rounded flex items-center justify-center border border-[#AEEB20]/60 shadow-xs cursor-pointer">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-[#171B1E]"></i>
             방문 예약
           </button>
         </div>
@@ -578,7 +590,7 @@ class VehicleDetailRenderer {
           <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
               <h3 class="text-base font-bold text-slate-800">방문 시승 및 실차 확인 예약</h3>
-              <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(d.model_name)}</p>
+              <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(displayTitle)}</p>
             </div>
             <button onclick="window.__vdrInstance.closeBottomSheet()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
               <i data-lucide="x" class="w-5 h-5"></i>
@@ -588,28 +600,28 @@ class VehicleDetailRenderer {
           <form id="vdrBsConsultForm" onsubmit="window.__vdrInstance.handleSubmitConsult(event, true)" class="space-y-3">
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">고객 성함 *</label>
-              <input type="text" id="vdrBsCustName" placeholder="예: 김철수" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#176B68]" />
+              <input type="text" id="vdrBsCustName" placeholder="예: 김철수" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">연락처 *</label>
-              <input type="tel" id="vdrBsCustPhone" placeholder="010-0000-0000" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#176B68]" />
+              <input type="tel" id="vdrBsCustPhone" placeholder="010-0000-0000" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">방문 희망일자</label>
-              <input type="date" id="vdrBsCustDate" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded text-slate-600 focus:outline-none focus:border-[#176B68]" />
+              <input type="date" id="vdrBsCustDate" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded text-slate-600 focus:outline-none focus:border-[#171B1E]" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">문의 메모 (선택)</label>
-              <textarea id="vdrBsCustMemo" rows="2" placeholder="시승 희망 여부, 보유차량 대차 견적 문의 등" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#176B68]"></textarea>
+              <textarea id="vdrBsCustMemo" rows="2" placeholder="시승 희망 여부, 보유차량 대차 견적 문의 등" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]"></textarea>
             </div>
             <div class="flex items-start space-x-2 text-[11px] text-slate-500 pt-1">
-              <input type="checkbox" id="vdrBsPrivacyAgree" required class="mt-0.5 rounded text-[#176B68] focus:ring-0 cursor-pointer" />
+              <input type="checkbox" id="vdrBsPrivacyAgree" required class="mt-0.5 rounded text-[#171B1E] focus:ring-0 cursor-pointer" />
               <label for="vdrBsPrivacyAgree" class="cursor-pointer">
                 [필수] 방문 상담 예약을 위한 개인정보 수집·이용에 동의합니다.
               </label>
             </div>
-            <button type="submit" id="vdrBsBtnSubmit" class="w-full py-2.5 bg-[#176B68] hover:bg-[#135754] text-white font-bold text-xs rounded shadow-2xs transition-colors flex items-center justify-center cursor-pointer mt-2">
-              <i data-lucide="check" class="w-4 h-4 mr-1"></i>
+            <button type="submit" id="vdrBsBtnSubmit" class="w-full py-2.5 bg-[#C8FF3D] hover:bg-[#B5F028] text-[#171B1E] font-bold text-xs rounded shadow-xs transition-colors flex items-center justify-center cursor-pointer border border-[#AEEB20]/60 mt-2">
+              <i data-lucide="check" class="w-4 h-4 mr-1 text-[#171B1E]"></i>
               간편 예약 신청 완료
             </button>
           </form>
@@ -959,7 +971,7 @@ class VehicleDetailRenderer {
         if (list && list.length > 0) {
           const badges = list.map(o => `
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-normal bg-slate-100 text-slate-700 border border-slate-200">
-              <i data-lucide="check" class="w-3 h-3 mr-1 text-[#176B68]"></i>
+              <i data-lucide="check" class="w-3 h-3 mr-1 text-[#171B1E]"></i>
               ${escapeHtml(o.name || o)}
             </span>
           `).join(' ');
@@ -975,7 +987,7 @@ class VehicleDetailRenderer {
     } else if (d.options && d.options.length > 0) {
       const badges = d.options.map(o => `
         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-normal bg-slate-100 text-slate-700 border border-slate-200">
-          <i data-lucide="check" class="w-3 h-3 mr-1 text-[#176B68]"></i>
+          <i data-lucide="check" class="w-3 h-3 mr-1 text-[#171B1E]"></i>
           ${escapeHtml(o)}
         </span>
       `).join(' ');
@@ -1049,7 +1061,7 @@ class VehicleDetailRenderer {
       const btns = container.querySelectorAll('button');
       btns.forEach((btn, idx) => {
         if (idx === this.currentPhotoIdx) {
-          btn.className = "w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#176B68] cursor-pointer";
+          btn.className = "w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#171B1E] ring-1 ring-[#C8FF3D] cursor-pointer";
         } else {
           btn.className = "w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all border-[#E5E8EC] opacity-70 hover:opacity-100 cursor-pointer";
         }

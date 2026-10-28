@@ -509,6 +509,7 @@ class PlatformService:
         """
         if not v:
             return False
+        # 1. 소유 유형 및 상태 검증
         if v.ownership_type not in [OwnershipType.CHAMART_OWNED.value, OwnershipType.PARTNER_APPROVED.value]:
             return False
         if v.status not in ["FOR_SALE", "AVAILABLE"]:
@@ -516,7 +517,32 @@ class PlatformService:
         if not v.is_public or v.is_demo:
             return False
 
-        # 실차 사진 검증 (DEMO_PLACEHOLDER 및 임시 placeholder 격리)
+        # DIRECTIVE 059 P0: 제휴 매물(PARTNER_APPROVED)인 경우 공식 판매권한 유효성(승인/철회/만료) 엄격 검증
+        if v.ownership_type == OwnershipType.PARTNER_APPROVED.value:
+            try:
+                auth_json = json.loads(v.marketing_auth_json or "{}")
+            except Exception:
+                auth_json = {}
+
+            # 1) 명시적 sale_auth 승인 필수
+            if auth_json.get("sale_auth") is not True:
+                return False
+
+            # 2) 권한 철회 여부 검증
+            if auth_json.get("is_revoked") is True:
+                return False
+
+            # 3) 권한 유효기간 만료 검증
+            expires_at_str = auth_json.get("expires_at")
+            if expires_at_str:
+                try:
+                    exp_date = datetime.datetime.strptime(expires_at_str[:10], "%Y-%m-%d").date()
+                    if exp_date < datetime.date.today():
+                        return False
+                except Exception:
+                    return False
+
+        # 2. 실차 사진 검증 (DEMO_PLACEHOLDER 및 임시 placeholder 격리)
         photos = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).all()
         has_real_photo = False
         for p in photos:
