@@ -650,6 +650,14 @@ def add_consultation(
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@app.get("/api/consultations")
+def list_consultations(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> list[dict[str, Any]]:
+    return PlatformService.list_consultations(db)
+
+
 # ----------------------------------------------------
 # 5. 거래·계약 관리 (P0 보안 인증 필수)
 # ----------------------------------------------------

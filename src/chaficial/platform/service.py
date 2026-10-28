@@ -203,15 +203,16 @@ class PlatformService:
             except Exception:
                 pass
 
-        # 1. 실제 성능점검 증빙 문서 메타데이터 검증
+        # 1. 실제 성능점검 증빙 문서 메타데이터 검증 (DIRECTIVE 056: 임의 하드코딩 완전 제거)
         inspection_doc_id = cond_detail.get("inspection_document_id") or accident_hist.get("inspection_document_id")
         inspected_at = cond_detail.get("inspection_date") or accident_hist.get("inspection_date")
-        inspected_by = cond_detail.get("inspected_by") or accident_hist.get("inspected_by") or "한국자동차진단보증협회 공인성능검사소"
+        inspected_by = cond_detail.get("inspected_by") or accident_hist.get("inspected_by")
         verified_at = cond_detail.get("verified_at") or accident_hist.get("verified_at")
-        verified_by = cond_detail.get("verified_by") or accident_hist.get("verified_by") or "차마트 진단품질검증팀"
-        verification_method = cond_detail.get("verification_method") or accident_hist.get("verification_method") or "공식 성능점검 원본 전산 대조"
+        verified_by = cond_detail.get("verified_by") or accident_hist.get("verified_by")
+        verification_method = cond_detail.get("verification_method") or accident_hist.get("verification_method")
 
-        has_valid_doc = bool(inspected_at and inspected_at != "미확인")
+        # 정식 문서번호와 점검일자가 모두 유효하게 존재해야만 DOCUMENT_VERIFIED 판정
+        has_valid_doc = bool(inspection_doc_id and inspected_at and inspected_at != "미확인")
         doc_status = "DOCUMENT_VERIFIED" if has_valid_doc else "DOCUMENT_PENDING"
 
         # 2. 각 항목별 독립 검증 상태 판정 (사고 여부로 타 부위 임의 추정 금지)
@@ -279,28 +280,54 @@ class PlatformService:
             flood_history_status = "UNKNOWN"
             flood_label = raw_special or "미확인 (이력 조회 대기)"
 
-        # (6) 보험 이력 (Insurance History)
-        insurance_history_status = "VERIFIED_CLEAN" if has_valid_doc else "UNKNOWN"
-        insurance_label = "보험 사고이력 전손·도난·침수 0건" if has_valid_doc else "보험 이력 조회 대기"
+        # (6) 보험 이력 (Insurance History) - 카히스토리 전산 조회 증빙 독립 검증 (DIRECTIVE 056)
+        insurance_inquiry_id = accident_hist.get("insurance_inquiry_id") or cond_detail.get("insurance_inquiry_id")
+        has_insurance_doc = bool(insurance_inquiry_id and insurance_inquiry_id != "미확인")
+        if has_insurance_doc:
+            total_loss = accident_hist.get("total_loss_count", 0)
+            flood_loss = accident_hist.get("flood_loss_count", 0)
+            if total_loss > 0 or flood_loss > 0:
+                insurance_history_status = "VERIFIED_ISSUE"
+                insurance_label = f"전손 {total_loss}건 / 침수 {flood_loss}건 확인"
+            else:
+                insurance_history_status = "VERIFIED_CLEAN"
+                insurance_label = "보험 사고이력 전손·도난·침수 0건 (조회 완료)"
+        else:
+            insurance_history_status = "UNKNOWN"
+            insurance_label = "보험 이력 전산 조회 대기"
 
-        # 3. 차량 부위별 정밀 다이어그램 데이터 매핑 (외판 vs 골격 분리)
+        # 3. 차량 부위별 정밀 다이어그램 데이터 매핑 (외판 vs 골격 분리 및 증빙 연결)
+        def _get_part_data(name: str, ptype: str, status: str, default_normal: str):
+            finding_text = default_normal if status == "CLEAN" else ("손상/교환 확인" if status in ["REPLACED", "DAMAGED"] else "점검 대기")
+            evidence_text = f"성능점검표 {inspection_doc_id}" if has_valid_doc else "공식 증빙 대기"
+            return {
+                "name": name,
+                "type": ptype,
+                "status": status,
+                "finding": finding_text,
+                "evidence": evidence_text,
+            }
+
+        outer_st = "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else ("REPLACED" if body_panel_status == "VERIFIED_ISSUE" else "UNKNOWN")
+        frame_st = "CLEAN" if frame_status == "VERIFIED_CLEAN" else ("DAMAGED" if frame_status == "VERIFIED_ISSUE" else "UNKNOWN")
+
         diagram_parts = {
-            "hood": {"name": "보닛(후드)", "type": "OUTER", "status": "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "front_fender_l": {"name": "앞휀더(좌)", "type": "OUTER", "status": "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "front_fender_r": {"name": "앞휀더(우)", "type": "OUTER", "status": "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "front_door_l": {"name": "앞도어(좌)", "type": "OUTER", "status": "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "front_door_r": {"name": "앞도어(우)", "type": "OUTER", "status": "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "rear_door_l": {"name": "뒷도어(좌)", "type": "OUTER", "status": "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "rear_door_r": {"name": "뒷도어(우)", "type": "OUTER", "status": "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "trunk_lid": {"name": "트렁크리드", "type": "OUTER", "status": "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "roof": {"name": "루프패널", "type": "OUTER", "status": "CLEAN" if body_panel_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "radiator_support": {"name": "라디에이터 서포트", "type": "FRAME", "status": "CLEAN" if frame_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "cross_member": {"name": "크로스멤버", "type": "FRAME", "status": "CLEAN" if frame_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "front_side_member": {"name": "사이드멤버(앞)", "type": "FRAME", "status": "CLEAN" if frame_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "pillar_a": {"name": "A필러(좌/우)", "type": "FRAME", "status": "CLEAN" if frame_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "pillar_b": {"name": "B필러(좌/우)", "type": "FRAME", "status": "CLEAN" if frame_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "pillar_c": {"name": "C필러(좌/우)", "type": "FRAME", "status": "CLEAN" if frame_status == "VERIFIED_CLEAN" else "UNKNOWN"},
-            "floor_panel": {"name": "플로어패널", "type": "FRAME", "status": "CLEAN" if frame_status == "VERIFIED_CLEAN" else "UNKNOWN"},
+            "hood": _get_part_data("보닛(후드)", "OUTER", outer_st, "볼트 풀림 및 판금 흔적 없음 (무교환)"),
+            "front_fender_l": _get_part_data("앞휀더(좌)", "OUTER", outer_st, "외판 볼트 체결 정상 (무교환)"),
+            "front_fender_r": _get_part_data("앞휀더(우)", "OUTER", outer_st, "외판 볼트 체결 정상 (무교환)"),
+            "front_door_l": _get_part_data("앞도어(좌)", "OUTER", outer_st, "도어 실링 및 판금 흔적 없음 (정상)"),
+            "front_door_r": _get_part_data("앞도어(우)", "OUTER", outer_st, "도어 실링 및 판금 흔적 없음 (정상)"),
+            "rear_door_l": _get_part_data("뒷도어(좌)", "OUTER", outer_st, "도어 실링 및 판금 흔적 없음 (정상)"),
+            "rear_door_r": _get_part_data("뒷도어(우)", "OUTER", outer_st, "도어 실링 및 판금 흔적 없음 (정상)"),
+            "trunk_lid": _get_part_data("트렁크리드", "OUTER", outer_st, "실링 테이프 및 볼트 원형 유지 (무교환)"),
+            "roof": _get_part_data("루프패널", "OUTER", outer_st, "외부 충격 및 찌그러짐 없음 (정상)"),
+            "radiator_support": _get_part_data("라디에이터 서포트", "FRAME", frame_st, "서포트 변형·용접 없음 (정상)"),
+            "cross_member": _get_part_data("크로스멤버", "FRAME", frame_st, "하체 멤버 휨·균열 없음 (정상)"),
+            "front_side_member": _get_part_data("사이드멤버(앞)", "FRAME", frame_st, "주요 골격 프레임 변형 없음 (정상)"),
+            "pillar_a": _get_part_data("A필러(좌/우)", "FRAME", frame_st, "필러 절단·교환 없음 (정상)"),
+            "pillar_b": _get_part_data("B필러(좌/우)", "FRAME", frame_st, "센터 필러 구조 변형 없음 (정상)"),
+            "pillar_c": _get_part_data("C필러(좌/우)", "FRAME", frame_st, "리어 필러 절단·교환 없음 (정상)"),
+            "floor_panel": _get_part_data("플로어패널", "FRAME", frame_st, "바닥 패널 충격 흔적 없음 (정상)"),
         }
 
         return {
@@ -315,8 +342,8 @@ class PlatformService:
             "special_accident": flood_label,
             "inspection_date": inspected_at or "미확인",
 
-            # DIRECTIVE 055 정밀 SSOT 신규 필드
-            "inspection_document_id": inspection_doc_id or f"INSP-{inspected_at.replace('-', '') if inspected_at else 'PENDING'}",
+            # DIRECTIVE 056 정밀 SSOT 신규 필드 (가짜 INSP 번호 생성 금지)
+            "inspection_document_id": inspection_doc_id,
             "document_status": doc_status,
             "inspected_at": inspected_at or "미확인",
             "inspected_by": inspected_by,
@@ -484,6 +511,20 @@ class PlatformService:
 
         results = []
         for v in vehicles:
+            # DIRECTIVE 056 P0: 실차 사진 검증 완료 매물만 고객 쇼룸 공개 허용
+            # DEMO_PLACEHOLDER 및 사진 미등록 매물은 일반 고객 목록에서 비공개 격리 (관리자에서만 준비중 관리)
+            photos = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).all()
+            has_real_photo = False
+            for p in photos:
+                if p.photo_url and "placeholder" not in p.photo_url and "neutral_car" not in p.photo_url:
+                    if p.caption and "DEMO_PLACEHOLDER" not in p.caption and "예시" not in p.caption:
+                        has_real_photo = True
+                        break
+
+            # 실차 촬영본이 아직 검증되지 않은 매물은 고객 목록에서 제외
+            if not has_real_photo:
+                continue
+
             # 월 납입금 추산 (60개월, 연 5.9% 기준 원리금 균등)
             price_won = (v.target_price or 0) * 10000
             monthly_est = 0
@@ -715,8 +756,28 @@ class PlatformService:
             "success": True,
             "consultation_id": consultation.id,
             "customer_id": customer.id,
-            "message": "상담 및 방문 예약이 성공적으로 접수되었습니다. 차마트 전문 상담사가 10분 내로 안내 전화를 드립니다.",
+            "message": "상담 및 방문 예약이 정상 접수되었습니다. 차마트 전시장 담당 매니저가 확인 후 연락드리겠습니다.",
         }
+
+    @staticmethod
+    def list_consultations(db: Session) -> list[dict[str, Any]]:
+        """관리자 전용 전체 상담 내역 조회 (CRM 연동)."""
+        consultations = db.query(Consultation).order_by(Consultation.created_at.desc()).all()
+        results = []
+        for c in consultations:
+            results.append({
+                "id": c.id,
+                "consultation_id": c.id,
+                "customer_id": c.customer_id,
+                "customer_name": c.customer.name if c.customer else "미확인",
+                "customer_phone": c.customer.phone if c.customer else "미확인",
+                "channel": c.channel,
+                "content": c.content,
+                "staff_name": c.staff_name,
+                "inquiry_source": c.inquiry_source,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+            })
+        return results
 
     @staticmethod
     def toggle_vehicle_public_status(db: Session, vehicle_id: str, is_public: bool | None = None) -> dict[str, Any]:
