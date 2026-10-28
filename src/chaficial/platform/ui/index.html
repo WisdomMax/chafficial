@@ -81,6 +81,9 @@
     }
     .sortable-th { cursor: pointer; user-select: none; transition: background-color 0.15s; }
     .sortable-th:hover { background-color: #F1F5F9; }
+    /* DIRECTIVE 055: 모바일 오버플로우 방지 및 숨김 모달 완전 격리 */
+    .hidden { display: none !important; }
+    html, body { max-width: 100vw; overflow-x: hidden; }
   </style>
 </head>
 <body class="min-h-screen flex antialiased bg-[#F5F7FA]">
@@ -308,7 +311,7 @@
     </header>
 
     <!-- 메인 뷰 스크롤 컨테이너 -->
-    <main class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+    <main class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-2 sm:p-6 space-y-6 max-w-full">
 
       <!-- ======================================================== -->
       <!-- 1. 대시보드 뷰 (Executive Dashboard: DIRECTIVE 046 & 046-A) -->
@@ -529,7 +532,7 @@
       <!-- ======================================================== -->
       <!-- 2-1. 독립 전폭 차량 상세 뷰 (DIRECTIVE 053 REVISED 엔카급 공통 렌더러) -->
       <!-- ======================================================== -->
-      <section id="view-vehicle-detail" class="hidden"></section>
+      <section id="view-vehicle-detail" class="hidden w-full max-w-full"></section>
 
       <!-- ======================================================== -->
       <!-- 2. 차량 관리 뷰 (데이터 테이블, 원클릭 정렬, 금액 자동 포맷) -->
@@ -2547,11 +2550,6 @@
       </form>
     </div>
   </div>
-          <button type="submit" class="px-5 py-2 bg-[#247D7C] hover:bg-[#1D6665] text-white rounded-lg text-sm font-semibold shadow-sm">차량 저장</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <!-- ======================================================== -->
   <!-- 모달 2: 고객 추가 모달 (전화번호 자동 하이픈 및 예산 쉼표 적용) -->
@@ -3835,6 +3833,14 @@
         document.getElementById('pageHeaderDesc').innerText = TITLE_MAP[targetId].desc;
       }
 
+      // DIRECTIVE 055: 뷰 전환 시 모바일 사이드바 자동 닫기 보장
+      if (window.innerWidth < 768) {
+        const sidebar = document.getElementById('mainSidebar');
+        const backdrop = document.getElementById('mobileSidebarBackdrop');
+        if (sidebar) sidebar.classList.add('-translate-x-full');
+        if (backdrop) backdrop.classList.add('hidden');
+      }
+
       if (targetId === 'market') loadMarketData();
       if (targetId === 'sourcing') loadSourcingData();
       if (targetId === 'attribution') loadAttributionData();
@@ -4267,6 +4273,7 @@
         showToast(`차량 상세 화면 로드 오류: ${err.message}`, 'error');
       }
     }
+    window.openVehicleDetailFullView = openVehicleDetailFullView;
 
     function backToVehicleList() {
       switchNav('vehicles');
