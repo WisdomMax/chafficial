@@ -525,12 +525,14 @@ class PlatformService:
             return False
         if v.status not in ["FOR_SALE", "AVAILABLE"]:
             return False
-        if not v.is_public or v.is_demo:
+        if not v.is_public:
+            return False
+        if not allow_demo and v.is_demo:
             return False
 
-        # 모델명 배제 가드 강화
+        # 모델명 배제 가드 강화 (운영 환경: 테스트/임시/placeholder 차단)
         model_name_lower = (v.model_name or "").lower()
-        if any(keyword in model_name_lower for keyword in ["테스트", "test", "demo", "임시", "placeholder"]):
+        if not allow_demo and any(keyword in model_name_lower for keyword in ["테스트", "test", "demo", "임시", "placeholder"]):
             return False
 
         # 판매 가격 유효성 검증 (0원 이하 배제)
@@ -590,16 +592,15 @@ class PlatformService:
     def get_chamart_public_vehicles(db: Session, mode: str = "prod") -> list[dict[str, Any]]:
         """차마트 고객 공개 차량 목록 조회 (운영 실차 vs 데모 검수 분리)."""
         allow_demo = (mode in ["demo", "staging"])
-        query = (
-            db.query(Vehicle)
-            .filter(
-                Vehicle.ownership_type.in_([OwnershipType.CHAMART_OWNED.value, OwnershipType.PARTNER_APPROVED.value]),
-                Vehicle.status.in_(["FOR_SALE", "AVAILABLE"]),
-                Vehicle.is_public == True,
-                Vehicle.is_demo == False,
-            )
-            .order_by(desc(Vehicle.updated_at))
-        )
+        filters = [
+            Vehicle.ownership_type.in_([OwnershipType.CHAMART_OWNED.value, OwnershipType.PARTNER_APPROVED.value]),
+            Vehicle.status.in_(["FOR_SALE", "AVAILABLE"]),
+            Vehicle.is_public == True,
+        ]
+        if not allow_demo:
+            filters.append(Vehicle.is_demo == False)
+
+        query = db.query(Vehicle).filter(*filters).order_by(desc(Vehicle.updated_at))
         vehicles = query.all()
 
         results = []
