@@ -1,3 +1,33 @@
+function resolveRealCarPhoto(modelName, existingPhoto) {
+  if (existingPhoto && !existingPhoto.includes('placeholder') && !existingPhoto.includes('sample_car') && !existingPhoto.includes('slots') && !existingPhoto.includes('demo_car')) {
+    return existingPhoto;
+  }
+  const name = modelName || '';
+  if (name.includes('GV70') || name.includes('GV80')) return '/static/img/ui_fixtures/gv70_01.jpg';
+  if (name.includes('G80')) return '/static/img/ui_fixtures/g80_01.jpg';
+  if (name.includes('쏘나타')) return '/static/img/ui_fixtures/sonata_01.jpg';
+  if (name.includes('싼타페')) return '/static/img/ui_fixtures/santafe_01.jpg';
+  if (name.includes('팰리세이드')) return '/static/img/ui_fixtures/palisade_01.jpg';
+  if (name.includes('투싼')) return '/static/img/ui_fixtures/tucson_01.jpg';
+  if (name.includes('카니발')) return '/static/img/ui_fixtures/carnival_01.jpg';
+  if (name.includes('스포티지')) return '/static/img/ui_fixtures/sportage_01.jpg';
+  if (name.includes('셀토스')) return '/static/img/ui_fixtures/seltos_01.jpg';
+  if (name.includes('K5')) return '/static/img/ui_fixtures/k5_01.jpg';
+  if (name.includes('토레스') || name.includes('티볼리') || name.includes('렉스턴')) return '/static/img/ui_fixtures/torres_01.jpg';
+  if (name.includes('QM6') || name.includes('XM3') || name.includes('르노')) return '/static/img/ui_fixtures/qm6_01.jpg';
+  if (name.includes('그랜저')) return '/static/img/vehicles/grandeur_gn7/front.jpg';
+  if (name.includes('K8')) return '/static/img/vehicles/k8/front.jpg';
+  if (name.includes('쏘렌토')) return '/static/img/vehicles/sorento/front.jpg';
+  if (name.includes('아반떼')) return '/static/img/ui_fixtures/아반떼_01.jpg';
+  if (name.includes('레이')) return '/static/img/ui_fixtures/레이_01.jpg';
+  if (name.includes('모닝')) return '/static/img/ui_fixtures/모닝_01.jpg';
+  if (name.includes('캐스퍼')) return '/static/img/ui_fixtures/캐스퍼_01.jpg';
+  if (name.includes('K3')) return '/static/img/ui_fixtures/K3_01.jpg';
+  if (name.includes('BMW') || name.includes('5시리즈') || name.includes('3시리즈') || name.includes('X5')) return '/static/img/ui_fixtures/bmw5_01.jpg';
+  if (name.includes('벤츠') || name.includes('E-클래스') || name.includes('C-클래스') || name.includes('GLC')) return '/static/img/ui_fixtures/benz_e_01.jpg';
+  return '/static/img/ui_fixtures/아반떼_01.jpg';
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -130,6 +160,8 @@ export default {
           if (photos.length === 0 && v.primary_photo_url) {
             photos = [v.primary_photo_url];
           }
+          const finalPhoto = resolveRealCarPhoto(v.model_name, photos[0] || v.primary_photo_url);
+          if (photos.length === 0) photos = [finalPhoto];
 
           return {
             id: v.id,
@@ -144,7 +176,7 @@ export default {
             color: v.color,
             target_price: v.target_price,
             monthly_payment_estimate: Math.round(v.target_price * 10000 / 48 / 10000),
-            primary_photo_url: photos[0] || v.primary_photo_url || '/static/img/sample_car.jpg',
+            primary_photo_url: finalPhoto,
             photos: photos,
             photo_count: photos.length || 5,
             options: options,
@@ -190,8 +222,12 @@ export default {
           'SELECT * FROM vehicle_photos WHERE vehicle_id = ? ORDER BY is_primary DESC, sort_order ASC'
         ).bind(vehicleId).all();
 
-        const photos = (photosRes.results || []).map(p => p.photo_url);
+        let photos = (photosRes.results || []).map(p => p.photo_url);
         if (photos.length === 0 && v.primary_photo_url) photos.push(v.primary_photo_url);
+        if (photos.length === 0 || photos.some(p => p.includes('placeholder') || p.includes('slots'))) {
+          const fallback = resolveRealCarPhoto(v.model_name, '');
+          photos = [fallback];
+        }
 
         let options = [];
         try { if (v.options_json) options = JSON.parse(v.options_json); } catch (e) {}

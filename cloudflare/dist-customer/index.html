@@ -15,7 +15,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="/static/js/vehicle_detail_renderer.js?v=20261029_075a_final"></script>
     <!-- DIRECTIVE 069: 차마트 정밀 커머셜 리스팅 스타일시트 (화이트/차콜/라임) -->
-    <link rel="stylesheet" href="/static/css/chamart-listing-v2.css">
+    <link rel="stylesheet" href="/static/css/chamart-listing-v2.css?v=20261029_cartong_v2">
     <style>
         :root {
             --brand-primary: #171B1E;
@@ -177,6 +177,14 @@
             }
         }
 
+        /* 1-2. 모바일 홈 뷰 (767px 이하): 상단 고정 헤더(로고+검색바) 뒤로 배너가 파고들지 않도록 확실한 상단 패딩 부여 */
+        @media (max-width: 767px) {
+            body.is-home-mode main {
+                padding-top: 122px !important;
+                margin-top: 0 !important;
+            }
+        }
+
         /* 2. 상세 뷰 (PC 및 모바일 전 구간): 브라우저 표준 네이티브 윈도우 스크롤 및 Sticky 정상 작동 */
         body.is-detail-mode, html.is-detail-mode {
             height: auto !important;
@@ -249,12 +257,16 @@
                     </nav>
                 </div>
 
-                <!-- 우측: 고객용 1:1 방문 예약 / 상담 버튼 (딥 차콜 + 라임 포인트) -->
-                <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
-                    <button onclick="scrollToConsultation()" class="inline-flex items-center text-xs sm:text-sm font-bold bg-[#171B1E] hover:bg-black text-white px-3 sm:px-4 py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
+                <!-- 우측: 고객용 1:1 방문 예약 / 상담 버튼 + 모바일 메뉴 햄버거 버튼 -->
+                <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+                    <button onclick="scrollToConsultation()" class="inline-flex items-center text-xs sm:text-sm font-bold bg-[#171B1E] hover:bg-black text-white px-2.5 sm:px-4 py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
                         <span class="w-2 h-2 rounded-full bg-[#C8FF3D] mr-1.5 sm:mr-2"></span>
                         <span class="hidden sm:inline">1:1 방문 예약 / 구매 상담</span>
                         <span class="sm:hidden">방문상담</span>
+                    </button>
+                    <!-- 모바일 전체 메뉴 열기 햄버거 버튼 -->
+                    <button type="button" id="mobileMenuOpenBtn" onclick="toggleMobileNavDrawer(true)" class="md:hidden p-2 text-slate-700 hover:text-black hover:bg-slate-100 rounded-lg transition-colors cursor-pointer" aria-label="메뉴 열기">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
                     </button>
                 </div>
             </div>
@@ -293,6 +305,62 @@
             </div>
         </div>
     </header>
+
+    <!-- 모바일 전용 슬라이드 네비게이션 드로어 메뉴 (우측 슬라이드 인) -->
+    <div id="mobileNavDrawer" class="fixed inset-0 z-50 pointer-events-none transition-opacity duration-300 opacity-0" aria-hidden="true">
+        <!-- 배경 오버레이 (클릭 시 닫힘) -->
+        <div id="mobileNavBackdrop" onclick="toggleMobileNavDrawer(false)" class="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity opacity-0"></div>
+        
+        <!-- 슬라이드 인 패널 -->
+        <aside id="mobileNavPanel" class="absolute top-0 right-0 bottom-0 w-[280px] max-w-[85vw] bg-white shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-out z-10">
+            <!-- 드로어 상단 헤더 -->
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div class="flex items-center gap-2">
+                    <img src="/static/img/chamart_official_logo.png?v=20261029_final070" alt="차마트" class="h-6 w-auto" />
+                    <span class="text-[11px] font-bold text-slate-500">직영 쇼룸</span>
+                </div>
+                <button type="button" onclick="toggleMobileNavDrawer(false)" class="p-1.5 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-200/60 cursor-pointer" aria-label="메뉴 닫기">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- 모바일 내비게이션 링크 목록 -->
+            <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-sm font-semibold text-slate-700">
+                <a href="/chamart" onclick="toggleMobileNavDrawer(false); navigateHome(event);" class="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-slate-100 text-[#171B1E] font-bold transition-colors">
+                    <i data-lucide="search" class="w-4 h-4 text-[#171B1E]"></i>
+                    <span>중고차 검색</span>
+                </a>
+                <a href="/cars" onclick="toggleMobileNavDrawer(false); navigateCars(event);" class="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors">
+                    <i data-lucide="car" class="w-4 h-4 text-slate-400"></i>
+                    <span>전체 실차 매물 (100대)</span>
+                </a>
+                <a href="#favorites" onclick="toggleMobileNavDrawer(false); toggleFavoritesFilter(event);" class="flex items-center justify-between px-3.5 py-3 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
+                        <span>관심 차량</span>
+                    </div>
+                    <span id="drawerFavCountBadge" class="text-xs bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full font-bold">0</span>
+                </a>
+                <a href="#showroom" onclick="toggleMobileNavDrawer(false); scrollToShowroom(event);" class="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-slate-400"></i>
+                    <span>장한평 전시장 안내</span>
+                </a>
+                <a href="#guide" onclick="toggleMobileNavDrawer(false); scrollToGuide(event);" class="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-slate-400"></i>
+                    <span>구매 안심 가이드</span>
+                </a>
+            </nav>
+
+            <!-- 드로어 하단 1:1 방문 상담 액션 -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-2">
+                <button onclick="toggleMobileNavDrawer(false); scrollToConsultation();" class="w-full py-3 bg-[#171B1E] hover:bg-black text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer">
+                    <span class="w-2 h-2 rounded-full bg-[#C8FF3D]"></span>
+                    <span>1:1 방문 예약 / 구매 상담</span>
+                </button>
+                <p class="text-[10.5px] text-slate-400 text-center leading-tight">서울 성동구 용답동 장한평 자동차매매단지</p>
+            </div>
+        </aside>
+    </div>
 
     <!-- 3. 메인 콘텐츠 영역 (상단 완전 고정 헤더 바로 아래에 도킹) -->
     <main class="flex-1 w-full">
@@ -459,8 +527,8 @@
                 <!-- [우측 메인: 차마트 실차 매물 결과 섹션] (DIRECTIVE 069 & 071) -->
                 <section class="cm-listing-results space-y-3.5">
                     
-                    <!-- [우측 상단: 브랜드 히어로 배너 (모바일 h-[260px] 시원한 높이 확보 & PC 16:9 와이드 배치)] -->
-                    <div id="chamartHeroCarousel" class="group relative w-full rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-xs select-none h-[260px] sm:h-auto sm:aspect-[16/9]">
+                    <!-- [우측 상단: 브랜드 히어로 배너 (모바일 & PC 16:9 원본 비율 유지: 텍스트 잘림 0%)] -->
+                    <div id="chamartHeroCarousel" class="group relative w-full rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-xs select-none aspect-[16/9]">
                         <!-- 슬라이드 트랙 (루프를 위해 5번 복제 + 1~5번 + 1번 복제 총 7개 구성) -->
                         <div id="heroTrack" class="flex h-full will-change-transform" style="transform: translateX(-100%);">
                             <!-- Clone of Slide 5 (자연스러운 역방향 루프용) -->
@@ -1337,7 +1405,7 @@
                 thumbContainer.innerHTML = window.compareVehicleIds.map(vid => {
                     const v = publicVehicles.find(x => x.id === vid);
                     if (!v) return '';
-                    const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/vehicles/neutral_car_placeholder.jpg');
+                    const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/ui_fixtures/아반떼_01.jpg');
                     return `
                         <div class="relative group shrink-0">
                             <img src="${photoUrl}" alt="${v.model_name}" class="w-10 h-7 object-cover rounded border border-slate-600">
@@ -1416,7 +1484,7 @@
                                         </button>
                                     </div>
                                     <div class="aspect-[5/3] bg-slate-900 rounded overflow-hidden mb-2 max-w-[220px] mx-auto">
-                                        <img src="${v.primary_photo_url || (v.photos && v.photos[0] ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/vehicles/neutral_car_placeholder.jpg')}" 
+                                        <img src="${v.primary_photo_url || (v.photos && v.photos[0] ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/ui_fixtures/아반떼_01.jpg')}" 
                                              alt="${v.model_name}" class="w-full h-full object-cover">
                                     </div>
                                     <div class="font-bold text-slate-900 text-sm truncate max-w-[200px] mx-auto">${v.model_name}</div>
@@ -2370,7 +2438,7 @@
         }
 
         function createVehicleListRow(v, favorites, compareIds) {
-            const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/vehicles/neutral_car_placeholder.jpg');
+            const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/ui_fixtures/아반떼_01.jpg');
             const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
             const mileageFormatted = v.mileage ? `${Number(v.mileage).toLocaleString('ko-KR')}km` : '주행 미확인';
             const titleParts = formatVehicleTitleParts(v.model_name, v.trim);
@@ -2383,7 +2451,7 @@
             return `
                 <article class="cm-vehicle-row" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-vehicle-row__photo">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" onerror="this.src='/static/img/vehicles/neutral_car_placeholder.jpg'">
+                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" onerror="this.src='/static/img/ui_fixtures/아반떼_01.jpg'">
                         <span class="cm-vehicle-row__badge">실차인증</span>
                     </div>
                     <div class="cm-vehicle-row__information">
@@ -2419,7 +2487,7 @@
         }
 
         function createVehicleAlbumCard(v, favorites, compareIds) {
-            const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/vehicles/neutral_car_placeholder.jpg');
+            const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/ui_fixtures/아반떼_01.jpg');
             const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
             const mileageNum = Number(v.mileage || 0);
             const mileageFormatted = mileageNum > 0 ? (mileageNum >= 10000 ? `${(mileageNum / 10000).toFixed(1).replace('.0', '')}만km` : `${mileageNum.toLocaleString('ko-KR')}km`) : '주행 미확인';
@@ -2430,7 +2498,7 @@
             return `
                 <article class="cm-album-card" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-album-card__photo">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" loading="lazy" onerror="this.src='/static/img/vehicles/neutral_car_placeholder.jpg'">
+                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" loading="lazy" onerror="this.src='/static/img/ui_fixtures/아반떼_01.jpg'">
                         <span class="cm-album-card__badge-tag">무사고</span>
                         <button type="button" class="cm-album-card__fav-btn ${isFav ? 'is-active' : ''}" onclick="event.stopPropagation(); toggleFavoriteVehicle('${v.id}')" aria-label="관심차량 찜" data-fav-btn="${v.id}">
                             <i data-lucide="heart" style="width:14px;height:14px;${isFav ? 'fill:#ef4444;stroke:#ef4444;' : 'color:#64748b;'}"></i>
@@ -3129,16 +3197,48 @@
             }
         })();
 
-        // DIRECTIVE 071/072: 상단 고정 헤더 높이 자동 동기화 (오차 0px 도킹 보장)
+        // 모바일 전용 네비게이션 드로어 열기/닫기 제어
+        function toggleMobileNavDrawer(open) {
+            const drawer = document.getElementById('mobileNavDrawer');
+            const backdrop = document.getElementById('mobileNavBackdrop');
+            const panel = document.getElementById('mobileNavPanel');
+            if (!drawer || !backdrop || !panel) return;
+
+            if (open) {
+                drawer.classList.remove('pointer-events-none', 'opacity-0');
+                drawer.setAttribute('aria-hidden', 'false');
+                backdrop.classList.remove('opacity-0');
+                backdrop.classList.add('opacity-100');
+                panel.classList.remove('translate-x-full');
+                panel.classList.add('translate-x-0');
+                document.body.style.overflow = 'hidden';
+            } else {
+                drawer.setAttribute('aria-hidden', 'true');
+                backdrop.classList.remove('opacity-100');
+                backdrop.classList.add('opacity-0');
+                panel.classList.remove('translate-x-0');
+                panel.classList.add('translate-x-full');
+                setTimeout(() => {
+                    drawer.classList.add('pointer-events-none', 'opacity-0');
+                    document.body.style.overflow = '';
+                }, 280);
+            }
+        }
+
+        // 상단 고정 헤더 높이 자동 동기화 (모바일 및 PC 오차 0px 도킹 보장: 배너 잘림 0%)
         function syncChamartHeaderHeight() {
+            const header = document.getElementById('cmSiteHeader');
+            const main = document.querySelector('main');
+            if (!header || !main) return;
+            const h = header.offsetHeight;
             if (window.innerWidth >= 768) {
-                const header = document.getElementById('cmSiteHeader');
-                const main = document.querySelector('main');
-                if (header && main) {
-                    const h = header.offsetHeight;
-                    main.style.top = h + 'px';
-                    main.style.height = `calc(100vh - ${h}px)`;
-                }
+                main.style.top = h + 'px';
+                main.style.height = `calc(100vh - ${h}px)`;
+                main.style.paddingTop = '4px';
+            } else {
+                main.style.top = '0px';
+                main.style.height = 'auto';
+                main.style.paddingTop = (h + 8) + 'px';
             }
         }
         window.addEventListener('resize', syncChamartHeaderHeight);
