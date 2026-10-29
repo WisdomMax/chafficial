@@ -269,6 +269,27 @@ class VehicleDetailRenderer {
           </div>
         </div>
 
+        <!-- DIRECTIVE 082 & 083: 상단 상세 모드 탭 바 (차량 정보 vs 사진 정보) -->
+        <div id="vdrTopTabBar" class="bg-white rounded-xl border border-[#E5E8EC] p-2 flex items-center justify-between gap-3 shadow-2xs select-none">
+          <div class="flex items-center gap-2">
+            <button type="button" id="vdrTabBtnInfo" onclick="window.__vdrInstance.switchDetailTab('INFO')" class="px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 bg-[#171B1E] text-white shadow-xs cursor-pointer">
+              <i data-lucide="info" class="w-4 h-4"></i>
+              차량 정보
+            </button>
+            <button type="button" id="vdrTabBtnPhotos" onclick="window.__vdrInstance.switchDetailTab('PHOTOS')" class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">
+              <i data-lucide="camera" class="w-4 h-4 text-emerald-600"></i>
+              사진 정보 <span class="text-xs px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-800 font-bold">${this.photos.length}</span>
+            </button>
+          </div>
+          <div class="hidden sm:flex items-center text-xs text-slate-500 font-medium mr-2">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1 text-amber-500"></i>
+            <span>사진 탭에서는 방해 없는 대형 사진을 연속으로 감상하실 수 있습니다.</span>
+          </div>
+        </div>
+
+        <!-- [모드 1: 차량 기본 정보 컨테이너 (스펙, 옵션, 진단도면, 구매패널)] -->
+        <div id="vdrMainInfoContainer" class="space-y-6">
+
         <!-- 메인 2단 본문 그리드 (DIRECTIVE 069: 좌측 유연 영역 + 우측 350px 고정 구매 패널) -->
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_350px] gap-6 items-start">
           
@@ -726,6 +747,59 @@ class VehicleDetailRenderer {
               </form>
             </div>
 
+          </div>
+        </div>
+
+        </div> <!-- [vdrMainInfoContainer 닫기] -->
+
+        <!-- DIRECTIVE 082 & 083: [모드 2: 사진 전용 화면 컨테이너 (스펙/옵션/메뉴 완전 배제, 콘텐츠 가로폭 100% 대형 뷰어)] -->
+        <div id="vdrDedicatedPhotoContainer" class="hidden w-full space-y-4 animate-in fade-in duration-150 select-none">
+          <!-- 대형 사진 뷰포트 (콘텐츠 가로폭 100% 활용, 높이 고정으로 위아래 흔들림 제로) -->
+          <div id="vdrDedicatedGalleryViewport" class="relative w-full h-[60vh] sm:h-[70vh] md:h-[76vh] min-h-[480px] max-h-[820px] bg-slate-950 rounded-2xl overflow-hidden flex items-center justify-center select-none shadow-xl touch-pan-y cursor-zoom-in">
+            
+            <!-- 대형 메인 이미지 -->
+            <img id="vdrDedicatedMainImage" src="${escapeHtml(this.photos[0].url)}" alt="차량 대형 사진" class="w-full h-full object-contain transition-all duration-150" onclick="window.__vdrInstance.openLightbox()" />
+
+            <!-- 좌우 대형 화살표 버튼 -->
+            ${this.photos.length > 1 ? `
+              <button id="vdrBtnDedicatedPrev" onclick="window.__vdrInstance.prevPhoto()" aria-label="이전 사진" class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/55 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/20 shadow-lg active:scale-95 z-20">
+                <i data-lucide="chevron-left" class="w-7 h-7 sm:w-8 sm:h-8"></i>
+              </button>
+              <button id="vdrBtnDedicatedNext" onclick="window.__vdrInstance.nextPhoto()" aria-label="다음 사진" class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/55 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/20 shadow-lg active:scale-95 z-20">
+                <i data-lucide="chevron-right" class="w-7 h-7 sm:w-8 sm:h-8"></i>
+              </button>
+            ` : ''}
+
+            <!-- 상단 바: 부위 라벨 & 크게보기 버튼 -->
+            <div class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
+              <div class="bg-black/75 backdrop-blur-md text-[#C8FF3D] border border-[#C8FF3D]/40 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-2 pointer-events-auto">
+                <span class="w-2 h-2 rounded-full bg-[#C8FF3D] animate-pulse"></span>
+                <span id="vdrDedicatedPartLabel">${escapeHtml(this.photos[0].display_label || '외관')}</span>
+              </div>
+              
+              <button onclick="window.__vdrInstance.openLightbox()" class="pointer-events-auto bg-black/75 hover:bg-black/90 backdrop-blur-md text-white text-xs sm:text-sm font-semibold px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5 cursor-pointer border border-white/20 transition-all hover:scale-105 active:scale-95">
+                <i data-lucide="maximize-2" class="w-4 h-4 text-[#C8FF3D]"></i>
+                전체화면 크게보기
+              </button>
+            </div>
+
+            <!-- 하단 바: 사진 캡션 & 사진 번호 카운터 -->
+            <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/95 bg-black/70 backdrop-blur-md px-5 py-3 rounded-xl border border-white/10 shadow-lg z-10">
+              <span id="vdrDedicatedCaption" class="truncate font-semibold text-sm sm:text-base">${escapeHtml(this.photos[0].caption)}</span>
+              <div class="flex items-center gap-3 shrink-0 ml-4 font-mono">
+                <span class="text-xs text-white/60 hidden sm:inline">좌우 화살표 또는 스와이프로 넘기기</span>
+                <span id="vdrDedicatedCounter" class="bg-white/20 text-[#C8FF3D] font-bold text-sm sm:text-base px-3 py-1 rounded-lg">1 / ${this.photos.length}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 보조 네비게이션: 차량 정보로 돌아가기 버튼 -->
+          <div class="flex items-center justify-between pt-1 pb-4">
+            <button type="button" onclick="window.__vdrInstance.switchDetailTab('INFO')" class="text-xs sm:text-sm text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1.5 py-2 px-3 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+              <i data-lucide="arrow-left" class="w-4 h-4"></i>
+              차량 제원 및 상세 정보 보기
+            </button>
+            <span class="text-xs text-slate-400">사진을 클릭하면 전체 화면 고화질 뷰어로 전환됩니다.</span>
           </div>
         </div>
 
@@ -1490,19 +1564,33 @@ class VehicleDetailRenderer {
     this.currentPhotoIdx = index;
     const photo = this.photos[this.currentPhotoIdx];
     
+    // 1. 일반 정보 탭 메인 이미지 갱신
     const mainImg = document.getElementById('vdrMainImage');
     if (mainImg) mainImg.src = photo.url;
 
     const capEl = document.getElementById('vdrPhotoCaption');
     if (capEl) capEl.textContent = photo.caption;
 
-    // 한글 부위 라벨 갱신 (DIRECTIVE 071)
     const partLabelEl = document.getElementById('vdrPhotoPartLabel');
     if (partLabelEl) partLabelEl.textContent = photo.display_label || photo.caption || '외관';
 
     const countEl = document.getElementById('vdrPhotoCounter');
     if (countEl) countEl.textContent = `${this.currentPhotoIdx + 1} / ${this.photos.length}`;
 
+    // 2. DIRECTIVE 082/083 사진 전용 화면 대형 뷰어 갱신
+    const dedImg = document.getElementById('vdrDedicatedMainImage');
+    if (dedImg) dedImg.src = photo.url;
+
+    const dedCap = document.getElementById('vdrDedicatedCaption');
+    if (dedCap) dedCap.textContent = photo.caption;
+
+    const dedPart = document.getElementById('vdrDedicatedPartLabel');
+    if (dedPart) dedPart.textContent = photo.display_label || photo.caption || '외관';
+
+    const dedCount = document.getElementById('vdrDedicatedCounter');
+    if (dedCount) dedCount.textContent = `${this.currentPhotoIdx + 1} / ${this.photos.length}`;
+
+    // 3. 전체화면 Lightbox 모달 갱신
     if (this.lightboxOpen) {
       const lbImg = document.getElementById('vdrLightboxImage');
       const lbCap = document.getElementById('vdrLightboxCaption');
@@ -1523,6 +1611,39 @@ class VehicleDetailRenderer {
         }
       });
     }
+  }
+
+  // DIRECTIVE 082 & 083: 차량 정보 ↔ 사진 전용 화면 탭 전환
+  switchDetailTab(tab) {
+    this.currentDetailTab = tab;
+    const btnInfo = document.getElementById('vdrTabBtnInfo');
+    const btnPhotos = document.getElementById('vdrTabBtnPhotos');
+    const contInfo = document.getElementById('vdrMainInfoContainer');
+    const contPhotos = document.getElementById('vdrDedicatedPhotoContainer');
+
+    if (tab === 'PHOTOS') {
+      if (btnInfo) {
+        btnInfo.className = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer";
+      }
+      if (btnPhotos) {
+        btnPhotos.className = "px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 bg-[#171B1E] text-white shadow-xs cursor-pointer";
+      }
+      if (contInfo) contInfo.classList.add('hidden');
+      if (contPhotos) contPhotos.classList.remove('hidden');
+      this.selectPhoto(this.currentPhotoIdx);
+    } else {
+      if (btnInfo) {
+        btnInfo.className = "px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 bg-[#171B1E] text-white shadow-xs cursor-pointer";
+      }
+      if (btnPhotos) {
+        btnPhotos.className = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer";
+      }
+      if (contInfo) contInfo.classList.remove('hidden');
+      if (contPhotos) contPhotos.classList.add('hidden');
+      this.selectPhoto(this.currentPhotoIdx);
+    }
+
+    if (window.lucide) window.lucide.createIcons();
   }
 
   filterPhotoCategory(cat) {
@@ -1889,6 +2010,23 @@ class VehicleDetailRenderer {
       });
     }
 
+    // DIRECTIVE 082 & 083: 사진 전용 뷰어 버튼
+    const dedBtnPrev = document.getElementById('vdrBtnDedicatedPrev');
+    if (dedBtnPrev) {
+      dedBtnPrev.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.prevPhoto();
+      });
+    }
+    const dedBtnNext = document.getElementById('vdrBtnDedicatedNext');
+    if (dedBtnNext) {
+      dedBtnNext.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.nextPhoto();
+      });
+    }
+
+    // 일반 갤러리 뷰포트 터치 스와이프
     const viewport = document.getElementById('vdrGalleryViewport');
     if (viewport) {
       viewport.addEventListener('touchstart', (e) => {
@@ -1899,7 +2037,6 @@ class VehicleDetailRenderer {
         const currentTime = new Date().getTime();
         const tapLength = currentTime - (this.lastTapTime || 0);
         if (tapLength < 350 && tapLength > 50) {
-          // 더블탭 감지 -> 2배 확대 토글
           e.preventDefault();
           this.toggleZoom();
           this.lastTapTime = 0;
@@ -1917,6 +2054,31 @@ class VehicleDetailRenderer {
           }
         }
       }, { passive: false });
+    }
+
+    // DIRECTIVE 082 & 083: 사진 전용 대형 뷰포트 터치 스와이프 (모바일 100% 최적화)
+    const dedViewport = document.getElementById('vdrDedicatedGalleryViewport');
+    if (dedViewport) {
+      dedViewport.addEventListener('touchstart', (e) => {
+        this.dedTouchStartX = e.changedTouches[0].screenX;
+        this.dedTouchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      dedViewport.addEventListener('touchend', (e) => {
+        const endX = e.changedTouches[0].screenX;
+        const endY = e.changedTouches[0].screenY;
+        const diffX = endX - (this.dedTouchStartX || endX);
+        const diffY = endY - (this.dedTouchStartY || endY);
+
+        // 수평 스와이프가 수직 스크롤보다 크고 40px 이상일 때만 사진 넘김 (세로 스크롤 보존)
+        if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+          if (diffX > 0) {
+            this.prevPhoto();
+          } else {
+            this.nextPhoto();
+          }
+        }
+      }, { passive: true });
     }
 
     window.addEventListener('keydown', (e) => {

@@ -250,10 +250,11 @@
                 </div>
 
                 <!-- 우측: 고객용 1:1 방문 예약 / 상담 버튼 (딥 차콜 + 라임 포인트) -->
-                <div class="flex items-center space-x-2 sm:space-x-3">
-                    <button onclick="scrollToConsultation()" class="inline-flex items-center text-xs sm:text-sm font-bold bg-[#171B1E] hover:bg-black text-white px-4 py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
-                        <span class="w-2 h-2 rounded-full bg-[#C8FF3D] mr-2"></span>
-                        1:1 방문 예약 / 구매 상담
+                <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
+                    <button onclick="scrollToConsultation()" class="inline-flex items-center text-xs sm:text-sm font-bold bg-[#171B1E] hover:bg-black text-white px-3 sm:px-4 py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-[#C8FF3D] mr-1.5 sm:mr-2"></span>
+                        <span class="hidden sm:inline">1:1 방문 예약 / 구매 상담</span>
+                        <span class="sm:hidden">방문상담</span>
                     </button>
                 </div>
             </div>
@@ -458,8 +459,8 @@
                 <!-- [우측 메인: 차마트 실차 매물 결과 섹션] (DIRECTIVE 069 & 071) -->
                 <section class="cm-listing-results space-y-3.5">
                     
-                    <!-- [우측 상단: 브랜드 히어로 배너 (우측 컬럼 상단 100% 풀 배치 & 16:9 원본 꽉 채움)] -->
-                    <div id="chamartHeroCarousel" class="group relative w-full rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-xs select-none aspect-[16/9]">
+                    <!-- [우측 상단: 브랜드 히어로 배너 (모바일 h-[260px] 시원한 높이 확보 & PC 16:9 와이드 배치)] -->
+                    <div id="chamartHeroCarousel" class="group relative w-full rounded-xl overflow-hidden bg-white border border-slate-200/90 shadow-xs select-none h-[260px] sm:h-auto sm:aspect-[16/9]">
                         <!-- 슬라이드 트랙 (루프를 위해 5번 복제 + 1~5번 + 1번 복제 총 7개 구성) -->
                         <div id="heroTrack" class="flex h-full will-change-transform" style="transform: translateX(-100%);">
                             <!-- Clone of Slide 5 (자연스러운 역방향 루프용) -->
