@@ -561,26 +561,59 @@
                                 <span>부위별 사진 관리</span>
                             </button>
 
-                            <!-- DIRECTIVE 071 TASK 3: 차마트 추천순 기본 정렬 셀렉트 -->
-                            <select id="sortSelect" class="cm-sort-select" aria-label="정렬 순서" onchange="sortVehicles()">
-                                <option value="chamart_recommended" selected>차마트 추천순 (기본)</option>
-                                <option value="price_low">낮은 가격순</option>
-                                <option value="price_high">높은 가격순</option>
-                                <option value="latest">최신 등록순</option>
-                                <option value="mileage">짧은 주행거리순</option>
-                                <option value="year_desc">최신 연식순</option>
+                            <!-- DIRECTIVE 084: 가격·주행거리 정렬 6대 기준 셀렉트 -->
+                            <select id="sortSelect" class="cm-sort-select font-bold text-xs sm:text-sm" aria-label="정렬 순서" onchange="sortVehicles()">
+                                <option value="recommended" selected>차마트 추천순</option>
+                                <option value="price_asc">가격 낮은순</option>
+                                <option value="price_desc">가격 높은순</option>
+                                <option value="mileage_asc">주행거리 짧은순</option>
+                                <option value="mileage_desc">주행거리 긴순</option>
+                                <option value="latest">최근 등록순</option>
                             </select>
 
-                            <!-- 차마트 뷰 모드 전환 버튼 (목록형 vs 앨범형) -->
+                            <!-- 차마트 뷰 모드 전환 버튼 (앨범형 vs 목록형) -->
                             <div class="cm-view-switch">
-                                <button type="button" id="cmViewList" aria-pressed="true" onclick="setViewMode('list')" title="목록형 보기">
-                                    <i data-lucide="list" class="w-4 h-4 mr-1"></i> 목록형
-                                </button>
-                                <button type="button" id="cmViewAlbum" aria-pressed="false" onclick="setViewMode('album')" title="앨범형 보기">
+                                <button type="button" id="cmViewAlbum" aria-pressed="true" onclick="setViewMode('album')" title="앨범형 보기">
                                     <i data-lucide="layout-grid" class="w-4 h-4 mr-1"></i> 앨범형
+                                </button>
+                                <button type="button" id="cmViewList" aria-pressed="false" onclick="setViewMode('list')" title="목록형 보기">
+                                    <i data-lucide="list" class="w-4 h-4 mr-1"></i> 목록형
                                 </button>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- DIRECTIVE 084 & 카통령 벤치마킹: 상단 빠른 필터 & 정렬 칩 바 -->
+                    <div id="cmQuickChipsBar" class="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 custom-scrollbar text-xs select-none">
+                        <button type="button" onclick="openMobileFilterBottomSheet()" class="md:hidden inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#171B1E] text-white font-bold cursor-pointer shrink-0 shadow-2xs">
+                            <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-[#C8FF3D]"></i>
+                            <span>필터</span>
+                        </button>
+                        <button type="button" id="chipSortPriceAsc" onclick="setQuickSort('price_asc')" class="px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold cursor-pointer shrink-0 transition-colors shadow-2xs">
+                            가격 낮은순
+                        </button>
+                        <button type="button" id="chipSortMileageAsc" onclick="setQuickSort('mileage_asc')" class="px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold cursor-pointer shrink-0 transition-colors shadow-2xs">
+                            주행거리 짧은순
+                        </button>
+                        <span class="w-px h-4 bg-slate-200 mx-0.5 shrink-0"></span>
+                        <button type="button" id="chipPrice2000" onclick="toggleQuickPrice('2000')" class="px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold cursor-pointer shrink-0 transition-colors shadow-2xs">
+                            2,000만원 이하
+                        </button>
+                        <button type="button" id="chipPrice3000" onclick="toggleQuickPrice('3000')" class="px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold cursor-pointer shrink-0 transition-colors shadow-2xs">
+                            3,000만원 이하
+                        </button>
+                        <button type="button" id="chipMileage50000" onclick="toggleQuickMileage('50000')" class="px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold cursor-pointer shrink-0 transition-colors shadow-2xs">
+                            5만km 이하
+                        </button>
+                        <button type="button" id="chipMileage100000" onclick="toggleQuickMileage('100000')" class="px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold cursor-pointer shrink-0 transition-colors shadow-2xs">
+                            10만km 이하
+                        </button>
+                        <button type="button" id="chipAccidentFree" onclick="toggleQuickAccidentFree()" class="px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold cursor-pointer shrink-0 transition-colors shadow-2xs">
+                            무사고 진단
+                        </button>
+                        <button type="button" onclick="resetAllFilters()" class="text-xs text-slate-400 hover:text-slate-600 px-2 py-1 cursor-pointer shrink-0 flex items-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i>초기화
+                        </button>
                     </div>
 
                     <!-- 선택된 필터 태그 칩 바 (DIRECTIVE 071 TASK 2 필수 UX) -->
@@ -593,8 +626,8 @@
                         <!-- JS로 렌더링 -->
                     </div>
 
-                    <!-- 매물 결과 컨테이너 (DIRECTIVE 069: 기본 is-list) -->
-                    <div id="vehicleGrid" class="cm-vehicle-results is-list">
+                    <!-- 매물 결과 컨테이너 (카통령/엔카 스타일: 기본 is-album 4열/2열 그리드) -->
+                    <div id="vehicleGrid" class="cm-vehicle-results is-album">
                         <div class="py-16 text-center text-slate-400">
                             <div class="inline-block animate-spin w-6 h-6 border-2 border-slate-300 border-t-[#171B1E] rounded-full mb-3"></div>
                             <p class="text-xs">실차 검증 매물을 불러오는 중입니다...</p>
@@ -739,6 +772,19 @@
 
             <!-- 바텀시트 본문 스크롤 영역 -->
             <div class="flex-1 overflow-y-auto custom-scrollbar space-y-5 pr-1 text-xs">
+                <!-- 0. 정렬 기준 선택 (DIRECTIVE 084) -->
+                <div class="space-y-2">
+                    <label class="block font-bold text-slate-800">정렬 기준</label>
+                    <div class="grid grid-cols-2 gap-1.5" id="mbFilterSortChips">
+                        <button type="button" onclick="setMbFilterSort('recommended')" class="mb-sort-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-[#171B1E] bg-[#171B1E] text-white" data-val="recommended">차마트 추천순</button>
+                        <button type="button" onclick="setMbFilterSort('price_asc')" class="mb-sort-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="price_asc">가격 낮은순</button>
+                        <button type="button" onclick="setMbFilterSort('price_desc')" class="mb-sort-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="price_desc">가격 높은순</button>
+                        <button type="button" onclick="setMbFilterSort('mileage_asc')" class="mb-sort-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="mileage_asc">주행거리 짧은순</button>
+                        <button type="button" onclick="setMbFilterSort('mileage_desc')" class="mb-sort-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="mileage_desc">주행거리 긴순</button>
+                        <button type="button" onclick="setMbFilterSort('latest')" class="mb-sort-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="latest">최근 등록순</button>
+                    </div>
+                </div>
+
                 <!-- 1. 제조사 선택 -->
                 <div class="space-y-2">
                     <label class="block font-bold text-slate-800">제조사</label>
@@ -759,19 +805,31 @@
                     </div>
                 </div>
 
-                <!-- 3. 가격대 선택 -->
+                <!-- 3. 가격대 선택 (DIRECTIVE 084) -->
                 <div class="space-y-2">
-                    <label class="block font-bold text-slate-800">가격대</label>
+                    <label class="block font-bold text-slate-800">가격대 범위</label>
                     <div class="grid grid-cols-2 gap-1.5" id="mbFilterPriceChips">
                         <button type="button" onclick="setMbFilterPrice('')" class="mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-[#171B1E] bg-[#171B1E] text-white" data-val="">전체</button>
-                        <button type="button" onclick="setMbFilterPrice('1500')" class="mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="1500">1,500만원 이하</button>
-                        <button type="button" onclick="setMbFilterPrice('2500')" class="mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="2500">2,500만원 이하</button>
-                        <button type="button" onclick="setMbFilterPrice('3500')" class="mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="3500">3,500만원 이하</button>
-                        <button type="button" onclick="setMbFilterPrice('over3500')" class="mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700 col-span-2" data-val="over3500">3,500만원 초과</button>
+                        <button type="button" onclick="setMbFilterPrice('1000')" class="mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="1000">1,000만원 이하</button>
+                        <button type="button" onclick="setMbFilterPrice('2000')" class="mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="2000">2,000만원 이하</button>
+                        <button type="button" onclick="setMbFilterPrice('3000')" class="mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="3000">3,000만원 이하</button>
+                        <button type="button" onclick="setMbFilterPrice('over3000')" class="mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700 col-span-2" data-val="over3000">3,000만원 이상</button>
                     </div>
                 </div>
 
-                <!-- 4. 연식 범위 -->
+                <!-- 4. 주행거리 선택 (DIRECTIVE 084) -->
+                <div class="space-y-2">
+                    <label class="block font-bold text-slate-800">주행거리 범위</label>
+                    <div class="grid grid-cols-2 gap-1.5" id="mbFilterMileageChips">
+                        <button type="button" onclick="setMbFilterMileage('')" class="mb-mil-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-[#171B1E] bg-[#171B1E] text-white" data-val="">전체</button>
+                        <button type="button" onclick="setMbFilterMileage('30000')" class="mb-mil-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="30000">3만km 이하</button>
+                        <button type="button" onclick="setMbFilterMileage('50000')" class="mb-mil-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="50000">5만km 이하</button>
+                        <button type="button" onclick="setMbFilterMileage('70000')" class="mb-mil-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700" data-val="70000">7만km 이하</button>
+                        <button type="button" onclick="setMbFilterMileage('100000')" class="mb-mil-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700 col-span-2" data-val="100000">10만km 이하</button>
+                    </div>
+                </div>
+
+                <!-- 5. 연식 범위 -->
                 <div class="space-y-2">
                     <label class="block font-bold text-slate-800">연식</label>
                     <div class="grid grid-cols-3 gap-1.5" id="mbFilterYearChips">
@@ -965,7 +1023,6 @@
         let publicVehicles = [];
         window.publicVehicles = publicVehicles;
         let currentDetailRenderer = null;
-        let mbFilterState = { maker: '', model: '', price: '', year: '' };
 
         // DIRECTIVE 059 P0: 차량명 및 트림 중복 렌더링 방지 헬퍼
         function formatVehicleTitleParts(modelName, trim) {
@@ -1014,6 +1071,22 @@
             }
         }
 
+        // DIRECTIVE 061 & 084: 모바일 필터 상태 관리
+        let mbFilterState = {
+            maker: '',
+            model: '',
+            price: '',
+            mileage: '',
+            year: '',
+            sort: 'recommended'
+        };
+
+        function setMbFilterSort(sort) {
+            mbFilterState.sort = sort;
+            renderMbFilterChips();
+            updateMbFilterCount();
+        }
+
         function setMbFilterMaker(maker) {
             mbFilterState.maker = maker;
             mbFilterState.model = ''; // 제조사 변경 시 모델 초기화
@@ -1034,6 +1107,12 @@
             updateMbFilterCount();
         }
 
+        function setMbFilterMileage(mil) {
+            mbFilterState.mileage = mil;
+            renderMbFilterChips();
+            updateMbFilterCount();
+        }
+
         function setMbFilterYear(year) {
             mbFilterState.year = year;
             renderMbFilterChips();
@@ -1041,6 +1120,15 @@
         }
 
         function renderMbFilterChips() {
+            document.querySelectorAll('.mb-sort-chip').forEach(btn => {
+                const val = btn.getAttribute('data-val') || '';
+                if (val === (mbFilterState.sort || 'recommended')) {
+                    btn.className = "mb-sort-chip py-2 px-2.5 rounded-lg border text-center font-bold cursor-pointer border-[#171B1E] bg-[#171B1E] text-white";
+                } else {
+                    btn.className = "mb-sort-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700";
+                }
+            });
+
             document.querySelectorAll('.mb-maker-chip').forEach(btn => {
                 const val = btn.getAttribute('data-val') || '';
                 if (val === mbFilterState.maker) {
@@ -1056,6 +1144,15 @@
                     btn.className = "mb-price-chip py-2 px-2.5 rounded-lg border text-center font-bold cursor-pointer border-[#171B1E] bg-[#171B1E] text-white";
                 } else {
                     btn.className = "mb-price-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700";
+                }
+            });
+
+            document.querySelectorAll('.mb-mil-chip').forEach(btn => {
+                const val = btn.getAttribute('data-val') || '';
+                if (val === mbFilterState.mileage) {
+                    btn.className = "mb-mil-chip py-2 px-2.5 rounded-lg border text-center font-bold cursor-pointer border-[#171B1E] bg-[#171B1E] text-white";
+                } else {
+                    btn.className = "mb-mil-chip py-2 px-2.5 rounded-lg border text-center font-medium cursor-pointer border-slate-200 bg-slate-50 text-slate-700";
                 }
             });
 
@@ -1422,15 +1519,17 @@
             if (window.lucide) window.lucide.createIcons();
         }
 
-        // DIRECTIVE 071: 차마트 정밀 상세 검색 및 차마트 보유 매물 우선순위 정렬 상태 관리
+        // DIRECTIVE 071 & 084: 차마트 정밀 상세 검색 및 가격·주행거리 정렬 시스템 강화
         let filterState = {
             origin: 'DOMESTIC',       // 'DOMESTIC', 'IMPORT', 'ALL'
             manufacturers: [],        // ['현대', '기아'] 등
             model: '',
-            priceQuick: '',           // '1500', '2500', '3500', 'over3500'
+            priceQuick: '',           // '1000', '2000', '3000', 'over3000'
             minPrice: null,
             maxPrice: null,
-            mileageQuick: '',         // '30000', '60000', '100000'
+            mileageQuick: '',         // '30000', '50000', '70000', '100000'
+            minMileage: null,
+            maxMileage: null,
             year: '',
             fuel: '',
             bodyType: '',
@@ -1439,7 +1538,7 @@
             selectedOptions: [],      // ['스마트키', '통풍시트', ...]
             onlyChamartOwned: false,  // 차마트 직영 보유 차량만
             onlyPriority: false,      // 우선추천 매물만
-            sort: 'chamart_recommended' // 기본값: 차마트 추천순
+            sort: 'recommended'       // 기본값: 차마트 추천순 ('recommended', 'price_asc', 'price_desc', 'mileage_asc', 'mileage_desc', 'latest')
         };
 
         function getFilteredVehicles() {
@@ -1475,18 +1574,20 @@
                 // 차종 (세단, SUV 등)
                 if (filterState.bodyType && !(v.body_type || '').includes(filterState.bodyType)) return false;
 
-                // 가격 범위
-                const price = v.target_price || 0;
+                // DIRECTIVE 084: 가격 범위 필터링 (순수 숫자 비교)
+                const price = (v.target_price !== null && v.target_price !== undefined) ? Number(v.target_price) : 0;
                 if (filterState.minPrice !== null && price < filterState.minPrice) return false;
                 if (filterState.maxPrice !== null && price > filterState.maxPrice) return false;
-                if (filterState.priceQuick === '1500' && price > 1500) return false;
-                if (filterState.priceQuick === '2500' && price > 2500) return false;
-                if (filterState.priceQuick === '3500' && price > 3500) return false;
-                if (filterState.priceQuick === 'over3500' && price <= 3500) return false;
+                if (filterState.priceQuick === '1000' && price > 1000) return false;
+                if (filterState.priceQuick === '2000' && price > 2000) return false;
+                if (filterState.priceQuick === '3000' && price > 3000) return false;
+                if (filterState.priceQuick === 'over3000' && price < 3000) return false;
 
-                // 주행거리
-                const mil = v.mileage || 0;
-                if (filterState.mileageQuick && mil > parseInt(filterState.mileageQuick, 10)) return false;
+                // DIRECTIVE 084: 주행거리 범위 필터링 (순수 숫자 비교)
+                const mil = (v.mileage !== null && v.mileage !== undefined) ? Number(v.mileage) : 0;
+                if (filterState.minMileage !== null && mil < filterState.minMileage) return false;
+                if (filterState.maxMileage !== null && mil > filterState.maxMileage) return false;
+                if (filterState.mileageQuick && mil > Number(filterState.mileageQuick)) return false;
 
                 // 사고/상태 필터
                 if (filterState.accidentFree) {
@@ -1517,15 +1618,36 @@
                 return true;
             });
 
-            // DIRECTIVE 071 TASK 3: 정렬 적용
-            const sortMode = filterState.sort || 'chamart_recommended';
-            if (sortMode === 'chamart_recommended') {
-                // 기본 추천순:
-                // 1순위: 차마트 직접 보유(OWNED) & 우선노출 지정 매물 (가격이 더 높아도 최우선)
-                // 2순위: 일반 차마트 직접 보유(OWNED) 매물
-                // 3순위: 파트너 승인 매물 중 우선지정 매물
-                // 4순위: 일반 정상 매물
-                result.sort((a, b) => {
+            // DIRECTIVE 084: 가격·주행거리 정렬 6대 기준 (순수 숫자 비교 & 타이브레이커)
+            const sortMode = filterState.sort || 'recommended';
+            
+            result.sort((a, b) => {
+                const priceA = (a.target_price !== null && a.target_price !== undefined) ? Number(a.target_price) : 99999999;
+                const priceB = (b.target_price !== null && b.target_price !== undefined) ? Number(b.target_price) : 99999999;
+                const milA = (a.mileage !== null && a.mileage !== undefined) ? Number(a.mileage) : 99999999;
+                const milB = (b.mileage !== null && b.mileage !== undefined) ? Number(b.mileage) : 99999999;
+                const yearA = Number(a.year) || 0;
+                const yearB = Number(b.year) || 0;
+
+                if (sortMode === 'price_asc' || sortMode === 'price_low') {
+                    // 1. 가격 낮은순 -> 같은 가격이면 주행거리 짧은 순 -> 연식 최신순
+                    return (priceA - priceB) || (milA - milB) || (yearB - yearA);
+                } else if (sortMode === 'price_desc' || sortMode === 'price_high') {
+                    // 2. 가격 높은순 -> 같은 가격이면 주행거리 짧은 순 -> 연식 최신순
+                    return (priceB - priceA) || (milA - milB) || (yearB - yearA);
+                } else if (sortMode === 'mileage_asc' || sortMode === 'mileage') {
+                    // 3. 주행거리 짧은순 -> 같은 주행거리이면 가격 낮은 순 -> 연식 최신순
+                    return (milA - milB) || (priceA - priceB) || (yearB - yearA);
+                } else if (sortMode === 'mileage_desc') {
+                    // 4. 주행거리 긴순 -> 같은 주행거리이면 가격 낮은 순 -> 연식 최신순
+                    return (milB - milA) || (priceA - priceB) || (yearB - yearA);
+                } else if (sortMode === 'latest') {
+                    // 5. 최근 등록순
+                    const timeA = new Date(a.created_at || '2026-01-01').getTime();
+                    const timeB = new Date(b.created_at || '2026-01-01').getTime();
+                    return (timeB - timeA) || (yearB - yearA);
+                } else {
+                    // 6. 차마트 추천순: 우선노출 -> 직영 보유(OWNED) -> 최신 연식
                     const aOwned = Boolean(a.is_chamart_owned || a.listing_ownership_type === 'OWNED');
                     const bOwned = Boolean(b.is_chamart_owned || b.listing_ownership_type === 'OWNED');
                     const aPriority = Boolean(a.is_priority_exposure);
@@ -1535,25 +1657,97 @@
                     const bScore = (bOwned && bPriority) ? 400 : (bOwned ? 300 : (bPriority ? 200 : 100));
 
                     if (aScore !== bScore) return bScore - aScore;
-                    // 동점일 때 우선순위 랭크 -> 최신 연식 순
                     if ((a.priority_rank || 0) !== (b.priority_rank || 0)) {
                         return (b.priority_rank || 0) - (a.priority_rank || 0);
                     }
-                    return (b.year || 0) - (a.year || 0);
-                });
-            } else if (sortMode === 'price_low') {
-                result.sort((a, b) => (a.target_price || 0) - (b.target_price || 0));
-            } else if (sortMode === 'price_high') {
-                result.sort((a, b) => (b.target_price || 0) - (a.target_price || 0));
-            } else if (sortMode === 'latest') {
-                result.sort((a, b) => (b.year || 0) - (a.year || 0));
-            } else if (sortMode === 'mileage') {
-                result.sort((a, b) => (a.mileage || 0) - (b.mileage || 0));
-            } else if (sortMode === 'year_desc') {
-                result.sort((a, b) => (b.year || 0) - (a.year || 0));
-            }
+                    return (yearB - yearA) || (priceA - priceB);
+                }
+            });
 
             return result;
+        }
+
+        // DIRECTIVE 084: 상단 빠른 필터 & 정렬 칩 컨트롤러
+        function setQuickSort(mode) {
+            filterState.sort = mode;
+            const sel = document.getElementById('sortSelect');
+            if (sel) sel.value = mode;
+            renderVehiclesList();
+            syncUrlParams();
+            updateQuickChipsUi();
+        }
+
+        function toggleQuickPrice(limit) {
+            if (filterState.priceQuick === limit) {
+                filterState.priceQuick = '';
+                filterState.maxPrice = null;
+            } else {
+                filterState.priceQuick = limit;
+                filterState.maxPrice = Number(limit);
+            }
+            renderVehiclesList();
+            syncUrlParams();
+            updateQuickChipsUi();
+        }
+
+        function toggleQuickMileage(limit) {
+            if (filterState.mileageQuick === limit) {
+                filterState.mileageQuick = '';
+                filterState.maxMileage = null;
+            } else {
+                filterState.mileageQuick = limit;
+                filterState.maxMileage = Number(limit);
+            }
+            renderVehiclesList();
+            syncUrlParams();
+            updateQuickChipsUi();
+        }
+
+        function toggleQuickAccidentFree() {
+            filterState.accidentFree = !filterState.accidentFree;
+            renderVehiclesList();
+            syncUrlParams();
+            updateQuickChipsUi();
+        }
+
+        function syncUrlParams() {
+            try {
+                const params = new URLSearchParams();
+                if (filterState.sort && filterState.sort !== 'recommended') params.set('sort', filterState.sort);
+                if (filterState.priceQuick) params.set('price', filterState.priceQuick);
+                if (filterState.mileageQuick) params.set('mil', filterState.mileageQuick);
+                if (filterState.manufacturers.length > 0) params.set('maker', filterState.manufacturers.join(','));
+                if (filterState.model) params.set('model', filterState.model);
+                if (filterState.year) params.set('year', filterState.year);
+                if (filterState.fuel) params.set('fuel', filterState.fuel);
+                if (filterState.accidentFree) params.set('accident_free', '1');
+
+                const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+                window.history.replaceState(null, '', newUrl);
+            } catch (e) {
+                console.warn('syncUrlParams error:', e);
+            }
+        }
+
+        function updateQuickChipsUi() {
+            const chipP = document.getElementById('chipSortPriceAsc');
+            const chipM = document.getElementById('chipSortMileageAsc');
+            const chipP20 = document.getElementById('chipPrice2000');
+            const chipP30 = document.getElementById('chipPrice3000');
+            const chipM50 = document.getElementById('chipMileage50000');
+            const chipM100 = document.getElementById('chipMileage100000');
+            const chipAcc = document.getElementById('chipAccidentFree');
+
+            const activeCls = 'px-3 py-1.5 rounded-full border border-[#171B1E] bg-[#171B1E] text-white font-bold cursor-pointer shrink-0 transition-colors shadow-xs';
+            const inactiveCls = 'px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold cursor-pointer shrink-0 transition-colors shadow-2xs';
+
+            if (chipP) chipP.className = filterState.sort === 'price_asc' ? activeCls : inactiveCls;
+            if (chipM) chipM.className = filterState.sort === 'mileage_asc' ? activeCls : inactiveCls;
+            if (chipP20) chipP20.className = filterState.priceQuick === '2000' ? activeCls : inactiveCls;
+            if (chipP30) chipP30.className = filterState.priceQuick === '3000' ? activeCls : inactiveCls;
+            if (chipM50) chipM50.className = filterState.mileageQuick === '50000' ? activeCls : inactiveCls;
+            if (chipM100) chipM100.className = filterState.mileageQuick === '100000' ? activeCls : inactiveCls;
+            if (chipAcc) chipAcc.className = filterState.accidentFree ? activeCls : inactiveCls;
         }
 
         function updateMbFilterCount() {
@@ -1566,14 +1760,55 @@
         }
 
         function applyMobileFilters() {
+            if (mbFilterState.sort) {
+                filterState.sort = mbFilterState.sort;
+                const sel = document.getElementById('sortSelect');
+                if (sel) sel.value = mbFilterState.sort;
+            }
+            if (mbFilterState.maker !== undefined) {
+                filterState.manufacturers = mbFilterState.maker ? [mbFilterState.maker] : [];
+            }
+            if (mbFilterState.model !== undefined) {
+                filterState.model = mbFilterState.model;
+            }
+            if (mbFilterState.price !== undefined) {
+                filterState.priceQuick = mbFilterState.price;
+                if (mbFilterState.price === '1000') filterState.maxPrice = 1000;
+                else if (mbFilterState.price === '2000') filterState.maxPrice = 2000;
+                else if (mbFilterState.price === '3000') filterState.maxPrice = 3000;
+                else if (mbFilterState.price === 'over3000') { filterState.minPrice = 3000; filterState.maxPrice = null; }
+                else { filterState.minPrice = null; filterState.maxPrice = null; }
+            }
+            if (mbFilterState.mileage !== undefined) {
+                filterState.mileageQuick = mbFilterState.mileage;
+                filterState.maxMileage = mbFilterState.mileage ? Number(mbFilterState.mileage) : null;
+            }
+            if (mbFilterState.year !== undefined) {
+                filterState.year = mbFilterState.year;
+            }
             closeMobileFilterBottomSheet();
             renderVehiclesList();
             updateFilterBadge();
             syncUrlParams();
+            updateQuickChipsUi();
         }
 
-        // 차마트 정밀 통합 필터 및 뷰 상태 관리 (DIRECTIVE 069: 기본 뷰 리스트형 'list' & DIRECTIVE 071)
-        let currentViewMode = 'list'; // 'list' (기본값) | 'album'
+        function resetMobileFilters() {
+            mbFilterState = {
+                maker: '',
+                model: '',
+                price: '',
+                mileage: '',
+                year: '',
+                sort: 'recommended'
+            };
+            renderMbFilterChips();
+            renderMbModelChips();
+            updateMbFilterCount();
+        }
+
+        // 차마트 정밀 통합 필터 및 뷰 상태 관리 (카통령/엔카 스타일: 기본 뷰 앨범형 'album')
+        let currentViewMode = 'album'; // 'album' (기본값: PC 4열 / 모바일 2열) | 'list'
 
         function setViewMode(mode) {
             currentViewMode = mode;
@@ -1744,6 +1979,7 @@
                 filterState.sort = select.value;
                 renderVehiclesList();
                 syncUrlParams();
+                updateQuickChipsUi();
             }
         }
 
@@ -1756,6 +1992,8 @@
                 minPrice: null,
                 maxPrice: null,
                 mileageQuick: '',
+                minMileage: null,
+                maxMileage: null,
                 year: '',
                 fuel: '',
                 bodyType: '',
@@ -1764,7 +2002,7 @@
                 selectedOptions: [],
                 onlyChamartOwned: false,
                 onlyPriority: false,
-                sort: 'chamart_recommended'
+                sort: 'recommended'
             };
 
             const searchInput = document.getElementById('homeSearchInput');
@@ -2183,37 +2421,30 @@
         function createVehicleAlbumCard(v, favorites, compareIds) {
             const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/vehicles/neutral_car_placeholder.jpg');
             const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
-            const mileageFormatted = v.mileage ? `${Number(v.mileage).toLocaleString('ko-KR')}km` : '주행 미확인';
+            const mileageNum = Number(v.mileage || 0);
+            const mileageFormatted = mileageNum > 0 ? (mileageNum >= 10000 ? `${(mileageNum / 10000).toFixed(1).replace('.0', '')}만km` : `${mileageNum.toLocaleString('ko-KR')}km`) : '주행 미확인';
             const titleParts = formatVehicleTitleParts(v.model_name, v.trim);
             const isFav = favorites.includes(v.id);
-            const isComp = compareIds.includes(v.id);
-            const isOwned = Boolean(v.is_chamart_owned || v.listing_ownership_type === 'OWNED' || v.ownership_type === 'CHAMART_OWNED');
-            const isPriority = Boolean(v.is_priority_exposure);
-            const photoCount = v.photo_count || (v.photos ? v.photos.length : 0);
+            const yearDisplay = v.year ? `${v.year}년형` : '';
 
             return `
                 <article class="cm-album-card" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-album-card__photo">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" onerror="this.src='/static/img/vehicles/neutral_car_placeholder.jpg'">
-                        <span class="cm-vehicle-row__badge">실차인증</span>
-                        <button type="button" class="cm-row-favorite ${isFav ? 'is-active' : ''}" style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.9);" onclick="event.stopPropagation(); toggleFavoriteVehicle('${v.id}')" aria-label="관심차량 찜" data-fav-btn="${v.id}">
-                            <i data-lucide="heart" style="width:15px;height:15px;${isFav ? 'fill:currentColor;' : ''}"></i>
+                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" loading="lazy" onerror="this.src='/static/img/vehicles/neutral_car_placeholder.jpg'">
+                        <span class="cm-album-card__badge-tag">무사고</span>
+                        <button type="button" class="cm-album-card__fav-btn ${isFav ? 'is-active' : ''}" onclick="event.stopPropagation(); toggleFavoriteVehicle('${v.id}')" aria-label="관심차량 찜" data-fav-btn="${v.id}">
+                            <i data-lucide="heart" style="width:14px;height:14px;${isFav ? 'fill:#ef4444;stroke:#ef4444;' : 'color:#64748b;'}"></i>
                         </button>
                     </div>
                     <div class="cm-album-card__body">
+                        <h3 class="cm-album-card__title" title="${titleParts.mainTitle} ${titleParts.subTrim || ''}">
+                            ${titleParts.mainTitle} ${titleParts.subTrim ? `<span class="cm-album-card__subtrim">${titleParts.subTrim}</span>` : ''}
+                        </h3>
                         <div class="cm-album-card__specs">
-                            <span>${v.year}년식</span> · <span>${mileageFormatted}</span> · <span>${v.fuel_type || '가솔린'}</span>
+                            <span>${yearDisplay}</span> · <span>${mileageFormatted}</span> · <span>${v.fuel_type || '가솔린'}</span>
                         </div>
-                        <h3 class="cm-album-card__title">${titleParts.mainTitle} ${titleParts.subTrim ? `<span style="font-weight:400;color:var(--cm-muted);font-size:13px;">${titleParts.subTrim}</span>` : ''}</h3>
-                        <div class="cm-album-card__footer">
+                        <div class="cm-album-card__price-row">
                             <span class="cm-album-card__price">${priceFormatted}</span>
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                ${photoCount > 0 ? `<span class="text-[10px] text-slate-500 bg-slate-100 px-1 rounded">📷 ${photoCount}장</span>` : ''}
-                                <label class="cm-row-compare-label" onclick="event.stopPropagation()">
-                                    <input type="checkbox" ${isComp ? 'checked' : ''} onchange="toggleCompareVehicle('${v.id}', this.checked)" class="cm-row-compare" data-compare-id="${v.id}">
-                                    <span>비교</span>
-                                </label>
-                            </div>
                         </div>
                     </div>
                 </article>
@@ -2301,6 +2532,7 @@
             if (window.lucide) window.lucide.createIcons();
             updateAllFavoritesUi();
             updateCompareFloatingBar();
+            updateQuickChipsUi();
         }
 
         function quickSearchKeyword(kw) {

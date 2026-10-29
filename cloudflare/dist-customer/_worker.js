@@ -18,9 +18,10 @@ export default {
         const maker = url.searchParams.get('maker') || '';
         const minPrice = parseInt(url.searchParams.get('min_price') || '0', 10);
         const maxPrice = parseInt(url.searchParams.get('max_price') || '999999', 10);
+        const minMileage = parseInt(url.searchParams.get('min_mileage') || '0', 10);
+        const maxMileage = parseInt(url.searchParams.get('max_mileage') || '999999', 10);
         const minYear = parseInt(url.searchParams.get('min_year') || '0', 10);
         const maxYear = parseInt(url.searchParams.get('max_year') || '9999', 10);
-        const maxMileage = parseInt(url.searchParams.get('max_mileage') || '999999', 10);
         const fuelType = url.searchParams.get('fuel_type') || '';
         const sort = url.searchParams.get('sort') || 'recommended';
 
@@ -62,6 +63,10 @@ export default {
           params.push(maxYear);
         }
 
+        if (minMileage > 0) {
+          sql += ' AND mileage >= ?';
+          params.push(minMileage);
+        }
         if (maxMileage < 999999) {
           sql += ' AND mileage <= ?';
           params.push(maxMileage);
@@ -72,16 +77,19 @@ export default {
           params.push(fuelType.trim());
         }
 
-        // 차마트 추천순 정렬 (우선노출 지정 -> 직영 보유(OWNED) -> 최신 등록순)
+        // DIRECTIVE 084: 가격·주행거리 정렬 최우선 개선 (순수 숫자 정렬 및 타이브레이커)
         if (sort === 'price_asc') {
-          sql += ' ORDER BY target_price ASC';
+          sql += ' ORDER BY CAST(target_price AS INTEGER) ASC, CAST(mileage AS INTEGER) ASC, year DESC';
         } else if (sort === 'price_desc') {
-          sql += ' ORDER BY target_price DESC';
-        } else if (sort === 'year_desc') {
-          sql += ' ORDER BY year DESC';
+          sql += ' ORDER BY CAST(target_price AS INTEGER) DESC, CAST(mileage AS INTEGER) ASC, year DESC';
         } else if (sort === 'mileage_asc') {
-          sql += ' ORDER BY mileage ASC';
+          sql += ' ORDER BY CAST(mileage AS INTEGER) ASC, CAST(target_price AS INTEGER) ASC, year DESC';
+        } else if (sort === 'mileage_desc') {
+          sql += ' ORDER BY CAST(mileage AS INTEGER) DESC, CAST(target_price AS INTEGER) ASC, year DESC';
+        } else if (sort === 'latest') {
+          sql += ' ORDER BY created_at DESC, id DESC';
         } else {
+          // 차마트 추천순: 우선노출 -> 직영 보유(OWNED) -> 최신 등록순
           sql += ` ORDER BY 
             is_priority_exposure DESC,
             (CASE 
