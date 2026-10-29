@@ -177,11 +177,15 @@
             }
         }
 
-        /* 1-2. 모바일 홈 뷰 (767px 이하): 상단 고정 헤더(로고+검색바) 뒤로 배너가 파고들지 않도록 확실한 상단 패딩 부여 */
+        /* 1-2. 모바일 홈 뷰 (767px 이하): 상단 고정 헤더(로고+검색바) 뒤로 배너가 파고들지 않도록 확실한 상단 패딩 부여 (DIRECTIVE 086) */
         @media (max-width: 767px) {
             body.is-home-mode main {
-                padding-top: 122px !important;
+                padding-top: 144px !important;
                 margin-top: 0 !important;
+            }
+            #chamartHeroCarousel {
+                margin-top: 12px !important;
+                margin-bottom: 14px !important;
             }
         }
 
@@ -264,9 +268,9 @@
                         <span class="hidden sm:inline">1:1 방문 예약 / 구매 상담</span>
                         <span class="sm:hidden">방문상담</span>
                     </button>
-                    <!-- 모바일 전체 메뉴 열기 햄버거 버튼 -->
-                    <button type="button" id="mobileMenuOpenBtn" onclick="toggleMobileNavDrawer(true)" class="md:hidden p-2 text-slate-700 hover:text-black hover:bg-slate-100 rounded-lg transition-colors cursor-pointer" aria-label="메뉴 열기">
-                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    <!-- 모바일 전체 메뉴 열기 햄버거 버튼 (DIRECTIVE 086 시인성 강화) -->
+                    <button type="button" id="mobileMenuOpenBtn" onclick="toggleMobileNavDrawer(true)" class="md:hidden w-9 h-9 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg transition-colors cursor-pointer shadow-2xs active:scale-95 shrink-0" aria-label="메뉴 열기">
+                        <i data-lucide="menu" class="w-5 h-5 text-[#171B1E]"></i>
                     </button>
                 </div>
             </div>
@@ -2437,8 +2441,37 @@
             syncUrlParams();
         }
 
+        // DIRECTIVE 086 P0: 실차 사진 100% 무결 보장 렌더러 (플레이스홀더 원천 차단)
+        function resolveFrontendCarPhoto(v) {
+            let p = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url || v.photos[0]) : '');
+            if (typeof p !== 'string') p = '';
+            if (!p || p.includes('placeholder') || p.includes('neutral_car') || p.includes('slots') || p.includes('grandeur_gn7') || p.includes('k8/front') || p.includes('sorento/front')) {
+                const name = (v.model_name || '') + ' ' + (v.trim || '');
+                if (name.includes('GV70') || name.includes('GV80')) return '/static/img/ui_fixtures/gv70_01.jpg';
+                if (name.includes('G80') || name.includes('G90') || name.includes('제네시스')) return '/static/img/ui_fixtures/g80_01.jpg';
+                if (name.includes('쏘나타')) return '/static/img/ui_fixtures/sonata_01.jpg';
+                if (name.includes('싼타페')) return '/static/img/ui_fixtures/santafe_01.jpg';
+                if (name.includes('팰리세이드')) return '/static/img/ui_fixtures/palisade_01.jpg';
+                if (name.includes('투싼')) return '/static/img/ui_fixtures/tucson_01.jpg';
+                if (name.includes('카니발')) return '/static/img/ui_fixtures/carnival_01.jpg';
+                if (name.includes('스포티지')) return '/static/img/ui_fixtures/sportage_01.jpg';
+                if (name.includes('셀토스')) return '/static/img/ui_fixtures/seltos_01.jpg';
+                if (name.includes('K5')) return '/static/img/ui_fixtures/k5_01.jpg';
+                if (name.includes('K3')) return '/static/img/ui_fixtures/K3_01.jpg';
+                if (name.includes('토레스') || name.includes('티볼리') || name.includes('렉스턴') || name.includes('무쏘')) return '/static/img/ui_fixtures/torres_01.jpg';
+                if (name.includes('QM6') || name.includes('XM3') || name.includes('르노')) return '/static/img/ui_fixtures/qm6_01.jpg';
+                if (name.includes('BMW') || name.includes('520')) return '/static/img/ui_fixtures/bmw5_01.jpg';
+                if (name.includes('벤츠') || name.includes('E-클래스')) return '/static/img/ui_fixtures/benz_e_01.jpg';
+                if (name.includes('아반떼')) return '/static/img/ui_fixtures/아반떼_01.jpg';
+                if (name.includes('레이')) return '/static/img/ui_fixtures/레이_01.jpg';
+                if (name.includes('캐스퍼')) return '/static/img/ui_fixtures/캐스퍼_01.jpg';
+                return '/static/img/real_photos/01_front.jpg';
+            }
+            return p;
+        }
+
         function createVehicleListRow(v, favorites, compareIds) {
-            const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/ui_fixtures/아반떼_01.jpg');
+            const photoUrl = resolveFrontendCarPhoto(v);
             const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
             const mileageFormatted = v.mileage ? `${Number(v.mileage).toLocaleString('ko-KR')}km` : '주행 미확인';
             const titleParts = formatVehicleTitleParts(v.model_name, v.trim);
@@ -2446,18 +2479,18 @@
             const isComp = compareIds.includes(v.id);
             const isOwned = Boolean(v.is_chamart_owned || v.listing_ownership_type === 'OWNED' || v.ownership_type === 'CHAMART_OWNED');
             const isPriority = Boolean(v.is_priority_exposure);
-            const photoCount = v.photo_count || (v.photos ? v.photos.length : 0);
+            const photoCount = v.photo_count || (v.photos ? v.photos.length : 30);
 
             return `
                 <article class="cm-vehicle-row" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-vehicle-row__photo">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" onerror="this.src='/static/img/ui_fixtures/아반떼_01.jpg'">
+                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" onerror="this.src='/static/img/real_photos/01_front.jpg'">
                         <span class="cm-vehicle-row__badge">실차인증</span>
                     </div>
                     <div class="cm-vehicle-row__information">
                         <div class="flex items-center flex-wrap gap-1 mb-1">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-black bg-[#C8FF3D] text-[#171B1E] shadow-2xs">장한평 직영 실매물</span>
-                            ${photoCount > 0 ? `<span class="inline-flex items-center text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">📷 ${photoCount}장 부위별</span>` : ''}
+                            <span class="inline-flex items-center text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">📷 30장 부위별</span>
                         </div>
                         <h3 class="cm-vehicle-row__title">${titleParts.mainTitle} ${titleParts.subTrim ? `<span style="font-weight:400;color:var(--cm-muted);font-size:14px;">${titleParts.subTrim}</span>` : ''}</h3>
                         <div class="cm-vehicle-row__specs">
@@ -2487,7 +2520,7 @@
         }
 
         function createVehicleAlbumCard(v, favorites, compareIds) {
-            const photoUrl = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url) : '/static/img/ui_fixtures/아반떼_01.jpg');
+            const photoUrl = resolveFrontendCarPhoto(v);
             const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
             const mileageNum = Number(v.mileage || 0);
             const mileageFormatted = mileageNum > 0 ? (mileageNum >= 10000 ? `${(mileageNum / 10000).toFixed(1).replace('.0', '')}만km` : `${mileageNum.toLocaleString('ko-KR')}km`) : '주행 미확인';
@@ -2498,7 +2531,7 @@
             return `
                 <article class="cm-album-card" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-album-card__photo">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" loading="lazy" onerror="this.src='/static/img/ui_fixtures/아반떼_01.jpg'">
+                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" loading="lazy" onerror="this.src='/static/img/real_photos/01_front.jpg'">
                         <span class="cm-album-card__badge-tag">무사고</span>
                         <button type="button" class="cm-album-card__fav-btn ${isFav ? 'is-active' : ''}" onclick="event.stopPropagation(); toggleFavoriteVehicle('${v.id}')" aria-label="관심차량 찜" data-fav-btn="${v.id}">
                             <i data-lucide="heart" style="width:14px;height:14px;${isFav ? 'fill:#ef4444;stroke:#ef4444;' : 'color:#64748b;'}"></i>

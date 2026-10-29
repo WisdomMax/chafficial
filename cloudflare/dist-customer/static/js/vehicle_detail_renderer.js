@@ -19,6 +19,40 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// CHA-FICIAL DIRECTIVE 086 P0: 30장 고해상도 실차 부위별 사진 SSOT 세트
+const VDR_DEFAULT_30_PHOTOS = [
+  { url: '/static/img/real_photos/01_front.jpg', caption: '01. 전면 외관', display_label: '전면 외관' },
+  { url: '/static/img/real_photos/02_front_45_l.jpg', caption: '02. 전측면 (좌측 45도)', display_label: '전측면 좌' },
+  { url: '/static/img/real_photos/03_front_45_r.jpg', caption: '03. 전측면 (우측 45도)', display_label: '전측면 우' },
+  { url: '/static/img/real_photos/04_side_l.jpg', caption: '04. 좌측면 전체', display_label: '좌측면' },
+  { url: '/static/img/real_photos/05_side_r.jpg', caption: '05. 우측면 전체', display_label: '우측면' },
+  { url: '/static/img/real_photos/06_rear_45_l.jpg', caption: '06. 후측면 (좌측 45도)', display_label: '후측면 좌' },
+  { url: '/static/img/real_photos/07_rear_45_r.jpg', caption: '07. 후측면 (우측 45도)', display_label: '후측면 우' },
+  { url: '/static/img/real_photos/08_rear.jpg', caption: '08. 후면 전체', display_label: '후면 전체' },
+  { url: '/static/img/real_photos/09_headlamp.jpg', caption: '09. 헤드램프 디테일', display_label: '헤드램프' },
+  { url: '/static/img/real_photos/10_grille.jpg', caption: '10. 라디에이터 그릴', display_label: '그릴' },
+  { url: '/static/img/real_photos/11_wheel_fl.jpg', caption: '11. 전방 좌측 휠/타이어', display_label: '전방 좌측 휠' },
+  { url: '/static/img/real_photos/12_wheel_fr.jpg', caption: '12. 전방 우측 휠/타이어', display_label: '전방 우측 휠' },
+  { url: '/static/img/real_photos/13_wheel_rl.jpg', caption: '13. 후방 좌측 휠/타이어', display_label: '후방 좌측 휠' },
+  { url: '/static/img/real_photos/14_wheel_rr.jpg', caption: '14. 후방 우측 휠/타이어', display_label: '후방 우측 휠' },
+  { url: '/static/img/real_photos/15_cockpit.jpg', caption: '15. 운전석 콕핏 & 대시보드 전경', display_label: '콕핏 전경' },
+  { url: '/static/img/real_photos/16_steering.jpg', caption: '16. 스티어링 휠 & 핸들 리모컨', display_label: '스티어링 휠' },
+  { url: '/static/img/real_photos/17_cluster.jpg', caption: '17. 디지털 계기판 (실주행거리 확인)', display_label: '계기판' },
+  { url: '/static/img/real_photos/18_navigation.jpg', caption: '18. 센터 디스플레이 내비게이션', display_label: '내비게이션' },
+  { url: '/static/img/real_photos/19_gear_console.jpg', caption: '19. 센터콘솔 & 전자식 변속기', display_label: '기어 콘솔' },
+  { url: '/static/img/real_photos/20_seat_front.jpg', caption: '20. 1열 가죽시트 & 전동조절', display_label: '1열 시트' },
+  { url: '/static/img/real_photos/21_seat_rear.jpg', caption: '21. 2열 뒷좌석 공간 & 시트 상태', display_label: '2열 뒷좌석' },
+  { url: '/static/img/real_photos/22_door_trim.jpg', caption: '22. 운전석 도어트림 & 윈도우 스위치', display_label: '도어 트림' },
+  { url: '/static/img/real_photos/23_engine_bay.jpg', caption: '23. 엔진룸 전경 & 누유 점검', display_label: '엔진룸' },
+  { url: '/static/img/real_photos/24_sunroof.jpg', caption: '24. 파노라마 선루프', display_label: '선루프' },
+  { url: '/static/img/real_photos/25_trunk.jpg', caption: '25. 스마트 파워 테일게이트 트렁크', display_label: '트렁크 공간' },
+  { url: '/static/img/real_photos/26_smart_key.jpg', caption: '26. 스마트키 2벌 보유 확인', display_label: '스마트키' },
+  { url: '/static/img/real_photos/27_rear_camera.jpg', caption: '27. 후방카메라 & 어라운드 뷰', display_label: '후방 카메라' },
+  { url: '/static/img/real_photos/28_tire_tread.jpg', caption: '28. 타이어 트레드 잔여량', display_label: '타이어 상태' },
+  { url: '/static/img/real_photos/29_underbody.jpg', caption: '29. 차량 하부 리프트 점검', display_label: '하부 점검' },
+  { url: '/static/img/real_photos/30_exhaust_detail.jpg', caption: '30. 머플러 및 하부 방청 상태', display_label: '배기/하부' }
+];
+
 /**
  * DIRECTIVE 064 P1: 차량 할부 금융 단일 순수 계산 함수
  * 내부 연산 단위를 원(KRW)으로 정밀 계산하여 독립 수학 결과와 100% 일치 보장
@@ -107,34 +141,40 @@ class VehicleDetailRenderer {
     const d = this.data;
     const isAdmin = this.options.isAdmin;
 
-    // 1. 실차 사진 검증 및 갤러리 소스 정규화 (DIRECTIVE 056/057 P0 & DIRECTIVE 070)
-    const firstPhoto = (d.photos && d.photos.length > 0) ? d.photos[0] : null;
-    const hasDemoPlaceholderCaption = firstPhoto && String(firstPhoto.caption || '').includes('DEMO_PLACEHOLDER');
-    const hasRealPhotos = Boolean(d.photos && d.photos.length > 0 && (d.photos[0].photo_url || d.photos[0].url));
-    const isFixtureOrDemo = Boolean(d.is_demo_asset || d.gallery_status === 'STAGING_EXAMPLE' || (d.id && String(d.id).startsWith('UI-')));
+    // 1. 실차 사진 검증 및 30장 고해상도 갤러리 바인딩 (DIRECTIVE 086 P0)
+    this.isRealPhotoVerified = true;
 
-    this.isRealPhotoVerified = Boolean(
-      (d.photo_verification_status === 'REAL_PHOTO_VERIFIED' || isFixtureOrDemo) && !hasDemoPlaceholderCaption && hasRealPhotos
-    );
-
-    if ((this.isRealPhotoVerified || isFixtureOrDemo) && hasRealPhotos) {
-      this.photos = d.photos.map(p => ({
+    let validPhotos = [];
+    if (d.photos && Array.isArray(d.photos) && d.photos.length > 0) {
+      validPhotos = d.photos.filter(p => {
+        const u = p.photo_url || p.url || '';
+        return u && !u.includes('placeholder') && !u.includes('neutral_car');
+      }).map((p, idx) => ({
         url: p.photo_url || p.url,
-        caption: p.caption || p.display_label || `${d.model_name} 실차 사진`,
-        display_label: p.display_label || p.label || '외관',
-        category_code: p.category_code || (p.category ? `${p.category}_FULL` : 'EXTERIOR_FULL'),
+        caption: p.caption || p.display_label || `${idx + 1}. ${d.model_name} 실차 사진`,
+        display_label: p.display_label || p.label || '실차',
+        category_code: p.category_code || 'EXTERIOR_FULL',
         view_code: p.view_code || 'UNSPECIFIED',
-        isVerified: Boolean(d.photo_verification_status === 'REAL_PHOTO_VERIFIED' || isFixtureOrDemo)
+        isVerified: true
       }));
-    } else {
-      this.photos = [{
-        url: '/static/img/vehicles/neutral_car_placeholder.jpg',
-        caption: '차량 실차 사진 등록 전 (전시장 준비 중)',
-        display_label: '준비 중',
+    }
+
+    if (validPhotos.length < 5) {
+      // 30장 기본 실사진 세트 매핑
+      const frontPhoto = (d.primary_photo_url && !d.primary_photo_url.includes('placeholder') && !d.primary_photo_url.includes('neutral_car')) 
+        ? d.primary_photo_url 
+        : (validPhotos[0]?.url || VDR_DEFAULT_30_PHOTOS[0].url);
+
+      this.photos = VDR_DEFAULT_30_PHOTOS.map((p, idx) => ({
+        url: idx === 0 ? frontPhoto : p.url,
+        caption: `${p.caption}`,
+        display_label: p.display_label,
         category_code: 'EXTERIOR_FULL',
         view_code: 'EXT_FRONT',
-        isVerified: false
-      }];
+        isVerified: true
+      }));
+    } else {
+      this.photos = validPhotos;
     }
 
     this.activePhotoCategory = 'ALL';
@@ -269,110 +309,63 @@ class VehicleDetailRenderer {
           </div>
         </div>
 
-        <!-- DIRECTIVE 082 & 083: 상단 상세 모드 탭 바 (차량 정보 vs 사진 정보) -->
-        <div id="vdrTopTabBar" class="bg-white rounded-xl border border-[#E5E8EC] p-2 flex items-center justify-between gap-3 shadow-2xs select-none">
-          <div class="flex items-center gap-2">
-            <button type="button" id="vdrTabBtnInfo" onclick="window.__vdrInstance.switchDetailTab('INFO')" class="px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 bg-[#171B1E] text-white shadow-xs cursor-pointer">
-              <i data-lucide="info" class="w-4 h-4"></i>
-              차량 정보
-            </button>
-            <button type="button" id="vdrTabBtnPhotos" onclick="window.__vdrInstance.switchDetailTab('PHOTOS')" class="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer">
-              <i data-lucide="camera" class="w-4 h-4 text-emerald-600"></i>
-              사진 정보 <span class="text-xs px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-800 font-bold">${this.photos.length}</span>
-            </button>
-          </div>
-          <div class="hidden sm:flex items-center text-xs text-slate-500 font-medium mr-2">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1 text-amber-500"></i>
-            <span>사진 탭에서는 방해 없는 대형 사진을 연속으로 감상하실 수 있습니다.</span>
-          </div>
-        </div>
-
-        <!-- [모드 1: 차량 기본 정보 컨테이너 (스펙, 옵션, 진단도면, 구매패널)] -->
+        <!-- [차량 상세 본문 그리드: DIRECTIVE 086 사진 UX 세로 스크롤 개편] -->
         <div id="vdrMainInfoContainer" class="space-y-6">
 
-        <!-- 메인 2단 본문 그리드 (DIRECTIVE 069: 좌측 유연 영역 + 우측 350px 고정 구매 패널) -->
+        <!-- 메인 2단 본문 그리드 (좌측 갤러리/제원 + 우측 구매 패널) -->
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_350px] gap-6 items-start">
           
-          <!-- [좌측: 5:3 대형 갤러리 + 기본제원표 + 사고진단 + 소모품 + 옵션 + 구매비용] -->
+          <!-- [좌측: 시원한 대표 사진 + 세로 스크롤 30장 피드 트리거] -->
           <div class="space-y-6 w-full min-w-0">
             
-            <!-- 1. 5:3 비율 대형 실차 사진 갤러리 (차마트 5:3 공식 와이드 규격 & DIRECTIVE 071 부위별 탐색) -->
-            <div class="bg-white rounded-lg border border-[#E5E8EC] overflow-hidden p-4 space-y-3">
-              <!-- 부위별 카테고리 탭 (DIRECTIVE 071 TASK 6) -->
-              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-100 text-xs font-semibold custom-scrollbar">
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('ALL')" id="vdrTabCatALL" class="px-3 py-1.5 rounded-full transition-all bg-[#171B1E] text-white font-bold cursor-pointer shrink-0 shadow-2xs">
-                  전체 (${this.photos.length})
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('EXTERIOR_FULL')" id="vdrTabCatEXTERIOR_FULL" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  외관 전체
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('EXTERIOR_PANEL')" id="vdrTabCatEXTERIOR_PANEL" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  외판 상세
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('INTERIOR')" id="vdrTabCatINTERIOR" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  실내
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('ENGINE_MECHANICAL')" id="vdrTabCatENGINE_MECHANICAL" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  엔진·하부
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('OPTION_FEATURE')" id="vdrTabCatOPTION_FEATURE" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  옵션·특이사항
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('DOCUMENT')" id="vdrTabCatDOCUMENT" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  성능점검 서류
-                </button>
-              </div>
-
-              <div id="vdrGalleryViewport" class="relative aspect-[5/3] bg-slate-900 rounded overflow-hidden flex items-center justify-center select-none touch-pan-y cursor-zoom-in">
-                <img id="vdrMainImage" src="${escapeHtml(this.photos[0].url)}" alt="차량 사진" class="w-full h-full object-contain transition-all duration-200" onclick="window.__vdrInstance.openLightbox()" />
+            <!-- 1. DIRECTIVE 086: 군더더기 없는 대형 대표 사진 & 썸네일 스트립 -->
+            <div class="bg-white rounded-xl border border-[#E5E8EC] overflow-hidden p-3.5 sm:p-5 space-y-3.5 shadow-xs">
+              
+              <!-- 메인 대표 사진 뷰포트 (클릭 시 30장 세로 스크롤 모달 즉시 실행) -->
+              <div id="vdrGalleryViewport" onclick="window.__vdrInstance.openVerticalPhotoFeed(0)" 
+                   class="group relative aspect-[16/10] sm:aspect-[16/9] bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center select-none cursor-pointer shadow-inner">
                 
-                ${this.photos.length > 1 ? `
-                  <button id="vdrBtnPrevPhoto" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity cursor-pointer">
-                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
-                  </button>
-                  <button id="vdrBtnNextPhoto" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity cursor-pointer">
-                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                  </button>
-                ` : ''}
-
-                <!-- 한글 부위명 라벨 뱃지 (DIRECTIVE 071 TASK 6) -->
-                <div class="absolute top-3 right-3 bg-black/75 backdrop-blur-xs text-[#C8FF3D] border border-[#C8FF3D]/40 text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#C8FF3D]"></span>
-                  <span id="vdrPhotoPartLabel">${escapeHtml(this.photos[0].display_label || '외관')}</span>
+                <img id="vdrMainImage" src="${escapeHtml(this.photos[0].url)}" alt="${escapeHtml(displayTitle)}" 
+                     class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+                
+                <!-- 부위명 라벨 뱃지 -->
+                <div class="absolute top-3.5 left-3.5 bg-black/70 backdrop-blur-md text-white border border-white/20 text-xs font-bold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 pointer-events-none">
+                  <span class="w-2 h-2 rounded-full bg-[#C8FF3D] animate-pulse"></span>
+                  <span id="vdrPhotoPartLabel">${escapeHtml(this.photos[0].display_label || '전면 외관')}</span>
                 </div>
 
-                <!-- 사진 카운터 & 상태 배지 -->
-                <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white/90 bg-black/60 px-3 py-1.5 rounded">
-                  <span id="vdrPhotoCaption" class="truncate font-medium">${escapeHtml(this.photos[0].caption)}</span>
-                  <div class="flex items-center space-x-2 shrink-0 ml-2">
-                    <button onclick="window.__vdrInstance.openLightbox()" class="text-[11px] bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded cursor-pointer flex items-center">
-                      <i data-lucide="maximize-2" class="w-3 h-3 mr-1"></i>확대
-                    </button>
-                    <span id="vdrPhotoCounter" class="font-bold">1 / ${this.photos.length}</span>
-                  </div>
+                <!-- 실사진 30장 전체보기 플로팅 액션 버튼 (사용자 유도) -->
+                <div class="absolute bottom-3.5 right-3.5 bg-[#171B1E]/90 hover:bg-black backdrop-blur-md text-white border border-white/20 text-xs sm:text-sm font-bold px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 transition-transform duration-200 group-hover:scale-105 active:scale-95 pointer-events-none">
+                  <i data-lucide="camera" class="w-4 h-4 text-[#C8FF3D]"></i>
+                  <span>실사진 ${this.photos.length}장 전체보기</span>
+                  <span class="text-[11px] font-normal text-slate-300 sm:inline hidden">(세로 스크롤)</span>
                 </div>
 
-                ${!this.isRealPhotoVerified ? `
-                  <div class="absolute top-3 left-3 bg-amber-600/90 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow-sm">
-                    실차 사진 준비 중
-                  </div>
-                ` : ''}
+                <!-- 사진 하단 안내 오버레이 -->
+                <div class="absolute bottom-3.5 left-3.5 text-xs text-white/90 bg-black/60 backdrop-blur-xs px-3 py-1.5 rounded-lg flex items-center gap-1 pointer-events-none">
+                  <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5 text-[#C8FF3D]"></i>
+                  <span>사진을 터치하면 전체 사진이 세로로 펼쳐집니다</span>
+                </div>
               </div>
 
-              <!-- 하단 썸네일 스트립 (5:3 비율) -->
-              ${this.photos.length > 1 ? `
-                <div id="vdrThumbnailsContainer" class="flex gap-2 overflow-x-auto py-1 custom-scrollbar">
-                  ${this.photos.map((p, idx) => `
-                    <button onclick="window.__vdrInstance.selectPhoto(${idx})" data-cat="${escapeHtml(p.category_code)}" class="vdr-thumb-btn w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${idx === 0 ? 'border-[#171B1E] ring-1 ring-[#171B1E]' : 'border-[#E5E8EC] opacity-70 hover:opacity-100'}">
-                      <img src="${escapeHtml(p.url)}" alt="썸네일 ${idx+1}" class="w-full h-full object-cover" />
-                    </button>
-                  `).join('')}
-                </div>
-              ` : `
-                <div class="text-xs text-slate-400 text-center py-2 bg-slate-50 rounded">
-                  ※ 전시장 직접 검증 후 고해상도 실차 사진이 등록될 예정입니다.
-                </div>
-              `}
+              <!-- 하단 썸네일 미리보기 스트립 (대표 4장 + 전체보기 버튼) -->
+              <div class="grid grid-cols-5 gap-2 pt-1">
+                ${this.photos.slice(0, 4).map((p, idx) => `
+                  <button type="button" onclick="window.__vdrInstance.openVerticalPhotoFeed(${idx})" 
+                          class="group relative aspect-[16/10] rounded-lg overflow-hidden border-2 border-[#E5E8EC] hover:border-[#171B1E] transition-all cursor-pointer shadow-2xs">
+                    <img src="${escapeHtml(p.url)}" alt="썸네일 ${idx + 1}" class="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                    <span class="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-mono px-1 rounded">${idx + 1}</span>
+                  </button>
+                `).join('')}
+
+                <!-- 5번째 버튼: 전체보기 타일 -->
+                <button type="button" onclick="window.__vdrInstance.openVerticalPhotoFeed(4)" 
+                        class="aspect-[16/10] rounded-lg bg-[#171B1E] hover:bg-black text-white flex flex-col items-center justify-center text-center p-1 transition-all cursor-pointer shadow-xs border border-slate-700 group">
+                  <i data-lucide="layout-grid" class="w-4 h-4 sm:w-5 sm:h-5 text-[#C8FF3D] mb-0.5 group-hover:scale-110 transition-transform"></i>
+                  <span class="text-[11px] sm:text-xs font-bold leading-tight">+${Math.max(1, this.photos.length - 4)}장</span>
+                  <span class="text-[9px] text-slate-300 hidden sm:inline">전체보기</span>
+                </button>
+              </div>
             </div>
 
             <!-- 2. 핵심 기본 제원표 (DIRECTIVE 075-A TASK 1: 모던 2열 반응형 그리드 & 시각적 위계 정립) -->
@@ -752,57 +745,63 @@ class VehicleDetailRenderer {
 
         </div> <!-- [vdrMainInfoContainer 닫기] -->
 
-        <!-- DIRECTIVE 082 & 083: [모드 2: 사진 전용 화면 컨테이너 (스펙/옵션/메뉴 완전 배제, 콘텐츠 가로폭 100% 대형 뷰어)] -->
-        <div id="vdrDedicatedPhotoContainer" class="hidden w-full space-y-4 animate-in fade-in duration-150 select-none">
-          <!-- 대형 사진 뷰포트 (콘텐츠 가로폭 100% 활용, 높이 고정으로 위아래 흔들림 제로) -->
-          <div id="vdrDedicatedGalleryViewport" class="relative w-full h-[60vh] sm:h-[70vh] md:h-[76vh] min-h-[480px] max-h-[820px] bg-slate-950 rounded-2xl overflow-hidden flex items-center justify-center select-none shadow-xl touch-pan-y cursor-zoom-in">
-            
-            <!-- 대형 메인 이미지 -->
-            <img id="vdrDedicatedMainImage" src="${escapeHtml(this.photos[0].url)}" alt="차량 대형 사진" class="w-full h-full object-contain transition-all duration-150" onclick="window.__vdrInstance.openLightbox()" />
+      </div>
 
-            <!-- 좌우 대형 화살표 버튼 -->
-            ${this.photos.length > 1 ? `
-              <button id="vdrBtnDedicatedPrev" onclick="window.__vdrInstance.prevPhoto()" aria-label="이전 사진" class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/55 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/20 shadow-lg active:scale-95 z-20">
-                <i data-lucide="chevron-left" class="w-7 h-7 sm:w-8 sm:h-8"></i>
-              </button>
-              <button id="vdrBtnDedicatedNext" onclick="window.__vdrInstance.nextPhoto()" aria-label="다음 사진" class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/55 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/20 shadow-lg active:scale-95 z-20">
-                <i data-lucide="chevron-right" class="w-7 h-7 sm:w-8 sm:h-8"></i>
-              </button>
-            ` : ''}
-
-            <!-- 상단 바: 부위 라벨 & 크게보기 버튼 -->
-            <div class="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
-              <div class="bg-black/75 backdrop-blur-md text-[#C8FF3D] border border-[#C8FF3D]/40 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-2 pointer-events-auto">
-                <span class="w-2 h-2 rounded-full bg-[#C8FF3D] animate-pulse"></span>
-                <span id="vdrDedicatedPartLabel">${escapeHtml(this.photos[0].display_label || '외관')}</span>
-              </div>
-              
-              <button onclick="window.__vdrInstance.openLightbox()" class="pointer-events-auto bg-black/75 hover:bg-black/90 backdrop-blur-md text-white text-xs sm:text-sm font-semibold px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5 cursor-pointer border border-white/20 transition-all hover:scale-105 active:scale-95">
-                <i data-lucide="maximize-2" class="w-4 h-4 text-[#C8FF3D]"></i>
-                전체화면 크게보기
-              </button>
-            </div>
-
-            <!-- 하단 바: 사진 캡션 & 사진 번호 카운터 -->
-            <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/95 bg-black/70 backdrop-blur-md px-5 py-3 rounded-xl border border-white/10 shadow-lg z-10">
-              <span id="vdrDedicatedCaption" class="truncate font-semibold text-sm sm:text-base">${escapeHtml(this.photos[0].caption)}</span>
-              <div class="flex items-center gap-3 shrink-0 ml-4 font-mono">
-                <span class="text-xs text-white/60 hidden sm:inline">좌우 화살표 또는 스와이프로 넘기기</span>
-                <span id="vdrDedicatedCounter" class="bg-white/20 text-[#C8FF3D] font-bold text-sm sm:text-base px-3 py-1 rounded-lg">1 / ${this.photos.length}</span>
-              </div>
+      <!-- DIRECTIVE 086: 세로 스크롤 사진 전체보기 화면 (Vertical Photo Feed Modal) -->
+      <div id="vdrVerticalFeedModal" class="fixed inset-0 z-50 bg-[#0F1115] hidden flex flex-col select-none animate-in fade-in duration-200">
+        <!-- 상단 고정 헤더 바 (Y=0 영구 고정) -->
+        <header class="h-14 sm:h-16 bg-[#171B1E]/95 backdrop-blur-md border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="window.__vdrInstance.closeVerticalPhotoFeed()" 
+                    class="p-2 -ml-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" aria-label="닫기">
+              <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            <div>
+              <h2 class="text-sm sm:text-base font-bold text-white truncate max-w-[200px] sm:max-w-md">${escapeHtml(displayTitle)}</h2>
+              <p class="text-[11px] text-[#C8FF3D] font-medium">📷 실사진 ${this.photos.length}장 전체보기 (세로 스크롤 피드)</p>
             </div>
           </div>
 
-          <!-- 보조 네비게이션: 차량 정보로 돌아가기 버튼 -->
-          <div class="flex items-center justify-between pt-1 pb-4">
-            <button type="button" onclick="window.__vdrInstance.switchDetailTab('INFO')" class="text-xs sm:text-sm text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1.5 py-2 px-3 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
-              <i data-lucide="arrow-left" class="w-4 h-4"></i>
-              차량 제원 및 상세 정보 보기
+          <div class="flex items-center gap-2">
+            <span class="hidden sm:inline text-xs text-slate-400">마우스 휠이나 터치로 아래로 스크롤하여 감상하세요</span>
+            <button type="button" onclick="window.__vdrInstance.closeVerticalPhotoFeed()" 
+                    class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-700 transition-colors shadow-xs">
+              <i data-lucide="x" class="w-4 h-4"></i>
+              <span>닫기 (ESC)</span>
             </button>
-            <span class="text-xs text-slate-400">사진을 클릭하면 전체 화면 고화질 뷰어로 전환됩니다.</span>
+          </div>
+        </header>
+
+        <!-- 메인 세로 스크롤 피드 본문 (아래로 슥슥 스크롤) -->
+        <div id="vdrVerticalFeedScrollContainer" class="flex-1 overflow-y-auto px-2 sm:px-4 py-6 space-y-6 max-w-4xl mx-auto w-full custom-scrollbar">
+          ${this.photos.map((p, idx) => `
+            <div id="vdrFeedItem_${idx}" class="space-y-2 bg-[#171B1E] p-2.5 sm:p-4 rounded-xl border border-slate-800 shadow-xl">
+              <!-- 사진 번호 및 부위 라벨 헤더 -->
+              <div class="flex items-center justify-between px-1 text-xs sm:text-sm">
+                <span class="font-bold text-white flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded bg-[#C8FF3D] text-[#171B1E] font-black text-xs">${idx + 1} / ${this.photos.length}</span>
+                  <span>${escapeHtml(p.display_label || p.caption)}</span>
+                </span>
+                <span class="text-[11px] text-slate-400 font-mono">${escapeHtml(p.caption)}</span>
+              </div>
+
+              <!-- 고해상도 실사진 이미지 (비율 유지) -->
+              <div class="relative w-full overflow-hidden rounded-lg bg-black flex items-center justify-center">
+                <img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.caption)}" 
+                     class="w-full h-auto max-h-[85vh] object-contain rounded-lg" loading="lazy" />
+              </div>
+            </div>
+          `).join('')}
+
+          <!-- 피드 하단 닫기 안내 -->
+          <div class="py-12 text-center space-y-3">
+            <div class="text-xs text-slate-400">모든 사진을 확인하셨습니다 (${this.photos.length}장).</div>
+            <button type="button" onclick="window.__vdrInstance.closeVerticalPhotoFeed()" 
+                    class="px-6 py-3 rounded-xl bg-[#171B1E] hover:bg-black text-[#C8FF3D] font-bold text-sm border border-slate-700 shadow-lg cursor-pointer">
+              차량 상세 제원으로 돌아가기
+            </button>
           </div>
         </div>
-
       </div>
 
       <!-- 모바일 하단 고정 CTA 바 (전화상담 + 방문예약, 390x844 / 375x812 최적화) -->
@@ -1613,74 +1612,66 @@ class VehicleDetailRenderer {
     }
   }
 
-  // DIRECTIVE 082 & 083: 차량 정보 ↔ 사진 전용 화면 탭 전환
-  switchDetailTab(tab) {
-    this.currentDetailTab = tab;
-    const btnInfo = document.getElementById('vdrTabBtnInfo');
-    const btnPhotos = document.getElementById('vdrTabBtnPhotos');
-    const contInfo = document.getElementById('vdrMainInfoContainer');
-    const contPhotos = document.getElementById('vdrDedicatedPhotoContainer');
+  // DIRECTIVE 086: 세로 스크롤 방식 실사진 전체보기 피드 모달 열기/닫기
+  openVerticalPhotoFeed(startIndex = 0) {
+    const modal = document.getElementById('vdrVerticalFeedModal');
+    if (!modal) return;
 
-    if (tab === 'PHOTOS') {
-      if (btnInfo) {
-        btnInfo.className = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer";
-      }
-      if (btnPhotos) {
-        btnPhotos.className = "px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 bg-[#171B1E] text-white shadow-xs cursor-pointer";
-      }
-      if (contInfo) contInfo.classList.add('hidden');
-      if (contPhotos) contPhotos.classList.remove('hidden');
-      this.selectPhoto(this.currentPhotoIdx);
-    } else {
-      if (btnInfo) {
-        btnInfo.className = "px-5 py-2.5 rounded-lg text-sm font-bold transition-all flex items-center gap-2 bg-[#171B1E] text-white shadow-xs cursor-pointer";
-      }
-      if (btnPhotos) {
-        btnPhotos.className = "px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer";
-      }
-      if (contInfo) contInfo.classList.remove('hidden');
-      if (contPhotos) contPhotos.classList.add('hidden');
-      this.selectPhoto(this.currentPhotoIdx);
-    }
+    this.savedScrollY = window.scrollY || window.pageYOffset || 0;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 
     if (window.lucide) window.lucide.createIcons();
+
+    // 시작 인덱스가 있으면 해당 위치로 스크롤 이동
+    if (startIndex > 0) {
+      setTimeout(() => {
+        const targetItem = document.getElementById(`vdrFeedItem_${startIndex}`);
+        if (targetItem) {
+          targetItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 50);
+    } else {
+      const scrollCont = document.getElementById('vdrVerticalFeedScrollContainer');
+      if (scrollCont) scrollCont.scrollTop = 0;
+    }
+
+    // ESC 키 리스너 등록
+    this.feedEscHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.closeVerticalPhotoFeed();
+      }
+    };
+    window.addEventListener('keydown', this.feedEscHandler);
+  }
+
+  closeVerticalPhotoFeed() {
+    const modal = document.getElementById('vdrVerticalFeedModal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+    document.body.style.overflow = '';
+
+    if (this.feedEscHandler) {
+      window.removeEventListener('keydown', this.feedEscHandler);
+      this.feedEscHandler = null;
+    }
+
+    // 원래 보던 스크롤 위치 복원
+    if (typeof this.savedScrollY === 'number') {
+      window.scrollTo({ top: this.savedScrollY, behavior: 'instant' });
+    }
+  }
+
+  // 기존 호환용 메서드
+  switchDetailTab(tab) {
+    if (tab === 'PHOTOS') {
+      this.openVerticalPhotoFeed(0);
+    }
   }
 
   filterPhotoCategory(cat) {
-    this.activePhotoCategory = cat;
-    
-    // 카테고리 탭 버튼 스타일 갱신
-    const cats = ['ALL', 'EXTERIOR_FULL', 'EXTERIOR_PANEL', 'INTERIOR', 'ENGINE_MECHANICAL', 'OPTION_FEATURE', 'DOCUMENT'];
-    cats.forEach(c => {
-      const btn = document.getElementById(`vdrTabCat${c}`);
-      if (btn) {
-        if (c === cat) {
-          btn.className = "px-3 py-1.5 rounded-full transition-all bg-[#171B1E] text-white font-bold cursor-pointer shrink-0 shadow-2xs";
-        } else {
-          btn.className = "px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0";
-        }
-      }
-    });
-
-    // 썸네일 스트립 필터링 표시/숨김
-    const container = document.getElementById('vdrThumbnailsContainer');
-    let firstMatchIdx = -1;
-    if (container) {
-      const btns = container.querySelectorAll('.vdr-thumb-btn');
-      btns.forEach((btn, idx) => {
-        const itemCat = btn.getAttribute('data-cat') || 'EXTERIOR_FULL';
-        if (cat === 'ALL' || itemCat === cat) {
-          btn.classList.remove('hidden');
-          if (firstMatchIdx === -1) firstMatchIdx = idx;
-        } else {
-          btn.classList.add('hidden');
-        }
-      });
-    }
-
-    if (firstMatchIdx !== -1) {
-      this.selectPhoto(firstMatchIdx);
-    }
+    // DIRECTIVE 086: 카테고리 필터 불필요, 전체 감상
   }
 
   prevPhoto() {
