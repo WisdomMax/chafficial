@@ -13,7 +13,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="/static/js/vehicle_detail_renderer.js"></script>
+    <script src="/static/js/vehicle_detail_renderer.js?v=20261029_075a_final"></script>
     <!-- DIRECTIVE 069: 차마트 정밀 커머셜 리스팅 스타일시트 (화이트/차콜/라임) -->
     <link rel="stylesheet" href="/static/css/chamart-listing-v2.css">
     <style>
@@ -115,15 +115,17 @@
             }
         }
 
-        /* DIRECTIVE 071/072: PC 환경 전체 창 스크롤 차단 및 우측 배너+매물 통프레임 독립 스크롤 */
+        /* DIRECTIVE 071/072 & DIRECTIVE 075: 홈 뷰와 상세 뷰의 명확한 레이아웃 분리 */
+        
+        /* 1. 홈 뷰 (PC 768px 이상): 네비+검색 고정, 좌측 필터 고정, 우측 매물목록 프레임 독립 스크롤 */
         @media (min-width: 768px) {
-            html, body {
+            body.is-home-mode, html.is-home-mode {
                 height: 100vh !important;
                 max-height: 100vh !important;
                 overflow: hidden !important;
             }
 
-            #cmSiteHeader {
+            body.is-home-mode #cmSiteHeader {
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
@@ -131,7 +133,7 @@
                 z-index: 50 !important;
             }
 
-            main {
+            body.is-home-mode main {
                 position: fixed !important;
                 top: 148px !important;
                 bottom: 0 !important;
@@ -142,20 +144,19 @@
                 margin-top: 0 !important;
             }
 
-            #view-home {
+            body.is-home-mode #view-home {
                 height: 100% !important;
                 overflow: hidden !important;
             }
 
-            .cm-listing-layout {
+            body.is-home-mode .cm-listing-layout {
                 height: 100% !important;
                 overflow: hidden !important;
                 padding-top: 4px !important;
                 padding-bottom: 0 !important;
             }
 
-            /* 좌측 상세 검색 패널: 제자리 완전 고정 (필요시 내부 스크롤) - 배경 불투명 및 z-index 부여 */
-            .cm-filter-panel {
+            body.is-home-mode .cm-filter-panel {
                 height: 100% !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
@@ -166,8 +167,7 @@
                 z-index: 10 !important;
             }
 
-            /* 우측 메인 프레임: 배너 + 툴바 + 차량목록 + 쇼룸 + 푸터 통째로 독립 스크롤 */
-            .cm-listing-results {
+            body.is-home-mode .cm-listing-results {
                 height: 100% !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
@@ -175,18 +175,47 @@
                 padding-bottom: 40px !important;
                 scroll-behavior: smooth !important;
             }
+        }
 
-            /* 상세 뷰 독립 스크롤 지원 */
-            #view-detail {
-                height: 100% !important;
-                overflow-y: auto !important;
-                overflow-x: hidden !important;
-                padding-bottom: 40px !important;
-            }
+        /* 2. 상세 뷰 (PC 및 모바일 전 구간): 브라우저 표준 네이티브 윈도우 스크롤 및 Sticky 정상 작동 */
+        body.is-detail-mode, html.is-detail-mode {
+            height: auto !important;
+            min-height: 100vh !important;
+            max-height: none !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+
+        body.is-detail-mode #cmSiteHeader {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 50 !important;
+        }
+
+        body.is-detail-mode main {
+            position: static !important;
+            top: auto !important;
+            bottom: auto !important;
+            left: auto !important;
+            right: auto !important;
+            overflow: visible !important;
+            padding-top: 156px !important; /* 상단 고정 헤더 높이(약 150px) + 안전 여백 */
+            min-height: 100vh !important;
+            display: block !important;
+        }
+
+        body.is-detail-mode #view-detail {
+            height: auto !important;
+            min-height: 100vh !important;
+            overflow: visible !important;
+            display: block !important;
+            padding-bottom: 60px !important;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col bg-[#F5F6F4] text-[#171B1E]">
+<body class="min-h-screen flex flex-col bg-[#F5F6F4] text-[#171B1E] is-home-mode">
 
     <!-- [고정 상단 일체형 헤더 바: 네비게이션 + 검색바 (영구 고정 Y=0)] -->
     <header id="cmSiteHeader" class="bg-white/98 backdrop-blur-md border-b border-[#E5E8EC] fixed top-0 left-0 right-0 z-50 shadow-2xs">
@@ -671,7 +700,7 @@
     </main>
 
     <!-- 차마트 우측 플로팅 퀵 위젯 (최근 본 차량 + 3대 비교함 + Top 버튼) -->
-    <div id="encarQuickBar" class="hidden xl:flex flex-col fixed right-6 bottom-12 z-30 space-y-2 select-none">
+    <div id="chamartQuickBar" class="hidden xl:flex flex-col fixed right-6 bottom-12 z-30 space-y-2 select-none">
         <!-- 1. 비교함 위젯 (최대 3대) -->
         <button onclick="openCompareModalDirect()" id="quickCompareBtn" class="w-14 h-14 bg-white border border-[#E5E8EC] hover:border-[#176B68] rounded-xl shadow-md flex flex-col items-center justify-center text-slate-700 hover:text-[#176B68] transition-all cursor-pointer relative group">
             <i data-lucide="scale" class="w-5 h-5 mb-0.5 text-slate-600 group-hover:text-[#176B68]"></i>
@@ -1949,6 +1978,10 @@
         }
 
         function showHomeView() {
+            document.documentElement.classList.remove('is-detail-mode');
+            document.documentElement.classList.add('is-home-mode');
+            document.body.classList.remove('is-detail-mode');
+            document.body.classList.add('is-home-mode');
             document.getElementById('view-home').classList.remove('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             updateNavActive('home');
@@ -2112,7 +2145,7 @@
                 <article class="cm-vehicle-row" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-vehicle-row__photo">
                         <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" onerror="this.src='/static/img/vehicles/neutral_car_placeholder.jpg'">
-                        <span class="cm-vehicle-row__badge">${v.is_demo_asset ? 'UI검수' : '실차인증'}</span>
+                        <span class="cm-vehicle-row__badge">실차인증</span>
                     </div>
                     <div class="cm-vehicle-row__information">
                         <div class="flex items-center flex-wrap gap-1 mb-1">
@@ -2161,11 +2194,7 @@
                 <article class="cm-album-card" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-album-card__photo">
                         <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" onerror="this.src='/static/img/vehicles/neutral_car_placeholder.jpg'">
-                        <span class="cm-vehicle-row__badge">${v.is_demo_asset ? 'UI검수' : '실차인증'}</span>
-                        <div class="absolute top-2 left-2 flex flex-col gap-1">
-                            ${isOwned ? '<span class="px-2 py-0.5 rounded text-[10px] font-black bg-[#C8FF3D] text-[#171B1E] shadow-2xs">차마트 보유</span>' : ''}
-                            ${isPriority ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#171B1E] text-white">우선매물</span>' : ''}
-                        </div>
+                        <span class="cm-vehicle-row__badge">실차인증</span>
                         <button type="button" class="cm-row-favorite ${isFav ? 'is-active' : ''}" style="position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.9);" onclick="event.stopPropagation(); toggleFavoriteVehicle('${v.id}')" aria-label="관심차량 찜" data-fav-btn="${v.id}">
                             <i data-lucide="heart" style="width:15px;height:15px;${isFav ? 'fill:currentColor;' : ''}"></i>
                         </button>
@@ -2298,6 +2327,10 @@
 
         // 차량 상세 조회 및 공통 렌더러 실행
         async function showDetailView(vid) {
+            document.documentElement.classList.remove('is-home-mode');
+            document.documentElement.classList.add('is-detail-mode');
+            document.body.classList.remove('is-home-mode');
+            document.body.classList.add('is-detail-mode');
             document.getElementById('view-home').classList.add('hidden');
             const detailViewEl = document.getElementById('view-detail');
             detailViewEl.classList.remove('hidden');
