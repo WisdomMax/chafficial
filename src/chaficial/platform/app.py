@@ -1234,7 +1234,7 @@ def get_rl_readiness(
 
 
 # ====================================================
-# 10. DIRECTIVE 050: 차량 마스터 등록 및 다중 플랫폼 연동 API
+# 10. DIRECTIVE 050 / DIRECTIVE 088: 차량 마스터 등록 및 다중 플랫폼 연동 API
 # ====================================================
 @app.get("/api/vehicles/catalog/hierarchy")
 def get_catalog_hierarchy(_auth: dict = Depends(require_auth)) -> dict[str, Any]:
@@ -1242,13 +1242,38 @@ def get_catalog_hierarchy(_auth: dict = Depends(require_auth)) -> dict[str, Any]
     return VehicleCatalogService.get_full_catalog_tree()
 
 
+@app.get("/api/vehicles/catalog/search")
+def search_catalog_models(
+    q: str = "",
+    _auth: dict = Depends(require_auth),
+) -> list[dict[str, Any]]:
+    """공식 차량 모델 키워드 및 트림 고속 검색 (DIRECTIVE 088 TASK 2)."""
+    return VehicleCatalogService.search_catalog(query=q)
+
+
 @app.get("/api/vehicles/catalog/options")
 def get_standard_options(
     category: Optional[str] = None,
-    _auth: dict = Depends(require_auth),
 ) -> list[dict[str, Any]]:
-    """표준 옵션 마스터 목록 및 플랫폼 매핑 코드 (DIRECTIVE 050 1항)."""
+    """표준 옵션 마스터 목록 및 플랫폼 매핑 코드 (DIRECTIVE 088 TASK 3)."""
     return StandardOptionCatalog.list_options(category=category)
+
+
+@app.get("/api/vehicles/catalog/top10-options")
+def get_top10_standard_options() -> list[dict[str, Any]]:
+    """고객 상세 페이지용 10대 핵심 주요 옵션 정의 목록 (DIRECTIVE 088 TASK 5)."""
+    return StandardOptionCatalog.get_top10_options()
+
+
+@app.get("/api/vehicles/catalog/recommend-options")
+def get_catalog_recommend_options(
+    manufacturer: str = "",
+    model: str = "",
+    trim: str = "",
+    _auth: dict = Depends(require_auth),
+) -> list[str]:
+    """차종 및 트림 기반 표준 옵션 추천 목록 (DIRECTIVE 088 TASK 7)."""
+    return VehicleCatalogService.get_recommended_options(manufacturer, model, trim)
 
 
 @app.post("/api/vehicles/master/create")

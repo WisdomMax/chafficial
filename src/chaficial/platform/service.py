@@ -659,41 +659,105 @@ class PlatformService:
             n = 60
             monthly_est = int((price_won * r * ((1 + r) ** n)) / (((1 + r) ** n) - 1) / 10000)
 
-        # 2. 카테고리별 구조화 옵션
+        # 2. 엔카형 4대 분류 구조화 옵션 및 10대 핵심 주요 옵션 (DIRECTIVE 088 TASK 3, 5, 6)
+        from chaficial.platform.catalog.options import StandardOptionCatalog
+
         try:
             raw_options = json.loads(v.options_structured_json or "[]")
         except Exception:
             raw_options = []
 
+        # 코드별 또는 이름별 상태 맵 생성
+        opt_status_map = {}
+        for opt in raw_options:
+            if isinstance(opt, dict):
+                code = opt.get("code") or ""
+                name = opt.get("name") or ""
+                st = opt.get("status") or ("PRESENT" if opt.get("is_verified") else "UNKNOWN")
+                if code:
+                    opt_status_map[code] = st
+                if name:
+                    opt_status_map[name] = st
+
+        # 단순 options_json 하위 호환 처리
+        try:
+            simple_opts = json.loads(v.options_json or "[]")
+        except Exception:
+            simple_opts = []
+        for name in simple_opts:
+            if name not in opt_status_map:
+                opt_status_map[name] = "PRESENT"
+
+        # 10대 핵심 주요 옵션 계산 (선루프, HUD, 주차감지센서, 후방카메라, 자동 에어컨, 스마트키, 내비게이션, 열선시트, 통풍시트, 가죽시트)
+        top10_defs = StandardOptionCatalog.get_top10_options()
+        top10_options = []
+        for t_def in top10_defs:
+            c_code = t_def["code"]
+            c_name = t_def["name"]
+            st = opt_status_map.get(c_code) or opt_status_map.get(c_name) or "UNKNOWN"
+            # simple_opts 키워드 포함 검사
+            if st == "UNKNOWN":
+                for so in simple_opts:
+                    if c_name in so or so in c_name:
+                        st = "PRESENT"
+                        break
+            top10_options.append({
+                "code": c_code,
+                "name": c_name,
+                "icon": t_def.get("icon", "check"),
+                "status": st,  # PRESENT, ABSENT, UNKNOWN
+                "is_present": (st == "PRESENT"),
+            })
+
+        # 4대 표준 카테고리 구성 (외관·내장, 안전, 편의·멀티미디어, 시트, 기타 옵션)
         categorized_options: dict[str, list[dict[str, Any]]] = {
-            "외관/휠": [],
-            "실내/시트": [],
-            "편의/멀티미디어": [],
-            "안전/주행보조": [],
+            "외관·내장": [],
+            "안전": [],
+            "편의·멀티미디어": [],
+            "시트": [],
+            "기타 옵션": [],
         }
-        if raw_options:
-            for opt in raw_options:
-                cat = opt.get("category", "편의/멀티미디어")
-                if cat not in categorized_options:
-                    categorized_options[cat] = []
-                categorized_options[cat].append({
-                    "code": opt.get("code"),
-                    "name": opt.get("name"),
-                    "is_genuine": opt.get("is_genuine", True),
-                    "is_verified": opt.get("is_verified", True),
-                })
-        else:
-            try:
-                simple_opts = json.loads(v.options_json or "[]")
-            except Exception:
-                simple_opts = []
-            for o in simple_opts:
-                categorized_options["편의/멀티미디어"].append({
-                    "code": "OPT",
-                    "name": o,
+
+        # 카탈로그 표준 옵션 분류 매핑
+        all_std_options = StandardOptionCatalog.list_options()
+        for s_opt in all_std_options:
+            c_code = s_opt["code"]
+            c_name = s_opt["name"]
+            cat_label = s_opt.get("category_label", "편의·멀티미디어")
+            st = opt_status_map.get(c_code) or opt_status_map.get(c_name)
+            if not st:
+                for so in simple_opts:
+                    if c_name in so or so in c_name:
+                        st = "PRESENT"
+                        break
+            st = st or "UNKNOWN"
+
+            if cat_label in categorized_options:
+                categorized_options[cat_label].append({
+                    "code": c_code,
+                    "name": c_name,
+                    "icon": s_opt.get("icon", "check"),
+                    "status": st,
+                    "is_present": (st == "PRESENT"),
                     "is_genuine": True,
-                    "is_verified": False,
                 })
+
+        # 표준 목록에 없는 추가/기타 옵션
+        std_names = {o["name"] for o in all_std_options}
+        std_codes = {o["code"] for o in all_std_options}
+        for opt in raw_options:
+            if isinstance(opt, dict):
+                o_name = opt.get("name")
+                o_code = opt.get("code")
+                if o_name and o_name not in std_names and o_code not in std_codes:
+                    categorized_options["기타 옵션"].append({
+                        "code": o_code or f"CUSTOM_{len(categorized_options['기타 옵션'])+1}",
+                        "name": o_name,
+                        "icon": "plus",
+                        "status": opt.get("status", "PRESENT"),
+                        "is_present": (opt.get("status", "PRESENT") == "PRESENT"),
+                        "is_genuine": opt.get("is_genuine", False),
+                    })
 
         # 3. 사고 및 성능 상태 요약 (DIRECTIVE 054: 단일 SSOT 정규화 사용)
         accident_summary = PlatformService._normalize_accident_summary(v)
@@ -792,6 +856,7 @@ class PlatformService:
             "ad_highlights": v.ad_highlights or "",
             "ad_notices": v.ad_notices or "",
             "photos": photos,
+            "top10_options": top10_options,
             "options_categorized": categorized_options,
             "accident_summary": accident_summary,
             "dealer_info": dealer_info,

@@ -112,6 +112,112 @@ export async function onRequestGet(context) {
       if (v.options_json) options = JSON.parse(v.options_json);
     } catch (e) {}
 
+    let structuredOptions = [];
+    try {
+      if (v.options_structured_json) structuredOptions = JSON.parse(v.options_structured_json);
+    } catch (e) {}
+
+    // 10대 핵심 주요 옵션 정의 (DIRECTIVE 088 TASK 5)
+    const TOP_10_DEFS = [
+      { code: 'OPT_SUNROOF', name: '선루프', icon: 'sun', keywords: ['선루프', '루프'] },
+      { code: 'OPT_HUD', name: '헤드업 디스플레이 (HUD)', icon: 'tv', keywords: ['HUD', '헤드업'] },
+      { code: 'OPT_PARKING_SENSOR', name: '주차감지센서', icon: 'radar', keywords: ['주차감지', '센서', '전방감지', '후방감지'] },
+      { code: 'OPT_REAR_CAMERA', name: '후방카메라', icon: 'camera', keywords: ['후방카메라', '카메라', '어라운드'] },
+      { code: 'OPT_AUTO_AC', name: '자동 에어컨', icon: 'fan', keywords: ['에어컨', '오토에어컨', '풀오토'] },
+      { code: 'OPT_SMART_KEY', name: '스마트키', icon: 'key', keywords: ['스마트키', '버튼시동'] },
+      { code: 'OPT_GENUINE_NAVI', name: '내비게이션', icon: 'navigation', keywords: ['내비게이션', '네비', '내비'] },
+      { code: 'OPT_HEATED_SEAT', name: '열선시트', icon: 'flame', keywords: ['열선시트', '열선'] },
+      { code: 'OPT_VENTILATED_SEAT', name: '통풍시트', icon: 'wind', keywords: ['통풍시트', '통풍'] },
+      { code: 'OPT_LEATHER_SEATS', name: '가죽시트', icon: 'armchair', keywords: ['가죽시트', '가죽', '나파'] }
+    ];
+
+    // 상태 맵 생성
+    const optStatusMap = {};
+    if (Array.isArray(structuredOptions)) {
+      structuredOptions.forEach(opt => {
+        if (opt && typeof opt === 'object') {
+          const st = opt.status || (opt.is_verified ? 'PRESENT' : 'UNKNOWN');
+          if (opt.code) optStatusMap[opt.code] = st;
+          if (opt.name) optStatusMap[opt.name] = st;
+        }
+      });
+    }
+
+    const optionsStr = options.join(' ');
+    const top10Options = TOP_10_DEFS.map(def => {
+      let st = optStatusMap[def.code] || optStatusMap[def.name];
+      if (!st) {
+        const matched = def.keywords.some(k => optionsStr.includes(k));
+        st = matched ? 'PRESENT' : 'UNKNOWN';
+      }
+      return {
+        code: def.code,
+        name: def.name,
+        icon: def.icon,
+        status: st,
+        is_present: (st === 'PRESENT')
+      };
+    });
+
+    // 4대 표준 카테고리 구성 (DIRECTIVE 088 TASK 3, 6)
+    const categorizedOptions = {
+      '외관·내장': [
+        { code: 'OPT_SUNROOF', name: '선루프', status: top10Options[0].status, is_present: top10Options[0].is_present },
+        { code: 'OPT_LED_HEADLAMP', name: 'LED 헤드램프', status: optionsStr.includes('LED') || optionsStr.includes('램프') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('LED') || optionsStr.includes('램프') },
+        { code: 'OPT_POWER_FOLD_MIRROR', name: '전동접이 사이드미러', status: 'PRESENT', is_present: true },
+        { code: 'OPT_ALUMINUM_WHEEL', name: '알루미늄 휠', status: 'PRESENT', is_present: true },
+        { code: 'OPT_HEATED_STEERING', name: '열선 스티어링 휠', status: optionsStr.includes('핸들') || optionsStr.includes('열선') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('핸들') || optionsStr.includes('열선') },
+        { code: 'OPT_POWER_TRUNK', name: '전동 트렁크', status: optionsStr.includes('트렁크') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('트렁크') },
+        { code: 'OPT_POWER_DOORLOCK', name: '파워 도어록', status: 'PRESENT', is_present: true },
+        { code: 'OPT_POWER_WINDOW', name: '파워 윈도우', status: 'PRESENT', is_present: true }
+      ],
+      '안전': [
+        { code: 'OPT_PARKING_SENSOR', name: '주차감지센서', status: top10Options[2].status, is_present: top10Options[2].is_present },
+        { code: 'OPT_REAR_CAMERA', name: '후방카메라', status: top10Options[3].status, is_present: top10Options[3].is_present },
+        { code: 'OPT_SURROUND_VIEW', name: '360도 어라운드 뷰', status: optionsStr.includes('어라운드') || optionsStr.includes('서라운드') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('어라운드') || optionsStr.includes('서라운드') },
+        { code: 'OPT_AIRBAG_FRONT', name: '에어백 (운전석/동승석)', status: 'PRESENT', is_present: true },
+        { code: 'OPT_AIRBAG_SIDE', name: '사이드/커튼 에어백', status: 'PRESENT', is_present: true },
+        { code: 'OPT_ABS_ESC', name: 'ABS / 차체자세제어', status: 'PRESENT', is_present: true },
+        { code: 'OPT_TPMS', name: '타이어 공기압 감지 (TPMS)', status: 'PRESENT', is_present: true },
+        { code: 'OPT_LANE_ASSIST', name: '차선이탈 경보 / 유지보조', status: optionsStr.includes('차선') || optionsStr.includes('이탈') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('차선') || optionsStr.includes('이탈') },
+        { code: 'OPT_BLIND_SPOT', name: '후측방 충돌방지 보조', status: optionsStr.includes('후측방') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('후측방') }
+      ],
+      '편의·멀티미디어': [
+        { code: 'OPT_HUD', name: '헤드업 디스플레이 (HUD)', status: top10Options[1].status, is_present: top10Options[1].is_present },
+        { code: 'OPT_AUTO_AC', name: '자동 에어컨', status: top10Options[4].status, is_present: top10Options[4].is_present },
+        { code: 'OPT_SMART_KEY', name: '스마트키', status: top10Options[5].status, is_present: top10Options[5].is_present },
+        { code: 'OPT_GENUINE_NAVI', name: '내비게이션', status: top10Options[6].status, is_present: top10Options[6].is_present },
+        { code: 'OPT_SMART_CRUISE', name: '크루즈 컨트롤 (스마트 크루즈)', status: optionsStr.includes('크루즈') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('크루즈') },
+        { code: 'OPT_AUTO_HOLD', name: '전자식 파킹 브레이크 (오토홀드)', status: optionsStr.includes('파킹') || optionsStr.includes('오토홀드') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('파킹') || optionsStr.includes('오토홀드') },
+        { code: 'OPT_BLUETOOTH', name: '블루투스 핸즈프리', status: 'PRESENT', is_present: true },
+        { code: 'OPT_CARPLAY_AA', name: '스마트폰 폰 프로젝션', status: 'PRESENT', is_present: true },
+        { code: 'OPT_HIPASS', name: '하이패스 내장 룸미러', status: optionsStr.includes('하이패스') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('하이패스') }
+      ],
+      '시트': [
+        { code: 'OPT_LEATHER_SEATS', name: '가죽시트', status: top10Options[9].status, is_present: top10Options[9].is_present },
+        { code: 'OPT_HEATED_SEAT', name: '열선시트', status: top10Options[7].status, is_present: top10Options[7].is_present },
+        { code: 'OPT_VENTILATED_SEAT', name: '통풍시트', status: top10Options[8].status, is_present: top10Options[8].is_present },
+        { code: 'OPT_POWER_SEAT_DRV', name: '운전석 전동시트', status: optionsStr.includes('전동시트') || optionsStr.includes('전동') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('전동시트') || optionsStr.includes('전동') },
+        { code: 'OPT_POWER_SEAT_PASS', name: '동승석 전동시트', status: optionsStr.includes('동승석') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('동승석') },
+        { code: 'OPT_MEMORY_SEAT', name: '메모리 시트', status: optionsStr.includes('메모리') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('메모리') }
+      ],
+      '기타 옵션': []
+    };
+
+    // 추가 커스텀 옵션 반영
+    if (Array.isArray(structuredOptions)) {
+      structuredOptions.forEach(opt => {
+        if (opt && opt.category === '기타 옵션' || opt.is_custom) {
+          categorizedOptions['기타 옵션'].push({
+            code: opt.code || 'CUSTOM',
+            name: opt.name,
+            status: opt.status || 'PRESENT',
+            is_present: (opt.status || 'PRESENT') === 'PRESENT'
+          });
+        }
+      });
+    }
+
     const detail = {
       id: v.id,
       plate_number: v.plate_number,
@@ -139,6 +245,8 @@ export async function onRequestGet(context) {
       photo_count: photos30.length,
       primary_photo_url: frontPhoto,
       options: options,
+      top10_options: top10Options,
+      options_categorized: categorizedOptions,
       accident_summary: {
         is_accident_free: true,
         simple_repair: false,

@@ -537,14 +537,17 @@ class VehicleDetailRenderer {
               </div>
             </div>
 
-            <!-- 5. 장착 주요 옵션 체크리스트 -->
-            <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 space-y-4">
+            <!-- 5. 주요 옵션 10개 요약 및 전체 옵션 펼치기 (DIRECTIVE 088 TASK 5, 6) -->
+            <div class="bg-white rounded-xl border border-[#E5E8EC] p-4 sm:p-5 space-y-3.5 shadow-2xs">
               <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-[#171C24]">장착 주요 옵션 체크리스트</h3>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base sm:text-lg font-bold text-[#171C24]">주요 옵션</h3>
+                  <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#171B1E] text-white">10대 핵심 사양</span>
+                </div>
                 <span class="text-xs text-slate-400">실차 확인 사양</span>
               </div>
               <div id="vdrOptionsContainer">
-                ${this.renderOptionsGrid(d)}
+                ${this.renderOptionsSection(d)}
               </div>
             </div>
 
@@ -1487,37 +1490,257 @@ class VehicleDetailRenderer {
     });
   }
 
-  renderOptionsGrid(d) {
-    const categorized = d.options_categorized || {};
-    if (Object.keys(categorized).length > 0) {
-      let html = '';
-      for (const [catName, list] of Object.entries(categorized)) {
-        if (list && list.length > 0) {
-          const badges = list.map(o => `
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-normal bg-slate-100 text-slate-700 border border-slate-200">
-              <i data-lucide="check" class="w-3 h-3 mr-1 text-[#171B1E]"></i>
-              ${escapeHtml(o.name || o)}
+  // DIRECTIVE 088 TASK 5 & 6: 주요 옵션 10개 요약 및 전체 옵션 펼치기 구현
+  toggleFullOptionsView() {
+    const panel = document.getElementById('vdrFullOptionsPanel');
+    const chevron = document.getElementById('vdrToggleOptionsChevron');
+    const btn = document.getElementById('vdrToggleFullOptionsBtn');
+    if (!panel) return;
+
+    const isHidden = panel.classList.contains('hidden');
+    if (isHidden) {
+      panel.classList.remove('hidden');
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+      if (btn) {
+        const textSpan = btn.querySelector('.vdr-toggle-label');
+        if (textSpan) textSpan.textContent = '전체 옵션 접기';
+      }
+    } else {
+      panel.classList.add('hidden');
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+      if (btn) {
+        const textSpan = btn.querySelector('.vdr-toggle-label');
+        if (textSpan) textSpan.textContent = '전체 옵션 보기';
+      }
+    }
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  getOptionIconSvg(iconName, isPresent) {
+    const strokeCls = isPresent ? 'stroke-[#171B1E] stroke-[2.2]' : 'stroke-slate-400 stroke-[1.8]';
+    const fillCls = 'none';
+
+    switch (iconName) {
+      case 'sun':
+      case 'OPT_SUNROOF':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+      case 'tv':
+      case 'OPT_HUD':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><rect width="20" height="15" x="2" y="7" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>`;
+      case 'radar':
+      case 'OPT_PARKING_SENSOR':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/></svg>`;
+      case 'camera':
+      case 'OPT_REAR_CAMERA':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
+      case 'fan':
+      case 'OPT_AUTO_AC':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"/><circle cx="12" cy="12" r="2"/></svg>`;
+      case 'key':
+      case 'OPT_SMART_KEY':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>`;
+      case 'navigation':
+      case 'OPT_GENUINE_NAVI':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>`;
+      case 'flame':
+      case 'OPT_HEATED_SEAT':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`;
+      case 'wind':
+      case 'OPT_VENTILATED_SEAT':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>`;
+      case 'armchair':
+      case 'OPT_LEATHER_SEATS':
+      default:
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>`;
+    }
+  }
+
+  buildFallbackTop10(d) {
+    const rawOptions = Array.isArray(d.options) ? d.options : [];
+    const text = rawOptions.join(' ') + ' ' + (d.model_name || '');
+    const defs = [
+      { code: 'OPT_SUNROOF', name: '선루프', icon: 'sun', keys: ['선루프', '루프'] },
+      { code: 'OPT_HUD', name: 'HUD', icon: 'tv', keys: ['HUD', '헤드업'] },
+      { code: 'OPT_PARKING_SENSOR', name: '주차센서', icon: 'radar', keys: ['주차', '센서'] },
+      { code: 'OPT_REAR_CAMERA', name: '후방카메라', icon: 'camera', keys: ['후방', '카메라', '어라운드'] },
+      { code: 'OPT_AUTO_AC', name: '자동에어컨', icon: 'fan', keys: ['에어컨', '오토'] },
+      { code: 'OPT_SMART_KEY', name: '스마트키', icon: 'key', keys: ['스마트키', '버튼'] },
+      { code: 'OPT_GENUINE_NAVI', name: '내비게이션', icon: 'navigation', keys: ['내비', '네비'] },
+      { code: 'OPT_HEATED_SEAT', name: '열선시트', icon: 'flame', keys: ['열선'] },
+      { code: 'OPT_VENTILATED_SEAT', name: '통풍시트', icon: 'wind', keys: ['통풍'] },
+      { code: 'OPT_LEATHER_SEATS', name: '가죽시트', icon: 'armchair', keys: ['가죽', '나파'] },
+    ];
+    return defs.map(def => {
+      const match = def.keys.some(k => text.includes(k));
+      return {
+        code: def.code,
+        name: def.name,
+        icon: def.icon,
+        status: match ? 'PRESENT' : 'UNKNOWN',
+        is_present: match,
+      };
+    });
+  }
+
+  buildFallbackCategorized(d) {
+    const rawOptions = Array.isArray(d.options) ? d.options : [];
+    return {
+      '외관·내장': rawOptions.filter(o => o.includes('선루프') || o.includes('휠') || o.includes('램프') || o.includes('핸들')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
+      '안전': rawOptions.filter(o => o.includes('에어백') || o.includes('센서') || o.includes('카메라') || o.includes('ABS')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
+      '편의·멀티미디어': rawOptions.filter(o => o.includes('스마트키') || o.includes('내비') || o.includes('에어컨') || o.includes('크루즈')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
+      '시트': rawOptions.filter(o => o.includes('시트') || o.includes('통풍') || o.includes('열선')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
+      '기타 옵션': []
+    };
+  }
+
+  renderOptionsSection(d) {
+    const top10 = (d.top10_options && d.top10_options.length === 10) ? d.top10_options : this.buildFallbackTop10(d);
+    const categorized = d.options_categorized || this.buildFallbackCategorized(d);
+
+    // 총 장착 확인 개수 계산
+    let totalPresentCount = 0;
+    for (const [cat, list] of Object.entries(categorized)) {
+      if (Array.isArray(list)) {
+        totalPresentCount += list.filter(o => o.is_present || o.status === 'PRESENT').length;
+      }
+    }
+    if (totalPresentCount === 0 && Array.isArray(d.options)) {
+      totalPresentCount = d.options.length;
+    }
+
+    // 1. 10대 핵심 주요 옵션 5x2 그리드 (PC: 5개씩 2줄, 모바일: 균등 5열)
+    const top10Html = top10.map(opt => {
+      const isPresent = opt.is_present || opt.status === 'PRESENT';
+      const isAbsent = opt.status === 'ABSENT';
+      const isUnknown = !isPresent && !isAbsent;
+
+      let cardStyle = "bg-white border-slate-200";
+      let iconColor = "text-[#171B1E]";
+      let badgeHtml = `<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>`;
+      let stateLabel = `<span class="text-[10px] font-bold text-[#10B981]">장착 확인</span>`;
+
+      if (isPresent) {
+        cardStyle = "bg-slate-50 border-slate-300 font-bold shadow-2xs";
+        iconColor = "text-[#171B1E]";
+        badgeHtml = `<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>`;
+        stateLabel = `<span class="text-[10px] font-bold text-[#10B981]">장착</span>`;
+      } else if (isAbsent) {
+        cardStyle = "bg-slate-50/40 border-slate-100 opacity-40";
+        iconColor = "text-slate-300";
+        badgeHtml = `<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>`;
+        stateLabel = `<span class="text-[10px] text-slate-400 line-through">미장착</span>`;
+      } else {
+        cardStyle = "bg-white border-dashed border-slate-200 opacity-70";
+        iconColor = "text-slate-400";
+        badgeHtml = `<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>`;
+        stateLabel = `<span class="text-[10px] text-slate-400">미확인</span>`;
+      }
+
+      // 모바일 친화 축약명
+      let shortName = opt.name || '';
+      shortName = shortName.replace('헤드업 디스플레이 (HUD)', 'HUD')
+                           .replace('주차감지센서', '주차센서')
+                           .replace('순정 내비게이션', '내비게이션')
+                           .replace('풀오토 에어컨', '자동에어컨');
+
+      return `
+        <div class="flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl border ${cardStyle} transition-all text-center">
+          <div class="mb-1 sm:mb-1.5 ${iconColor}">
+            ${this.getOptionIconSvg(opt.icon || opt.code, isPresent)}
+          </div>
+          <span class="text-[11px] sm:text-xs font-semibold tracking-tight text-slate-800 truncate w-full text-center">${escapeHtml(shortName)}</span>
+          <div class="mt-1 flex items-center justify-center gap-1">
+            ${badgeHtml}
+            ${stateLabel}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 2. 전체 옵션 아코디언 내용 구성
+    let fullCategoriesHtml = '';
+    const catKeys = ['외관·내장', '안전', '편의·멀티미디어', '시트', '기타 옵션'];
+    for (const catName of catKeys) {
+      const list = categorized[catName] || [];
+      if (list.length === 0) continue;
+
+      const presentList = list.filter(o => o.is_present || o.status === 'PRESENT');
+
+      const badges = list.map(o => {
+        const p = o.is_present || o.status === 'PRESENT';
+        const abs = o.status === 'ABSENT';
+        if (p) {
+          return `
+            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-900 border border-slate-200 shadow-2xs">
+              <i data-lucide="check" class="w-3.5 h-3.5 mr-1 text-[#10B981] stroke-[2.5]"></i>
+              ${escapeHtml(o.name)}
             </span>
-          `).join(' ');
-          html += `
-            <div class="space-y-1.5">
-              <div class="text-xs font-semibold text-slate-500">${escapeHtml(catName)}</div>
-              <div class="flex flex-wrap gap-1.5">${badges}</div>
-            </div>
+          `;
+        } else if (abs) {
+          return `
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-slate-400 border border-dashed border-slate-200 line-through opacity-50">
+              <i data-lucide="x" class="w-3 h-3 mr-1 text-slate-300"></i>
+              ${escapeHtml(o.name)}
+            </span>
+          `;
+        } else {
+          return `
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-slate-400 border border-dashed border-slate-200 opacity-60">
+              <i data-lucide="help-circle" class="w-3 h-3 mr-1 text-slate-300"></i>
+              ${escapeHtml(o.name)}
+            </span>
           `;
         }
-      }
-      return html || '<div class="text-xs text-slate-400">장착 옵션 사양을 정리 중입니다.</div>';
-    } else if (d.options && d.options.length > 0) {
-      const badges = d.options.map(o => `
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-normal bg-slate-100 text-slate-700 border border-slate-200">
-          <i data-lucide="check" class="w-3 h-3 mr-1 text-[#171B1E]"></i>
-          ${escapeHtml(o)}
-        </span>
-      `).join(' ');
-      return `<div class="flex flex-wrap gap-1.5">${badges}</div>`;
+      }).join(' ');
+
+      fullCategoriesHtml += `
+        <div class="p-3 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-2">
+          <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+            <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#171B1E]"></span>
+              ${escapeHtml(catName)}
+            </span>
+            <span class="text-[11px] font-semibold text-slate-500">
+              <strong class="text-slate-900">${presentList.length}</strong> / ${list.length}개 장착
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            ${badges}
+          </div>
+        </div>
+      `;
     }
-    return '<div class="text-xs text-slate-400">확인된 주요 옵션 사양을 정리 중입니다.</div>';
+
+    return `
+      <div class="space-y-3">
+        <!-- 10대 핵심 주요 옵션 5x2 그리드 -->
+        <div class="grid grid-cols-5 gap-1.5 sm:gap-2.5">
+          ${top10Html}
+        </div>
+
+        <!-- 전체 옵션 보기 토글 버튼 (TASK 6) -->
+        <button type="button" onclick="window.__vdrInstance ? window.__vdrInstance.toggleFullOptionsView() : null" id="vdrToggleFullOptionsBtn" class="w-full py-2.5 sm:py-3 px-4 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 text-slate-800 text-xs sm:text-sm font-bold rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs">
+          <i data-lucide="layers" class="w-4 h-4 text-slate-600"></i>
+          <span class="vdr-toggle-label">전체 옵션 보기</span>
+          <span class="text-xs text-slate-500 font-normal">(총 ${totalPresentCount}개 장착 확인)</span>
+          <i data-lucide="chevron-down" id="vdrToggleOptionsChevron" class="w-4 h-4 ml-1 text-slate-500 transition-transform"></i>
+        </button>
+
+        <!-- 전체 옵션 펼치기 패널 (기본 접힘, 인라인 펼침) -->
+        <div id="vdrFullOptionsPanel" class="hidden space-y-3 pt-1 animate-in fade-in duration-150">
+          <div class="text-[11px] text-slate-500 flex items-center justify-between px-1 pb-1">
+            <span>엔카·차마트 표준 4대 분류 상세 옵션표</span>
+            <span class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1 text-[#10B981] font-bold"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>장착 확인</span>
+              <span class="inline-flex items-center gap-1 text-slate-400"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>미확인</span>
+            </span>
+          </div>
+          <div class="space-y-2.5">
+            ${fullCategoriesHtml || '<div class="text-xs text-slate-400 py-3 text-center">상세 옵션 내역을 불러오는 중입니다.</div>'}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   updateLoanCalc() {

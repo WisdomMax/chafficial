@@ -277,6 +277,79 @@ class VehicleCatalogService:
                 },
             },
         },
+        "르노코리아": {
+            "QM6": {
+                "body_type": "중형 SUV",
+                "generations": {
+                    "더 뉴 QM6": {
+                        "years": [2020, 2021, 2022, 2023, 2024],
+                        "trims": {
+                            "2.0 LPe RE": {"displacement_cc": 1998, "fuel_type": "LPG", "transmission": "CVT", "drive_type": "2WD"},
+                            "2.0 LPe 프리미에르": {"displacement_cc": 1998, "fuel_type": "LPG", "transmission": "CVT", "drive_type": "2WD"},
+                            "2.0 GDe RE": {"displacement_cc": 1998, "fuel_type": "가솔린", "transmission": "CVT", "drive_type": "2WD"},
+                        },
+                    },
+                },
+            },
+            "SM6": {
+                "body_type": "중형 세단",
+                "generations": {
+                    "더 뉴 SM6": {
+                        "years": [2020, 2021, 2022, 2023, 2024],
+                        "trims": {
+                            "TCe 260 RE": {"displacement_cc": 1332, "fuel_type": "가솔린", "transmission": "DCT", "drive_type": "2WD"},
+                            "TCe 300 프리미에르": {"displacement_cc": 1798, "fuel_type": "가솔린", "transmission": "DCT", "drive_type": "2WD"},
+                        },
+                    },
+                },
+            },
+        },
+        "메르세데스-벤츠": {
+            "E-클래스": {
+                "body_type": "대형 세단",
+                "generations": {
+                    "E-클래스 W214": {
+                        "years": [2024, 2025, 2026],
+                        "trims": {
+                            "E300 4MATIC 익스클루시브": {"displacement_cc": 1999, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "AWD"},
+                            "E300 4MATIC AMG line": {"displacement_cc": 1999, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "AWD"},
+                        },
+                    },
+                    "E-클래스 W213": {
+                        "years": [2017, 2018, 2019, 2020, 2021, 2022, 2023],
+                        "trims": {
+                            "E250 아방가르드": {"displacement_cc": 1991, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "2WD"},
+                            "E250 익스클루시브": {"displacement_cc": 1991, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "2WD"},
+                            "E300 4MATIC 익스클루시브": {"displacement_cc": 1991, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "AWD"},
+                            "E350 4MATIC 익스클루시브": {"displacement_cc": 1991, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "AWD"},
+                        },
+                    },
+                },
+            },
+        },
+        "BMW": {
+            "5시리즈": {
+                "body_type": "대형 세단",
+                "generations": {
+                    "5시리즈 (G60)": {
+                        "years": [2024, 2025, 2026],
+                        "trims": {
+                            "520i M 스포츠": {"displacement_cc": 1998, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "2WD"},
+                            "530i xDrive M 스포츠": {"displacement_cc": 1998, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "AWD"},
+                        },
+                    },
+                    "5시리즈 (G30)": {
+                        "years": [2017, 2018, 2019, 2020, 2021, 2022, 2023],
+                        "trims": {
+                            "520i 럭셔리": {"displacement_cc": 1998, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "2WD"},
+                            "520i M 스포츠": {"displacement_cc": 1998, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "2WD"},
+                            "530i 럭셔리": {"displacement_cc": 1998, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "2WD"},
+                            "530i xDrive M 스포츠": {"displacement_cc": 1998, "fuel_type": "가솔린", "transmission": "오토", "drive_type": "AWD"},
+                        },
+                    },
+                },
+            },
+        },
     }
 
     @classmethod
@@ -343,3 +416,98 @@ class VehicleCatalogService:
     def get_full_catalog_tree(cls) -> dict[str, Any]:
         """프론트엔드 캐시용 전체 카탈로그 구조 트리."""
         return cls.CATALOG_DATA
+
+    @classmethod
+    def search_catalog(cls, query: str, limit: int = 15) -> list[dict[str, Any]]:
+        """차종, 세대, 별칭, 트림 키워드로 카탈로그 고속 검색 (DIRECTIVE 088 TASK 2)."""
+        q = (query or "").strip().lower()
+        if not q:
+            return []
+
+        results = []
+        for mfg, models in cls.CATALOG_DATA.items():
+            for model_name, m_info in models.items():
+                body_type = m_info.get("body_type", "세단")
+                for gen_name, gen_data in m_info.get("generations", {}).items():
+                    years = gen_data.get("years", [])
+                    year_min = min(years) if years else 2020
+                    year_max = max(years) if years else 2025
+                    for trim_name, trim_info in gen_data.get("trims", {}).items():
+                        full_label = f"{mfg} {gen_name} {trim_name}"
+                        search_target = f"{mfg} {model_name} {gen_name} {trim_name}".lower()
+                        
+                        # 키워드 매칭
+                        if all(k in search_target for k in q.split()):
+                            results.append({
+                                "manufacturer": mfg,
+                                "model": model_name,
+                                "generation": gen_name,
+                                "trim": trim_name,
+                                "year_range": f"{year_min}~{year_max}년",
+                                "default_year": year_max,
+                                "body_type": body_type,
+                                "displacement_cc": trim_info.get("displacement_cc"),
+                                "fuel_type": trim_info.get("fuel_type", "가솔린"),
+                                "transmission": trim_info.get("transmission", "오토"),
+                                "drive_type": trim_info.get("drive_type", "2WD"),
+                                "display_title": full_label,
+                            })
+                            if len(results) >= limit:
+                                return results
+        return results
+
+    @classmethod
+    def get_recommended_options(cls, manufacturer: str, model: str, trim: str) -> list[str]:
+        """차종 및 트림 기반 표준 옵션 장착 추천 (DIRECTIVE 088 TASK 7 보조 기능)."""
+        trim_lower = (trim or "").lower()
+        model_lower = (model or "").lower()
+
+        # 대부분의 최신 차량 기본 공통
+        recommended = [
+            "OPT_SMART_KEY",
+            "OPT_AUTO_AC",
+            "OPT_GENUINE_NAVI",
+            "OPT_PARKING_SENSOR",
+            "OPT_REAR_CAMERA",
+            "OPT_HEATED_SEAT",
+            "OPT_LEATHER_SEATS",
+            "OPT_AIRBAG_FRONT",
+            "OPT_AIRBAG_SIDE",
+            "OPT_ABS_ESC",
+            "OPT_TPMS",
+            "OPT_AUTO_HOLD",
+            "OPT_BLUETOOTH",
+            "OPT_CARPLAY_AA",
+            "OPT_POWER_FOLD_MIRROR",
+            "OPT_POWER_DOORLOCK",
+            "OPT_POWER_WINDOW",
+        ]
+
+        # 고급 트림 (캘리그래피, 인스퍼레이션, 익스클루시브, M스포츠 등)
+        high_trims = ["캘리그래피", "인스퍼레이션", "익스클루시브", "m 스포츠", "프리미에르", "아방가르드", "t7"]
+        if any(h in trim_lower for h in high_trims):
+            recommended.extend([
+                "OPT_VENTILATED_SEAT",
+                "OPT_POWER_SEAT_DRV",
+                "OPT_POWER_SEAT_PASS",
+                "OPT_MEMORY_SEAT",
+                "OPT_SMART_CRUISE",
+                "OPT_LANE_ASSIST",
+                "OPT_BLIND_SPOT",
+                "OPT_LED_HEADLAMP",
+                "OPT_HEATED_STEERING",
+                "OPT_POWER_TRUNK",
+                "OPT_HIPASS",
+            ])
+
+        # 최고급 옵션 (캘리그래피, 풀옵션, 제네시스/벤츠/BMW)
+        if "캘리그래피" in trim_lower or "제네시스" in manufacturer or "벤츠" in manufacturer or "bmw" in manufacturer:
+            recommended.extend([
+                "OPT_HUD",
+                "OPT_SURROUND_VIEW",
+                "OPT_SUNROOF",
+                "OPT_WIRELESS_CHARGER",
+            ])
+
+        return list(dict.fromkeys(recommended))
+

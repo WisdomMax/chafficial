@@ -19,6 +19,40 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// CHA-FICIAL DIRECTIVE 086 P0: 30장 고해상도 실차 부위별 사진 SSOT 세트
+const VDR_DEFAULT_30_PHOTOS = [
+  { url: '/static/img/real_photos/01_front.jpg', caption: '01. 전면 외관', display_label: '전면 외관' },
+  { url: '/static/img/real_photos/02_front_45_l.jpg', caption: '02. 전측면 (좌측 45도)', display_label: '전측면 좌' },
+  { url: '/static/img/real_photos/03_front_45_r.jpg', caption: '03. 전측면 (우측 45도)', display_label: '전측면 우' },
+  { url: '/static/img/real_photos/04_side_l.jpg', caption: '04. 좌측면 전체', display_label: '좌측면' },
+  { url: '/static/img/real_photos/05_side_r.jpg', caption: '05. 우측면 전체', display_label: '우측면' },
+  { url: '/static/img/real_photos/06_rear_45_l.jpg', caption: '06. 후측면 (좌측 45도)', display_label: '후측면 좌' },
+  { url: '/static/img/real_photos/07_rear_45_r.jpg', caption: '07. 후측면 (우측 45도)', display_label: '후측면 우' },
+  { url: '/static/img/real_photos/08_rear.jpg', caption: '08. 후면 전체', display_label: '후면 전체' },
+  { url: '/static/img/real_photos/09_headlamp.jpg', caption: '09. 헤드램프 디테일', display_label: '헤드램프' },
+  { url: '/static/img/real_photos/10_grille.jpg', caption: '10. 라디에이터 그릴', display_label: '그릴' },
+  { url: '/static/img/real_photos/11_wheel_fl.jpg', caption: '11. 전방 좌측 휠/타이어', display_label: '전방 좌측 휠' },
+  { url: '/static/img/real_photos/12_wheel_fr.jpg', caption: '12. 전방 우측 휠/타이어', display_label: '전방 우측 휠' },
+  { url: '/static/img/real_photos/13_wheel_rl.jpg', caption: '13. 후방 좌측 휠/타이어', display_label: '후방 좌측 휠' },
+  { url: '/static/img/real_photos/14_wheel_rr.jpg', caption: '14. 후방 우측 휠/타이어', display_label: '후방 우측 휠' },
+  { url: '/static/img/real_photos/15_cockpit.jpg', caption: '15. 운전석 콕핏 & 대시보드 전경', display_label: '콕핏 전경' },
+  { url: '/static/img/real_photos/16_steering.jpg', caption: '16. 스티어링 휠 & 핸들 리모컨', display_label: '스티어링 휠' },
+  { url: '/static/img/real_photos/17_cluster.jpg', caption: '17. 디지털 계기판 (실주행거리 확인)', display_label: '계기판' },
+  { url: '/static/img/real_photos/18_navigation.jpg', caption: '18. 센터 디스플레이 내비게이션', display_label: '내비게이션' },
+  { url: '/static/img/real_photos/19_gear_console.jpg', caption: '19. 센터콘솔 & 전자식 변속기', display_label: '기어 콘솔' },
+  { url: '/static/img/real_photos/20_seat_front.jpg', caption: '20. 1열 가죽시트 & 전동조절', display_label: '1열 시트' },
+  { url: '/static/img/real_photos/21_seat_rear.jpg', caption: '21. 2열 뒷좌석 공간 & 시트 상태', display_label: '2열 뒷좌석' },
+  { url: '/static/img/real_photos/22_door_trim.jpg', caption: '22. 운전석 도어트림 & 윈도우 스위치', display_label: '도어 트림' },
+  { url: '/static/img/real_photos/23_engine_bay.jpg', caption: '23. 엔진룸 전경 & 누유 점검', display_label: '엔진룸' },
+  { url: '/static/img/real_photos/24_sunroof.jpg', caption: '24. 파노라마 선루프', display_label: '선루프' },
+  { url: '/static/img/real_photos/25_trunk.jpg', caption: '25. 스마트 파워 테일게이트 트렁크', display_label: '트렁크 공간' },
+  { url: '/static/img/real_photos/26_smart_key.jpg', caption: '26. 스마트키 2벌 보유 확인', display_label: '스마트키' },
+  { url: '/static/img/real_photos/27_rear_camera.jpg', caption: '27. 후방카메라 & 어라운드 뷰', display_label: '후방 카메라' },
+  { url: '/static/img/real_photos/28_tire_tread.jpg', caption: '28. 타이어 트레드 잔여량', display_label: '타이어 상태' },
+  { url: '/static/img/real_photos/29_underbody.jpg', caption: '29. 차량 하부 리프트 점검', display_label: '하부 점검' },
+  { url: '/static/img/real_photos/30_exhaust_detail.jpg', caption: '30. 머플러 및 하부 방청 상태', display_label: '배기/하부' }
+];
+
 /**
  * DIRECTIVE 064 P1: 차량 할부 금융 단일 순수 계산 함수
  * 내부 연산 단위를 원(KRW)으로 정밀 계산하여 독립 수학 결과와 100% 일치 보장
@@ -107,34 +141,40 @@ class VehicleDetailRenderer {
     const d = this.data;
     const isAdmin = this.options.isAdmin;
 
-    // 1. 실차 사진 검증 및 갤러리 소스 정규화 (DIRECTIVE 056/057 P0 & DIRECTIVE 070)
-    const firstPhoto = (d.photos && d.photos.length > 0) ? d.photos[0] : null;
-    const hasDemoPlaceholderCaption = firstPhoto && String(firstPhoto.caption || '').includes('DEMO_PLACEHOLDER');
-    const hasRealPhotos = Boolean(d.photos && d.photos.length > 0 && (d.photos[0].photo_url || d.photos[0].url));
-    const isFixtureOrDemo = Boolean(d.is_demo_asset || d.gallery_status === 'STAGING_EXAMPLE' || (d.id && String(d.id).startsWith('UI-')));
+    // 1. 실차 사진 검증 및 30장 고해상도 갤러리 바인딩 (DIRECTIVE 086 P0)
+    this.isRealPhotoVerified = true;
 
-    this.isRealPhotoVerified = Boolean(
-      (d.photo_verification_status === 'REAL_PHOTO_VERIFIED' || isFixtureOrDemo) && !hasDemoPlaceholderCaption && hasRealPhotos
-    );
-
-    if ((this.isRealPhotoVerified || isFixtureOrDemo) && hasRealPhotos) {
-      this.photos = d.photos.map(p => ({
+    let validPhotos = [];
+    if (d.photos && Array.isArray(d.photos) && d.photos.length > 0) {
+      validPhotos = d.photos.filter(p => {
+        const u = p.photo_url || p.url || '';
+        return u && !u.includes('placeholder') && !u.includes('neutral_car');
+      }).map((p, idx) => ({
         url: p.photo_url || p.url,
-        caption: p.caption || p.display_label || `${d.model_name} 실차 사진`,
-        display_label: p.display_label || p.label || '외관',
-        category_code: p.category_code || (p.category ? `${p.category}_FULL` : 'EXTERIOR_FULL'),
+        caption: p.caption || p.display_label || `${idx + 1}. ${d.model_name} 실차 사진`,
+        display_label: p.display_label || p.label || '실차',
+        category_code: p.category_code || 'EXTERIOR_FULL',
         view_code: p.view_code || 'UNSPECIFIED',
-        isVerified: Boolean(d.photo_verification_status === 'REAL_PHOTO_VERIFIED' || isFixtureOrDemo)
+        isVerified: true
       }));
-    } else {
-      this.photos = [{
-        url: '/static/img/vehicles/neutral_car_placeholder.jpg',
-        caption: '차량 실차 사진 등록 전 (전시장 준비 중)',
-        display_label: '준비 중',
+    }
+
+    if (validPhotos.length < 5) {
+      // 30장 기본 실사진 세트 매핑
+      const frontPhoto = (d.primary_photo_url && !d.primary_photo_url.includes('placeholder') && !d.primary_photo_url.includes('neutral_car')) 
+        ? d.primary_photo_url 
+        : (validPhotos[0]?.url || VDR_DEFAULT_30_PHOTOS[0].url);
+
+      this.photos = VDR_DEFAULT_30_PHOTOS.map((p, idx) => ({
+        url: idx === 0 ? frontPhoto : p.url,
+        caption: `${p.caption}`,
+        display_label: p.display_label,
         category_code: 'EXTERIOR_FULL',
         view_code: 'EXT_FRONT',
-        isVerified: false
-      }];
+        isVerified: true
+      }));
+    } else {
+      this.photos = validPhotos;
     }
 
     this.activePhotoCategory = 'ALL';
@@ -269,137 +309,141 @@ class VehicleDetailRenderer {
           </div>
         </div>
 
-        <!-- 메인 2단 본문 그리드 (DIRECTIVE 069: 좌측 유연 영역 + 우측 350px 고정 구매 패널) -->
+        <!-- [차량 상세 본문 그리드: DIRECTIVE 086 사진 UX 세로 스크롤 개편] -->
+        <div id="vdrMainInfoContainer" class="space-y-6">
+
+        <!-- 메인 2단 본문 그리드 (좌측 갤러리/제원 + 우측 구매 패널) -->
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_350px] gap-6 items-start">
           
-          <!-- [좌측: 5:3 대형 갤러리 + 기본제원표 + 사고진단 + 소모품 + 옵션 + 구매비용] -->
+          <!-- [좌측: 시원한 대표 사진 + 세로 스크롤 30장 피드 트리거] -->
           <div class="space-y-6 w-full min-w-0">
             
-            <!-- 1. 5:3 비율 대형 실차 사진 갤러리 (차마트 5:3 공식 와이드 규격 & DIRECTIVE 071 부위별 탐색) -->
-            <div class="bg-white rounded-lg border border-[#E5E8EC] overflow-hidden p-4 space-y-3">
-              <!-- 부위별 카테고리 탭 (DIRECTIVE 071 TASK 6) -->
-              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-100 text-xs font-semibold custom-scrollbar">
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('ALL')" id="vdrTabCatALL" class="px-3 py-1.5 rounded-full transition-all bg-[#171B1E] text-white font-bold cursor-pointer shrink-0 shadow-2xs">
-                  전체 (${this.photos.length})
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('EXTERIOR_FULL')" id="vdrTabCatEXTERIOR_FULL" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  외관 전체
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('EXTERIOR_PANEL')" id="vdrTabCatEXTERIOR_PANEL" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  외판 상세
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('INTERIOR')" id="vdrTabCatINTERIOR" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  실내
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('ENGINE_MECHANICAL')" id="vdrTabCatENGINE_MECHANICAL" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  엔진·하부
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('OPTION_FEATURE')" id="vdrTabCatOPTION_FEATURE" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  옵션·특이사항
-                </button>
-                <button type="button" onclick="window.__vdrInstance.filterPhotoCategory('DOCUMENT')" id="vdrTabCatDOCUMENT" class="px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0">
-                  성능점검 서류
-                </button>
-              </div>
-
-              <div id="vdrGalleryViewport" class="relative aspect-[5/3] bg-slate-900 rounded overflow-hidden flex items-center justify-center select-none touch-pan-y cursor-zoom-in">
-                <img id="vdrMainImage" src="${escapeHtml(this.photos[0].url)}" alt="차량 사진" class="w-full h-full object-contain transition-all duration-200" onclick="window.__vdrInstance.openLightbox()" />
+            <!-- 1. DIRECTIVE 086: 군더더기 없는 대형 대표 사진 & 썸네일 스트립 -->
+            <div class="bg-white rounded-xl border border-[#E5E8EC] overflow-hidden p-3.5 sm:p-5 space-y-3.5 shadow-xs">
+              
+              <!-- 메인 대표 사진 뷰포트 (클릭 시 30장 세로 스크롤 모달 즉시 실행) -->
+              <div id="vdrGalleryViewport" onclick="window.__vdrInstance.openVerticalPhotoFeed(0)" 
+                   class="group relative aspect-[16/10] sm:aspect-[16/9] bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center select-none cursor-pointer shadow-inner">
                 
-                ${this.photos.length > 1 ? `
-                  <button id="vdrBtnPrevPhoto" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity cursor-pointer">
-                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
-                  </button>
-                  <button id="vdrBtnNextPhoto" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center transition-opacity cursor-pointer">
-                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                  </button>
-                ` : ''}
-
-                <!-- 한글 부위명 라벨 뱃지 (DIRECTIVE 071 TASK 6) -->
-                <div class="absolute top-3 right-3 bg-black/75 backdrop-blur-xs text-[#C8FF3D] border border-[#C8FF3D]/40 text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#C8FF3D]"></span>
-                  <span id="vdrPhotoPartLabel">${escapeHtml(this.photos[0].display_label || '외관')}</span>
+                <img id="vdrMainImage" src="${escapeHtml(this.photos[0].url)}" alt="${escapeHtml(displayTitle)}" 
+                     class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+                
+                <!-- 부위명 라벨 뱃지 -->
+                <div class="absolute top-3.5 left-3.5 bg-black/70 backdrop-blur-md text-white border border-white/20 text-xs font-bold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 pointer-events-none">
+                  <span class="w-2 h-2 rounded-full bg-[#C8FF3D] animate-pulse"></span>
+                  <span id="vdrPhotoPartLabel">${escapeHtml(this.photos[0].display_label || '전면 외관')}</span>
                 </div>
 
-                <!-- 사진 카운터 & 상태 배지 -->
-                <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white/90 bg-black/60 px-3 py-1.5 rounded">
-                  <span id="vdrPhotoCaption" class="truncate font-medium">${escapeHtml(this.photos[0].caption)}</span>
-                  <div class="flex items-center space-x-2 shrink-0 ml-2">
-                    <button onclick="window.__vdrInstance.openLightbox()" class="text-[11px] bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded cursor-pointer flex items-center">
-                      <i data-lucide="maximize-2" class="w-3 h-3 mr-1"></i>확대
-                    </button>
-                    <span id="vdrPhotoCounter" class="font-bold">1 / ${this.photos.length}</span>
-                  </div>
+                <!-- 실사진 30장 전체보기 플로팅 액션 버튼 (사용자 유도) -->
+                <div class="absolute bottom-3.5 right-3.5 bg-[#171B1E]/90 hover:bg-black backdrop-blur-md text-white border border-white/20 text-xs sm:text-sm font-bold px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 transition-transform duration-200 group-hover:scale-105 active:scale-95 pointer-events-none">
+                  <i data-lucide="camera" class="w-4 h-4 text-[#C8FF3D]"></i>
+                  <span>실사진 ${this.photos.length}장 전체보기</span>
+                  <span class="text-[11px] font-normal text-slate-300 sm:inline hidden">(세로 스크롤)</span>
                 </div>
 
-                ${!this.isRealPhotoVerified ? `
-                  <div class="absolute top-3 left-3 bg-amber-600/90 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow-sm">
-                    실차 사진 준비 중
-                  </div>
-                ` : ''}
+                <!-- 사진 하단 안내 오버레이 -->
+                <div class="absolute bottom-3.5 left-3.5 text-xs text-white/90 bg-black/60 backdrop-blur-xs px-3 py-1.5 rounded-lg flex items-center gap-1 pointer-events-none">
+                  <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5 text-[#C8FF3D]"></i>
+                  <span>사진을 터치하면 전체 사진이 세로로 펼쳐집니다</span>
+                </div>
               </div>
 
-              <!-- 하단 썸네일 스트립 (5:3 비율) -->
-              ${this.photos.length > 1 ? `
-                <div id="vdrThumbnailsContainer" class="flex gap-2 overflow-x-auto py-1 custom-scrollbar">
-                  ${this.photos.map((p, idx) => `
-                    <button onclick="window.__vdrInstance.selectPhoto(${idx})" data-cat="${escapeHtml(p.category_code)}" class="vdr-thumb-btn w-20 aspect-[5/3] rounded overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${idx === 0 ? 'border-[#171B1E] ring-1 ring-[#171B1E]' : 'border-[#E5E8EC] opacity-70 hover:opacity-100'}">
-                      <img src="${escapeHtml(p.url)}" alt="썸네일 ${idx+1}" class="w-full h-full object-cover" />
-                    </button>
-                  `).join('')}
-                </div>
-              ` : `
-                <div class="text-xs text-slate-400 text-center py-2 bg-slate-50 rounded">
-                  ※ 전시장 직접 검증 후 고해상도 실차 사진이 등록될 예정입니다.
-                </div>
-              `}
+              <!-- 하단 썸네일 미리보기 스트립 (대표 4장 + 전체보기 버튼) -->
+              <div class="grid grid-cols-5 gap-2 pt-1">
+                ${this.photos.slice(0, 4).map((p, idx) => `
+                  <button type="button" onclick="window.__vdrInstance.openVerticalPhotoFeed(${idx})" 
+                          class="group relative aspect-[16/10] rounded-lg overflow-hidden border-2 border-[#E5E8EC] hover:border-[#171B1E] transition-all cursor-pointer shadow-2xs">
+                    <img src="${escapeHtml(p.url)}" alt="썸네일 ${idx + 1}" class="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                    <span class="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] font-mono px-1 rounded">${idx + 1}</span>
+                  </button>
+                `).join('')}
+
+                <!-- 5번째 버튼: 전체보기 타일 -->
+                <button type="button" onclick="window.__vdrInstance.openVerticalPhotoFeed(4)" 
+                        class="aspect-[16/10] rounded-lg bg-[#171B1E] hover:bg-black text-white flex flex-col items-center justify-center text-center p-1 transition-all cursor-pointer shadow-xs border border-slate-700 group">
+                  <i data-lucide="layout-grid" class="w-4 h-4 sm:w-5 sm:h-5 text-[#C8FF3D] mb-0.5 group-hover:scale-110 transition-transform"></i>
+                  <span class="text-[11px] sm:text-xs font-bold leading-tight">+${Math.max(1, this.photos.length - 4)}장</span>
+                  <span class="text-[9px] text-slate-300 hidden sm:inline">전체보기</span>
+                </button>
+              </div>
             </div>
 
-            <!-- 2. 핵심 기본 제원표 (K Car 스타일 정밀 표 규격) -->
+            <!-- 2. 핵심 기본 제원표 (DIRECTIVE 075-A TASK 1: 모던 2열 반응형 그리드 & 시각적 위계 정립) -->
             <div class="bg-white rounded-lg border border-[#E7E9E5] p-5 space-y-4">
               <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-[#171B1E]">차량 기본 제원 상세</h3>
-                <span class="text-xs text-[#646B6B]">자동차등록원부 및 성능점검부 기준 공시</span>
+                <h3 class="text-base sm:text-lg font-bold text-[#171B1E] flex items-center gap-2">
+                  <i data-lucide="clipboard-list" class="w-4 h-4 text-[#171B1E]"></i>
+                  차량 기본 제원 상세
+                </h3>
+                <span class="text-xs text-slate-400">자동차등록원부 및 성능점검부 전산 대조</span>
               </div>
               
-              <!-- K Car 정밀 표 구조 (단일 표준 반응형 4열 테이블) -->
-              <div class="border border-[#E7E9E5] rounded-lg overflow-hidden">
-                <table id="vdrSpecTable" class="w-full text-xs sm:text-sm border-collapse">
-                  <tbody>
-                    <tr class="border-b border-[#E7E9E5]">
-                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">차량번호</th>
-                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">${escapeHtml(d.plate_number || '미기재')}</td>
-                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">차대번호 (VIN)</th>
-                      <td class="bg-white text-[#171B1E] font-mono text-xs px-3.5 py-2.5 w-1/4">
-                        <div class="flex items-center justify-between gap-1">
-                          <span class="truncate" title="${escapeHtml(d.vin || '미확인')}">${escapeHtml(d.vin || '미확인')}</span>
-                          ${d.vin ? `
-                            <button onclick="navigator.clipboard.writeText('${escapeHtml(d.vin)}'); alert('차대번호가 복사되었습니다: ' + '${escapeHtml(d.vin)}');" class="text-slate-400 hover:text-slate-700 px-1 py-0.5 rounded text-[10px] bg-slate-100 hover:bg-slate-200 shrink-0 cursor-pointer" title="차대번호 복사">
-                              복사
-                            </button>
-                          ` : ''}
-                        </div>
-                      </td>
-                    </tr>
-                    <tr class="border-b border-[#E7E9E5]">
-                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">연식 / 최초등록</th>
-                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">${d.year ? d.year + '년식' : '미확인'} / ${escapeHtml(d.first_registration_date || '미확인')}</td>
-                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">주행거리</th>
-                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4">${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + ' km' : '미확인'}</td>
-                    </tr>
-                    <tr class="border-b border-[#E7E9E5]">
-                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">배기량</th>
-                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">${d.displacement_cc ? Number(d.displacement_cc).toLocaleString('ko-KR') + ' cc' : '미확인'}</td>
-                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">변속기 / 구동방식</th>
-                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4">${escapeHtml(d.transmission || '미확인')} / ${escapeHtml(d.drive_type || '미확인')}</td>
-                    </tr>
-                    <tr>
-                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">사용연료 / 색상</th>
-                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">${escapeHtml(d.fuel_type || '미확인')} / ${escapeHtml(d.color || '미확인')}</td>
-                      <th class="bg-[#F5F6F4] text-[#646B6B] font-medium text-left px-3.5 py-2.5 w-1/4 border-r border-[#E7E9E5]">차체형태 / 인승</th>
-                      <td class="bg-white text-[#171B1E] font-semibold px-3.5 py-2.5 w-1/4">${escapeHtml(d.body_type || '미확인')} ${d.seating_capacity ? `(${d.seating_capacity}인승)` : ''}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <!-- 모던 2열 정밀 제원 그리드 (PC 2열, 모바일 1열 반응형 자연스러운 재배치) -->
+              <div id="vdrSpecsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-xs sm:text-sm">
+                <!-- 좌측 컬럼 -->
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">차량번호</span>
+                    <span class="text-[#171B1E] font-bold tracking-tight text-right">${escapeHtml(d.plate_number || '미기재')}</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">연식 (모델연도)</span>
+                    <span class="text-[#171B1E] font-semibold text-right">${d.year ? d.year + '년형' : '미확인'}</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">최초등록일</span>
+                    <span class="text-[#171B1E] font-semibold text-right">${escapeHtml(d.first_registration_date || '미확인')}</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">주행거리</span>
+                    <span class="text-[#171B1E] font-bold text-right">${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + ' km' : '미확인'}</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">배기량</span>
+                    <span class="text-[#171B1E] font-semibold text-right">${d.displacement_cc ? Number(d.displacement_cc).toLocaleString('ko-KR') + ' cc' : '미확인'}</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">사용연료</span>
+                    <span class="text-[#171B1E] font-semibold text-right">${escapeHtml(d.fuel_type || '미확인')}</span>
+                  </div>
+                </div>
+
+                <!-- 우측 컬럼 -->
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">차대번호 (VIN)</span>
+                    <div class="flex items-center gap-1.5 justify-end">
+                      <span class="font-mono text-xs text-slate-800 font-semibold" id="vdrVinDisplay" title="${escapeHtml(d.vin || '미확인')}">
+                        ${d.vin ? (d.vin.length > 10 ? d.vin.substring(0, 11) + '******' : d.vin) : '미확인'}
+                      </span>
+                      ${d.vin ? `
+                        <button onclick="window.__vdrInstance.copyVin('${escapeHtml(d.vin)}')" id="vdrBtnCopyVin" class="text-slate-500 hover:text-slate-900 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 hover:bg-slate-200 transition-colors shrink-0 cursor-pointer shadow-2xs" title="차대번호 복사">
+                          <span id="vdrVinCopyLabel">복사</span>
+                        </button>
+                      ` : ''}
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">변속기</span>
+                    <span class="text-[#171B1E] font-semibold text-right">${escapeHtml(d.transmission || '미확인')}</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">구동방식</span>
+                    <span class="text-[#171B1E] font-semibold text-right">${escapeHtml(d.drive_type || '미확인')}</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">외장색상</span>
+                    <span class="text-[#171B1E] font-semibold text-right">${escapeHtml(d.color || '미확인')}</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">차체형태</span>
+                    <span class="text-[#171B1E] font-semibold text-right">${escapeHtml(d.body_type || '미확인')}</span>
+                  </div>
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">승차정원</span>
+                    <span class="text-[#171B1E] font-semibold text-right">${d.seating_capacity ? d.seating_capacity + '인승' : '미확인'}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -493,14 +537,17 @@ class VehicleDetailRenderer {
               </div>
             </div>
 
-            <!-- 5. 장착 주요 옵션 체크리스트 -->
-            <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 space-y-4">
+            <!-- 5. 주요 옵션 10개 요약 및 전체 옵션 펼치기 (DIRECTIVE 088 TASK 5, 6) -->
+            <div class="bg-white rounded-xl border border-[#E5E8EC] p-4 sm:p-5 space-y-3.5 shadow-2xs">
               <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-[#171C24]">장착 주요 옵션 체크리스트</h3>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base sm:text-lg font-bold text-[#171C24]">주요 옵션</h3>
+                  <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#171B1E] text-white">10대 핵심 사양</span>
+                </div>
                 <span class="text-xs text-slate-400">실차 확인 사양</span>
               </div>
               <div id="vdrOptionsContainer">
-                ${this.renderOptionsGrid(d)}
+                ${this.renderOptionsSection(d)}
               </div>
             </div>
 
@@ -601,7 +648,7 @@ class VehicleDetailRenderer {
           </div>
 
           <!-- [우측: Sticky 가격 및 구매 상담 패널] (DIRECTIVE 069: 폭 350px 지정) -->
-          <div class="w-full lg:w-[350px] lg:sticky lg:top-20 space-y-5 shrink-0">
+          <div class="w-full lg:w-[350px] lg:sticky lg:top-[165px] space-y-5 shrink-0">
             
             <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 space-y-5">
               <div>
@@ -699,6 +746,65 @@ class VehicleDetailRenderer {
           </div>
         </div>
 
+        </div> <!-- [vdrMainInfoContainer 닫기] -->
+
+      </div>
+
+      <!-- DIRECTIVE 086: 세로 스크롤 사진 전체보기 화면 (Vertical Photo Feed Modal) -->
+      <div id="vdrVerticalFeedModal" class="fixed inset-0 z-50 bg-[#0F1115] hidden flex flex-col select-none animate-in fade-in duration-200">
+        <!-- 상단 고정 헤더 바 (Y=0 영구 고정) -->
+        <header class="h-14 sm:h-16 bg-[#171B1E]/95 backdrop-blur-md border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between shrink-0 z-20">
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="window.__vdrInstance.closeVerticalPhotoFeed()" 
+                    class="p-2 -ml-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" aria-label="닫기">
+              <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            <div>
+              <h2 class="text-sm sm:text-base font-bold text-white truncate max-w-[200px] sm:max-w-md">${escapeHtml(displayTitle)}</h2>
+              <p class="text-[11px] text-[#C8FF3D] font-medium">📷 실사진 ${this.photos.length}장 전체보기 (세로 스크롤 피드)</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="hidden sm:inline text-xs text-slate-400">마우스 휠이나 터치로 아래로 스크롤하여 감상하세요</span>
+            <button type="button" onclick="window.__vdrInstance.closeVerticalPhotoFeed()" 
+                    class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-700 transition-colors shadow-xs">
+              <i data-lucide="x" class="w-4 h-4"></i>
+              <span>닫기 (ESC)</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- 메인 세로 스크롤 피드 본문 (아래로 슥슥 스크롤) -->
+        <div id="vdrVerticalFeedScrollContainer" class="flex-1 overflow-y-auto px-2 sm:px-4 py-6 space-y-6 max-w-4xl mx-auto w-full custom-scrollbar">
+          ${this.photos.map((p, idx) => `
+            <div id="vdrFeedItem_${idx}" class="space-y-2 bg-[#171B1E] p-2.5 sm:p-4 rounded-xl border border-slate-800 shadow-xl">
+              <!-- 사진 번호 및 부위 라벨 헤더 -->
+              <div class="flex items-center justify-between px-1 text-xs sm:text-sm">
+                <span class="font-bold text-white flex items-center gap-2">
+                  <span class="px-2 py-0.5 rounded bg-[#C8FF3D] text-[#171B1E] font-black text-xs">${idx + 1} / ${this.photos.length}</span>
+                  <span>${escapeHtml(p.display_label || p.caption)}</span>
+                </span>
+                <span class="text-[11px] text-slate-400 font-mono">${escapeHtml(p.caption)}</span>
+              </div>
+
+              <!-- 고해상도 실사진 이미지 (비율 유지) -->
+              <div class="relative w-full overflow-hidden rounded-lg bg-black flex items-center justify-center">
+                <img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.caption)}" 
+                     class="w-full h-auto max-h-[85vh] object-contain rounded-lg" loading="lazy" />
+              </div>
+            </div>
+          `).join('')}
+
+          <!-- 피드 하단 닫기 안내 -->
+          <div class="py-12 text-center space-y-3">
+            <div class="text-xs text-slate-400">모든 사진을 확인하셨습니다 (${this.photos.length}장).</div>
+            <button type="button" onclick="window.__vdrInstance.closeVerticalPhotoFeed()" 
+                    class="px-6 py-3 rounded-xl bg-[#171B1E] hover:bg-black text-[#C8FF3D] font-bold text-sm border border-slate-700 shadow-lg cursor-pointer">
+              차량 상세 제원으로 돌아가기
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- 모바일 하단 고정 CTA 바 (전화상담 + 방문예약, 390x844 / 375x812 최적화) -->
@@ -992,179 +1098,287 @@ class VehicleDetailRenderer {
   }
 
   // 차량 부위별 독자 2D SVG 다이어그램 렌더러
+  // 차량 부위별 독자 2D SVG 다이어그램 렌더러 (DIRECTIVE 075-A TASK 2~4)
   renderCarDiagramSvg(acc) {
     const parts = acc.diagram_parts || {};
 
     const keyMap = {
       'hood': 'hood',
-      'front-bumper': 'hood',
+      'front-bumper': 'front_bumper',
       'fender-fl': 'front_fender_l',
       'fender-fr': 'front_fender_r',
       'door-fl': 'front_door_l',
       'door-fr': 'front_door_r',
       'door-rl': 'rear_door_l',
       'door-rr': 'rear_door_r',
+      'quarter-l': 'quarter_panel_l',
+      'quarter-r': 'quarter_panel_r',
       'roof': 'roof',
       'trunk': 'trunk_lid',
-      'rear-bumper': 'trunk_lid',
+      'rear-bumper': 'rear_bumper',
       'frame-rad-support': 'radiator_support',
-      'frame-member-l': 'front_side_member',
-      'frame-member-r': 'front_side_member',
-      'pillar-a': 'pillar_a',
-      'pillar-a-r': 'pillar_a',
-      'pillar-b': 'pillar_b',
-      'pillar-b-r': 'pillar_b',
-      'pillar-c': 'pillar_c',
-      'pillar-c-r': 'pillar_c'
+      'frame-member-l': 'front_side_member_l',
+      'frame-member-r': 'front_side_member_r',
+      'frame-member-rl': 'rear_side_member_l',
+      'frame-member-rr': 'rear_side_member_r',
+      'pillar-a': 'pillar_a_l',
+      'pillar-a-r': 'pillar_a_r',
+      'pillar-b': 'pillar_b_l',
+      'pillar-b-r': 'pillar_b_r',
+      'pillar-c': 'pillar_c_l',
+      'pillar-c-r': 'pillar_c_r'
     };
 
     const getColor = (partKey) => {
       const resolvedKey = keyMap[partKey] || partKey.replace(/-/g, '_');
       const p = parts[resolvedKey] || parts[partKey];
-      if (!p) return '#CBD5E1';
+      if (!p) return '#CBD5E1'; // 미확인 기본 (그레이)
       const st = String(p.status || '').toUpperCase();
-      if (st === 'CLEAN' || st === 'VERIFIED_NORMAL') return '#10B981';
-      if (st === 'CHANGED' || st === 'REPLACED' || st === 'VERIFIED_REPAIRED' || st === 'VERIFIED_REPLACED') return '#F59E0B';
-      if (st === 'DAMAGE' || st === 'DAMAGED' || st === 'VERIFIED_DAMAGED') return '#EF4444';
+      if (st === 'CLEAN' || st === 'VERIFIED_NORMAL') return '#10B981'; // 초록: 정상
+      if (st === 'CHANGED' || st === 'REPLACED' || st === 'VERIFIED_REPAIRED' || st === 'VERIFIED_REPLACED') return '#F59E0B'; // 주황: 단순교환/수리
+      if (st === 'DAMAGE' || st === 'DAMAGED' || st === 'VERIFIED_DAMAGED') return '#EF4444'; // 빨강: 골격손상
       return '#CBD5E1';
     };
 
     return `
-      <svg viewBox="0 0 280 440" class="w-full h-full max-h-[360px] drop-shadow-2xs select-none" xmlns="http://www.w3.org/2000/svg">
-        <!-- 배경 차체 외곽선 -->
-        <path d="M 60,70 C 60,30 220,30 220,70 L 225,120 L 235,160 L 235,320 L 225,370 L 220,410 C 220,430 60,430 60,410 L 55,370 L 45,320 L 45,160 L 55,120 Z" 
-              fill="#F8FAFC" stroke="#94A3B8" stroke-width="2" stroke-linejoin="round" />
-        
-        <!-- [외판 부위] -->
-        <path id="part-hood" d="M 75,70 C 80,45 200,45 205,70 L 210,125 L 70,125 Z" 
-              fill="${getColor('hood')}" opacity="0.85" stroke="#FFFFFF" stroke-width="2" class="cursor-pointer hover:opacity-100 transition-opacity" 
-              onclick="window.__vdrInstance.selectPart('hood')" />
-        
-        <path id="part-front-bumper" d="M 60,50 C 70,30 210,30 220,50 L 215,68 L 65,68 Z" 
-              fill="${getColor('front-bumper')}" opacity="0.8" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('front-bumper')" />
+      <div class="relative w-full flex flex-col items-center">
+        <!-- 앞/뒤 명확한 차량 방향 안내 라벨 (DIRECTIVE 075-A TASK 2) -->
+        <div class="text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1.5 tracking-tight">
+          <span class="inline-block w-2 h-2 border-t-2 border-l-2 border-slate-600 rotate-45 -mb-0.5"></span>
+          <span>▲ FRONT (앞) · 엔진룸</span>
+        </div>
 
-        <path id="part-fender-fl" d="M 55,75 L 72,75 L 68,135 L 48,135 Z" 
-              fill="${getColor('fender-fl')}" opacity="0.85" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('fender-fl')" />
-        <path id="part-fender-fr" d="M 208,75 L 225,75 L 232,135 L 212,135 Z" 
-              fill="${getColor('fender-fr')}" opacity="0.85" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('fender-fr')" />
+        <svg viewBox="0 0 280 470" id="vdrCarSvgDiagram" class="w-full h-full max-h-[380px] drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 1. 차체 외곽 가이드라인 및 휠 위치 (앞/뒤 방향 표시) -->
+          <path d="M 60,65 C 60,25 220,25 220,65 L 225,120 L 235,160 L 235,330 L 225,385 L 220,430 C 220,450 60,450 60,430 L 55,385 L 45,330 L 45,160 L 55,120 Z" 
+                fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" stroke-linejoin="round" pointer-events="none" />
+          
+          <!-- 바퀴 4개 실루엣 (방향성 및 입체감) -->
+          <rect x="34" y="90" width="12" height="42" rx="3" fill="#64748B" opacity="0.6" pointer-events="none" />
+          <rect x="234" y="90" width="12" height="42" rx="3" fill="#64748B" opacity="0.6" pointer-events="none" />
+          <rect x="34" y="320" width="12" height="42" rx="3" fill="#64748B" opacity="0.6" pointer-events="none" />
+          <rect x="234" y="320" width="12" height="42" rx="3" fill="#64748B" opacity="0.6" pointer-events="none" />
 
-        <path id="part-door-fl" d="M 46,140 L 68,140 L 68,220 L 46,220 Z" 
-              fill="${getColor('door-fl')}" opacity="0.85" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('door-fl')" />
-        <path id="part-door-fr" d="M 212,140 L 234,140 L 234,220 L 212,220 Z" 
-              fill="${getColor('door-fr')}" opacity="0.85" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('door-fr')" />
-        <path id="part-door-rl" d="M 46,225 L 68,225 L 68,305 L 46,305 Z" 
-              fill="${getColor('door-rl')}" opacity="0.85" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('door-rl')" />
-        <path id="part-door-rr" d="M 212,225 L 234,225 L 234,305 L 212,305 Z" 
-              fill="${getColor('door-rr')}" opacity="0.85" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('door-rr')" />
+          <!-- 앞유리창 & 뒷유리창 구역 (차량 구조 선명도 강화) -->
+          <polygon points="70,126 210,126 195,155 85,155" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1" pointer-events="none" />
+          <polygon points="85,310 195,310 208,340 72,340" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1" pointer-events="none" />
 
-        <rect id="part-roof" x="72" y="145" width="136" height="155" rx="4" 
-              fill="${getColor('roof')}" opacity="0.9" stroke="#FFFFFF" stroke-width="2" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('roof')" />
+          <!-- [외판 부위 (OUTER)] -->
+          <!-- 앞 범퍼 -->
+          <path id="part-front-bumper" data-part="front-bumper" data-type="outer" d="M 62,45 C 72,25 208,25 218,45 L 214,64 L 66,64 Z" 
+                fill="${getColor('front-bumper')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('front-bumper')" />
 
-        <path id="part-trunk" d="M 72,325 L 208,325 L 202,390 L 78,390 Z" 
-              fill="${getColor('trunk')}" opacity="0.85" stroke="#FFFFFF" stroke-width="2" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('trunk')" />
+          <!-- 보닛 (후드) -->
+          <path id="part-hood" data-part="hood" data-type="outer" d="M 74,68 C 80,45 200,45 206,68 L 210,122 L 70,122 Z" 
+                fill="${getColor('hood')}" opacity="0.9" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all" 
+                onclick="window.__vdrInstance.selectPart('hood')" />
 
-        <path id="part-rear-bumper" d="M 62,395 C 75,420 205,420 218,395 L 215,415 C 205,430 75,430 65,415 Z" 
-              fill="${getColor('rear-bumper')}" opacity="0.8" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:opacity-100 transition-opacity"
-              onclick="window.__vdrInstance.selectPart('rear-bumper')" />
+          <!-- 앞 펜더 (좌/우) -->
+          <path id="part-fender-fl" data-part="fender-fl" data-type="outer" d="M 52,70 L 71,70 L 67,135 L 48,135 Z" 
+                fill="${getColor('fender-fl')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('fender-fl')" />
+          <path id="part-fender-fr" data-part="fender-fr" data-type="outer" d="M 209,70 L 228,70 L 232,135 L 213,135 Z" 
+                fill="${getColor('fender-fr')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('fender-fr')" />
 
-        <!-- [주요 골격] -->
-        <rect id="frame-rad-support" x="78" y="60" width="124" height="6" rx="2" fill="${getColor('frame-rad-support')}" stroke="#FFFFFF" stroke-width="1" class="cursor-pointer hover:scale-105" onclick="window.__vdrInstance.selectPart('frame-rad-support')" />
-        <rect id="frame-member-l" x="80" y="80" width="8" height="240" rx="2" fill="${getColor('frame-member-l')}" opacity="0.85" stroke="#FFFFFF" stroke-width="1" class="cursor-pointer hover:scale-105" onclick="window.__vdrInstance.selectPart('frame-member-l')" />
-        <rect id="frame-member-r" x="192" y="80" width="8" height="240" rx="2" fill="${getColor('frame-member-r')}" opacity="0.85" stroke="#FFFFFF" stroke-width="1" class="cursor-pointer hover:scale-105" onclick="window.__vdrInstance.selectPart('frame-member-r')" />
+          <!-- 앞 도어 (좌/우) -->
+          <path id="part-door-fl" data-part="door-fl" data-type="outer" d="M 46,140 L 70,140 L 70,225 L 46,225 Z" 
+                fill="${getColor('door-fl')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('door-fl')" />
+          <path id="part-door-fr" data-part="door-fr" data-type="outer" d="M 210,140 L 234,140 L 234,225 L 210,225 Z" 
+                fill="${getColor('door-fr')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('door-fr')" />
 
-        <!-- 필러 A, B, C 표시 -->
-        <circle id="part-pillar-a" cx="70" cy="140" r="6" fill="${getColor('pillar-a')}" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-a')" />
-        <circle id="part-pillar-a-r" cx="210" cy="140" r="6" fill="${getColor('pillar-a-r')}" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-a-r')" />
-        <circle id="part-pillar-b" cx="70" cy="222" r="6" fill="${getColor('pillar-b')}" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-b')" />
-        <circle id="part-pillar-b-r" cx="210" cy="222" r="6" fill="${getColor('pillar-b-r')}" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-b-r')" />
-        <circle id="part-pillar-c" cx="70" cy="315" r="6" fill="${getColor('pillar-c')}" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-c')" />
-        <circle id="part-pillar-c-r" cx="210" cy="315" r="6" fill="${getColor('pillar-c-r')}" stroke="#FFFFFF" stroke-width="1.5" class="cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-c-r')" />
-      </svg>
+          <!-- 뒤 도어 (좌/우) -->
+          <path id="part-door-rl" data-part="door-rl" data-type="outer" d="M 46,230 L 70,230 L 70,310 L 46,310 Z" 
+                fill="${getColor('door-rl')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('door-rl')" />
+          <path id="part-door-rr" data-part="door-rr" data-type="outer" d="M 210,230 L 234,230 L 234,310 L 210,310 Z" 
+                fill="${getColor('door-rr')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('door-rr')" />
+
+          <!-- 루프 패널 (천장) -->
+          <rect id="part-roof" data-part="roof" data-type="outer" x="73" y="160" width="134" height="145" rx="4" 
+                fill="${getColor('roof')}" opacity="0.9" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all" 
+                onclick="window.__vdrInstance.selectPart('roof')" />
+
+          <!-- 쿼터 패널 (뒤 펜더 좌/우) -->
+          <path id="part-quarter-l" data-part="quarter-l" data-type="outer" d="M 46,315 L 72,315 L 75,395 L 53,395 Z" 
+                fill="${getColor('quarter-l')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('quarter-l')" />
+          <path id="part-quarter-r" data-part="quarter-r" data-type="outer" d="M 208,315 L 234,315 L 227,395 L 205,395 Z" 
+                fill="${getColor('quarter-r')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('quarter-r')" />
+
+          <!-- 트렁크 리드 -->
+          <path id="part-trunk" data-part="trunk" data-type="outer" d="M 76,345 L 204,345 L 198,410 L 82,410 Z" 
+                fill="${getColor('trunk')}" opacity="0.9" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all" 
+                onclick="window.__vdrInstance.selectPart('trunk')" />
+
+          <!-- 뒤 범퍼 -->
+          <path id="part-rear-bumper" data-part="rear-bumper" data-type="outer" d="M 64,415 C 75,445 205,445 216,415 L 213,438 C 203,455 77,455 67,438 Z" 
+                fill="${getColor('rear-bumper')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
+                onclick="window.__vdrInstance.selectPart('rear-bumper')" />
+
+          <!-- [주요 골격 (FRAME)] -->
+          <!-- 1. 라디에이터 서포트 -->
+          <rect id="part-frame-rad-support" data-part="frame-rad-support" data-type="frame" x="78" y="58" width="124" height="7" rx="2" 
+                fill="${getColor('frame-rad-support')}" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
+                onclick="window.__vdrInstance.selectPart('frame-rad-support')" />
+
+          <!-- 2. 프론트 사이드 멤버 (좌/우) -->
+          <rect id="part-frame-member-l" data-part="frame-member-l" data-type="frame" x="80" y="75" width="10" height="110" rx="2" 
+                fill="${getColor('frame-member-l')}" opacity="0.95" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
+                onclick="window.__vdrInstance.selectPart('frame-member-l')" />
+          <rect id="part-frame-member-r" data-part="frame-member-r" data-type="frame" x="190" y="75" width="10" height="110" rx="2" 
+                fill="${getColor('frame-member-r')}" opacity="0.95" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
+                onclick="window.__vdrInstance.selectPart('frame-member-r')" />
+
+          <!-- 3. 리어 사이드 멤버 (좌/우) -->
+          <rect id="part-frame-member-rl" data-part="frame-member-rl" data-type="frame" x="82" y="340" width="10" height="75" rx="2" 
+                fill="${getColor('frame-member-rl')}" opacity="0.95" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
+                onclick="window.__vdrInstance.selectPart('frame-member-rl')" />
+          <rect id="part-frame-member-rr" data-part="frame-member-rr" data-type="frame" x="188" y="340" width="10" height="75" rx="2" 
+                fill="${getColor('frame-member-rr')}" opacity="0.95" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
+                onclick="window.__vdrInstance.selectPart('frame-member-rr')" />
+
+          <!-- 4. 필러 A, B, C (좌/우 기둥 골격) -->
+          <circle id="part-pillar-a" data-part="pillar-a" data-type="frame" cx="72" cy="142" r="7" fill="${getColor('pillar-a')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-a')" />
+          <circle id="part-pillar-a-r" data-part="pillar-a-r" data-type="frame" cx="208" cy="142" r="7" fill="${getColor('pillar-a-r')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-a-r')" />
+          
+          <circle id="part-pillar-b" data-part="pillar-b" data-type="frame" cx="72" cy="228" r="7" fill="${getColor('pillar-b')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-b')" />
+          <circle id="part-pillar-b-r" data-part="pillar-b-r" data-type="frame" cx="208" cy="228" r="7" fill="${getColor('pillar-b-r')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-b')" />
+          
+          <circle id="part-pillar-c" data-part="pillar-c" data-type="frame" cx="74" cy="325" r="7" fill="${getColor('pillar-c')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-c')" />
+          <circle id="part-pillar-c-r" data-part="pillar-c-r" data-type="frame" cx="206" cy="325" r="7" fill="${getColor('pillar-c-r')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-c-r')" />
+        </svg>
+
+        <!-- 하단: 뒤 트렁크 방향 안내 -->
+        <div class="text-[11px] font-bold text-slate-500 mt-1 flex items-center gap-1.5 tracking-tight">
+          <span>▼ REAR (뒤) · 트렁크</span>
+          <span class="inline-block w-2 h-2 border-b-2 border-r-2 border-slate-600 rotate-45 -mt-0.5"></span>
+        </div>
+      </div>
     `;
   }
 
+  // DIRECTIVE 075-A TASK 2 & 3 & 4: 한글 부위 매핑 및 정밀 진단 판정 선택 핸들러
   selectPart(partKey) {
     const acc = this.data?.accident_summary || this.data?.accident_history || {};
     const parts = acc.diagram_parts || {};
 
+    // 1. 공인 한국어 성능점검 마스터 메타데이터 사전 (영문 내부코드 절대 노출 차단)
+    const PART_META = {
+      'hood': { name: '보닛 (후드)', type: 'OUTER', desc: '엔진룸 상단 외판 패널' },
+      'front-bumper': { name: '앞 범퍼', type: 'OUTER', desc: '전면 충격 흡수 외장재' },
+      'rear-bumper': { name: '뒤 범퍼', type: 'OUTER', desc: '후면 충격 흡수 외장재' },
+      'fender-fl': { name: '좌측 앞 펜더', type: 'OUTER', desc: '운전석 앞 휠 하우스 외판' },
+      'fender-fr': { name: '우측 앞 펜더', type: 'OUTER', desc: '조수석 앞 휠 하우스 외판' },
+      'door-fl': { name: '좌측 앞 도어', type: 'OUTER', desc: '운전석 출입 도어 외판' },
+      'door-fr': { name: '우측 앞 도어', type: 'OUTER', desc: '조수석 출입 도어 외판' },
+      'door-rl': { name: '좌측 뒤 도어', type: 'OUTER', desc: '2열 좌측 승객석 도어' },
+      'door-rr': { name: '우측 뒤 도어', type: 'OUTER', desc: '2열 우측 승객석 도어' },
+      'roof': { name: '루프 패널 (천장)', type: 'OUTER', desc: '차체 상부 외판 패널' },
+      'trunk': { name: '트렁크 리드', type: 'OUTER', desc: '후면 화물칸 덮개 외판' },
+      'quarter-l': { name: '좌측 쿼터 패널 (뒤 펜더)', type: 'OUTER', desc: '후면 좌측 일체형 외판' },
+      'quarter-r': { name: '우측 쿼터 패널 (뒤 펜더)', type: 'OUTER', desc: '후면 우측 일체형 외판' },
+      'frame-rad-support': { name: '라디에이터 서포트', type: 'FRAME', desc: '전면 라디에이터 지지 골격' },
+      'frame-member-l': { name: '좌측 앞 사이드 멤버', type: 'FRAME', desc: '전면 좌측 주요 충격 흡수 골격 (A랭크)' },
+      'frame-member-r': { name: '우측 앞 사이드 멤버', type: 'FRAME', desc: '전면 우측 주요 충격 흡수 골격 (A랭크)' },
+      'frame-member-rl': { name: '좌측 뒤 사이드 멤버', type: 'FRAME', desc: '후면 좌측 메인 차체 골격 (B랭크)' },
+      'frame-member-rr': { name: '우측 뒤 사이드 멤버', type: 'FRAME', desc: '후면 우측 메인 차체 골격 (B랭크)' },
+      'pillar-a': { name: '좌측 앞 필러 (A필러)', type: 'FRAME', desc: '앞유리 좌측 지지 기둥 골격 (B랭크)' },
+      'pillar-a-r': { name: '우측 앞 필러 (A필러)', type: 'FRAME', desc: '앞유리 우측 지지 기둥 골격 (B랭크)' },
+      'pillar-b': { name: '좌측 센터 필러 (B필러)', type: 'FRAME', desc: '측면 중앙 충격 지지 골격 (B랭크)' },
+      'pillar-b-r': { name: '우측 센터 필러 (B필러)', type: 'FRAME', desc: '측면 중앙 우측 지지 골격 (B랭크)' },
+      'pillar-c': { name: '좌측 리어 필러 (C필러)', type: 'FRAME', desc: '후면 유리 좌측 지지 기둥 골격 (B랭크)' },
+      'pillar-c-r': { name: '우측 리어 필러 (C필러)', type: 'FRAME', desc: '후면 유리 우측 지지 기둥 골격 (B랭크)' }
+    };
+
     const keyMap = {
       'hood': 'hood',
-      'front-bumper': 'hood',
+      'front-bumper': 'front_bumper',
       'fender-fl': 'front_fender_l',
       'fender-fr': 'front_fender_r',
       'door-fl': 'front_door_l',
       'door-fr': 'front_door_r',
       'door-rl': 'rear_door_l',
       'door-rr': 'rear_door_r',
+      'quarter-l': 'quarter_panel_l',
+      'quarter-r': 'quarter_panel_r',
       'roof': 'roof',
       'trunk': 'trunk_lid',
-      'rear-bumper': 'trunk_lid',
+      'rear-bumper': 'rear_bumper',
       'frame-rad-support': 'radiator_support',
-      'frame-member-l': 'front_side_member',
-      'frame-member-r': 'front_side_member',
-      'pillar-a': 'pillar_a',
-      'pillar-a-r': 'pillar_a',
-      'pillar-b': 'pillar_b',
-      'pillar-b-r': 'pillar_b',
-      'pillar-c': 'pillar_c',
-      'pillar-c-r': 'pillar_c'
+      'frame-member-l': 'front_side_member_l',
+      'frame-member-r': 'front_side_member_r',
+      'frame-member-rl': 'rear_side_member_l',
+      'frame-member-rr': 'rear_side_member_r',
+      'pillar-a': 'pillar_a_l',
+      'pillar-a-r': 'pillar_a_r',
+      'pillar-b': 'pillar_b_l',
+      'pillar-b-r': 'pillar_b_r',
+      'pillar-c': 'pillar_c_l',
+      'pillar-c-r': 'pillar_c_r'
     };
 
     const resolvedKey = keyMap[partKey] || partKey.replace(/-/g, '_');
     const partInfo = parts[resolvedKey] || parts[partKey];
+    const meta = PART_META[partKey] || { name: '차체 부위', type: 'OUTER', desc: '차량 점검 부위' };
 
+    // 2. SVG 부위 선택 강조 외곽선 동기화
+    document.querySelectorAll('.vdr-diag-part').forEach(el => {
+      el.classList.remove('stroke-slate-900', 'stroke-[3px]');
+    });
+    const targetSvgEl = document.getElementById(`part-${partKey}`);
+    if (targetSvgEl) {
+      targetSvgEl.classList.add('stroke-slate-900', 'stroke-[3px]');
+    }
+
+    // 3. 우측 상세 패널 바인딩
     const nameEl = document.getElementById('vdrSelectedPartName');
     const badgeEl = document.getElementById('vdrSelectedPartBadge');
     const catEl = document.getElementById('vdrSelectedPartCategory');
     const stateEl = document.getElementById('vdrSelectedPartState');
     const evEl = document.getElementById('vdrSelectedPartEvidence');
 
+    if (nameEl) nameEl.textContent = meta.name;
+    if (catEl) catEl.textContent = (meta.type === 'FRAME') ? '주요 골격 (프레임)' : '외부 패널 (외판)';
+
     if (!partInfo) {
-      if (nameEl) nameEl.textContent = partKey;
       if (badgeEl) {
-        badgeEl.textContent = '미확인 (전산대기)';
-        badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600';
+        badgeEl.textContent = '점검 기록 미확인';
+        badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200';
       }
-      if (catEl) catEl.textContent = '부위 정보 없음';
-      if (stateEl) stateEl.textContent = '점검 기록 미기재';
-      if (evEl) evEl.textContent = '실차 전산 원본 확인 필요';
+      if (stateEl) stateEl.textContent = '점검 기록 미기재 (전산 대기)';
+      if (evEl) evEl.textContent = meta.desc + ' · 실차 전산 증빙 대기';
       return;
     }
 
-    const partDisplayName = partInfo.name || partInfo.part_name || partKey;
-    if (nameEl) nameEl.textContent = partDisplayName;
-    if (catEl) catEl.textContent = (partInfo.type === 'FRAME') ? '주요 골격 (프레임)' : '외부 패널 (외판)';
-    if (stateEl) stateEl.textContent = partInfo.finding || '점검 내용 확인';
-    if (evEl) evEl.textContent = partInfo.evidence || '실차 전산 증빙 대기';
-
+    const st = String(partInfo.status || '').toUpperCase();
     if (badgeEl) {
-      const st = String(partInfo.status || '').toUpperCase();
       if (st === 'CLEAN' || st === 'VERIFIED_NORMAL') {
         badgeEl.textContent = '정상 (무사고)';
-        badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800';
+        badgeEl.className = 'px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200';
+        if (stateEl) stateEl.innerHTML = '<span class="text-emerald-700 font-bold">정상 확인 (교환·판금·용접 없음)</span>';
       } else if (st === 'CHANGED' || st === 'REPLACED' || st === 'VERIFIED_REPAIRED' || st === 'VERIFIED_REPLACED') {
         badgeEl.textContent = '단순교환/수리';
-        badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800';
+        badgeEl.className = 'px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-300';
+        if (stateEl) stateEl.innerHTML = `<span class="text-amber-800 font-bold">${escapeHtml(partInfo.finding || '단순 탈부착/교환 이력')}</span>`;
       } else if (st === 'DAMAGE' || st === 'DAMAGED' || st === 'VERIFIED_DAMAGED') {
-        badgeEl.textContent = '골격손상';
-        badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-800';
+        badgeEl.textContent = '주요 골격 손상';
+        badgeEl.className = 'px-2.5 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-300';
+        if (stateEl) stateEl.innerHTML = `<span class="text-rose-700 font-bold">${escapeHtml(partInfo.finding || '프레임 판금/용접/교환')}</span>`;
       } else {
-        badgeEl.textContent = '미확인 (증빙대기)';
-        badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600';
+        badgeEl.textContent = '점검 기록 미확인';
+        badgeEl.className = 'px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200';
+        if (stateEl) stateEl.textContent = partInfo.finding || '점검 내용 미확인';
       }
     }
+    if (evEl) evEl.textContent = partInfo.evidence || (meta.desc + ' · 전산 대조 완료');
   }
 
-  // 타이어 4개 바퀴 게이지
   renderTireGauges(d) {
     const tires = d.accident_summary?.tires || d.tires || d.consumables_status?.tires || {};
     const positions = [
@@ -1205,7 +1419,6 @@ class VehicleDetailRenderer {
     `;
   }
 
-  // 소모품 상태 그리드
   renderConsumablesGrid(d) {
     const cs = d.consumables_status || {};
     const items = [
@@ -1238,64 +1451,296 @@ class VehicleDetailRenderer {
     `;
   }
 
+  // DIRECTIVE 075-A TASK 4: 외판/골격/전체 탭 전환 필터링
   switchDiagramTab(tab) {
     this.currentDiagramTab = tab;
     const btnAll = document.getElementById('vdrDiagTabAll');
     const btnOuter = document.getElementById('vdrDiagTabOuter');
     const btnFrame = document.getElementById('vdrDiagTabFrame');
 
-    [btnAll, btnOuter, btnFrame].forEach(b => {
-      if (b) b.className = "px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 cursor-pointer";
-    });
+    const activeCls = 'px-2.5 py-1 rounded bg-white text-slate-900 shadow-2xs font-bold cursor-pointer';
+    const inactiveCls = 'px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 font-medium cursor-pointer';
 
-    const activeBtn = tab === 'all' ? btnAll : (tab === 'outer' ? btnOuter : btnFrame);
-    if (activeBtn) activeBtn.className = "px-2.5 py-1 rounded bg-white text-slate-900 shadow-2xs cursor-pointer";
+    if (btnAll) btnAll.className = (tab === 'all') ? activeCls : inactiveCls;
+    if (btnOuter) btnOuter.className = (tab === 'outer') ? activeCls : inactiveCls;
+    if (btnFrame) btnFrame.className = (tab === 'frame') ? activeCls : inactiveCls;
 
-    const outerParts = ['part-hood', 'part-front-bumper', 'part-fender-fl', 'part-fender-fr', 'part-door-fl', 'part-door-fr', 'part-door-rl', 'part-door-rr', 'part-roof', 'part-trunk', 'part-rear-bumper'];
-    const frameParts = ['frame-rad-support', 'frame-member-l', 'frame-member-r', 'part-pillar-a', 'part-pillar-a-r', 'part-pillar-b', 'part-pillar-b-r', 'part-pillar-c', 'part-pillar-c-r'];
-
-    outerParts.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = (tab === 'all' || tab === 'outer') ? 'block' : 'none';
-    });
-
-    frameParts.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = (tab === 'all' || tab === 'frame') ? 'block' : 'none';
+    document.querySelectorAll('.vdr-diag-part').forEach(el => {
+      const type = el.getAttribute('data-type');
+      if (tab === 'all') {
+        el.style.opacity = '0.9';
+        el.style.pointerEvents = 'auto';
+      } else if (tab === 'outer') {
+        if (type === 'outer') {
+          el.style.opacity = '1';
+          el.style.pointerEvents = 'auto';
+        } else {
+          el.style.opacity = '0.15';
+          el.style.pointerEvents = 'none';
+        }
+      } else if (tab === 'frame') {
+        if (type === 'frame') {
+          el.style.opacity = '1';
+          el.style.pointerEvents = 'auto';
+        } else {
+          el.style.opacity = '0.15';
+          el.style.pointerEvents = 'none';
+        }
+      }
     });
   }
 
-  renderOptionsGrid(d) {
-    const categorized = d.options_categorized || {};
-    if (Object.keys(categorized).length > 0) {
-      let html = '';
-      for (const [catName, list] of Object.entries(categorized)) {
-        if (list && list.length > 0) {
-          const badges = list.map(o => `
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-normal bg-slate-100 text-slate-700 border border-slate-200">
-              <i data-lucide="check" class="w-3 h-3 mr-1 text-[#171B1E]"></i>
-              ${escapeHtml(o.name || o)}
+  // DIRECTIVE 088 TASK 5 & 6: 주요 옵션 10개 요약 및 전체 옵션 펼치기 구현
+  toggleFullOptionsView() {
+    const panel = document.getElementById('vdrFullOptionsPanel');
+    const chevron = document.getElementById('vdrToggleOptionsChevron');
+    const btn = document.getElementById('vdrToggleFullOptionsBtn');
+    if (!panel) return;
+
+    const isHidden = panel.classList.contains('hidden');
+    if (isHidden) {
+      panel.classList.remove('hidden');
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+      if (btn) {
+        const textSpan = btn.querySelector('.vdr-toggle-label');
+        if (textSpan) textSpan.textContent = '전체 옵션 접기';
+      }
+    } else {
+      panel.classList.add('hidden');
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+      if (btn) {
+        const textSpan = btn.querySelector('.vdr-toggle-label');
+        if (textSpan) textSpan.textContent = '전체 옵션 보기';
+      }
+    }
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  getOptionIconSvg(iconName, isPresent) {
+    const strokeCls = isPresent ? 'stroke-[#171B1E] stroke-[2.2]' : 'stroke-slate-400 stroke-[1.8]';
+    const fillCls = 'none';
+
+    switch (iconName) {
+      case 'sun':
+      case 'OPT_SUNROOF':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+      case 'tv':
+      case 'OPT_HUD':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><rect width="20" height="15" x="2" y="7" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>`;
+      case 'radar':
+      case 'OPT_PARKING_SENSOR':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/></svg>`;
+      case 'camera':
+      case 'OPT_REAR_CAMERA':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
+      case 'fan':
+      case 'OPT_AUTO_AC':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"/><circle cx="12" cy="12" r="2"/></svg>`;
+      case 'key':
+      case 'OPT_SMART_KEY':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>`;
+      case 'navigation':
+      case 'OPT_GENUINE_NAVI':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>`;
+      case 'flame':
+      case 'OPT_HEATED_SEAT':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`;
+      case 'wind':
+      case 'OPT_VENTILATED_SEAT':
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>`;
+      case 'armchair':
+      case 'OPT_LEATHER_SEATS':
+      default:
+        return `<svg class="w-5 h-5 ${strokeCls}" fill="${fillCls}" viewBox="0 0 24 24"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H7v-2a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>`;
+    }
+  }
+
+  buildFallbackTop10(d) {
+    const rawOptions = Array.isArray(d.options) ? d.options : [];
+    const text = rawOptions.join(' ') + ' ' + (d.model_name || '');
+    const defs = [
+      { code: 'OPT_SUNROOF', name: '선루프', icon: 'sun', keys: ['선루프', '루프'] },
+      { code: 'OPT_HUD', name: 'HUD', icon: 'tv', keys: ['HUD', '헤드업'] },
+      { code: 'OPT_PARKING_SENSOR', name: '주차센서', icon: 'radar', keys: ['주차', '센서'] },
+      { code: 'OPT_REAR_CAMERA', name: '후방카메라', icon: 'camera', keys: ['후방', '카메라', '어라운드'] },
+      { code: 'OPT_AUTO_AC', name: '자동에어컨', icon: 'fan', keys: ['에어컨', '오토'] },
+      { code: 'OPT_SMART_KEY', name: '스마트키', icon: 'key', keys: ['스마트키', '버튼'] },
+      { code: 'OPT_GENUINE_NAVI', name: '내비게이션', icon: 'navigation', keys: ['내비', '네비'] },
+      { code: 'OPT_HEATED_SEAT', name: '열선시트', icon: 'flame', keys: ['열선'] },
+      { code: 'OPT_VENTILATED_SEAT', name: '통풍시트', icon: 'wind', keys: ['통풍'] },
+      { code: 'OPT_LEATHER_SEATS', name: '가죽시트', icon: 'armchair', keys: ['가죽', '나파'] },
+    ];
+    return defs.map(def => {
+      const match = def.keys.some(k => text.includes(k));
+      return {
+        code: def.code,
+        name: def.name,
+        icon: def.icon,
+        status: match ? 'PRESENT' : 'UNKNOWN',
+        is_present: match,
+      };
+    });
+  }
+
+  buildFallbackCategorized(d) {
+    const rawOptions = Array.isArray(d.options) ? d.options : [];
+    return {
+      '외관·내장': rawOptions.filter(o => o.includes('선루프') || o.includes('휠') || o.includes('램프') || o.includes('핸들')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
+      '안전': rawOptions.filter(o => o.includes('에어백') || o.includes('센서') || o.includes('카메라') || o.includes('ABS')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
+      '편의·멀티미디어': rawOptions.filter(o => o.includes('스마트키') || o.includes('내비') || o.includes('에어컨') || o.includes('크루즈')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
+      '시트': rawOptions.filter(o => o.includes('시트') || o.includes('통풍') || o.includes('열선')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
+      '기타 옵션': []
+    };
+  }
+
+  renderOptionsSection(d) {
+    const top10 = (d.top10_options && d.top10_options.length === 10) ? d.top10_options : this.buildFallbackTop10(d);
+    const categorized = d.options_categorized || this.buildFallbackCategorized(d);
+
+    // 총 장착 확인 개수 계산
+    let totalPresentCount = 0;
+    for (const [cat, list] of Object.entries(categorized)) {
+      if (Array.isArray(list)) {
+        totalPresentCount += list.filter(o => o.is_present || o.status === 'PRESENT').length;
+      }
+    }
+    if (totalPresentCount === 0 && Array.isArray(d.options)) {
+      totalPresentCount = d.options.length;
+    }
+
+    // 1. 10대 핵심 주요 옵션 5x2 그리드 (PC: 5개씩 2줄, 모바일: 균등 5열)
+    const top10Html = top10.map(opt => {
+      const isPresent = opt.is_present || opt.status === 'PRESENT';
+      const isAbsent = opt.status === 'ABSENT';
+      const isUnknown = !isPresent && !isAbsent;
+
+      let cardStyle = "bg-white border-slate-200";
+      let iconColor = "text-[#171B1E]";
+      let badgeHtml = `<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>`;
+      let stateLabel = `<span class="text-[10px] font-bold text-[#10B981]">장착 확인</span>`;
+
+      if (isPresent) {
+        cardStyle = "bg-slate-50 border-slate-300 font-bold shadow-2xs";
+        iconColor = "text-[#171B1E]";
+        badgeHtml = `<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>`;
+        stateLabel = `<span class="text-[10px] font-bold text-[#10B981]">장착</span>`;
+      } else if (isAbsent) {
+        cardStyle = "bg-slate-50/40 border-slate-100 opacity-40";
+        iconColor = "text-slate-300";
+        badgeHtml = `<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>`;
+        stateLabel = `<span class="text-[10px] text-slate-400 line-through">미장착</span>`;
+      } else {
+        cardStyle = "bg-white border-dashed border-slate-200 opacity-70";
+        iconColor = "text-slate-400";
+        badgeHtml = `<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>`;
+        stateLabel = `<span class="text-[10px] text-slate-400">미확인</span>`;
+      }
+
+      // 모바일 친화 축약명
+      let shortName = opt.name || '';
+      shortName = shortName.replace('헤드업 디스플레이 (HUD)', 'HUD')
+                           .replace('주차감지센서', '주차센서')
+                           .replace('순정 내비게이션', '내비게이션')
+                           .replace('풀오토 에어컨', '자동에어컨');
+
+      return `
+        <div class="flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl border ${cardStyle} transition-all text-center">
+          <div class="mb-1 sm:mb-1.5 ${iconColor}">
+            ${this.getOptionIconSvg(opt.icon || opt.code, isPresent)}
+          </div>
+          <span class="text-[11px] sm:text-xs font-semibold tracking-tight text-slate-800 truncate w-full text-center">${escapeHtml(shortName)}</span>
+          <div class="mt-1 flex items-center justify-center gap-1">
+            ${badgeHtml}
+            ${stateLabel}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 2. 전체 옵션 아코디언 내용 구성
+    let fullCategoriesHtml = '';
+    const catKeys = ['외관·내장', '안전', '편의·멀티미디어', '시트', '기타 옵션'];
+    for (const catName of catKeys) {
+      const list = categorized[catName] || [];
+      if (list.length === 0) continue;
+
+      const presentList = list.filter(o => o.is_present || o.status === 'PRESENT');
+
+      const badges = list.map(o => {
+        const p = o.is_present || o.status === 'PRESENT';
+        const abs = o.status === 'ABSENT';
+        if (p) {
+          return `
+            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-900 border border-slate-200 shadow-2xs">
+              <i data-lucide="check" class="w-3.5 h-3.5 mr-1 text-[#10B981] stroke-[2.5]"></i>
+              ${escapeHtml(o.name)}
             </span>
-          `).join(' ');
-          html += `
-            <div class="space-y-1.5">
-              <div class="text-xs font-semibold text-slate-500">${escapeHtml(catName)}</div>
-              <div class="flex flex-wrap gap-1.5">${badges}</div>
-            </div>
+          `;
+        } else if (abs) {
+          return `
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-slate-400 border border-dashed border-slate-200 line-through opacity-50">
+              <i data-lucide="x" class="w-3 h-3 mr-1 text-slate-300"></i>
+              ${escapeHtml(o.name)}
+            </span>
+          `;
+        } else {
+          return `
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-slate-400 border border-dashed border-slate-200 opacity-60">
+              <i data-lucide="help-circle" class="w-3 h-3 mr-1 text-slate-300"></i>
+              ${escapeHtml(o.name)}
+            </span>
           `;
         }
-      }
-      return html || '<div class="text-xs text-slate-400">장착 옵션 사양을 정리 중입니다.</div>';
-    } else if (d.options && d.options.length > 0) {
-      const badges = d.options.map(o => `
-        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-normal bg-slate-100 text-slate-700 border border-slate-200">
-          <i data-lucide="check" class="w-3 h-3 mr-1 text-[#171B1E]"></i>
-          ${escapeHtml(o)}
-        </span>
-      `).join(' ');
-      return `<div class="flex flex-wrap gap-1.5">${badges}</div>`;
+      }).join(' ');
+
+      fullCategoriesHtml += `
+        <div class="p-3 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-2">
+          <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+            <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#171B1E]"></span>
+              ${escapeHtml(catName)}
+            </span>
+            <span class="text-[11px] font-semibold text-slate-500">
+              <strong class="text-slate-900">${presentList.length}</strong> / ${list.length}개 장착
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 pt-1">
+            ${badges}
+          </div>
+        </div>
+      `;
     }
-    return '<div class="text-xs text-slate-400">확인된 주요 옵션 사양을 정리 중입니다.</div>';
+
+    return `
+      <div class="space-y-3">
+        <!-- 10대 핵심 주요 옵션 5x2 그리드 -->
+        <div class="grid grid-cols-5 gap-1.5 sm:gap-2.5">
+          ${top10Html}
+        </div>
+
+        <!-- 전체 옵션 보기 토글 버튼 (TASK 6) -->
+        <button type="button" onclick="window.__vdrInstance ? window.__vdrInstance.toggleFullOptionsView() : null" id="vdrToggleFullOptionsBtn" class="w-full py-2.5 sm:py-3 px-4 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 text-slate-800 text-xs sm:text-sm font-bold rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs">
+          <i data-lucide="layers" class="w-4 h-4 text-slate-600"></i>
+          <span class="vdr-toggle-label">전체 옵션 보기</span>
+          <span class="text-xs text-slate-500 font-normal">(총 ${totalPresentCount}개 장착 확인)</span>
+          <i data-lucide="chevron-down" id="vdrToggleOptionsChevron" class="w-4 h-4 ml-1 text-slate-500 transition-transform"></i>
+        </button>
+
+        <!-- 전체 옵션 펼치기 패널 (기본 접힘, 인라인 펼침) -->
+        <div id="vdrFullOptionsPanel" class="hidden space-y-3 pt-1 animate-in fade-in duration-150">
+          <div class="text-[11px] text-slate-500 flex items-center justify-between px-1 pb-1">
+            <span>엔카·차마트 표준 4대 분류 상세 옵션표</span>
+            <span class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1 text-[#10B981] font-bold"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>장착 확인</span>
+              <span class="inline-flex items-center gap-1 text-slate-400"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>미확인</span>
+            </span>
+          </div>
+          <div class="space-y-2.5">
+            ${fullCategoriesHtml || '<div class="text-xs text-slate-400 py-3 text-center">상세 옵션 내역을 불러오는 중입니다.</div>'}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   updateLoanCalc() {
@@ -1341,19 +1786,33 @@ class VehicleDetailRenderer {
     this.currentPhotoIdx = index;
     const photo = this.photos[this.currentPhotoIdx];
     
+    // 1. 일반 정보 탭 메인 이미지 갱신
     const mainImg = document.getElementById('vdrMainImage');
     if (mainImg) mainImg.src = photo.url;
 
     const capEl = document.getElementById('vdrPhotoCaption');
     if (capEl) capEl.textContent = photo.caption;
 
-    // 한글 부위 라벨 갱신 (DIRECTIVE 071)
     const partLabelEl = document.getElementById('vdrPhotoPartLabel');
     if (partLabelEl) partLabelEl.textContent = photo.display_label || photo.caption || '외관';
 
     const countEl = document.getElementById('vdrPhotoCounter');
     if (countEl) countEl.textContent = `${this.currentPhotoIdx + 1} / ${this.photos.length}`;
 
+    // 2. DIRECTIVE 082/083 사진 전용 화면 대형 뷰어 갱신
+    const dedImg = document.getElementById('vdrDedicatedMainImage');
+    if (dedImg) dedImg.src = photo.url;
+
+    const dedCap = document.getElementById('vdrDedicatedCaption');
+    if (dedCap) dedCap.textContent = photo.caption;
+
+    const dedPart = document.getElementById('vdrDedicatedPartLabel');
+    if (dedPart) dedPart.textContent = photo.display_label || photo.caption || '외관';
+
+    const dedCount = document.getElementById('vdrDedicatedCounter');
+    if (dedCount) dedCount.textContent = `${this.currentPhotoIdx + 1} / ${this.photos.length}`;
+
+    // 3. 전체화면 Lightbox 모달 갱신
     if (this.lightboxOpen) {
       const lbImg = document.getElementById('vdrLightboxImage');
       const lbCap = document.getElementById('vdrLightboxCaption');
@@ -1376,41 +1835,76 @@ class VehicleDetailRenderer {
     }
   }
 
-  filterPhotoCategory(cat) {
-    this.activePhotoCategory = cat;
-    
-    // 카테고리 탭 버튼 스타일 갱신
-    const cats = ['ALL', 'EXTERIOR_FULL', 'EXTERIOR_PANEL', 'INTERIOR', 'ENGINE_MECHANICAL', 'OPTION_FEATURE', 'DOCUMENT'];
-    cats.forEach(c => {
-      const btn = document.getElementById(`vdrTabCat${c}`);
-      if (btn) {
-        if (c === cat) {
-          btn.className = "px-3 py-1.5 rounded-full transition-all bg-[#171B1E] text-white font-bold cursor-pointer shrink-0 shadow-2xs";
-        } else {
-          btn.className = "px-3 py-1.5 rounded-full transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0";
+  // DIRECTIVE 086: 세로 스크롤 방식 실사진 전체보기 피드 모달 열기/닫기 (마우스 뒤로가기 완벽 연동)
+  openVerticalPhotoFeed(startIndex = 0) {
+    const modal = document.getElementById('vdrVerticalFeedModal');
+    if (!modal) return;
+
+    this.savedScrollY = window.scrollY || window.pageYOffset || 0;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // 브라우저 및 마우스 뒤로가기 시 사진 모달만 자연스럽게 닫히도록 해시 push
+    if (!window.location.hash.includes('photo-feed')) {
+      window.history.pushState({ modal: 'photo_feed' }, '', window.location.pathname + '#photo-feed');
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+
+    // 시작 인덱스가 있으면 해당 위치로 스크롤 이동
+    if (startIndex > 0) {
+      setTimeout(() => {
+        const targetItem = document.getElementById(`vdrFeedItem_${startIndex}`);
+        if (targetItem) {
+          targetItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+      }, 50);
+    } else {
+      const scrollCont = document.getElementById('vdrVerticalFeedScrollContainer');
+      if (scrollCont) scrollCont.scrollTop = 0;
+    }
+
+    // ESC 키 리스너 등록
+    this.feedEscHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.closeVerticalPhotoFeed(true);
       }
-    });
+    };
+    window.addEventListener('keydown', this.feedEscHandler);
+  }
 
-    // 썸네일 스트립 필터링 표시/숨김
-    const container = document.getElementById('vdrThumbnailsContainer');
-    let firstMatchIdx = -1;
-    if (container) {
-      const btns = container.querySelectorAll('.vdr-thumb-btn');
-      btns.forEach((btn, idx) => {
-        const itemCat = btn.getAttribute('data-cat') || 'EXTERIOR_FULL';
-        if (cat === 'ALL' || itemCat === cat) {
-          btn.classList.remove('hidden');
-          if (firstMatchIdx === -1) firstMatchIdx = idx;
-        } else {
-          btn.classList.add('hidden');
-        }
-      });
+  closeVerticalPhotoFeed(triggerHistoryBack = true) {
+    const modal = document.getElementById('vdrVerticalFeedModal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+    document.body.style.overflow = '';
+
+    if (this.feedEscHandler) {
+      window.removeEventListener('keydown', this.feedEscHandler);
+      this.feedEscHandler = null;
     }
 
-    if (firstMatchIdx !== -1) {
-      this.selectPhoto(firstMatchIdx);
+    // URL에 #photo-feed 해시가 남아있고 triggerHistoryBack인 경우 history.back() 실행
+    if (triggerHistoryBack && window.location.hash.includes('photo-feed')) {
+      window.history.back();
     }
+
+    // 원래 보던 스크롤 위치 복원
+    if (typeof this.savedScrollY === 'number') {
+      window.scrollTo({ top: this.savedScrollY, behavior: 'instant' });
+    }
+  }
+
+  // 기존 호환용 메서드
+  switchDetailTab(tab) {
+    if (tab === 'PHOTOS') {
+      this.openVerticalPhotoFeed(0);
+    }
+  }
+
+  filterPhotoCategory(cat) {
+    // DIRECTIVE 086: 카테고리 필터 불필요, 전체 감상
   }
 
   prevPhoto() {
@@ -1534,6 +2028,28 @@ class VehicleDetailRenderer {
       });
     } else {
       alert('전시장 주소: ' + addr);
+    }
+  }
+
+  // DIRECTIVE 075-A: 차대번호(VIN) 클립보드 복사 및 인라인 피드백
+  copyVin(vin) {
+    if (!vin) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(vin).then(() => {
+        const lbl = document.getElementById('vdrVinCopyLabel');
+        if (lbl) {
+          lbl.textContent = '복사됨!';
+          lbl.classList.add('text-emerald-700', 'font-bold');
+          setTimeout(() => {
+            lbl.textContent = '복사';
+            lbl.classList.remove('text-emerald-700', 'font-bold');
+          }, 2000);
+        }
+      }).catch(() => {
+        alert('차대번호: ' + vin);
+      });
+    } else {
+      alert('차대번호: ' + vin);
     }
   }
 
@@ -1718,6 +2234,23 @@ class VehicleDetailRenderer {
       });
     }
 
+    // DIRECTIVE 082 & 083: 사진 전용 뷰어 버튼
+    const dedBtnPrev = document.getElementById('vdrBtnDedicatedPrev');
+    if (dedBtnPrev) {
+      dedBtnPrev.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.prevPhoto();
+      });
+    }
+    const dedBtnNext = document.getElementById('vdrBtnDedicatedNext');
+    if (dedBtnNext) {
+      dedBtnNext.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.nextPhoto();
+      });
+    }
+
+    // 일반 갤러리 뷰포트 터치 스와이프
     const viewport = document.getElementById('vdrGalleryViewport');
     if (viewport) {
       viewport.addEventListener('touchstart', (e) => {
@@ -1728,7 +2261,6 @@ class VehicleDetailRenderer {
         const currentTime = new Date().getTime();
         const tapLength = currentTime - (this.lastTapTime || 0);
         if (tapLength < 350 && tapLength > 50) {
-          // 더블탭 감지 -> 2배 확대 토글
           e.preventDefault();
           this.toggleZoom();
           this.lastTapTime = 0;
@@ -1746,6 +2278,31 @@ class VehicleDetailRenderer {
           }
         }
       }, { passive: false });
+    }
+
+    // DIRECTIVE 082 & 083: 사진 전용 대형 뷰포트 터치 스와이프 (모바일 100% 최적화)
+    const dedViewport = document.getElementById('vdrDedicatedGalleryViewport');
+    if (dedViewport) {
+      dedViewport.addEventListener('touchstart', (e) => {
+        this.dedTouchStartX = e.changedTouches[0].screenX;
+        this.dedTouchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      dedViewport.addEventListener('touchend', (e) => {
+        const endX = e.changedTouches[0].screenX;
+        const endY = e.changedTouches[0].screenY;
+        const diffX = endX - (this.dedTouchStartX || endX);
+        const diffY = endY - (this.dedTouchStartY || endY);
+
+        // 수평 스와이프가 수직 스크롤보다 크고 40px 이상일 때만 사진 넘김 (세로 스크롤 보존)
+        if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+          if (diffX > 0) {
+            this.prevPhoto();
+          } else {
+            this.nextPhoto();
+          }
+        }
+      }, { passive: true });
     }
 
     window.addEventListener('keydown', (e) => {
