@@ -1612,7 +1612,7 @@ class VehicleDetailRenderer {
     }
   }
 
-  // DIRECTIVE 086: 세로 스크롤 방식 실사진 전체보기 피드 모달 열기/닫기
+  // DIRECTIVE 086: 세로 스크롤 방식 실사진 전체보기 피드 모달 열기/닫기 (마우스 뒤로가기 완벽 연동)
   openVerticalPhotoFeed(startIndex = 0) {
     const modal = document.getElementById('vdrVerticalFeedModal');
     if (!modal) return;
@@ -1620,6 +1620,11 @@ class VehicleDetailRenderer {
     this.savedScrollY = window.scrollY || window.pageYOffset || 0;
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+
+    // 브라우저 및 마우스 뒤로가기 시 사진 모달만 자연스럽게 닫히도록 해시 push
+    if (!window.location.hash.includes('photo-feed')) {
+      window.history.pushState({ modal: 'photo_feed' }, '', window.location.pathname + '#photo-feed');
+    }
 
     if (window.lucide) window.lucide.createIcons();
 
@@ -1639,13 +1644,13 @@ class VehicleDetailRenderer {
     // ESC 키 리스너 등록
     this.feedEscHandler = (e) => {
       if (e.key === 'Escape') {
-        this.closeVerticalPhotoFeed();
+        this.closeVerticalPhotoFeed(true);
       }
     };
     window.addEventListener('keydown', this.feedEscHandler);
   }
 
-  closeVerticalPhotoFeed() {
+  closeVerticalPhotoFeed(triggerHistoryBack = true) {
     const modal = document.getElementById('vdrVerticalFeedModal');
     if (modal) {
       modal.classList.add('hidden');
@@ -1655,6 +1660,11 @@ class VehicleDetailRenderer {
     if (this.feedEscHandler) {
       window.removeEventListener('keydown', this.feedEscHandler);
       this.feedEscHandler = null;
+    }
+
+    // URL에 #photo-feed 해시가 남아있고 triggerHistoryBack인 경우 history.back() 실행
+    if (triggerHistoryBack && window.location.hash.includes('photo-feed')) {
+      window.history.back();
     }
 
     // 원래 보던 스크롤 위치 복원

@@ -2269,8 +2269,40 @@
             if (window.lucide) window.lucide.createIcons();
         });
 
-        window.addEventListener('popstate', () => {
+        // 브라우저 뒤로가기/앞으로가기 및 마우스 제스처 완벽 지원
+        window.addEventListener('popstate', (e) => {
+            // 1. 세로 스크롤 사진 모달이 열려있다면 모달만 닫기
+            const photoModal = document.getElementById('vdrVerticalFeedModal');
+            if (photoModal && !photoModal.classList.contains('hidden')) {
+                if (window.__vdrInstance) {
+                    window.__vdrInstance.closeVerticalPhotoFeed(false);
+                }
+                return;
+            }
+
+            // 2. 라우팅 전환 (상세 -> 목록, 목록 -> 상세)
             handleClientRouting();
+        });
+
+        // 마우스 측면 버튼 (e.button === 3: 뒤로가기) 전역 지원
+        window.addEventListener('mouseup', (e) => {
+            if (e.button === 3) {
+                // 1) 세로 사진 모달이 열려있으면 사진 모달 닫기
+                const photoModal = document.getElementById('vdrVerticalFeedModal');
+                if (photoModal && !photoModal.classList.contains('hidden')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.__vdrInstance) window.__vdrInstance.closeVerticalPhotoFeed(true);
+                    return;
+                }
+                // 2) 상세 화면이면 브라우저 뒤로가기 실행 (목록 복귀)
+                if (document.body.classList.contains('is-detail-mode')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.history.back();
+                    return;
+                }
+            }
         });
 
         function handleClientRouting() {
@@ -2284,7 +2316,24 @@
                 }
             }
             showHomeView();
-            loadPublicVehicles();
+            if (!publicVehicles || publicVehicles.length === 0) {
+                loadPublicVehicles();
+            } else {
+                renderVehiclesList();
+                restoreSavedScroll();
+            }
+        }
+
+        function restoreSavedScroll() {
+            requestAnimationFrame(() => {
+                if (typeof window.__savedHomeScrollY === 'number') {
+                    window.scrollTo({ top: window.__savedHomeScrollY, behavior: 'instant' });
+                }
+                const resultsEl = document.querySelector('.cm-listing-results');
+                if (resultsEl && typeof window.__savedResultsScrollTop === 'number') {
+                    resultsEl.scrollTop = window.__savedResultsScrollTop;
+                }
+            });
         }
 
         function showHomeView() {
@@ -2295,7 +2344,13 @@
             document.getElementById('view-home').classList.remove('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             updateNavActive('home');
-            window.scrollTo(0, 0);
+
+            // 세로 사진 모달이 열려있다면 즉시 닫기
+            if (window.__vdrInstance && typeof window.__vdrInstance.closeVerticalPhotoFeed === 'function') {
+                window.__vdrInstance.closeVerticalPhotoFeed(false);
+            }
+
+            restoreSavedScroll();
         }
 
         function navigateHome(e) {
@@ -2654,7 +2709,14 @@
         }
 
         function openVehicleDetail(vid) {
-            window.history.pushState({}, '', `/cars/${vid}`);
+            // 목록 스크롤 위치 보존
+            window.__savedHomeScrollY = window.scrollY || window.pageYOffset || 0;
+            const resultsEl = document.querySelector('.cm-listing-results');
+            if (resultsEl) {
+                window.__savedResultsScrollTop = resultsEl.scrollTop;
+            }
+
+            window.history.pushState({ type: 'detail', vid: vid }, '', `/cars/${vid}`);
             showDetailView(vid);
         }
 
@@ -2698,7 +2760,13 @@
 
                 currentDetailRenderer = new VehicleDetailRenderer('view-detail', {
                     isAdmin: false,
-                    onBack: () => navigateHome(),
+                    onBack: () => {
+                        if (window.history.length > 1) {
+                            window.history.back();
+                        } else {
+                            navigateHome();
+                        }
+                    },
                     onSubmitConsultation: async (formData) => {
                         await submitCustomerConsultation(formData);
                     }
