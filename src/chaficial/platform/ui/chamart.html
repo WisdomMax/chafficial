@@ -1291,15 +1291,15 @@
         function toggleFavoritesFilter(e) {
             if (e) e.preventDefault();
             showFavoritesOnly = !showFavoritesOnly;
-            const navFav = document.getElementById('nav-link-fav');
-            if (navFav) {
-                if (showFavoritesOnly) {
-                    navFav.classList.add('text-[#171B1E]', 'font-bold', 'border-b-2', 'border-[#171B1E]');
-                } else {
-                    navFav.classList.remove('text-[#171B1E]', 'font-bold', 'border-b-2', 'border-[#171B1E]');
-                }
+            showHomeView(false);
+            if (showFavoritesOnly) {
+                updateNavActive('fav');
+            } else {
+                updateNavActive('cars');
             }
-            navigateCars();
+            renderVehiclesList();
+            const grid = document.getElementById('vehicleGrid');
+            if (grid) grid.scrollIntoView({ behavior: 'smooth' });
         }
 
         function updateAllFavoritesUi() {
@@ -2336,14 +2336,20 @@
             });
         }
 
-        function showHomeView() {
+        function showHomeView(updateNav = true) {
             document.documentElement.classList.remove('is-detail-mode');
             document.documentElement.classList.add('is-home-mode');
             document.body.classList.remove('is-detail-mode');
             document.body.classList.add('is-home-mode');
             document.getElementById('view-home').classList.remove('hidden');
             document.getElementById('view-detail').classList.add('hidden');
-            updateNavActive('home');
+            if (updateNav) {
+                if (showFavoritesOnly) {
+                    updateNavActive('fav');
+                } else {
+                    updateNavActive('home');
+                }
+            }
 
             // 세로 사진 모달이 열려있다면 즉시 닫기
             if (window.__vdrInstance && typeof window.__vdrInstance.closeVerticalPhotoFeed === 'function') {
@@ -2356,16 +2362,21 @@
         function navigateHome(e) {
             if (e) e.preventDefault();
             window.history.pushState({}, '', '/chamart');
-            showHomeView();
+            showFavoritesOnly = false;
+            showHomeView(true);
+            renderVehiclesList();
+            scrollToTopSmooth();
         }
 
         function navigateCars(e) {
             if (e) e.preventDefault();
-            window.history.pushState({}, '', '/chamart');
-            showHomeView();
+            window.history.pushState({}, '', '/cars');
+            showFavoritesOnly = false;
+            showHomeView(false);
+            updateNavActive('cars');
+            renderVehiclesList();
             const grid = document.getElementById('vehicleGrid');
             if (grid) grid.scrollIntoView({ behavior: 'smooth' });
-            updateNavActive('cars');
         }
 
         function scrollToShowroom(e) {
@@ -2396,14 +2407,19 @@
         function updateNavActive(type) {
             const linkHome = document.getElementById('nav-link-home');
             const linkCars = document.getElementById('nav-link-cars');
-            if (linkHome && linkCars) {
-                if (type === 'home') {
-                    linkHome.className = "hover:text-[#171B1E] transition-colors text-[#171B1E] font-bold border-b-2 border-[#171B1E] pb-1";
-                    linkCars.className = "hover:text-[#171B1E] transition-colors text-slate-700 pb-1";
-                } else {
-                    linkHome.className = "hover:text-[#171B1E] transition-colors text-slate-700 pb-1";
-                    linkCars.className = "hover:text-[#171B1E] transition-colors text-[#171B1E] font-bold border-b-2 border-[#171B1E] pb-1";
-                }
+            const linkFav = document.getElementById('nav-link-fav');
+
+            const activeClass = "hover:text-[#171B1E] transition-colors text-[#171B1E] font-bold border-b-2 border-[#171B1E] pb-1";
+            const inactiveClass = "hover:text-[#171B1E] transition-colors text-slate-700 pb-1";
+
+            if (linkHome) {
+                linkHome.className = (type === 'home' ? activeClass : inactiveClass);
+            }
+            if (linkCars) {
+                linkCars.className = (type === 'cars' ? activeClass : inactiveClass);
+            }
+            if (linkFav) {
+                linkFav.className = (type === 'fav' || type === 'favorites' ? activeClass : inactiveClass) + " flex items-center cursor-pointer";
             }
         }
 
