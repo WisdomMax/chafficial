@@ -1,4 +1,8 @@
-import os
+"""
+[DECOMMISSIONED BY USER & DIRECTIVE 103]
+로컬 M4 rembg 배경 교체 방식은 사용자 최종 판정(어색한 합성, 차량 왜곡)에 따라 영구 폐기되었습니다.
+운영 서비스 및 관리자 승인 파이프라인에서 완전히 제외되었습니다.
+"""
 import sys
 import time
 import json

@@ -1,9 +1,9 @@
 """
-Chaficial Photo Automation Pipeline
-- Status machine: PHOTO_MISSING -> EXTERNAL_SEARCHING -> CANDIDATE_FOUND -> BG_PROCESSED -> VERIFIED -> READY_FOR_PUBLISH
-- Rule: Exterior photos get studio clean background; Interior/mechanical/defect photos preserve original.
-- Caching: SHA256 image hashing prevents duplicate processing and redundant billing.
-- Engine: Mac mini M4 local background removal (0.46s/photo, $0 cost) with fallback to AI API.
+Chaficial Photo Ingestion & Preservation Pipeline (DIRECTIVE 103)
+- Principle: ZERO artificial modification. All CarManager high-res photos preserved 100% as pristine originals.
+- Status machine: PHOTO_MISSING -> HARVESTED_ORIGINAL -> VERIFIED -> READY_FOR_PUBLISH
+- Rule: Local M4 rembg background removal completely DECOMMISSIONED by user & technical director mandate.
+- Caching: SHA256 image hashing ensures idempotency, deduplication, and zero redundant storage.
 """
 
 import os
@@ -15,9 +15,7 @@ from PIL import Image
 
 class PhotoStatus(str, Enum):
     PHOTO_MISSING = "PHOTO_MISSING"
-    EXTERNAL_SEARCHING = "EXTERNAL_SEARCHING"
-    CANDIDATE_FOUND = "CANDIDATE_FOUND"
-    BG_PROCESSED = "BG_PROCESSED"
+    HARVESTED_ORIGINAL = "HARVESTED_ORIGINAL"
     VERIFIED = "VERIFIED"
     READY_FOR_PUBLISH = "READY_FOR_PUBLISH"
 
@@ -38,13 +36,6 @@ class PhotoPipelineManager:
         self.processed_dir = processed_dir
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.processed_dir, exist_ok=True)
-        self._rembg_session = None
-
-    def _get_rembg_session(self):
-        if self._rembg_session is None:
-            from rembg import new_session
-            self._rembg_session = new_session("u2net")
-        return self._rembg_session
 
     @staticmethod
     def compute_sha256(image_bytes: bytes) -> str:
@@ -53,29 +44,31 @@ class PhotoPipelineManager:
     def classify_category(self, sort_order: int, label: str = "") -> PhotoCategory:
         """사진 순서 및 라벨 기반 외관 vs 실내/기계/하자 판별"""
         label_lower = label.lower()
-        if "하자" in label or "흠집" in label or "손상" in label:
+        if "하자" in label_lower or "흠집" in label_lower or "손상" in label_lower:
             return PhotoCategory.DEFECT_DAMAGE
-        if "실내" in label or "계기판" in label or "시트" in label:
+        if "실내" in label_lower or "계기판" in label_lower or "시트" in label_lower:
             return PhotoCategory.INTERIOR_DASHBOARD
-        if "엔진" in label:
+        if "엔진" in label_lower:
             return PhotoCategory.ENGINE_ROOM
+        if "휠" in label_lower or "타이어" in label_lower:
+            return PhotoCategory.TIRE_WHEEL
         
-        # 순서 기반 표준 매핑 (카매니저/엔카 표준: 1~4번 전면/후면/측면 외관)
+        # 순서 기반 표준 매핑 (카매니저 표준: 1~4번 외관, 5~7번 실내, 8~9번 휠/엔진, 10번 이후 기타)
         if sort_order in [1, 2, 3, 4]:
             return PhotoCategory.EXTERIOR_FRONT
-        elif sort_order in [5, 6]:
-            return PhotoCategory.EXTERIOR_REAR
-        elif sort_order in [7, 8]:
+        elif sort_order in [5, 6, 7]:
             return PhotoCategory.INTERIOR_DASHBOARD
+        elif sort_order in [8, 9]:
+            return PhotoCategory.TIRE_WHEEL
         else:
-            return PhotoCategory.INTERIOR_SEATS
+            return PhotoCategory.UNKNOWN
 
     def process_photo(self, image_path: str, sort_order: int = 1, label: str = "") -> Dict:
         """
-        단일 사진 파이프라인 처리
-        - 외관인 경우: 배경 제거 후 소프트 화이트 스튜디오(#F8F9FA) 합성
-        - 실내/하자/엔진인 경우: 원본 무손실 유지
-        - 해시 캐싱으로 중복 처리 방지
+        단일 사진 파이프라인 처리 (DIRECTIVE 103 원본 보존 전용)
+        - rembg 로컬 배경 합성 전면 폐기 완료 (어떠한 누끼나 인위적 배경 합성도 적용하지 않음)
+        - 원본 이미지 무손실 100% 보존
+        - SHA256 해시 무결성 검증 및 멱등성 캐싱
         """
         with open(image_path, "rb") as f:
             raw_bytes = f.read()
@@ -92,43 +85,19 @@ class PhotoPipelineManager:
                 "category": category.value,
                 "is_cached": True,
                 "processed_path": cached_out_path,
-                "bg_applied": category.value.startswith("EXTERIOR"),
-                "status": PhotoStatus.BG_PROCESSED.value
+                "bg_applied": False,  # 로컬 배경 합성 영구 비활성화
+                "status": PhotoStatus.VERIFIED.value
             }
 
-        # 2. 외관이 아니면 원본 보존 복제
-        if not category.value.startswith("EXTERIOR"):
-            with open(cached_out_path, "wb") as f:
-                f.write(raw_bytes)
-            return {
-                "hash": file_hash,
-                "category": category.value,
-                "is_cached": False,
-                "processed_path": cached_out_path,
-                "bg_applied": False,
-                "status": PhotoStatus.BG_PROCESSED.value
-            }
+        # 2. 100% 원본 무손실 보존 복제
+        with open(cached_out_path, "wb") as f:
+            f.write(raw_bytes)
 
-        # 3. 외관 사진 로컬 M4 스튜디오 배경 처리
-        from rembg import remove
-        session = self._get_rembg_session()
-        t0 = time.time()
-        
-        with Image.open(image_path) as im:
-            # 배경 제거
-            rgba_car = remove(im, session=session)
-            # 소프트 화이트 스튜디오 배경 (#F8F9FA)
-            bg = Image.new("RGBA", rgba_car.size, (248, 249, 250, 255))
-            final_img = Image.alpha_composite(bg, rgba_car).convert("RGB")
-            final_img.save(cached_out_path, quality=92)
-
-        elapsed = time.time() - t0
         return {
             "hash": file_hash,
             "category": category.value,
             "is_cached": False,
             "processed_path": cached_out_path,
-            "bg_applied": True,
-            "elapsed_seconds": round(elapsed, 2),
-            "status": PhotoStatus.BG_PROCESSED.value
+            "bg_applied": False,  # 로컬 배경 합성 영구 비활성화
+            "status": PhotoStatus.VERIFIED.value
         }
