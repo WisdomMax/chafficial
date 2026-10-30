@@ -119,16 +119,16 @@ export async function onRequestGet(context) {
 
     // 10대 핵심 주요 옵션 정의 (DIRECTIVE 088 TASK 5)
     const TOP_10_DEFS = [
-      { code: 'OPT_SUNROOF', name: '선루프', icon: 'sun', keywords: ['선루프', '루프'] },
+      { code: 'OPT_SUNROOF', name: '선루프', icon: 'sun', keywords: ['선루프', '루프', '파노라마'] },
       { code: 'OPT_HUD', name: '헤드업 디스플레이 (HUD)', icon: 'tv', keywords: ['HUD', '헤드업'] },
-      { code: 'OPT_PARKING_SENSOR', name: '주차감지센서', icon: 'radar', keywords: ['주차감지', '센서', '전방감지', '후방감지'] },
-      { code: 'OPT_REAR_CAMERA', name: '후방카메라', icon: 'camera', keywords: ['후방카메라', '카메라', '어라운드'] },
-      { code: 'OPT_AUTO_AC', name: '자동 에어컨', icon: 'fan', keywords: ['에어컨', '오토에어컨', '풀오토'] },
-      { code: 'OPT_SMART_KEY', name: '스마트키', icon: 'key', keywords: ['스마트키', '버튼시동'] },
-      { code: 'OPT_GENUINE_NAVI', name: '내비게이션', icon: 'navigation', keywords: ['내비게이션', '네비', '내비'] },
-      { code: 'OPT_HEATED_SEAT', name: '열선시트', icon: 'flame', keywords: ['열선시트', '열선'] },
-      { code: 'OPT_VENTILATED_SEAT', name: '통풍시트', icon: 'wind', keywords: ['통풍시트', '통풍'] },
-      { code: 'OPT_LEATHER_SEATS', name: '가죽시트', icon: 'armchair', keywords: ['가죽시트', '가죽', '나파'] }
+      { code: 'OPT_PARKING_SENSOR', name: '주차감지센서', icon: 'radar', keywords: ['주차감지', '센서', '전방감지', '후방감지', '전후방센서'] },
+      { code: 'OPT_REAR_CAMERA', name: '후방카메라', icon: 'camera', keywords: ['후방카메라', '후방 캠', '카메라', '어라운드'] },
+      { code: 'OPT_AUTO_AC', name: '자동 에어컨', icon: 'fan', keywords: ['에어컨', '오토에어컨', '풀오토', '듀얼에어컨'] },
+      { code: 'OPT_SMART_KEY', name: '스마트키', icon: 'key', keywords: ['스마트키', '버튼시동', '원격시동'] },
+      { code: 'OPT_GENUINE_NAVI', name: '내비게이션', icon: 'navigation', keywords: ['내비게이션', '네비', '내비', '순정내비'] },
+      { code: 'OPT_HEATED_SEAT_FRONT', name: '열선시트', icon: 'flame', keywords: ['열선시트', '열선', '앞좌석열선'] },
+      { code: 'OPT_VENTILATED_SEAT_FRONT', name: '통풍시트', icon: 'wind', keywords: ['통풍시트', '통풍', '앞좌석통풍'] },
+      { code: 'OPT_LEATHER_SEATS', name: '가죽시트', icon: 'armchair', keywords: ['가죽시트', '가죽', '나파', '천연가죽'] }
     ];
 
     // 상태 맵 생성
@@ -143,7 +143,8 @@ export async function onRequestGet(context) {
       });
     }
 
-    const optionsStr = options.join(' ');
+    const optionsStr = (Array.isArray(options) ? options.join(' ') : '') + ' ' + (v.model_name || '') + ' ' + (v.trim || '');
+    
     const top10Options = TOP_10_DEFS.map(def => {
       let st = optStatusMap[def.code] || optStatusMap[def.name];
       if (!st) {
@@ -159,58 +160,109 @@ export async function onRequestGet(context) {
       };
     });
 
-    // 4대 표준 카테고리 구성 (DIRECTIVE 088 TASK 3, 6)
-    const categorizedOptions = {
+    // 4대 표준 카테고리 현대화 마스터 전체 목록 (사장된 구시대 옵션 제외, 현대 필수 사양 전체 포함)
+    const MASTER_CATEGORIES_DEF = {
       '외관·내장': [
-        { code: 'OPT_SUNROOF', name: '선루프', status: top10Options[0].status, is_present: top10Options[0].is_present },
-        { code: 'OPT_LED_HEADLAMP', name: 'LED 헤드램프', status: optionsStr.includes('LED') || optionsStr.includes('램프') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('LED') || optionsStr.includes('램프') },
-        { code: 'OPT_POWER_FOLD_MIRROR', name: '전동접이 사이드미러', status: 'PRESENT', is_present: true },
-        { code: 'OPT_ALUMINUM_WHEEL', name: '알루미늄 휠', status: 'PRESENT', is_present: true },
-        { code: 'OPT_HEATED_STEERING', name: '열선 스티어링 휠', status: optionsStr.includes('핸들') || optionsStr.includes('열선') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('핸들') || optionsStr.includes('열선') },
-        { code: 'OPT_POWER_TRUNK', name: '전동 트렁크', status: optionsStr.includes('트렁크') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('트렁크') },
-        { code: 'OPT_POWER_DOORLOCK', name: '파워 도어록', status: 'PRESENT', is_present: true },
-        { code: 'OPT_POWER_WINDOW', name: '파워 윈도우', status: 'PRESENT', is_present: true }
+        { code: 'OPT_SUNROOF', name: '선루프 (파노라마/일반)', icon: 'sun', keywords: ['선루프', '루프', '파노라마'] },
+        { code: 'OPT_LED_HEADLAMP', name: 'LED 헤드램프 & 주간주행등', icon: 'zap', keywords: ['LED', 'HID', '프로젝션', '헤드램프', '데이라이트'] },
+        { code: 'OPT_POWER_TRUNK', name: '스마트 파워 전동 트렁크', icon: 'arrow-up-circle', keywords: ['전동트렁크', '파워트렁크', '스마트테일게이트', '테일게이트'] },
+        { code: 'OPT_POWER_FOLD_MIRROR', name: '전동접이 사이드미러 (락폴딩)', icon: 'move-horizontal', keywords: ['사이드미러', '전동접이', '락폴딩', '미러', '전동'] },
+        { code: 'OPT_ALUMINUM_WHEEL', name: '알루미늄 휠 (17~21인치)', icon: 'circle-dot', keywords: ['알루미늄', '알로이', '휠', '18인치', '19인치', '20인치'] },
+        { code: 'OPT_ROOF_RACK', name: '루프랙', icon: 'grip-horizontal', keywords: ['루프랙', '루프레일', '캐리어'] },
+        { code: 'OPT_HEATED_STEERING', name: '열선 스티어링 휠', icon: 'flame', keywords: ['열선핸들', '열선 스티어링', '핸들열선', '핸들'] },
+        { code: 'OPT_TILT_STEERING', name: '전동 조절 스티어링 휠', icon: 'move', keywords: ['전동조절핸들', '전동 스티어링', '틸트', '텔레스코픽'] },
+        { code: 'OPT_PADDLE_SHIFT', name: '패들 시프트', icon: 'sliders', keywords: ['패들시프트', '패들', '시프트패들'] },
+        { code: 'OPT_STEERING_REMOTE', name: '스티어링 휠 리모컨', icon: 'disc', keywords: ['핸들리모컨', '스티어링리모컨', '리모컨'] },
+        { code: 'OPT_AMBIENT_LIGHT', name: '앰비언트 라이트 (실내 무드램프)', icon: 'sparkles', keywords: ['앰비언트', '무드램프', '무드등'] },
+        { code: 'OPT_ECM_ROOM_MIRROR', name: 'ECM 전자식 룸미러', icon: 'eye', keywords: ['ECM', '눈부심방지'] },
+        { code: 'OPT_GHOST_DOOR', name: '고스트 도어 클로징 (소프트 클로징)', icon: 'shield-check', keywords: ['고스트도어', '소프트클로징', '압축도어'] }
       ],
       '안전': [
-        { code: 'OPT_PARKING_SENSOR', name: '주차감지센서', status: top10Options[2].status, is_present: top10Options[2].is_present },
-        { code: 'OPT_REAR_CAMERA', name: '후방카메라', status: top10Options[3].status, is_present: top10Options[3].is_present },
-        { code: 'OPT_SURROUND_VIEW', name: '360도 어라운드 뷰', status: optionsStr.includes('어라운드') || optionsStr.includes('서라운드') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('어라운드') || optionsStr.includes('서라운드') },
-        { code: 'OPT_AIRBAG_FRONT', name: '에어백 (운전석/동승석)', status: 'PRESENT', is_present: true },
-        { code: 'OPT_AIRBAG_SIDE', name: '사이드/커튼 에어백', status: 'PRESENT', is_present: true },
-        { code: 'OPT_ABS_ESC', name: 'ABS / 차체자세제어', status: 'PRESENT', is_present: true },
-        { code: 'OPT_TPMS', name: '타이어 공기압 감지 (TPMS)', status: 'PRESENT', is_present: true },
-        { code: 'OPT_LANE_ASSIST', name: '차선이탈 경보 / 유지보조', status: optionsStr.includes('차선') || optionsStr.includes('이탈') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('차선') || optionsStr.includes('이탈') },
-        { code: 'OPT_BLIND_SPOT', name: '후측방 충돌방지 보조', status: optionsStr.includes('후측방') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('후측방') }
+        { code: 'OPT_PARKING_SENSOR', name: '주차감지센서 (전방/후방)', icon: 'radar', keywords: ['주차감지', '센서', '전방감지', '후방감지', '전후방센서'] },
+        { code: 'OPT_REAR_CAMERA', name: '후방카메라 (조향 연동 가이드)', icon: 'camera', keywords: ['후방카메라', '후방 캠', '조향가이드', '카메라'] },
+        { code: 'OPT_SURROUND_VIEW', name: '360도 어라운드 뷰 (서라운드 뷰)', icon: 'eye', keywords: ['어라운드뷰', '서라운드뷰', '360', '서라운드', '어라운드'] },
+        { code: 'OPT_AIRBAG_FRONT', name: '에어백 (운전석, 동승석)', icon: 'shield', keywords: ['에어백', '운전석에어백', '동승석에어백', '듀얼에어백'] },
+        { code: 'OPT_AIRBAG_SIDE_CURTAIN', name: '사이드 & 커튼 에어백', icon: 'shield-alert', keywords: ['사이드에어백', '커튼에어백', '사이드', '커튼'] },
+        { code: 'OPT_ABS_ESC_TCS', name: 'ABS / ESC (차체자세제어) / TCS', icon: 'activity', keywords: ['ABS', 'ESC', 'TCS', '차체자세', '미끄럼방지'] },
+        { code: 'OPT_TPMS', name: '타이어 공기압 경보 (TPMS)', icon: 'gauge', keywords: ['TPMS', '공기압', '타이어공기압'] },
+        { code: 'OPT_LANE_ASSIST', name: '차로 이탈방지 / 차로 유지 보조 (LKA/LFA)', icon: 'git-commit', keywords: ['차선이탈', '차로유지', 'LKA', 'LFA', '차선'] },
+        { code: 'OPT_FORWARD_COLLISION', name: '전방 충돌방지 보조 (FCA)', icon: 'alert-triangle', keywords: ['전방충돌', '긴급제동', 'FCA', '충돌방지'] },
+        { code: 'OPT_BLIND_SPOT', name: '후측방 충돌방지 보조 / 경보 (BCA/BSD)', icon: 'scan', keywords: ['후측방', '사각지대', 'BSD', 'BCA', '측후방'] },
+        { code: 'OPT_ELEC_SUSPENSION', name: '전자제어 서스펜션 (ECS)', icon: 'layers', keywords: ['전자제어서스펜션', '에어서스', '서스펜션', 'ECS'] },
+        { code: 'OPT_REMOTE_PARKING', name: '원격 스마트 주차 보조 (RSPA)', icon: 'smartphone', keywords: ['원격주차', 'RSPA', '원격스마트주차'] }
       ],
       '편의·멀티미디어': [
-        { code: 'OPT_HUD', name: '헤드업 디스플레이 (HUD)', status: top10Options[1].status, is_present: top10Options[1].is_present },
-        { code: 'OPT_AUTO_AC', name: '자동 에어컨', status: top10Options[4].status, is_present: top10Options[4].is_present },
-        { code: 'OPT_SMART_KEY', name: '스마트키', status: top10Options[5].status, is_present: top10Options[5].is_present },
-        { code: 'OPT_GENUINE_NAVI', name: '내비게이션', status: top10Options[6].status, is_present: top10Options[6].is_present },
-        { code: 'OPT_SMART_CRUISE', name: '크루즈 컨트롤 (스마트 크루즈)', status: optionsStr.includes('크루즈') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('크루즈') },
-        { code: 'OPT_AUTO_HOLD', name: '전자식 파킹 브레이크 (오토홀드)', status: optionsStr.includes('파킹') || optionsStr.includes('오토홀드') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('파킹') || optionsStr.includes('오토홀드') },
-        { code: 'OPT_BLUETOOTH', name: '블루투스 핸즈프리', status: 'PRESENT', is_present: true },
-        { code: 'OPT_CARPLAY_AA', name: '스마트폰 폰 프로젝션', status: 'PRESENT', is_present: true },
-        { code: 'OPT_HIPASS', name: '하이패스 내장 룸미러', status: optionsStr.includes('하이패스') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('하이패스') }
+        { code: 'OPT_HUD', name: '헤드업 디스플레이 (HUD)', icon: 'tv', keywords: ['HUD', '헤드업', '헤드업디스플레이'] },
+        { code: 'OPT_AUTO_AC', name: '자동 에어컨 (풀오토 듀얼 에어컨)', icon: 'fan', keywords: ['에어컨', '풀오토', '오토에어컨', '듀얼에어컨', '자동에어컨'] },
+        { code: 'OPT_SMART_KEY', name: '스마트키 & 버튼 시동 / 원격 시동', icon: 'key', keywords: ['스마트키', '버튼시동', '원격시동'] },
+        { code: 'OPT_GENUINE_NAVI', name: '와이드 디스플레이 내비게이션', icon: 'navigation', keywords: ['내비게이션', '네비', '내비', '순정내비'] },
+        { code: 'OPT_SMART_CRUISE', name: '스마트 크루즈 컨트롤 (어댑티브 / 정차&재출발)', icon: 'compass', keywords: ['스마트크루즈', '어댑티브', '크루즈', 'SCC', 'ASCC'] },
+        { code: 'OPT_HDA', name: '고속도로 주행 보조 (HDA / HDA2)', icon: 'navigation-2', keywords: ['HDA', '고속도로주행보조', 'HDA2'] },
+        { code: 'OPT_AUTO_HOLD', name: '전자식 주차브레이크 (EPB & 오토홀드)', icon: 'pause-circle', keywords: ['EPB', '전자식파킹', '오토홀드', '파킹브레이크', '파킹'] },
+        { code: 'OPT_CARPLAY_AA', name: '애플 카플레이 / 안드로이드 오토 (폰 프로젝션)', icon: 'smartphone', keywords: ['카플레이', '안드로이드오토', '폰프로젝션', '티맵'] },
+        { code: 'OPT_WIRELESS_CHARGER', name: '스마트폰 무선 충전 패드', icon: 'battery-charging', keywords: ['무선충전', '무선 충전', '스마트폰무선충전'] },
+        { code: 'OPT_DIGITAL_KEY', name: '디지털 키 (스마트폰 키)', icon: 'credit-card', keywords: ['디지털키', '카드키', 'NFC'] },
+        { code: 'OPT_HIPASS', name: '하이패스 시스템 (내장형/룸미러)', icon: 'tag', keywords: ['하이패스', '통행료'] },
+        { code: 'OPT_RAIN_SENSOR', name: '레인센서 (우적감지 와이퍼)', icon: 'cloud-rain', keywords: ['레인센서', '우적감지', '와이퍼'] },
+        { code: 'OPT_AUTO_LIGHT', name: '오토 라이트 컨트롤', icon: 'sun-medium', keywords: ['오토라이트', '오토 헤드램프'] },
+        { code: 'OPT_PREMIUM_AUDIO', name: '프리미엄 사운드 (크렐/보스/하만카돈/B&O)', icon: 'volume-2', keywords: ['크렐', '보스', '하만카돈', '뱅앤올룹슨', '사운드', '스피커', 'JBL', '렉시콘', '메리디안'] },
+        { code: 'OPT_SUN_CURTAIN', name: '뒷좌석 / 후방 선커튼 (수동/전동)', icon: 'columns', keywords: ['커튼', '선커튼', '블라인드', '선블라인드'] }
       ],
       '시트': [
-        { code: 'OPT_LEATHER_SEATS', name: '가죽시트', status: top10Options[9].status, is_present: top10Options[9].is_present },
-        { code: 'OPT_HEATED_SEAT', name: '열선시트', status: top10Options[7].status, is_present: top10Options[7].is_present },
-        { code: 'OPT_VENTILATED_SEAT', name: '통풍시트', status: top10Options[8].status, is_present: top10Options[8].is_present },
-        { code: 'OPT_POWER_SEAT_DRV', name: '운전석 전동시트', status: optionsStr.includes('전동시트') || optionsStr.includes('전동') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('전동시트') || optionsStr.includes('전동') },
-        { code: 'OPT_POWER_SEAT_PASS', name: '동승석 전동시트', status: optionsStr.includes('동승석') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('동승석') },
-        { code: 'OPT_MEMORY_SEAT', name: '메모리 시트', status: optionsStr.includes('메모리') ? 'PRESENT' : 'UNKNOWN', is_present: optionsStr.includes('메모리') }
-      ],
-      '기타 옵션': []
+        { code: 'OPT_LEATHER_SEATS', name: '가죽시트 (천연 / 나파 / 퀼팅)', icon: 'armchair', keywords: ['가죽시트', '가죽', '나파', '천연가죽'] },
+        { code: 'OPT_HEATED_SEAT_FRONT', name: '열선시트 (앞좌석)', icon: 'flame', keywords: ['열선시트', '열선', '앞좌석열선'] },
+        { code: 'OPT_HEATED_SEAT_REAR', name: '열선시트 (뒷좌석)', icon: 'flame', keywords: ['뒷좌석열선', '2열열선', '후석열선'] },
+        { code: 'OPT_VENTILATED_SEAT_FRONT', name: '통풍시트 (앞좌석)', icon: 'wind', keywords: ['통풍시트', '통풍', '앞좌석통풍'] },
+        { code: 'OPT_VENTILATED_SEAT_REAR', name: '통풍시트 (뒷좌석)', icon: 'wind', keywords: ['뒷좌석통풍', '2열통풍', '후석통풍'] },
+        { code: 'OPT_POWER_SEAT_DRV', name: '운전석 전동시트 & 럼버서포트', icon: 'user-check', keywords: ['운전석전동시트', '전동시트', '요추받침'] },
+        { code: 'OPT_POWER_SEAT_PASS', name: '동승석 전동시트 & 워크인 디바이스', icon: 'users', keywords: ['동승석전동시트', '동승석전동', '워크인', '릴렉션'] },
+        { code: 'OPT_MEMORY_SEAT', name: '운전석 자세 메모리 시스템 (IMS)', icon: 'bookmark', keywords: ['메모리시트', '메모리', 'IMS'] },
+        { code: 'OPT_POWER_SEAT_REAR', name: '뒷좌석 전동 리클라이닝 시트', icon: 'user-plus', keywords: ['뒷좌석전동시트', '후석전동', '2열전동', '리클라이닝'] },
+        { code: 'OPT_MASSAGE_SEAT', name: '마사지 시트 (에르고 모션 스트레칭)', icon: 'sparkles', keywords: ['마사지시트', '에르고모션', '마사지'] }
+      ]
     };
 
-    // 추가 커스텀 옵션 반영
+    // 차량의 기본 탑재 사양 룰 (최신 연식 국산/수입차 기본 장착 옵션 스마트 판정)
+    const isModernCar = (v.year && v.year >= 2020);
+    const isPremiumCar = (v.model_name && (v.model_name.includes('제네시스') || v.model_name.includes('벤츠') || v.model_name.includes('BMW') || v.model_name.includes('그랜저') || v.model_name.includes('K8') || v.model_name.includes('GV70') || v.model_name.includes('GV80')));
+
+    const categorizedOptions = {};
+    for (const [catName, defs] of Object.entries(MASTER_CATEGORIES_DEF)) {
+      categorizedOptions[catName] = defs.map(def => {
+        let st = optStatusMap[def.code] || optStatusMap[def.name];
+        if (!st) {
+          const matched = def.keywords.some(k => optionsStr.includes(k));
+          if (matched) {
+            st = 'PRESENT';
+          } else {
+            // 프리미엄/최신 연식 스마트 판정
+            if (isPremiumCar && ['OPT_LED_HEADLAMP', 'OPT_POWER_FOLD_MIRROR', 'OPT_ALUMINUM_WHEEL', 'OPT_HEATED_STEERING', 'OPT_STEERING_REMOTE', 'OPT_AIRBAG_FRONT', 'OPT_AIRBAG_SIDE_CURTAIN', 'OPT_ABS_ESC_TCS', 'OPT_TPMS', 'OPT_AUTO_AC', 'OPT_SMART_KEY', 'OPT_AUTO_HOLD', 'OPT_CARPLAY_AA', 'OPT_AUTO_LIGHT', 'OPT_HIPASS', 'OPT_LEATHER_SEATS', 'OPT_HEATED_SEAT_FRONT', 'OPT_POWER_SEAT_DRV'].includes(def.code)) {
+              st = 'PRESENT';
+            } else if (isModernCar && ['OPT_POWER_FOLD_MIRROR', 'OPT_ALUMINUM_WHEEL', 'OPT_AIRBAG_FRONT', 'OPT_AIRBAG_SIDE_CURTAIN', 'OPT_ABS_ESC_TCS', 'OPT_TPMS', 'OPT_SMART_KEY', 'OPT_AUTO_LIGHT', 'OPT_CARPLAY_AA'].includes(def.code)) {
+              st = 'PRESENT';
+            } else {
+              st = 'UNKNOWN';
+            }
+          }
+        }
+        return {
+          code: def.code,
+          name: def.name,
+          icon: def.icon,
+          status: st,
+          is_present: (st === 'PRESENT')
+        };
+      });
+    }
+
+    categorizedOptions['기타 옵션'] = [];
     if (Array.isArray(structuredOptions)) {
       structuredOptions.forEach(opt => {
-        if (opt && opt.category === '기타 옵션' || opt.is_custom) {
+        if (opt && (opt.category === '기타 옵션' || opt.is_custom)) {
           categorizedOptions['기타 옵션'].push({
             code: opt.code || 'CUSTOM',
             name: opt.name,
+            icon: 'plus',
             status: opt.status || 'PRESENT',
             is_present: (opt.status || 'PRESENT') === 'PRESENT'
           });

@@ -1582,20 +1582,134 @@ class VehicleDetailRenderer {
     });
   }
 
+  // 현대화된 표준 50대 옵션 정의 마스터 (CD/AUX/파워윈도우 등 구시대 옵션 제외, 현대 필수 사양 전체 포함)
+  static MASTER_CATEGORIES_CATALOG = {
+    '외관·내장': [
+      { code: 'OPT_SUNROOF', name: '선루프 (파노라마/일반)', keywords: ['선루프', '루프', '파노라마'] },
+      { code: 'OPT_LED_HEADLAMP', name: 'LED 헤드램프 & 주간주행등', keywords: ['LED', 'HID', '프로젝션', '헤드램프', '데이라이트'] },
+      { code: 'OPT_POWER_TRUNK', name: '스마트 파워 전동 트렁크', keywords: ['전동트렁크', '파워트렁크', '스마트테일게이트', '테일게이트'] },
+      { code: 'OPT_POWER_FOLD_MIRROR', name: '전동접이 사이드미러 (락폴딩)', keywords: ['사이드미러', '전동접이', '락폴딩', '미러', '전동'] },
+      { code: 'OPT_ALUMINUM_WHEEL', name: '알루미늄 휠 (17~21인치)', keywords: ['알루미늄', '알로이', '휠', '18인치', '19인치', '20인치'] },
+      { code: 'OPT_ROOF_RACK', name: '루프랙', keywords: ['루프랙', '루프레일', '캐리어'] },
+      { code: 'OPT_HEATED_STEERING', name: '열선 스티어링 휠', keywords: ['열선핸들', '열선 스티어링', '핸들열선', '핸들'] },
+      { code: 'OPT_TILT_STEERING', name: '전동 조절 스티어링 휠', keywords: ['전동조절핸들', '전동 스티어링', '틸트', '텔레스코픽'] },
+      { code: 'OPT_PADDLE_SHIFT', name: '패들 시프트', keywords: ['패들시프트', '패들', '시프트패들'] },
+      { code: 'OPT_STEERING_REMOTE', name: '스티어링 휠 리모컨', keywords: ['핸들리모컨', '스티어링리모컨', '리모컨'] },
+      { code: 'OPT_AMBIENT_LIGHT', name: '앰비언트 라이트 (실내 무드램프)', keywords: ['앰비언트', '무드램프', '무드등'] },
+      { code: 'OPT_ECM_ROOM_MIRROR', name: 'ECM 전자식 룸미러', keywords: ['ECM', '눈부심방지'] },
+      { code: 'OPT_GHOST_DOOR', name: '고스트 도어 클로징 (소프트 클로징)', keywords: ['고스트도어', '소프트클로징', '압축도어'] }
+    ],
+    '안전': [
+      { code: 'OPT_PARKING_SENSOR', name: '주차감지센서 (전방/후방)', keywords: ['주차감지', '센서', '전방감지', '후방감지', '전후방센서'] },
+      { code: 'OPT_REAR_CAMERA', name: '후방카메라 (조향 연동 가이드)', keywords: ['후방카메라', '후방 캠', '조향가이드', '카메라'] },
+      { code: 'OPT_SURROUND_VIEW', name: '360도 어라운드 뷰 (서라운드 뷰)', keywords: ['어라운드뷰', '서라운드뷰', '360', '서라운드', '어라운드'] },
+      { code: 'OPT_AIRBAG_FRONT', name: '에어백 (운전석, 동승석)', keywords: ['에어백', '운전석에어백', '동승석에어백', '듀얼에어백'] },
+      { code: 'OPT_AIRBAG_SIDE_CURTAIN', name: '사이드 & 커튼 에어백', keywords: ['사이드에어백', '커튼에어백', '사이드', '커튼'] },
+      { code: 'OPT_ABS_ESC_TCS', name: 'ABS / ESC (차체자세제어) / TCS', keywords: ['ABS', 'ESC', 'TCS', '차체자세', '미끄럼방지'] },
+      { code: 'OPT_TPMS', name: '타이어 공기압 경보 (TPMS)', keywords: ['TPMS', '공기압', '타이어공기압'] },
+      { code: 'OPT_LANE_ASSIST', name: '차로 이탈방지 / 차로 유지 보조 (LKA/LFA)', keywords: ['차선이탈', '차로유지', 'LKA', 'LFA', '차선'] },
+      { code: 'OPT_FORWARD_COLLISION', name: '전방 충돌방지 보조 (FCA)', keywords: ['전방충돌', '긴급제동', 'FCA', '충돌방지'] },
+      { code: 'OPT_BLIND_SPOT', name: '후측방 충돌방지 보조 / 경보 (BCA/BSD)', keywords: ['후측방', '사각지대', 'BSD', 'BCA', '측후방'] },
+      { code: 'OPT_ELEC_SUSPENSION', name: '전자제어 서스펜션 (ECS)', keywords: ['전자제어서스펜션', '에어서스', '서스펜션', 'ECS'] },
+      { code: 'OPT_REMOTE_PARKING', name: '원격 스마트 주차 보조 (RSPA)', keywords: ['원격주차', 'RSPA', '원격스마트주차'] }
+    ],
+    '편의·멀티미디어': [
+      { code: 'OPT_HUD', name: '헤드업 디스플레이 (HUD)', keywords: ['HUD', '헤드업', '헤드업디스플레이'] },
+      { code: 'OPT_AUTO_AC', name: '자동 에어컨 (풀오토 듀얼 에어컨)', keywords: ['에어컨', '풀오토', '오토에어컨', '듀얼에어컨', '자동에어컨'] },
+      { code: 'OPT_SMART_KEY', name: '스마트키 & 버튼 시동 / 원격 시동', keywords: ['스마트키', '버튼시동', '원격시동'] },
+      { code: 'OPT_GENUINE_NAVI', name: '와이드 디스플레이 내비게이션', keywords: ['내비게이션', '네비', '내비', '순정내비'] },
+      { code: 'OPT_SMART_CRUISE', name: '스마트 크루즈 컨트롤 (어댑티브 / 정차&재출발)', keywords: ['스마트크루즈', '어댑티브', '크루즈', 'SCC', 'ASCC'] },
+      { code: 'OPT_HDA', name: '고속도로 주행 보조 (HDA / HDA2)', keywords: ['HDA', '고속도로주행보조', 'HDA2'] },
+      { code: 'OPT_AUTO_HOLD', name: '전자식 주차브레이크 (EPB & 오토홀드)', keywords: ['EPB', '전자식파킹', '오토홀드', '파킹브레이크', '파킹'] },
+      { code: 'OPT_CARPLAY_AA', name: '애플 카플레이 / 안드로이드 오토 (폰 프로젝션)', keywords: ['카플레이', '안드로이드오토', '폰프로젝션', '티맵'] },
+      { code: 'OPT_WIRELESS_CHARGER', name: '스마트폰 무선 충전 패드', keywords: ['무선충전', '무선 충전', '스마트폰무선충전'] },
+      { code: 'OPT_DIGITAL_KEY', name: '디지털 키 (스마트폰 키)', keywords: ['디지털키', '카드키', 'NFC'] },
+      { code: 'OPT_HIPASS', name: '하이패스 시스템 (내장형/룸미러)', keywords: ['하이패스', '통행료'] },
+      { code: 'OPT_RAIN_SENSOR', name: '레인센서 (우적감지 와이퍼)', keywords: ['레인센서', '우적감지', '와이퍼'] },
+      { code: 'OPT_AUTO_LIGHT', name: '오토 라이트 컨트롤', keywords: ['오토라이트', '오토 헤드램프'] },
+      { code: 'OPT_PREMIUM_AUDIO', name: '프리미엄 사운드 (크렐/보스/하만카돈/B&O)', keywords: ['크렐', '보스', '하만카돈', '뱅앤올룹슨', '사운드', '스피커', 'JBL', '렉시콘', '메리디안'] },
+      { code: 'OPT_SUN_CURTAIN', name: '뒷좌석 / 후방 선커튼 (수동/전동)', keywords: ['커튼', '선커튼', '블라인드', '선블라인드'] }
+    ],
+    '시트': [
+      { code: 'OPT_LEATHER_SEATS', name: '가죽시트 (천연 / 나파 / 퀼팅)', keywords: ['가죽시트', '가죽', '나파', '천연가죽'] },
+      { code: 'OPT_HEATED_SEAT_FRONT', name: '열선시트 (앞좌석)', keywords: ['열선시트', '열선', '앞좌석열선'] },
+      { code: 'OPT_HEATED_SEAT_REAR', name: '열선시트 (뒷좌석)', keywords: ['뒷좌석열선', '2열열선', '후석열선'] },
+      { code: 'OPT_VENTILATED_SEAT_FRONT', name: '통풍시트 (앞좌석)', keywords: ['통풍시트', '통풍', '앞좌석통풍'] },
+      { code: 'OPT_VENTILATED_SEAT_REAR', name: '통풍시트 (뒷좌석)', keywords: ['뒷좌석통풍', '2열통풍', '후석통풍'] },
+      { code: 'OPT_POWER_SEAT_DRV', name: '운전석 전동시트 & 럼버서포트', keywords: ['운전석전동시트', '전동시트', '요추받침'] },
+      { code: 'OPT_POWER_SEAT_PASS', name: '동승석 전동시트 & 워크인 디바이스', keywords: ['동승석전동시트', '동승석전동', '워크인', '릴렉션'] },
+      { code: 'OPT_MEMORY_SEAT', name: '운전석 자세 메모리 시스템 (IMS)', keywords: ['메모리시트', '메모리', 'IMS'] },
+      { code: 'OPT_POWER_SEAT_REAR', name: '뒷좌석 전동 리클라이닝 시트', keywords: ['뒷좌석전동시트', '후석전동', '2열전동', '리클라이닝'] },
+      { code: 'OPT_MASSAGE_SEAT', name: '마사지 시트 (에르고 모션 스트레칭)', keywords: ['마사지시트', '에르고모션', '마사지'] }
+    ]
+  };
+
   buildFallbackCategorized(d) {
     const rawOptions = Array.isArray(d.options) ? d.options : [];
-    return {
-      '외관·내장': rawOptions.filter(o => o.includes('선루프') || o.includes('휠') || o.includes('램프') || o.includes('핸들')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
-      '안전': rawOptions.filter(o => o.includes('에어백') || o.includes('센서') || o.includes('카메라') || o.includes('ABS')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
-      '편의·멀티미디어': rawOptions.filter(o => o.includes('스마트키') || o.includes('내비') || o.includes('에어컨') || o.includes('크루즈')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
-      '시트': rawOptions.filter(o => o.includes('시트') || o.includes('통풍') || o.includes('열선')).map(n => ({ name: n, is_present: true, status: 'PRESENT' })),
-      '기타 옵션': []
-    };
+    const optionsStr = rawOptions.join(' ') + ' ' + (d.model_name || '') + ' ' + (d.trim || '');
+    const isPremiumCar = (d.model_name && (d.model_name.includes('제네시스') || d.model_name.includes('벤츠') || d.model_name.includes('BMW') || d.model_name.includes('그랜저') || d.model_name.includes('K8') || d.model_name.includes('GV70') || d.model_name.includes('GV80')));
+    const isModernCar = (d.year && d.year >= 2020);
+
+    const categorized = {};
+    for (const [catName, defs] of Object.entries(VehicleDetailRenderer.MASTER_CATEGORIES_CATALOG)) {
+      categorized[catName] = defs.map(def => {
+        let isPresent = def.keywords.some(k => optionsStr.includes(k));
+        if (!isPresent) {
+          if (isPremiumCar && ['OPT_LED_HEADLAMP', 'OPT_POWER_FOLD_MIRROR', 'OPT_ALUMINUM_WHEEL', 'OPT_HEATED_STEERING', 'OPT_STEERING_REMOTE', 'OPT_AIRBAG_FRONT', 'OPT_AIRBAG_SIDE_CURTAIN', 'OPT_ABS_ESC_TCS', 'OPT_TPMS', 'OPT_AUTO_AC', 'OPT_SMART_KEY', 'OPT_AUTO_HOLD', 'OPT_CARPLAY_AA', 'OPT_AUTO_LIGHT', 'OPT_HIPASS', 'OPT_LEATHER_SEATS', 'OPT_HEATED_SEAT_FRONT', 'OPT_POWER_SEAT_DRV'].includes(def.code)) {
+            isPresent = true;
+          } else if (isModernCar && ['OPT_POWER_FOLD_MIRROR', 'OPT_ALUMINUM_WHEEL', 'OPT_AIRBAG_FRONT', 'OPT_AIRBAG_SIDE_CURTAIN', 'OPT_ABS_ESC_TCS', 'OPT_TPMS', 'OPT_SMART_KEY', 'OPT_AUTO_LIGHT', 'OPT_CARPLAY_AA'].includes(def.code)) {
+            isPresent = true;
+          }
+        }
+        return {
+          code: def.code,
+          name: def.name,
+          status: isPresent ? 'PRESENT' : 'UNKNOWN',
+          is_present: isPresent
+        };
+      });
+    }
+    categorized['기타 옵션'] = [];
+    return categorized;
+  }
+
+  // 적용된 옵션만 보기 토글 기능 (엔카식 편의 기능)
+  toggleOnlyPresentOptions(btn) {
+    window.__showOnlyPresentOptions = !window.__showOnlyPresentOptions;
+    const isOnly = window.__showOnlyPresentOptions;
+    const items = document.querySelectorAll('.vdr-absent-option');
+    items.forEach(el => {
+      if (isOnly) {
+        el.classList.add('hidden');
+      } else {
+        el.classList.remove('hidden');
+      }
+    });
+
+    // 모든 토글 버튼 상태 텍스트 및 스타일 갱신
+    const allBtns = document.querySelectorAll('.vdr-only-present-btn');
+    allBtns.forEach(b => {
+      if (isOnly) {
+        b.classList.remove('bg-slate-100', 'text-slate-600', 'border-slate-200');
+        b.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200', 'font-bold');
+        b.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 mr-1 text-rose-500"></i>적용된 옵션만 보는 중`;
+      } else {
+        b.classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-200', 'font-bold');
+        b.classList.add('bg-slate-100', 'text-slate-600', 'border-slate-200');
+        b.innerHTML = `<i data-lucide="filter" class="w-3.5 h-3.5 mr-1 text-slate-400"></i>적용된 옵션만 보기`;
+      }
+    });
+    if (window.lucide) window.lucide.createIcons();
   }
 
   renderOptionsSection(d) {
     const top10 = (d.top10_options && d.top10_options.length === 10) ? d.top10_options : this.buildFallbackTop10(d);
-    const categorized = d.options_categorized || this.buildFallbackCategorized(d);
+    
+    // 카테고리 전체 목록이 50개 마스터에 미달하면 마스터와 병합
+    let categorized = d.options_categorized;
+    if (!categorized || Object.keys(categorized).length < 4 || (categorized['외관·내장'] && categorized['외관·내장'].length < 10)) {
+      categorized = this.buildFallbackCategorized(d);
+    }
 
     // 총 장착 확인 개수 계산
     let totalPresentCount = 0;
@@ -1612,7 +1726,6 @@ class VehicleDetailRenderer {
     const top10Html = top10.map(opt => {
       const isPresent = opt.is_present || opt.status === 'PRESENT';
       const isAbsent = opt.status === 'ABSENT';
-      const isUnknown = !isPresent && !isAbsent;
 
       let cardStyle = "bg-white border-slate-200";
       let iconColor = "text-[#171B1E]";
@@ -1640,8 +1753,15 @@ class VehicleDetailRenderer {
       let shortName = opt.name || '';
       shortName = shortName.replace('헤드업 디스플레이 (HUD)', 'HUD')
                            .replace('주차감지센서', '주차센서')
+                           .replace('와이드 디스플레이 내비게이션', '내비게이션')
                            .replace('순정 내비게이션', '내비게이션')
-                           .replace('풀오토 에어컨', '자동에어컨');
+                           .replace('자동 에어컨 (풀오토 듀얼 에어컨)', '자동에어컨')
+                           .replace('풀오토 에어컨', '자동에어컨')
+                           .replace('스마트키 & 버튼 시동 / 원격 시동', '스마트키')
+                           .replace('가죽시트 (천연 / 나파 / 퀼팅)', '가죽시트')
+                           .replace('열선시트 (앞좌석)', '열선시트')
+                           .replace('통풍시트 (앞좌석)', '통풍시트')
+                           .replace('선루프 (파노라마/일반)', '선루프');
 
       return `
         <div class="flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl border ${cardStyle} transition-all text-center">
@@ -1657,7 +1777,7 @@ class VehicleDetailRenderer {
       `;
     }).join('');
 
-    // 2. 전체 옵션 아코디언 내용 구성
+    // 2. 전체 옵션 아코디언 내용 구성 (엔카형 세부 목록: 다 넣고 장착된 것만 선명하게 활성화)
     let fullCategoriesHtml = '';
     const catKeys = ['외관·내장', '안전', '편의·멀티미디어', '시트', '기타 옵션'];
     for (const catName of catKeys) {
@@ -1666,46 +1786,46 @@ class VehicleDetailRenderer {
 
       const presentList = list.filter(o => o.is_present || o.status === 'PRESENT');
 
-      const badges = list.map(o => {
+      // 엔카 스타일 리스트 그리드: 적용된 옵션은 선명한 검정 + 체크원, 미적용은 연회색
+      const rowsHtml = list.map(o => {
         const p = o.is_present || o.status === 'PRESENT';
-        const abs = o.status === 'ABSENT';
         if (p) {
           return `
-            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-900 border border-slate-200 shadow-2xs">
-              <i data-lucide="check" class="w-3.5 h-3.5 mr-1 text-[#10B981] stroke-[2.5]"></i>
-              ${escapeHtml(o.name)}
-            </span>
-          `;
-        } else if (abs) {
-          return `
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-slate-400 border border-dashed border-slate-200 line-through opacity-50">
-              <i data-lucide="x" class="w-3 h-3 mr-1 text-slate-300"></i>
-              ${escapeHtml(o.name)}
-            </span>
+            <div class="vdr-option-item flex items-center gap-2.5 py-1.5 px-2 rounded-lg bg-white border border-slate-200/80 shadow-2xs">
+              <span class="w-4 h-4 rounded-full border-2 border-slate-900 bg-slate-900 flex items-center justify-center shrink-0">
+                <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              </span>
+              <span class="text-xs sm:text-[13px] font-bold text-slate-900 truncate">${escapeHtml(o.name)}</span>
+            </div>
           `;
         } else {
           return `
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs text-slate-400 border border-dashed border-slate-200 opacity-60">
-              <i data-lucide="help-circle" class="w-3 h-3 mr-1 text-slate-300"></i>
-              ${escapeHtml(o.name)}
-            </span>
+            <div class="vdr-option-item vdr-absent-option flex items-center gap-2.5 py-1.5 px-2 rounded-lg bg-transparent border border-dashed border-slate-200/50">
+              <span class="w-4 h-4 rounded-full border border-slate-300 bg-transparent flex items-center justify-center shrink-0">
+                <svg class="w-2.5 h-2.5 text-slate-300" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              </span>
+              <span class="text-xs sm:text-[13px] font-normal text-slate-400 truncate">${escapeHtml(o.name)}</span>
+            </div>
           `;
         }
-      }).join(' ');
+      }).join('');
 
       fullCategoriesHtml += `
-        <div class="p-3 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-2">
+        <div class="p-3.5 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-2.5">
           <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
-            <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#171B1E]"></span>
+            <span class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-[#171B1E]"></span>
               ${escapeHtml(catName)}
             </span>
-            <span class="text-[11px] font-semibold text-slate-500">
-              <strong class="text-slate-900">${presentList.length}</strong> / ${list.length}개 장착
-            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] sm:text-xs font-semibold text-slate-500">
+                <strong class="text-slate-900">${presentList.length}</strong> / ${list.length}개 장착
+              </span>
+            </div>
           </div>
-          <div class="flex flex-wrap gap-1.5 pt-1">
-            ${badges}
+          <!-- 2열 그리드 배치로 전체 옵션 정렬 (모바일/PC 반응형) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            ${rowsHtml}
           </div>
         </div>
       `;
@@ -1728,12 +1848,19 @@ class VehicleDetailRenderer {
 
         <!-- 전체 옵션 펼치기 패널 (기본 접힘, 인라인 펼침) -->
         <div id="vdrFullOptionsPanel" class="hidden space-y-3 pt-1 animate-in fade-in duration-150">
-          <div class="text-[11px] text-slate-500 flex items-center justify-between px-1 pb-1">
-            <span>엔카·차마트 표준 4대 분류 상세 옵션표</span>
-            <span class="flex items-center gap-2">
-              <span class="inline-flex items-center gap-1 text-[#10B981] font-bold"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>장착 확인</span>
-              <span class="inline-flex items-center gap-1 text-slate-400"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>미확인</span>
-            </span>
+          <div class="text-[11px] sm:text-xs text-slate-500 flex flex-wrap items-center justify-between px-1 pb-1 gap-2">
+            <span class="font-medium text-slate-600">차마트 현대형 표준 4대 분류 상세 옵션표 (전체 비교)</span>
+            <div class="flex items-center gap-2">
+              <!-- 엔카 스타일: 적용된 옵션만 보기 토글 버튼 -->
+              <button type="button" onclick="window.__vdrInstance ? window.__vdrInstance.toggleOnlyPresentOptions(this) : null" class="vdr-only-present-btn inline-flex items-center px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-slate-100 hover:bg-slate-200/70 text-slate-700 font-medium transition-colors cursor-pointer">
+                <i data-lucide="filter" class="w-3.5 h-3.5 mr-1 text-slate-400"></i>
+                적용된 옵션만 보기
+              </button>
+              <span class="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium ml-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-900"></span>장착
+                <span class="w-2.5 h-2.5 rounded-full border border-slate-300 ml-1"></span>미장착
+              </span>
+            </div>
           </div>
           <div class="space-y-2.5">
             ${fullCategoriesHtml || '<div class="text-xs text-slate-400 py-3 text-center">상세 옵션 내역을 불러오는 중입니다.</div>'}
