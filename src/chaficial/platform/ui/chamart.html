@@ -255,19 +255,25 @@
                             <span>관심 차량</span>
                             <span id="navFavCountBadge" class="ml-1 text-[11px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded-full font-mono">0</span>
                         </a>
-                        <a href="#showroom" onclick="scrollToShowroom(event)" class="hover:text-[#171B1E] transition-colors pb-1">장한평 전시장</a>
-                        <a href="#guide" onclick="scrollToGuide(event)" class="hover:text-[#171B1E] transition-colors pb-1">구매 가이드</a>
+                        <a href="javascript:void(0)" onclick="openAddressModal()" id="nav-link-address" class="hover:text-[#171B1E] transition-colors pb-1 flex items-center cursor-pointer text-slate-800">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 mr-1 text-[#10B981]"></i>
+                            <span>주소</span>
+                        </a>
                     </nav>
                 </div>
 
-                <!-- 우측: 고객용 1:1 방문 예약 / 상담 버튼 + 모바일 메뉴 햄버거 버튼 -->
-                <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+                <!-- 우측: 고객용 가짜 대표전화(010-1111-9999) + 1:1 방문 예약 / 구매 상담 버튼 -->
+                <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
+                    <a href="tel:010-1111-9999" class="hidden sm:inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800 hover:text-black bg-slate-100 hover:bg-slate-200/80 px-2.5 sm:px-3 py-2 rounded-lg border border-slate-200 transition-colors shadow-2xs">
+                        <i data-lucide="phone" class="w-3.5 h-3.5 text-[#10B981]"></i>
+                        <span class="tracking-tight font-mono">010-1111-9999</span>
+                    </a>
                     <button onclick="scrollToConsultation()" class="inline-flex items-center text-xs sm:text-sm font-bold bg-[#171B1E] hover:bg-black text-white px-2.5 sm:px-4 py-2 rounded-lg transition-colors cursor-pointer shadow-xs">
                         <span class="w-2 h-2 rounded-full bg-[#C8FF3D] mr-1.5 sm:mr-2"></span>
                         <span class="hidden sm:inline">1:1 방문 예약 / 구매 상담</span>
-                        <span class="sm:hidden">방문상담</span>
+                        <span class="sm:hidden">1:1 예약/상담</span>
                     </button>
-                    <!-- 모바일 전체 메뉴 열기 햄버거 버튼 (DIRECTIVE 086 시인성 강화) -->
+                    <!-- 모바일 전체 메뉴 열기 햄버거 버튼 -->
                     <button type="button" id="mobileMenuOpenBtn" onclick="toggleMobileNavDrawer(true)" class="md:hidden w-9 h-9 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg transition-colors cursor-pointer shadow-2xs active:scale-95 shrink-0" aria-label="메뉴 열기">
                         <i data-lucide="menu" class="w-5 h-5 text-[#171B1E]"></i>
                     </button>
@@ -344,18 +350,18 @@
                     </div>
                     <span id="drawerFavCountBadge" class="text-xs bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full font-bold">0</span>
                 </a>
-                <a href="#showroom" onclick="toggleMobileNavDrawer(false); scrollToShowroom(event);" class="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors">
-                    <i data-lucide="map-pin" class="w-4 h-4 text-slate-400"></i>
-                    <span>장한평 전시장 안내</span>
-                </a>
-                <a href="#guide" onclick="toggleMobileNavDrawer(false); scrollToGuide(event);" class="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors">
-                    <i data-lucide="shield-check" class="w-4 h-4 text-slate-400"></i>
-                    <span>구매 안심 가이드</span>
+                <a href="javascript:void(0)" onclick="toggleMobileNavDrawer(false); openAddressModal();" class="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-slate-100 text-slate-700 transition-colors">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-[#10B981]"></i>
+                    <span class="font-bold text-slate-800">전시장 주소 (오시는 길)</span>
                 </a>
             </nav>
 
-            <!-- 드로어 하단 1:1 방문 상담 액션 -->
+            <!-- 드로어 하단 1:1 방문 상담 액션 및 전화 바로걸기 -->
             <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-2">
+                <a href="tel:010-1111-9999" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 transition-colors">
+                    <i data-lucide="phone" class="w-3.5 h-3.5 text-[#10B981]"></i>
+                    <span>전화 문의: 010-1111-9999</span>
+                </a>
                 <button onclick="toggleMobileNavDrawer(false); scrollToConsultation();" class="w-full py-3 bg-[#171B1E] hover:bg-black text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer">
                     <span class="w-2 h-2 rounded-full bg-[#C8FF3D]"></span>
                     <span>1:1 방문 예약 / 구매 상담</span>
@@ -782,13 +788,13 @@
                             <div class="flex flex-wrap gap-4 text-xs text-slate-600">
                                 <button onclick="openPolicyModal('terms')" class="hover:text-slate-900 transition-colors cursor-pointer">이용약관</button>
                                 <button onclick="openPolicyModal('privacy')" class="hover:text-slate-900 transition-colors font-bold text-slate-800 cursor-pointer">개인정보처리방침</button>
-                                <a href="#showroom" onclick="scrollToShowroom(event)" class="hover:text-slate-900 transition-colors">고객지원센터</a>
-                                <a href="#guide" onclick="scrollToGuide(event)" class="hover:text-slate-900 transition-colors">투명 구매 가이드</a>
+                                <button onclick="openAddressModal()" class="hover:text-slate-900 transition-colors cursor-pointer font-bold text-slate-700">전시장 주소 (오시는 길)</button>
+                                <a href="tel:010-1111-9999" class="hover:text-slate-900 transition-colors text-slate-700">전화상담 (010-1111-9999)</a>
                             </div>
                         </div>
 
                         <div class="space-y-1.5 text-slate-400 text-[11px] leading-relaxed">
-                            <p>상호: 차마트 (CHAMART) | 대표전화: 온라인 고객센터 | 고객지원: 서울특별시 성동구 자동차시장1길 70 (용답동 장한평 전시장) | 사업자등록 전산 실사 완료</p>
+                            <p>상호: 차마트 (CHAMART) | 대표전화: 010-1111-9999 | 사업장 주소: 서울특별시 성동구 자동차시장 1길 94-47 장안모터프라자 801호 차마트 | 사업자등록 전산 실사 완료</p>
                             <p>전자상거래 소비자보호 및 중고차 실매물 확인 서비스 | 허위매물 신고센터 상시 운영 | 통신판매업 신고 완료</p>
                             <p class="pt-2 text-slate-400">
                                 ※ 차마트에 등록된 모든 차량은 자동차관리법에 따른 성능·상태점검기록부와 실차 촬영본이 1:1 대조된 실매물이며, 허위매물 방지를 위해 상시 모니터링을 실시하고 있습니다.
@@ -1083,6 +1089,87 @@
             </div>
             <div class="pt-2 border-t border-slate-100 text-right">
                 <button onclick="closePolicyModal()" class="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-semibold rounded cursor-pointer">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 차마트 전시장 주소 및 찾아오시는 길 모달 (원클릭 주소 복사 지원) -->
+    <div id="addressModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4 animate-in fade-in duration-150">
+        <div class="bg-white rounded-2xl max-w-lg w-full flex flex-col p-5 sm:p-6 space-y-4 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-[#10B981]"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-900">차마트 찾아오시는 길</h3>
+                        <p class="text-[11px] text-slate-500">장한평 직영 전시장 & 고객 상담 본사</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAddressModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 py-1">
+                <!-- 도로명 주소 카드 (원클릭 복사) -->
+                <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">도로명 주소</span>
+                        <span class="text-[11px] text-slate-500 font-medium">장안모터프라자 8층 801호</span>
+                    </div>
+                    <div class="text-slate-900 font-bold text-sm sm:text-base leading-snug select-all bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs" id="targetAddressText">
+                        서울 성동구 자동차시장 1길 94-47 장안모터프라자 801호 차마트
+                    </div>
+                    <button type="button" onclick="copyAddressText()" id="copyAddressBtn" class="w-full py-2.5 px-4 bg-[#171B1E] hover:bg-black active:scale-[0.99] text-white text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer">
+                        <i data-lucide="copy" class="w-4 h-4 text-[#C8FF3D]"></i>
+                        <span id="copyAddressBtnLabel">주소 전체 복사하기</span>
+                    </button>
+                </div>
+
+                <!-- 상세 위치 및 교통편 안내 -->
+                <div class="space-y-2 text-xs text-slate-600 bg-white border border-slate-200/60 rounded-xl p-3.5">
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="train" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>
+                        <div>
+                            <strong class="text-slate-800">지하철 이용 시:</strong>
+                            <p class="text-slate-600">5호선 장한평역 5번 또는 6번 출구 (도보 약 5분 소요)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2 pt-1 border-t border-slate-100">
+                        <i data-lucide="car" class="w-4 h-4 text-slate-500 shrink-0 mt-0.5"></i>
+                        <div>
+                            <strong class="text-slate-800">자가용 네비게이션:</strong>
+                            <p class="text-slate-600">'장안모터프라자' 검색 (지상/지하 고객 무료 주차 가능)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2 pt-1 border-t border-slate-100">
+                        <i data-lucide="phone" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
+                        <div>
+                            <strong class="text-slate-800">방문 안내 및 상담 전화:</strong>
+                            <a href="tel:010-1111-9999" class="text-emerald-700 font-bold hover:underline">010-1111-9999</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 모바일 지도 바로가기 버튼 링크들 -->
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <a href="https://map.kakao.com/link/search/서울 성동구 자동차시장 1길 94-47" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3 rounded-xl bg-[#FEE500] hover:bg-[#FADA0A] text-[#191919] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
+                        <span>카카오맵 길찾기</span>
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                    </a>
+                    <a href="https://map.naver.com/v5/search/서울 성동구 자동차시장 1길 94-47" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3 rounded-xl bg-[#03C75A] hover:bg-[#02B150] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
+                        <span>네이버지도 길찾기</span>
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span class="text-[11px] text-slate-400">사전 예약 후 방문하시면 실차 시승 가능합니다.</span>
+                <button type="button" onclick="closeAddressModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg cursor-pointer transition-colors">
                     닫기
                 </button>
             </div>
@@ -2924,6 +3011,58 @@
             }
         }
 
+        // 차마트 전시장 주소 모달 제어 및 클립보드 복사
+        const CHAMART_EXACT_ADDRESS = '서울 성동구 자동차시장 1길 94-47 장안모터프라자 801호 차마트';
+
+        function openAddressModal() {
+            const modal = document.getElementById('addressModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                if (window.lucide) window.lucide.createIcons();
+            }
+        }
+
+        function closeAddressModal() {
+            const modal = document.getElementById('addressModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        async function copyAddressText() {
+            const btn = document.getElementById('copyAddressBtn');
+            const label = document.getElementById('copyAddressBtnLabel');
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(CHAMART_EXACT_ADDRESS);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = CHAMART_EXACT_ADDRESS;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+
+                if (label) label.innerText = '✅ 주소가 복사되었습니다!';
+                if (btn) {
+                    btn.classList.remove('bg-[#171B1E]', 'hover:bg-black');
+                    btn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                }
+                setTimeout(() => {
+                    if (label) label.innerText = '주소 전체 복사하기';
+                    if (btn) {
+                        btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                        btn.classList.add('bg-[#171B1E]', 'hover:bg-black');
+                    }
+                }, 2000);
+            } catch (err) {
+                prompt('아래 주소를 복사해 주세요:', CHAMART_EXACT_ADDRESS);
+            }
+        }
+
         function scrollToShowroom(e) {
             if (e) e.preventDefault();
             const elem = document.getElementById('showroom');
@@ -2935,6 +3074,7 @@
         // ESC 키로 모달 닫기
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
+                closeAddressModal();
                 closePolicyModal();
                 closeCompareModal();
                 closeMobileFilterBottomSheet();
