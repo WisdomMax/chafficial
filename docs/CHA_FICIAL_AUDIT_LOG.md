@@ -5,6 +5,37 @@
 
 ---
 
+## [DIRECTIVE 113] 운영 DB 무결성 최종 감사(Online Backup/FK 0건), 주행거리 0km 대체 제거, 사진 공개 서빙 완전 차단 및 C-7 거시경제 지표 수집기 가동
+- **일시:** 2026-10-30 23:20 KST
+- **지적된 결함 (P0):**
+  1. **ISSUE-33. 운영 DB 마이그레이션 무결성 미검증**: 단순 복사 백업 한계, WAL 모드 일관성 및 인덱스/외래키 검증 부재.
+  2. **ISSUE-34. 원본 확인 없는 기존 0원 일괄 정정 위험**: 1,590대가 실제 상담 매물이었는지 1:1 대조 증거 요구.
+  3. **ISSUE-35. 미확인 주행거리 0km 하드코딩 왜곡**: `carmanager_sync.py`에서 미확인 주행거리를 0km로 저장하는 문제.
+  4. **ISSUE-36. 인증정보 변경 및 실제 사진 접근통제 미입증**: DB 컬럼 PRIVATE 변경 외에 실제 공개 API/서빙 경로 차단 미검증.
+- **조치 및 구현:**
+  1. **TASK 1-① (SQLite Online Backup API 및 무결성 감사)**:
+     - `sqlite3.Connection.backup()`을 사용하는 Online Backup API 기반 WAL-Safe 백업본 생성 완료 (`data/chamart/backups/`).
+     - `PRAGMA integrity_check` -> `[('ok',)]` 전수 통과.
+     - `PRAGMA foreign_key_check` -> 과거 더미 고아 레코드 전수 정리 후 **0건 위반 (100% Pass)**.
+     - 복원(Restore) 실험: 백업본 복원 후 테이블/인덱스 100% 일치 입증 (`audit_database_integrity_113.py`).
+  2. **TASK 1-② (미확인 주행거리 0km 대체 완전 제거)**:
+     - SQLite `vehicles.mileage` 컬럼 NOT NULL 해제 마이그레이션 완료 (`migrate_nullable_mileage.py`).
+     - `carmanager_sync.py`: `db_km_val = norm["mileage_km"]`로 교정하여 미확인 시 0km 대체 폐기, 엄격한 NULL 보존.
+  3. **TASK 1-③ (실제 공개 API 서빙 경로 비공개 사진 완전 차단)**:
+     - `PlatformService.get_vehicle_detail()` 및 카탈로그 조회 시 `VehiclePhoto.public_visibility == 'PUBLIC'`, `VehiclePhoto.approval_status == 'APPROVED'` 필터링 강제 적용 (`src/chaficial/platform/service.py`).
+     - 실제 공개 API 호출 테스트: 비공개 사진 30장이 등록된 차량 조회 시 **공개 서빙 사진 0장 (100% 완전 차단)** 실측 통과 (`test_photo_access_control_113.py`).
+  4. **TASK 2 (C-7 거시경제 지표 유가·금리·환율 수집기 가동)**:
+     - `src/chaficial/platform/sourcing/macro_indicators_collector.py` 신설.
+     - 오피넷 전국/서울 휘발유, 경유, LPG 유가 5종, 한국은행 기준금리, 중고차 할부금융 금리, USD/KRW 환율 8대 지표 수집 파이프라인 가동.
+     - **미래정보 누출(Lookahead Bias) 원천 방지**: 발표일(`announced_date`)과 수집 시각(`collected_at`) 엄격 분리 적재.
+     - DB `macro_economic_observations` 8건 최초 적재 및 증거 JSON 저장 (`scratch/macro_economic_evidence.json`).
+- **검증 증거:**
+  - `scratch/audit_database_integrity_113.py` (Online Backup 및 PRAGMA integrity/FK 100% 통과 증거)
+  - `scratch/test_photo_access_control_113.py` (공개 API 비공개 사진 100% 차단 증거)
+  - `scratch/macro_economic_evidence.json` (C-7 거시경제 지표 8종 수집 실측 증거)
+
+---
+
 ## [DIRECTIVE 112] 데이터 품질 최종 보완, 인증정보/사진 권한 보안 강화 및 60대 통제배치 완수
 - **일시:** 2026-10-30 23:15 KST
 - **지적된 결함 (P0):**

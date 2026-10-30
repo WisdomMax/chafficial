@@ -403,7 +403,7 @@ class PlatformService:
             for d in v.defects
         ]
 
-        # 사진 자산 목록 (순서 정렬)
+        # 사진 자산 목록 (DIRECTIVE 113: 공개 및 승인된 사진만 엄격 필터링하여 노출)
         photos = [
             {
                 "id": p.id,
@@ -414,9 +414,10 @@ class PlatformService:
                 "is_primary": p.is_primary,
                 "allow_video_use": p.allow_video_use,
                 "caption": p.caption,
-                "created_at": p.created_at.strftime("%Y-%m-%d %H:%M"),
+                "created_at": p.created_at.strftime("%Y-%m-%d %H:%M") if p.created_at else "",
             }
             for p in sorted(v.photos, key=lambda x: (not x.is_primary, x.sort_order))
+            if getattr(p, "public_visibility", "PUBLIC") == "PUBLIC" and getattr(p, "approval_status", "APPROVED") == "APPROVED"
         ]
 
         # 외부 매물 Listing 목록
@@ -2991,8 +2992,12 @@ class PlatformService:
                 if not has_all_options:
                     continue
 
-            # 사진 수 및 부위별 통계 계산
-            photos = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).all()
+            # 사진 수 및 부위별 통계 계산 (DIRECTIVE 113: 공개 승인된 사진만 카운트)
+            photos = db.query(VehiclePhoto).filter(
+                VehiclePhoto.vehicle_id == v.id,
+                VehiclePhoto.public_visibility == 'PUBLIC',
+                VehiclePhoto.approval_status == 'APPROVED'
+            ).all()
             photo_count = len(photos)
 
             # 월 납입금 추산 (60개월, 연 5.9% 기준 원리금 균등)

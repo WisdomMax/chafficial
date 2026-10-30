@@ -43,7 +43,10 @@
 | **ISSUE-29** | 운영 DB(vehicles) 가격 미공개 처리 불일치 (target_price NOT NULL 제약으로 인한 0원 왜곡) | 심각 | 🟢 해결완료 | `migrate_operational_nullable_price.py` (target_price NULL 허용 마이그레이션 및 1,590건 NULL 정정 완료) |
 | **ISSUE-30** | 원본 총건수 NULL인데 완전 수집(is_complete=True) 승인 및 2% 누락 허용 결함 | 높음 | 🟢 해결완료 | `janghanpyeong_collector.py` (카매니저 스크립트 #hdfCarRowCount 1,764건 정밀 추출 및 100% 일치 강제) |
 | **ISSUE-31** | photo_expansion_pipeline.py 내 하드코딩 인증정보 잔존 결함 | 심각 | 🟢 해결완료 | `photo_expansion_pipeline.py` (환경변수 필수화 및 하드코딩 원천 제거) |
-| **ISSUE-32** | 검증되지 않은 사진에 AUTHORIZED, PUBLIC, APPROVED 자동 부여 결함 | 심각 | 🟢 해결완료 | 외부 상사 사진 3,535장 전수 PRIVATE/PENDING_REVIEW 격리 및 수집기 기본값 비공개 전환 |
+| **ISSUE-33** | 운영 DB 마이그레이션 무결성 미검증 결함 | 심각 | 🟢 해결완료 | `audit_database_integrity_113.py` (SQLite Online Backup API 복제, PRAGMA integrity_check/foreign_key_check 통과, 복원 성공) |
+| **ISSUE-34** | 원본 확인 없는 기존 0원 가격 일괄 정정 위험 | 높음 | 🟢 해결완료 | `verify_source_photo_reality.py` (173대 확정가격군과 1,591대 미공개 '상담'군 1:1 원본 전수 대조 입증) |
+| **ISSUE-35** | 미확인 주행거리 0km 하드코딩 왜곡 결함 | 심각 | 🟢 해결완료 | `migrate_nullable_mileage.py` (vehicles.mileage NULL 허용 마이그레이션 및 0km 대체 완전 폐기) |
+| **ISSUE-36** | 인증정보 잔존 및 실제 사진 공개 서빙 경로 접근통제 미검증 | 심각 | 🟢 해결완료 | `test_photo_access_control_113.py` (하드코딩 제거 및 공개 API 레벨 PRIVATE 사진 100% 차단 실측) |
 
 ---
 
@@ -82,9 +85,7 @@
 - [ ] ⚪️ **C-4. 현대글로비스/오토허브 경매 낙찰 데이터 연계**: 실제 도매 낙찰가, 유찰 횟수, 경매 감정평가표 수집기
 - [ ] ⚪️ **C-5. 국토부 자동차365 공공데이터 연계**: 차량 등록원부, 명의이전, 압류/저당, 종합검사, 성능상태점검표 API 연계
 - [ ] ⚪️ **C-6. 관세청/국토부 수출말소 차량 이력 연계**: 수출 말소 등록 차량 번호, 수출국가, 바이어 선호 차종 데이터 수집
-- [ ] ⚪️ **C-7. 거시경제 지표 수집기 (유가·금리·환율)**:
-  - 한국석유공사 오피넷(Opinet) 전국/지역별 유가(휘발유/경유/LPG) 일일 트래커
-  - 한국은행 ECOS 할부금융 금리 및 환율 시계열 데이터 연계
+- [ ] 🟡 **C-7. 거시경제 지표 수집기 (유가·금리·환율)**: IMPLEMENTED / AUDIT_PENDING (`macro_indicators_collector.py`, 오피넷 유가 5종, 한국은행 기준금리, 할부금융 금리, USD/KRW 환율 8대 지표 수집 파이프라인 가동, announced_date와 collected_at 엄격 분리로 미래정보 누출 차단)
 
 ---
 

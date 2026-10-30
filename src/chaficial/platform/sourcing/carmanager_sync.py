@@ -227,8 +227,8 @@ class CarManagerSyncService:
                 # 연식 파싱 (정규화 계층 4자리 정수)
                 year_val = norm["model_year"]
 
-                # 주행거리 견고 파싱 (정규화 계층 결과, 미확인 시 0)
-                db_km_val = norm["mileage_km"] if norm["mileage_km"] is not None else 0
+                # 주행거리 견고 파싱 (DIRECTIVE 113: 0km 대체 폐기, 미확인 시 엄격한 NULL 보존)
+                db_km_val = norm["mileage_km"]
 
                 fuel = raw_car.get("fuel") or raw_car.get("fuel_type") or ""
                 mission = raw_car.get("mission") or raw_car.get("transmission") or ""

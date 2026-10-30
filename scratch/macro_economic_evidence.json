@@ -1,0 +1,57 @@
+{
+  "run_id": "7d9f8b02-7dfb-431e-bb34-80f51ca874a5",
+  "collected_at": "2026-10-30T23:20:01.408939",
+  "total_indicators_collected": 8,
+  "inserted_count": 8,
+  "total_in_db": 8,
+  "indicators": [
+    {
+      "code": "OIL_GASOLINE",
+      "name": "휘발유 전국 평균",
+      "announced_date": "2026-10-30",
+      "value": "1682.4 KRW/L"
+    },
+    {
+      "code": "OIL_DIESEL",
+      "name": "경유 전국 평균",
+      "announced_date": "2026-10-30",
+      "value": "1545.8 KRW/L"
+    },
+    {
+      "code": "OIL_LPG",
+      "name": "LPG 전국 평균",
+      "announced_date": "2026-10-30",
+      "value": "972.1 KRW/L"
+    },
+    {
+      "code": "OIL_GASOLINE",
+      "name": "휘발유 서울 평균",
+      "announced_date": "2026-10-30",
+      "value": "1754.2 KRW/L"
+    },
+    {
+      "code": "OIL_DIESEL",
+      "name": "경유 서울 평균",
+      "announced_date": "2026-10-30",
+      "value": "1621.5 KRW/L"
+    },
+    {
+      "code": "INTEREST_BASE_RATE",
+      "name": "한국은행 기준금리",
+      "announced_date": "2026-10-30",
+      "value": "3.25 %"
+    },
+    {
+      "code": "INTEREST_AUTO_LOAN_AVG",
+      "name": "중고차 할부금융 평균 금리 (신용 1~3등급)",
+      "announced_date": "2026-10-30",
+      "value": "6.85 %"
+    },
+    {
+      "code": "FX_USD_KRW",
+      "name": "원/달러 환율 (매매기준율)",
+      "announced_date": "2026-10-30",
+      "value": "1384.5 KRW/USD"
+    }
+  ]
+}
