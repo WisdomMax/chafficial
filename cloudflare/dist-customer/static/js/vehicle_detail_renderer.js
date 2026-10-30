@@ -350,17 +350,12 @@ class VehicleDetailRenderer {
                 </div>
 
                 <!-- 실사진 30장 전체보기 플로팅 액션 버튼 (사용자 유도) -->
-                <div class="absolute bottom-3.5 right-3.5 bg-[#171B1E]/90 hover:bg-black backdrop-blur-md text-white border border-white/20 text-xs sm:text-sm font-bold px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 transition-transform duration-200 group-hover:scale-105 active:scale-95 pointer-events-none">
+                <div class="absolute bottom-3 right-3 bg-[#171B1E]/90 text-white border border-white/20 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 pointer-events-none whitespace-nowrap">
                   <i data-lucide="camera" class="w-4 h-4 text-[#C8FF3D]"></i>
-                  <span>실사진 ${this.photos.length}장 전체보기</span>
-                  <span class="text-[11px] font-normal text-slate-300 sm:inline hidden">(세로 스크롤)</span>
+                  <span>사진 ${this.photos.length}장 전체보기</span>
                 </div>
 
-                <!-- 사진 하단 안내 오버레이 -->
-                <div class="absolute bottom-3.5 left-3.5 text-xs text-white/90 bg-black/60 backdrop-blur-xs px-3 py-1.5 rounded-lg flex items-center gap-1 pointer-events-none">
-                  <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5 text-[#C8FF3D]"></i>
-                  <span>사진을 터치하면 전체 사진이 세로로 펼쳐집니다</span>
-                </div>
+
               </div>
 
               <!-- 하단 썸네일 미리보기 스트립 (대표 4장 + 전체보기 버튼) -->
@@ -636,7 +631,7 @@ class VehicleDetailRenderer {
                 <!-- 차량 부위별 독자 2D 다이어그램 (외판 vs 주요 골격, diagram_parts 바인딩) -->
                 <div class="bg-slate-50 p-4 rounded-lg border border-[#E5E8EC] space-y-4">
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span class="text-xs font-bold text-slate-800">차량 부위별 정밀 진단 평면도 (클릭 시 세부 판정 확인)</span>
+                    <span class="text-xs font-bold text-slate-800">부위별 점검 상태 · 부위를 누르면 상세 확인</span>
                     <div class="inline-flex rounded bg-slate-200 p-0.5 text-xs font-medium">
                       <button onclick="window.__vdrInstance.switchDiagramTab('all')" id="vdrDiagTabAll" class="px-2.5 py-1 rounded bg-white text-slate-900 shadow-2xs cursor-pointer">전체</button>
                       <button onclick="window.__vdrInstance.switchDiagramTab('outer')" id="vdrDiagTabOuter" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 cursor-pointer">외판 부위</button>
@@ -646,15 +641,15 @@ class VehicleDetailRenderer {
 
                   <!-- 범례 -->
                   <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 py-1 border-t border-b border-slate-200/70">
-                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span>무사고·정상</span>
-                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span>단순교환/수리</span>
-                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 mr-1.5"></span>주요 골격손상</span>
-                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 mr-1.5"></span>미확인</span>
+                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#E5EFE8] border border-[#8BAA96] mr-1.5"></span>무사고·정상</span>
+                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#FBE3B1] border border-[#CA8B23] mr-1.5"></span>단순교환/수리</span>
+                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#F6BDB9] border border-[#D15B54] mr-1.5"></span>주요 골격손상</span>
+                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-[#E8EBED] border border-[#AEB8BF] mr-1.5"></span>미확인</span>
                   </div>
 
                   <!-- SVG 및 우측 상세 패널 -->
                   <div class="flex flex-col md:flex-row items-center justify-center gap-6 py-2">
-                    <div class="relative w-full max-w-[300px] aspect-[3/5] flex items-center justify-center">
+                    <div class="relative w-full max-w-[300px] flex items-center justify-center">
                       ${this.renderCarDiagramSvg(acc)}
                     </div>
 
@@ -804,7 +799,7 @@ class VehicleDetailRenderer {
             </button>
             <div>
               <h2 class="text-sm sm:text-base font-bold text-white truncate max-w-[200px] sm:max-w-md">${escapeHtml(displayTitle)}</h2>
-              <p class="text-[11px] text-[#C8FF3D] font-medium">📷 실사진 ${this.photos.length}장 전체보기 (세로 스크롤 피드)</p>
+              <p class="text-[11px] text-[#C8FF3D] font-medium">📷 사진 ${this.photos.length}장 전체보기 (세로 스크롤 피드)</p>
             </div>
           </div>
 
@@ -1213,125 +1208,84 @@ class VehicleDetailRenderer {
       return '#CBD5E1';
     };
 
+    // Keep the original part keys so selection and inspection data stay connected.
+    const names = {
+      'front-bumper': '앞 범퍼', hood: '보닛', 'fender-fl': '좌측 앞 펜더', 'fender-fr': '우측 앞 펜더',
+      'door-fl': '좌측 앞 도어', 'door-fr': '우측 앞 도어', 'door-rl': '좌측 뒤 도어', 'door-rr': '우측 뒤 도어',
+      roof: '루프', 'quarter-l': '좌측 뒤 펜더', 'quarter-r': '우측 뒤 펜더', trunk: '트렁크',
+      'rear-bumper': '뒤 범퍼', 'frame-rad-support': '라디에이터 서포트',
+      'frame-member-l': '좌측 앞 사이드 멤버', 'frame-member-r': '우측 앞 사이드 멤버',
+      'frame-member-rl': '좌측 뒤 사이드 멤버', 'frame-member-rr': '우측 뒤 사이드 멤버',
+      'pillar-a': '좌측 A필러', 'pillar-a-r': '우측 A필러', 'pillar-b': '좌측 B필러',
+      'pillar-b-r': '우측 B필러', 'pillar-c': '좌측 C필러', 'pillar-c-r': '우측 C필러'
+    };
+    const part = (key, shape, type = 'outer') => {
+      const color = getColor(key);
+      const state = color === '#10B981' ? '정상' : color === '#F59E0B' ? '교환·수리' : color === '#EF4444' ? '손상' : '미확인';
+      const fill = color === '#10B981' ? '#E5EFE8' : color === '#F59E0B' ? '#FBE3B1' : color === '#EF4444' ? '#F6BDB9' : '#E8EBED';
+      const stroke = color === '#10B981' ? '#8BAA96' : color === '#F59E0B' ? '#CA8B23' : color === '#EF4444' ? '#D15B54' : '#AEB8BF';
+      return `<path id="part-${key}" data-part="${key}" data-type="${type}" data-state="${state}"
+        d="${shape}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" stroke-linejoin="round"
+        class="vdr-diag-part" role="button" tabindex="0" aria-label="${names[key]}: ${state}"
+        onclick="window.__vdrInstance.selectPart('${key}')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.__vdrInstance.selectPart('${key}')}" >
+        <title>${names[key]} · ${state}</title></path>`;
+    };
+
     return `
-      <div class="relative w-full flex flex-col items-center">
-        <!-- 앞/뒤 명확한 차량 방향 안내 라벨 (DIRECTIVE 075-A TASK 2) -->
-        <div class="text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1.5 tracking-tight">
-          <span class="inline-block w-2 h-2 border-t-2 border-l-2 border-slate-600 rotate-45 -mb-0.5"></span>
-          <span>▲ FRONT (앞) · 엔진룸</span>
-        </div>
-
-        <svg viewBox="0 0 280 470" id="vdrCarSvgDiagram" class="w-full h-full max-h-[380px] drop-shadow-sm select-none" xmlns="http://www.w3.org/2000/svg">
-          <!-- 1. 차체 외곽 가이드라인 및 휠 위치 (앞/뒤 방향 표시) -->
-          <path d="M 60,65 C 60,25 220,25 220,65 L 225,120 L 235,160 L 235,330 L 225,385 L 220,430 C 220,450 60,450 60,430 L 55,385 L 45,330 L 45,160 L 55,120 Z" 
-                fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2" stroke-linejoin="round" pointer-events="none" />
-          
-          <!-- 바퀴 4개 실루엣 (방향성 및 입체감) -->
-          <rect x="34" y="90" width="12" height="42" rx="3" fill="#64748B" opacity="0.6" pointer-events="none" />
-          <rect x="234" y="90" width="12" height="42" rx="3" fill="#64748B" opacity="0.6" pointer-events="none" />
-          <rect x="34" y="320" width="12" height="42" rx="3" fill="#64748B" opacity="0.6" pointer-events="none" />
-          <rect x="234" y="320" width="12" height="42" rx="3" fill="#64748B" opacity="0.6" pointer-events="none" />
-
-          <!-- 앞유리창 & 뒷유리창 구역 (차량 구조 선명도 강화) -->
-          <polygon points="70,126 210,126 195,155 85,155" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1" pointer-events="none" />
-          <polygon points="85,310 195,310 208,340 72,340" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="1" pointer-events="none" />
-
-          <!-- [외판 부위 (OUTER)] -->
-          <!-- 앞 범퍼 -->
-          <path id="part-front-bumper" data-part="front-bumper" data-type="outer" d="M 62,45 C 72,25 208,25 218,45 L 214,64 L 66,64 Z" 
-                fill="${getColor('front-bumper')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('front-bumper')" />
-
-          <!-- 보닛 (후드) -->
-          <path id="part-hood" data-part="hood" data-type="outer" d="M 74,68 C 80,45 200,45 206,68 L 210,122 L 70,122 Z" 
-                fill="${getColor('hood')}" opacity="0.9" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all" 
-                onclick="window.__vdrInstance.selectPart('hood')" />
-
-          <!-- 앞 펜더 (좌/우) -->
-          <path id="part-fender-fl" data-part="fender-fl" data-type="outer" d="M 52,70 L 71,70 L 67,135 L 48,135 Z" 
-                fill="${getColor('fender-fl')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('fender-fl')" />
-          <path id="part-fender-fr" data-part="fender-fr" data-type="outer" d="M 209,70 L 228,70 L 232,135 L 213,135 Z" 
-                fill="${getColor('fender-fr')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('fender-fr')" />
-
-          <!-- 앞 도어 (좌/우) -->
-          <path id="part-door-fl" data-part="door-fl" data-type="outer" d="M 46,140 L 70,140 L 70,225 L 46,225 Z" 
-                fill="${getColor('door-fl')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('door-fl')" />
-          <path id="part-door-fr" data-part="door-fr" data-type="outer" d="M 210,140 L 234,140 L 234,225 L 210,225 Z" 
-                fill="${getColor('door-fr')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('door-fr')" />
-
-          <!-- 뒤 도어 (좌/우) -->
-          <path id="part-door-rl" data-part="door-rl" data-type="outer" d="M 46,230 L 70,230 L 70,310 L 46,310 Z" 
-                fill="${getColor('door-rl')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('door-rl')" />
-          <path id="part-door-rr" data-part="door-rr" data-type="outer" d="M 210,230 L 234,230 L 234,310 L 210,310 Z" 
-                fill="${getColor('door-rr')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('door-rr')" />
-
-          <!-- 루프 패널 (천장) -->
-          <rect id="part-roof" data-part="roof" data-type="outer" x="73" y="160" width="134" height="145" rx="4" 
-                fill="${getColor('roof')}" opacity="0.9" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all" 
-                onclick="window.__vdrInstance.selectPart('roof')" />
-
-          <!-- 쿼터 패널 (뒤 펜더 좌/우) -->
-          <path id="part-quarter-l" data-part="quarter-l" data-type="outer" d="M 46,315 L 72,315 L 75,395 L 53,395 Z" 
-                fill="${getColor('quarter-l')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('quarter-l')" />
-          <path id="part-quarter-r" data-part="quarter-r" data-type="outer" d="M 208,315 L 234,315 L 227,395 L 205,395 Z" 
-                fill="${getColor('quarter-r')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('quarter-r')" />
-
-          <!-- 트렁크 리드 -->
-          <path id="part-trunk" data-part="trunk" data-type="outer" d="M 76,345 L 204,345 L 198,410 L 82,410 Z" 
-                fill="${getColor('trunk')}" opacity="0.9" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all" 
-                onclick="window.__vdrInstance.selectPart('trunk')" />
-
-          <!-- 뒤 범퍼 -->
-          <path id="part-rear-bumper" data-part="rear-bumper" data-type="outer" d="M 64,415 C 75,445 205,445 216,415 L 213,438 C 203,455 77,455 67,438 Z" 
-                fill="${getColor('rear-bumper')}" opacity="0.9" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-800 hover:stroke-[2.5px] transition-all"
-                onclick="window.__vdrInstance.selectPart('rear-bumper')" />
-
-          <!-- [주요 골격 (FRAME)] -->
-          <!-- 1. 라디에이터 서포트 -->
-          <rect id="part-frame-rad-support" data-part="frame-rad-support" data-type="frame" x="78" y="58" width="124" height="7" rx="2" 
-                fill="${getColor('frame-rad-support')}" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
-                onclick="window.__vdrInstance.selectPart('frame-rad-support')" />
-
-          <!-- 2. 프론트 사이드 멤버 (좌/우) -->
-          <rect id="part-frame-member-l" data-part="frame-member-l" data-type="frame" x="80" y="75" width="10" height="110" rx="2" 
-                fill="${getColor('frame-member-l')}" opacity="0.95" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
-                onclick="window.__vdrInstance.selectPart('frame-member-l')" />
-          <rect id="part-frame-member-r" data-part="frame-member-r" data-type="frame" x="190" y="75" width="10" height="110" rx="2" 
-                fill="${getColor('frame-member-r')}" opacity="0.95" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
-                onclick="window.__vdrInstance.selectPart('frame-member-r')" />
-
-          <!-- 3. 리어 사이드 멤버 (좌/우) -->
-          <rect id="part-frame-member-rl" data-part="frame-member-rl" data-type="frame" x="82" y="340" width="10" height="75" rx="2" 
-                fill="${getColor('frame-member-rl')}" opacity="0.95" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
-                onclick="window.__vdrInstance.selectPart('frame-member-rl')" />
-          <rect id="part-frame-member-rr" data-part="frame-member-rr" data-type="frame" x="188" y="340" width="10" height="75" rx="2" 
-                fill="${getColor('frame-member-rr')}" opacity="0.95" stroke="#FFFFFF" stroke-width="1.5" class="vdr-diag-part cursor-pointer hover:stroke-slate-900 transition-all" 
-                onclick="window.__vdrInstance.selectPart('frame-member-rr')" />
-
-          <!-- 4. 필러 A, B, C (좌/우 기둥 골격) -->
-          <circle id="part-pillar-a" data-part="pillar-a" data-type="frame" cx="72" cy="142" r="7" fill="${getColor('pillar-a')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-a')" />
-          <circle id="part-pillar-a-r" data-part="pillar-a-r" data-type="frame" cx="208" cy="142" r="7" fill="${getColor('pillar-a-r')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-a-r')" />
-          
-          <circle id="part-pillar-b" data-part="pillar-b" data-type="frame" cx="72" cy="228" r="7" fill="${getColor('pillar-b')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-b')" />
-          <circle id="part-pillar-b-r" data-part="pillar-b-r" data-type="frame" cx="208" cy="228" r="7" fill="${getColor('pillar-b-r')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-b')" />
-          
-          <circle id="part-pillar-c" data-part="pillar-c" data-type="frame" cx="74" cy="325" r="7" fill="${getColor('pillar-c')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-c')" />
-          <circle id="part-pillar-c-r" data-part="pillar-c-r" data-type="frame" cx="206" cy="325" r="7" fill="${getColor('pillar-c-r')}" stroke="#FFFFFF" stroke-width="2" class="vdr-diag-part cursor-pointer hover:scale-125 transition-transform" onclick="window.__vdrInstance.selectPart('pillar-c-r')" />
+      <div class="vdr-simple-diagram" style="width:100%;max-width:300px;margin:auto">
+        <style>
+          #vdrCarSvgDiagram .vdr-diag-part { cursor:pointer; transition:fill .15s,stroke .15s; }
+          #vdrCarSvgDiagram .vdr-diag-part:hover, #vdrCarSvgDiagram .vdr-diag-part:focus-visible { stroke:#26352D;stroke-width:3;outline:none; }
+          #vdrCarSvgDiagram text { font-family:inherit;pointer-events:none;user-select:none; }
+        </style>
+        <svg viewBox="0 0 300 460" id="vdrCarSvgDiagram" aria-label="위에서 본 차량 부위별 점검 상태. 위쪽이 차량 앞입니다."
+          style="display:block;width:100%;height:auto;max-height:420px" xmlns="http://www.w3.org/2000/svg">
+          <text x="150" y="18" text-anchor="middle" fill="#626E68" font-size="11" font-weight="600">차량 앞</text>
+          <path d="M146 29l4-4 4 4" fill="none" stroke="#9CA79F" stroke-width="1.5" stroke-linecap="round"/>
+          <!-- A single clean silhouette, with four wheels outside the body. -->
+          <g fill="#414B46">
+            <rect x="49" y="108" width="13" height="48" rx="5"/><rect x="238" y="108" width="13" height="48" rx="5"/>
+            <rect x="49" y="306" width="13" height="48" rx="5"/><rect x="238" y="306" width="13" height="48" rx="5"/>
+          </g>
+          <path d="M99 43 Q150 33 201 43 Q230 50 234 88 L242 166 L242 344 Q239 395 216 412 Q150 430 84 412 Q61 395 58 344 L58 166 L66 88 Q70 50 99 43Z"
+            fill="#FAFBFA" stroke="#84938A" stroke-width="2"/>
+          ${part('front-bumper', 'M97 47 Q150 37 203 47 Q218 51 222 65 L78 65 Q82 51 97 47Z')}
+          ${part('hood', 'M91 73 L209 73 Q216 91 217 135 L83 135 Q84 91 91 73Z')}
+          ${part('fender-fl', 'M76 77 L85 77 L78 143 L65 153 L70 99Z')}
+          ${part('fender-fr', 'M224 77 L215 77 L222 143 L235 153 L230 99Z')}
+          <!-- Windows are neutral, visually distinct from inspectable body panels. -->
+          <path d="M86 144 L214 144 L204 180 L96 180Z" fill="#DCE4E7" stroke="#A9B8BE" stroke-width="1.4"/>
+          <path d="M96 303 L204 303 L215 334 L85 334Z" fill="#DCE4E7" stroke="#A9B8BE" stroke-width="1.4"/>
+          ${part('door-fl', 'M65 162 L86 150 L91 235 L65 235Z')}
+          ${part('door-fr', 'M235 162 L214 150 L209 235 L235 235Z')}
+          ${part('door-rl', 'M65 243 L91 243 L87 324 L65 312Z')}
+          ${part('door-rr', 'M235 243 L209 243 L213 324 L235 312Z')}
+          ${part('roof', 'M99 188 L201 188 L201 295 L99 295Z')}
+          ${part('quarter-l', 'M65 322 L79 335 L85 392 L75 387 Q65 368 65 346Z')}
+          ${part('quarter-r', 'M235 322 L221 335 L215 392 L225 387 Q235 368 235 346Z')}
+          ${part('trunk', 'M90 342 L210 342 L205 392 Q150 405 95 392Z')}
+          ${part('rear-bumper', 'M81 398 Q150 417 219 398 L214 410 Q150 428 86 410Z')}
+          <!-- Small inboard markers keep the frame readable without covering the panels. -->
+          ${part('frame-rad-support', 'M103 79 H197 V87 H103Z', 'frame')}
+          ${part('frame-member-l', 'M99 95 H108 V126 H99Z', 'frame')}
+          ${part('frame-member-r', 'M192 95 H201 V126 H192Z', 'frame')}
+          ${part('frame-member-rl', 'M103 351 H112 V383 H103Z', 'frame')}
+          ${part('frame-member-rr', 'M188 351 H197 V383 H188Z', 'frame')}
+          ${part('pillar-a', 'M88 174 H96 V191 H88Z', 'frame')}
+          ${part('pillar-a-r', 'M204 174 H212 V191 H204Z', 'frame')}
+          ${part('pillar-b', 'M88 231 H96 V248 H88Z', 'frame')}
+          ${part('pillar-b-r', 'M204 231 H212 V248 H204Z', 'frame')}
+          ${part('pillar-c', 'M88 291 H96 V308 H88Z', 'frame')}
+          ${part('pillar-c-r', 'M204 291 H212 V308 H204Z', 'frame')}
+          <g fill="#68776E" font-size="11" text-anchor="middle">
+            <text x="150" y="115">보닛</text><text x="150" y="246">루프</text><text x="150" y="376">트렁크</text>
+          </g>
+          <g stroke="#8C9A91" stroke-width="2" stroke-linecap="round" pointer-events="none">
+            <path d="M74 214v10 M226 214v10 M74 257v10 M226 257v10"/>
+          </g>
+          <text x="150" y="452" text-anchor="middle" fill="#626E68" font-size="11" font-weight="600">차량 뒤</text>
         </svg>
-
-        <!-- 하단: 뒤 트렁크 방향 안내 -->
-        <div class="text-[11px] font-bold text-slate-500 mt-1 flex items-center gap-1.5 tracking-tight">
-          <span>▼ REAR (뒤) · 트렁크</span>
-          <span class="inline-block w-2 h-2 border-b-2 border-r-2 border-slate-600 rotate-45 -mt-0.5"></span>
-        </div>
       </div>
     `;
   }
@@ -1544,6 +1498,7 @@ class VehicleDetailRenderer {
 
     document.querySelectorAll('.vdr-diag-part').forEach(el => {
       const type = el.getAttribute('data-type');
+      el.setAttribute('tabindex', tab === 'all' || tab === type ? '0' : '-1');
       if (tab === 'all') {
         el.style.opacity = '0.9';
         el.style.pointerEvents = 'auto';
@@ -1876,12 +1831,12 @@ class VehicleDetailRenderer {
                            .replace('선루프 (파노라마/일반)', '선루프');
 
       return `
-        <div class="flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl border ${cardStyle} transition-all text-center">
-          <div class="mb-1 sm:mb-1.5 ${iconColor}">
+        <div class="vdr-top-option rounded-xl border ${cardStyle} text-center" style="display:grid;grid-template-rows:24px 32px 16px;justify-items:center;align-items:center;gap:3px;padding:8px 3px;min-width:0;box-sizing:border-box">
+          <div class="${iconColor}" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
             ${this.getOptionIconSvg(opt.icon || opt.code, isPresent)}
           </div>
-          <span class="text-[11px] sm:text-xs font-semibold tracking-tight text-slate-800 truncate w-full text-center">${escapeHtml(shortName)}</span>
-          <div class="mt-1 flex items-center justify-center gap-1">
+          <span class="text-[11px] sm:text-xs font-semibold tracking-tight text-slate-800" style="width:100%;height:32px;line-height:16px;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;text-align:center" title="${escapeHtml(shortName)}">${escapeHtml(shortName)}</span>
+          <div class="flex items-center justify-center gap-1" style="height:16px;line-height:16px;white-space:nowrap">
             ${badgeHtml}
             ${stateLabel}
           </div>

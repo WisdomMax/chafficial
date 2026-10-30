@@ -97,6 +97,7 @@ class MasterVehicleService:
             recon_cost=int(data.get("recon_cost") or 0),
             sales_conditions=data.get("sales_conditions") or "현금/할부/리스 가능",
             ownership_type=data.get("ownership_type") or "CHAMART_OWNED",
+            listing_ownership_type={"CHAMART_OWNED": "OWNED", "PARTNER_APPROVED": "PARTNER_CONFIRMED", "PARTNER_CANDIDATE": "EXTERNAL", "MARKET_OBSERVED": "EXTERNAL"}.get(data.get("ownership_type") or "CHAMART_OWNED", "UNKNOWN"),
             dealer_id=data.get("dealer_id"),
             status=data.get("status") or "FOR_SALE",
             ad_description=data.get("ad_description"),
@@ -174,6 +175,9 @@ class MasterVehicleService:
         for field in updatable_fields:
             if field in data and data[field] is not None:
                 setattr(vehicle, field, data[field])
+
+        if "ownership_type" in data and data["ownership_type"] is not None:
+            vehicle.listing_ownership_type = {"CHAMART_OWNED": "OWNED", "PARTNER_APPROVED": "PARTNER_CONFIRMED", "PARTNER_CANDIDATE": "EXTERNAL", "MARKET_OBSERVED": "EXTERNAL"}.get(data["ownership_type"], "UNKNOWN")
 
         # 플랫폼별 문구 갱신
         if "platform_ad_copies" in data:

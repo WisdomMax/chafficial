@@ -1,0 +1,44 @@
+/* Skin only: keep the existing page structure, controls, banner and floating search. */
+.cm-skin { -webkit-font-smoothing:antialiased; }
+.cm-skin :is(button,a,input,select,[tabindex]):focus-visible { outline:2px solid #79932d; outline-offset:3px; }
+.cm-skin input[type=checkbox] { accent-color:#171b1e; }
+.cm-skin .cm-album-card { border-color:#e3e7e1; box-shadow:0 1px 3px #17201504; }
+.cm-skin .cm-album-card:hover { border-color:#bdc8b4; box-shadow:0 4px 14px #1720150a; }
+.cm-skin .cm-album-card__badge-tag { color:#3e543a; box-shadow:none; }
+.cm-skin .cm-album-card__title { white-space:normal; line-height:1.5; overflow:visible; text-overflow:clip; }
+.cm-skin .cm-album-card__model { display:block; font-weight:700; word-break:keep-all; overflow-wrap:anywhere; }
+.cm-skin .cm-album-card__subtrim { display:block; margin:3px 0 0; line-height:1.5; white-space:normal; word-break:keep-all; }
+.cm-skin .cm-album-card__price { font-variant-numeric:tabular-nums; letter-spacing:-.025em; white-space:nowrap; }
+.cm-skin .cm-album-card__price-row { gap:6px; flex-wrap:wrap; }
+.cm-skin .cm-card-specs { display:flex; flex-wrap:wrap; align-items:center; gap:3px 0; font-size:12px; line-height:1.6; color:#697568; margin-top:6px; }
+.cm-skin .cm-card-specs > span { white-space:nowrap; }
+.cm-skin .cm-card-specs > span:not(:last-child)::after { content:'·'; display:inline-block; margin:0 5px; color:#a1aaa0; }
+.cm-skin .cm-feed-card__body { padding:16px; }
+.cm-skin .cm-feed-card__title { font-size:17px; font-weight:700; line-height:1.5; letter-spacing:-.025em; word-break:keep-all; overflow-wrap:anywhere; }
+.cm-skin .cm-feed-card__trim { margin-top:3px; font-size:13px; line-height:1.6; color:#727972; word-break:keep-all; }
+.cm-skin .cm-feed-card__price { font-size:23px; font-weight:750; line-height:1.4; letter-spacing:-.025em; margin-top:12px; white-space:nowrap; }
+.cm-skin .cm-feed-card__monthly { margin:3px 0 12px; font-size:11px; color:#7c8794; white-space:nowrap; }
+.cm-skin .cm-feed-card__body > div:last-child { gap:10px; padding-top:12px; }
+.cm-skin .cm-feed-card__body > div:last-child > * { flex-shrink:0; white-space:nowrap; }
+.cm-skin .cm-list-card { align-items:flex-start; }
+.cm-skin .cm-list-card__body { gap:10px; }
+.cm-skin .cm-list-card__title { white-space:normal; word-break:keep-all; overflow-wrap:anywhere; line-height:1.5; }
+.cm-skin #vdrGalleryViewport .animate-pulse { animation:none; }
+@media(max-width:767px) {
+ .cm-skin .cm-feed-card__title { font-size:16px; }
+ .cm-skin .cm-card-specs { font-size:11px; }
+ .cm-skin .cm-list-card__body > div:last-child { flex-wrap:wrap; gap:6px; }
+}
+
+.cm-skin .cm-vehicle-results.is-feed { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:none;margin-inline:0;align-items:start; }
+.cm-skin .is-feed .cm-feed-card { margin:0;min-width:0; }
+@media(max-width:767px) { .cm-skin .cm-vehicle-results.is-feed { grid-template-columns:minmax(0,1fr);gap:16px; } }
+
+/* Direct-stock distinction stays inside the existing result cards. */
+.cm-skin #vehicleGrid article.cm-preferred-card { border:1px solid #b4e62e; box-shadow:0 0 0 1px #c8ff3d55; }
+.cm-skin #vehicleGrid article.cm-preferred-card:hover { border-color:#a5d52c; box-shadow:0 0 0 1px #c8ff3d99; }
+.cm-skin #vehicleGrid .cm-preferred-sticker { display:block;width:148px;height:30px;max-width:100%;object-fit:contain;flex-shrink:0; }
+.cm-skin .cm-preferred-album-badge { position:absolute;top:8px;left:8px;z-index:2;max-width:calc(100% - 50px); }
+.cm-skin .cm-list-card .cm-preferred-sticker { margin-bottom:7px; }
+.cm-skin .cm-album-card .cm-preferred-sticker { width:136px;height:auto; }
+@media(max-width:767px) { .cm-skin .cm-album-card .cm-preferred-sticker { width:108px; } }

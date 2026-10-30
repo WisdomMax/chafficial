@@ -180,12 +180,12 @@ export default {
         } else {
           // 차마트 추천순: 우선노출 -> 직영 보유(OWNED) -> 최신 등록순
           sql += ` ORDER BY 
-            is_priority_exposure DESC,
             (CASE 
               WHEN listing_ownership_type = 'OWNED' THEN 0 
               WHEN listing_ownership_type = 'PARTNER_CONFIRMED' THEN 1 
               ELSE 2 
             END) ASC,
+            is_priority_exposure DESC,
             created_at DESC`;
         }
 
@@ -216,7 +216,7 @@ export default {
             primary_photo_url: finalPhoto,
             photo_count: 30,
             options: options,
-            listing_ownership_type: v.listing_ownership_type || 'OWNED',
+            listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
             is_chamart_owned: (v.listing_ownership_type === 'OWNED'),
             is_priority_exposure: !!v.is_priority_exposure,
             priority_rank: v.priority_rank || 0,
@@ -375,7 +375,7 @@ export default {
           branch_name: '차마트 장한평 본사 직영점',
           is_public: !!v.is_public,
           publishing_status: v.publishing_status || 'APPROVED',
-          listing_ownership_type: v.listing_ownership_type || 'OWNED',
+          listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
           is_priority_exposure: !!v.is_priority_exposure,
           updated_at: v.updated_at || new Date().toISOString(),
           photo_matrix: photoMatrix

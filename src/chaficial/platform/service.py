@@ -3004,7 +3004,7 @@ class PlatformService:
                 monthly_est = int((price_won * r * ((1 + r) ** n)) / (((1 + r) ** n) - 1) / 10000)
 
             # 소유 및 우선노출 배지 정보
-            is_owned = (v.listing_ownership_type == "OWNED" or v.ownership_type == OwnershipType.CHAMART_OWNED.value)
+            is_owned = (v.listing_ownership_type == "OWNED")
             is_priority = bool(v.is_priority_exposure)
 
             item = {

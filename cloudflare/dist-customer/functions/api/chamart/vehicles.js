@@ -214,7 +214,7 @@ export async function onRequestGet(context) {
         primary_photo_url: finalPrimaryPhoto,
         photo_count: 30, // 30장 고해상도 보유
         options: options,
-        listing_ownership_type: v.listing_ownership_type || 'OWNED',
+        listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
         is_chamart_owned: (v.listing_ownership_type === 'OWNED'),
         is_priority_exposure: !!v.is_priority_exposure,
         priority_rank: v.priority_rank || 0,

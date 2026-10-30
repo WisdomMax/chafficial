@@ -25,6 +25,7 @@ export async function onRequestPost(context) {
       });
     }
 
+    const ownership = listing_ownership_type || ({ CHAMART_OWNED: 'OWNED', PARTNER_APPROVED: 'PARTNER_CONFIRMED', PARTNER_CANDIDATE: 'EXTERNAL', MARKET_OBSERVED: 'EXTERNAL' }[body.ownership_type] || 'UNKNOWN');
     const vehicleId = crypto.randomUUID();
     const now = new Date().toISOString();
     const branchId = '61fea9a4-58f0-42bd-862c-14fd16d0d21c'; // 장한평 본사
@@ -63,7 +64,7 @@ export async function onRequestPost(context) {
       parseInt(purchase_price || '1500', 10),
       parseInt(target_price || '1800', 10),
       timelineJson, now, now,
-      listing_ownership_type || 'OWNED',
+      ownership,
       is_priority_exposure ? 1 : 0,
       is_priority_exposure ? 100 : 0,
       is_public ? 1 : 0,

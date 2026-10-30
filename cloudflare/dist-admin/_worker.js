@@ -118,6 +118,7 @@ export default {
           return new Response(JSON.stringify({ error: '차량 번호와 모델명을 입력해주세요.' }), { status: 400 });
         }
 
+        const ownership = listing_ownership_type || ({ CHAMART_OWNED: 'OWNED', PARTNER_APPROVED: 'PARTNER_CONFIRMED', PARTNER_CANDIDATE: 'EXTERNAL', MARKET_OBSERVED: 'EXTERNAL' }[body.ownership_type] || 'UNKNOWN');
         const vehicleId = crypto.randomUUID();
         const now = new Date().toISOString();
         const branchId = '61fea9a4-58f0-42bd-862c-14fd16d0d21c';
@@ -145,7 +146,7 @@ export default {
           fuel_type || '가솔린', transmission || '오토', color || '화이트',
           parseInt(purchase_price || '2000', 10), parseInt(target_price || '2300', 10),
           timelineJson, now, now,
-          listing_ownership_type || 'OWNED',
+          ownership,
           is_priority_exposure ? 1 : 0, is_priority_exposure ? 100 : 0,
           is_public ? 1 : 0, is_public ? 'APPROVED' : 'DRAFT',
           primary_photo_url || '/static/img/sample_car.jpg',
