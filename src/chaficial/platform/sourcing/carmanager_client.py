@@ -34,13 +34,9 @@ class CarManagerLiveClient:
         try:
             return asyncio.run(self._async_fetch_my_cars(timeout_sec=timeout_sec))
         except Exception as e:
-            # 실시간 브라우저 연결 실패 시 파일 캐시 안전 폴백
-            fallback_file = Path("scratch/carmanager_inspect/my_13_cleaned_cars.json")
-            if fallback_file.exists():
-                import json
-                with open(fallback_file, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            raise e
+            # DIRECTIVE 097: 과거 JSON 조용한 폴백 금지. 실패를 명시적으로 로깅하고 예외를 전파한다.
+            print(f"[!] CarManagerLiveClient live fetch failed: {e}")
+            raise RuntimeError(f"CarManager real-time session fetch failed: {e}") from e
 
     async def _async_fetch_my_cars(self, timeout_sec: int = 25) -> List[Dict[str, Any]]:
         from playwright.async_api import async_playwright
@@ -76,27 +72,27 @@ class CarManagerLiveClient:
             await page.wait_for_timeout(2000)
 
             # 3. 실시간 매물 테이블 파싱
-            cars = await page.evaluate('''() => {
+            cars = await page.evaluate(r'''() => {
                 const rows = Array.from(document.querySelectorAll('table tbody tr'));
                 const list = [];
                 for (const tr of rows) {
                     const text = tr.innerText;
                     if (!text || text.includes('등록된 차량이 없습니다')) continue;
                     
-                    const plateMatch = text.match(/(\\d{2,3}[가-힣]\\s*\\d{4})/);
-                    const plate = plateMatch ? plateMatch[1].replace(/\\s+/g, '') : '';
+                    const plateMatch = text.match(/(\d{2,3}[가-힣]\s*\d{4})/);
+                    const plate = plateMatch ? plateMatch[1].replace(/\s+/g, '') : '';
                     if (!plate) continue;
 
-                    const suggestMatch = text.match(/제시번호\\s*:\\s*\\[?\\s*(\\d+)\\s*\\]?/);
+                    const suggestMatch = text.match(/제시번호\s*:\s*\[?\s*(\d+)\s*\]?/);
                     const suggestNo = suggestMatch ? suggestMatch[1] : '';
 
-                    const yearMatch = text.match(/(20\\d{2})\\s*년/);
+                    const yearMatch = text.match(/(20\d{2})\s*년/);
                     const year = yearMatch ? yearMatch[1] : '0';
 
-                    const mileageMatch = text.match(/([\\d,]+)\\s*Km/i);
+                    const mileageMatch = text.match(/([\d,]+)\s*Km/i);
                     const mileage = mileageMatch ? mileageMatch[1] : '0';
 
-                    const priceMatch = text.match(/([\\d,]+)\\s*만원/);
+                    const priceMatch = text.match(/([\d,]+)\s*만원/);
                     const price = priceMatch ? priceMatch[1] : '0';
 
                     const links = Array.from(tr.querySelectorAll('a'));
@@ -104,21 +100,21 @@ class CarManagerLiveClient:
                     for (const a of links) {
                         const href = a.getAttribute('href') || '';
                         const onclick = a.getAttribute('onclick') || '';
-                        const m = (href + onclick).match(/(\\d{7,10})/);
+                        const m = (href + onclick).match(/(\d{7,10})/);
                         if (m) {
                             carSeq = m[1];
                             break;
                         }
                     }
 
-                    list.append({
+                    list.push({
                         plate: plate,
                         suggestNo: suggestNo,
                         year: year,
                         mileage: mileage,
                         price: price,
                         carSeq: carSeq,
-                        title: text.slice(0, 100).replace(/\\n/g, ' '),
+                        title: text.slice(0, 100).replace(/\n/g, ' '),
                         status: text.includes('정상 광고중') ? '정상 광고중' : '매물정보부족'
                     });
                 }
