@@ -67,9 +67,14 @@ def analyze_t2_differential(
             "error": f"Missing mandatory metadata fields: {missing_fields}"
         }
 
-    # SHA256 일치 여부 검증 (메타데이터에 sha256이 기록된 경우)
+    # SHA256 필수값 검증 및 일치 여부 대조 (건너뛰기 원천 차단)
     expected_sha256 = meta.get("raw_sha256") or meta.get("expected_sha256")
-    if expected_sha256 and expected_sha256.lower() != actual_sha256.lower():
+    if not expected_sha256:
+        return {
+            "status": "MISSING_SHA256",
+            "error": "Metadata must explicitly provide expected raw_sha256 checksum."
+        }
+    if expected_sha256.lower() != actual_sha256.lower():
         return {
             "status": "HASH_MISMATCH",
             "error": f"File SHA256 ({actual_sha256}) does not match expected metadata ({expected_sha256})."
@@ -135,7 +140,8 @@ def analyze_t2_differential(
     matched_in_t1 = 0
     new_to_baseline = 0
     price_changed = 0
-    price_unannounced = 0
+    price_consultation_unannounced = 0
+    price_missing_corrupt = 0
     invalid_or_uncomparable = 0
 
     diff_details = []
@@ -153,8 +159,13 @@ def analyze_t2_differential(
             continue
         seen_encarnos.add(enc)
 
+        # [DIRECTIVE 129 보정]: 실제 가격 미공개('상담')와 가격 필드 누락/파싱 불가 구분
+        raw_price_val = raw.get("price") or raw.get("price_manwon") or raw.get("raw_price_str")
         if price is None:
-            price_unannounced += 1
+            if raw_price_val is None or str(raw_price_val).strip() == "":
+                price_missing_corrupt += 1
+            else:
+                price_consultation_unannounced += 1
 
         if enc in t1_baseline_map:
             matched_in_t1 += 1
@@ -185,7 +196,8 @@ def analyze_t2_differential(
             "matched_in_t1_count": matched_in_t1,
             "new_to_baseline_count": new_to_baseline,
             "price_changed_count": price_changed,
-            "price_unannounced_count": price_unannounced,
+            "price_consultation_unannounced_count": price_consultation_unannounced,
+            "price_missing_corrupt_count": price_missing_corrupt,
             "invalid_or_uncomparable_count": invalid_or_uncomparable
         },
         "sample_price_changes": diff_details[:10]
@@ -202,8 +214,9 @@ def analyze_t2_differential(
     print(f"2. 과거 T1(1,764대) 일치 ID 수:  {report['metrics']['matched_in_t1_count']}대 (체류일수 누적)")
     print(f"3. T1에 없던 신규 관측 ID 수:     {report['metrics']['new_to_baseline_count']}대 (신규 등장 후보)")
     print(f"4. 동일 ID 확인된 실제 가격 변화: {report['metrics']['price_changed_count']}건")
-    print(f"5. 가격 미공개('상담') 매물 수:   {report['metrics']['price_unannounced_count']}대")
-    print(f"6. 비교 불가/정보 부족 매물 수:   {report['metrics']['invalid_or_uncomparable_count']}대")
+    print(f"5. 가격 미공개('상담') 매물 수:   {report['metrics']['price_consultation_unannounced_count']}대")
+    print(f"6. 가격 결측/파싱 불가 매물 수:   {report['metrics']['price_missing_corrupt_count']}대")
+    print(f"7. 식별 불가/정보 부족 매물 수:   {report['metrics']['invalid_or_uncomparable_count']}대")
     print("=" * 65)
 
     return report

@@ -31,11 +31,13 @@ def run_tests():
         meta_file = os.path.join(temp_dir, "fake_cars.meta.json")
         with open(html_file, "w", encoding="utf-8") as f:
             f.write("<html><body><table><tr><td>11가1111</td></tr></table></body></html>")
+        html_sha = hashlib.sha256(open(html_file, "rb").read()).hexdigest()
         with open(meta_file, "w", encoding="utf-8") as f:
             json.dump({
                 "source_capture_id": "T2_TEST_001",
                 "source_capture_at": "2026-11-01T10:00:00",
-                "observation_scope": "JANGHANPYEONG_50"
+                "observation_scope": "JANGHANPYEONG_50",
+                "raw_sha256": html_sha
             }, f)
         res2 = analyze_t2_differential(html_file, meta_file)
         assert res2["status"] == "UNSUPPORTED_FORMAT", f"Expected UNSUPPORTED_FORMAT, got {res2}"
@@ -51,7 +53,20 @@ def run_tests():
             json.dump({"source_capture_id": "T2_ONLY_ID"}, f) # capture_at, scope 누락
         res3 = analyze_t2_differential(json_file, bad_meta)
         assert res3["status"] == "INVALID_METADATA", f"Expected INVALID_METADATA, got {res3}"
-        print("[PASS] TEST 3: 메타데이터 필수 필드 누락 시 INVALID_METADATA 거부 확인!")
+        print("[PASS] TEST 3-A: 메타데이터 필수 필드 누락 시 INVALID_METADATA 거부 확인!")
+
+        # 3-B. SHA256 체크섬 누락 시 MISSING_SHA256 거부 검증 (DIRECTIVE 129 보정)
+        print("\n[TEST 3-B] SHA256 체크섬 누락 시 MISSING_SHA256 거부 검증...")
+        no_sha_meta = os.path.join(temp_dir, "no_sha.meta.json")
+        with open(no_sha_meta, "w", encoding="utf-8") as f:
+            json.dump({
+                "source_capture_id": "T2_TEST_001",
+                "source_capture_at": "2026-11-01T10:00:00",
+                "observation_scope": "JANGHANPYEONG_50"
+            }, f)
+        res3_b = analyze_t2_differential(json_file, no_sha_meta)
+        assert res3_b["status"] == "MISSING_SHA256", f"Expected MISSING_SHA256, got {res3_b}"
+        print("[PASS] TEST 3-B: SHA256 체크섬 누락 시 건너뛰기 없이 MISSING_SHA256 거부 확인!")
 
         # 4. SHA256 체크섬 불일치 시 HASH_MISMATCH 거부 검증
         print("\n[TEST 4] SHA256 해시 불일치 시 HASH_MISMATCH 거부 검증...")
@@ -73,11 +88,13 @@ def run_tests():
         empty_meta = os.path.join(temp_dir, "empty.meta.json")
         with open(empty_json, "w", encoding="utf-8") as f:
             json.dump([], f)
+        empty_sha = hashlib.sha256(open(empty_json, "rb").read()).hexdigest()
         with open(empty_meta, "w", encoding="utf-8") as f:
             json.dump({
                 "source_capture_id": "T2_TEST_003",
                 "source_capture_at": "2026-11-01T10:00:00",
-                "observation_scope": "JANGHANPYEONG_50"
+                "observation_scope": "JANGHANPYEONG_50",
+                "raw_sha256": empty_sha
             }, f)
         res5 = analyze_t2_differential(empty_json, empty_meta)
         assert res5["status"] == "NO_VALID_LISTINGS_EXTRACTED", f"Expected NO_VALID_LISTINGS_EXTRACTED, got {res5}"
@@ -102,8 +119,8 @@ def run_tests():
                 # 1) 가격 변동 5건 (+100만원)
                 mock_t2.append({"encarno": enc, "price_manwon": p_val + 100, "carName": norm_c.get("model_name")})
             elif t1_used < 10:
-                # 2) 가격 상담 전환 5건 (None)
-                mock_t2.append({"encarno": enc, "price_manwon": None, "carName": norm_c.get("model_name")})
+                # 2) 실제 가격 상담 매물 5건 (원시 표기 '상담')
+                mock_t2.append({"encarno": enc, "price": "상담", "raw_price_str": "상담", "carName": norm_c.get("model_name")})
             elif t1_used < 20:
                 # 3) 무변경 10건
                 mock_t2.append({"encarno": enc, "price_manwon": p_val, "carName": norm_c.get("model_name")})
@@ -142,11 +159,12 @@ def run_tests():
         assert metrics["matched_in_t1_count"] == 20, f"Expected 20 matched in T1, got {metrics['matched_in_t1_count']}"
         assert metrics["new_to_baseline_count"] == 30, f"Expected 30 new to baseline, got {metrics['new_to_baseline_count']}"
         assert metrics["price_changed_count"] == 5, f"Expected 5 price changed, got {metrics['price_changed_count']}"
-        assert metrics["price_unannounced_count"] == 5, f"Expected 5 price unannounced, got {metrics['price_unannounced_count']}"
+        assert metrics["price_consultation_unannounced_count"] == 5, f"Expected 5 consultation unannounced, got {metrics['price_consultation_unannounced_count']}"
+        assert metrics["price_missing_corrupt_count"] == 0, f"Expected 0 corrupt missing price, got {metrics['price_missing_corrupt_count']}"
         assert metrics["invalid_or_uncomparable_count"] == 0, f"Expected 0 invalid, got {metrics['invalid_or_uncomparable_count']}"
 
-        print("[PASS] TEST 6: 정상 T2 50대 목록 차분 6대 핵심 지표 100% 일치 확인!")
-        print(f"  -> Total: {metrics['total_valid_listings']} | T1 Matched: {metrics['matched_in_t1_count']} | New to Baseline: {metrics['new_to_baseline_count']} | Price Changed: {metrics['price_changed_count']} | Unannounced: {metrics['price_unannounced_count']}")
+        print("[PASS] TEST 6: 정상 T2 50대 목록 차분 7대 핵심 지표 100% 일치 확인!")
+        print(f"  -> Total: {metrics['total_valid_listings']} | T1 Matched: {metrics['matched_in_t1_count']} | New to Baseline: {metrics['new_to_baseline_count']} | Price Changed: {metrics['price_changed_count']} | Consultation: {metrics['price_consultation_unannounced_count']}")
 
         print("\n" + "=" * 65)
         print(">>> [DIRECTIVE 129] 6대 정밀 회귀 테스트 100% 전수 통과 <<<")
