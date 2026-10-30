@@ -152,7 +152,7 @@ def test_offline_integration():
         "color": "회색"
     }
     kb_cand4 = {
-        "car_id": "kb_car_04",
+        "car_id": "car_04",
         "plate_number": "56다7890",
         "model_name": "쏘나타 DN8 2.0 프리미엄",
         "year": 2020,
@@ -161,7 +161,10 @@ def test_offline_integration():
         "color": "회색",
         "price": 2100,
         "url": "https://www.kbchachacha.com/car_04",
-        "photos": []
+        "photos": [],
+        "verified_by": "human_expert",
+        "verified_at": "2026-10-31T00:55:00+09:00",
+        "admin_approved": True
     }
     # 한도 넉넉한 별도 러너로 MANUAL_VERIFIED 검증
     manual_runner = QuotaEnrichmentRunner(db_path=SANDBOX_DB, daily_limit=10)
@@ -176,21 +179,21 @@ def test_offline_integration():
     print("[MANUAL_VERIFIED Row]:", row4)
     assert row4 == ('ACTIVE', 0)
 
-    # 3. Car 03: 일일 차량 한도(2대) 초과 검증 -> QuotaExhaustedException 발생
-    v3 = {
-        "id": "car_03",
-        "plate_number": "56다7890",
-        "model_name": "쏘나타 DN8",
-        "year": 2020,
-        "mileage": 31000,
+    # 4. Car 04: 일일 차량 한도(2대) 초과 검증 -> QuotaExhaustedException 발생
+    v4_new = {
+        "id": "car_04_new",
+        "plate_number": "78라9012",
+        "model_name": "K5 2.0 가솔린",
+        "year": 2021,
+        "mileage": 25000,
         "fuel_type": "가솔린",
-        "color": "회색"
+        "color": "검정"
     }
     try:
-        runner.process_vehicle_safe(v3, kb_candidate=kb_cand1)
+        runner.process_vehicle_safe(v4_new, kb_candidate=kb_cand1)
         assert False, "Should have raised QuotaExhaustedException"
     except QuotaExhaustedException as e:
-        print("[+] 예산 초과 정상 차단:", e)
+        print("[+] 일일 차량 예산 초과 정상 차단:", e)
 
     print("[+] TASK 1 & TASK 3 오프라인 통합 테스트 100% PASS!")
 

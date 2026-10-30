@@ -134,20 +134,24 @@ def test_matcher_guards():
     except ValueError as e:
         print("[+] 확인자 누락 정상 차단:", e)
 
-    # 5. 정상 MANUAL_VERIFIED 저장 검증
+    # 5. 정상 MANUAL_VERIFIED 저장 검증 (도메인, car_id 매핑, verified_by, verified_at, admin_approved 충족)
     valid_manual = MatchResult(
         vehicle_id="veh_02",
         plate_number="34나5678",
         source_platform="KB_CHACHACHA",
-        external_car_id="kb_real_02",
+        external_car_id="real_02",
         external_url="https://www.kbchachacha.com/car/real_02",
         advertised_price_manwon=1800,
         photo_urls=[],
         status=MatchingStatus.VERIFIED,
         match_score=0.90,
-        match_evidence={"verified_by": "expert_human_inspector"},
+        match_evidence={
+            "verified_by": "expert_human_inspector",
+            "verified_at": "2026-10-31T00:55:00+09:00",
+            "admin_approved": True
+        },
         observation_mode=ObservationMode.MANUAL_VERIFIED,
-        matched_at="2026-10-31T00:44:00+09:00"
+        matched_at="2026-10-31T00:55:00+09:00"
     )
     sandbox_matcher.record_verified_match(valid_manual)
 

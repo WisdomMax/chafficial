@@ -27,9 +27,10 @@ load_env()
 SNAPSHOT_DIR = Path("data/carmanager_raw/snapshots")
 SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
-# 엄격한 수집량 임계치 (기준 미달 시 즉시 DB 쓰기 전면 차단)
-MIN_MARKET_THRESHOLD = 1500
+# 엄격한 수집량 임계치 (단일화된 통합 표준: 전체 1500, 자사 60, 타사관측 1440)
+MIN_TOTAL_THRESHOLD = 1500
 MIN_OWNED_THRESHOLD = 60
+MIN_MARKET_OBSERVED_THRESHOLD = 1440
 
 async def collect_live_snapshot(max_pages: int = 89):
     """카매니저 실시간 시장 매물 수집 실행 (1~89페이지 전체 순회)"""
@@ -68,9 +69,9 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
         all_cars = full_data.get("cars", [])
         print(f"[+] Loaded verified snapshot with {len(all_cars)} cars.")
 
-    # 1. 엄격한 전체 수집량 검증 (최소 1,500대 미만 시 즉시 차단)
-    if len(all_cars) < MIN_MARKET_THRESHOLD:
-        print(f"[!] CRITICAL GUARD: Harvested vehicle count ({len(all_cars)}) is below strict threshold ({MIN_MARKET_THRESHOLD}).", file=sys.stderr)
+    # 1. 전체 수집량 검증 (최소 1,500대 미만 시 즉시 차단)
+    if len(all_cars) < MIN_TOTAL_THRESHOLD:
+        print(f"[!] CRITICAL GUARD: Total harvested vehicle count ({len(all_cars)}) is below strict threshold ({MIN_TOTAL_THRESHOLD}).", file=sys.stderr)
         print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
         sys.exit(1)
 
@@ -88,16 +89,15 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
 
     print(f"[*] Partitioned vehicles: OWNED={len(owned_cars)}대 | MARKET_OBSERVED={len(market_cars)}대")
 
-    # 2. 우리 상사 수집량 임계치 검증 (시계열 및 운영 DB 쓰기 전 사전 차단)
+    # 2. 우리 상사 수집량 임계치 사전 검증 (시계열 및 운영 DB 쓰기 전 사전 차단)
     if len(owned_cars) < MIN_OWNED_THRESHOLD:
         print(f"[!] CRITICAL GUARD: Owned vehicle count ({len(owned_cars)}) is below strict threshold ({MIN_OWNED_THRESHOLD}).", file=sys.stderr)
         print("[!] Aborting database writes completely to protect owned inventory.", file=sys.stderr)
         sys.exit(1)
 
-    # 3. 시장 관측 수집량 임계치 검증 (시계열 및 운영 DB 쓰기 전 사전 차단)
-    min_market_net = MIN_MARKET_THRESHOLD - MIN_OWNED_THRESHOLD
-    if len(market_cars) < min_market_net:
-        print(f"[!] CRITICAL GUARD: Market observed vehicle count ({len(market_cars)}) is below net threshold ({min_market_net}).", file=sys.stderr)
+    # 3. 시장 관측 수집량 임계치 사전 검증 (시계열 및 운영 DB 쓰기 전 사전 차단)
+    if len(market_cars) < MIN_MARKET_OBSERVED_THRESHOLD:
+        print(f"[!] CRITICAL GUARD: Market observed vehicle count ({len(market_cars)}) is below threshold ({MIN_MARKET_OBSERVED_THRESHOLD}).", file=sys.stderr)
         print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
         sys.exit(1)
 
@@ -120,7 +120,7 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
         sys.exit(1)
 
     # 6. 장한평 시장 운영 동기화
-    market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_THRESHOLD, dry_run=dry_run)
+    market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_OBSERVED_THRESHOLD, dry_run=dry_run)
     print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, New={market_res['new_inserted']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
     if market_res.get("status") != "SUCCESS":
         print(f"[!] Critical Abort in Market Sync: Status is '{market_res.get('status')}'.", file=sys.stderr)

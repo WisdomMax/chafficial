@@ -82,6 +82,11 @@
 | **ISSUE-69** | 실제 목록 50대 기반 수동 파일럿 증적 부재 | 보통 | 🟢 해결완료 | `run_50_car_pilot.py` (실제 카매니저 1페이지 50대 데이터로 샌드박스 파일럿 완수, pilot_50_cars_result.json) |
 | **ISSUE-70** | HTTP 요청 예산과 오프라인 후보 평가 카운터 혼선 결함 | 보통 | 🟢 해결완료 | `quota_enrichment_runner.py` (LIVE_OBSERVED 실제 호출 시에만 HTTP 차감, evaluation_count 명확 분리) |
 | **ISSUE-71** | 일일 동기화 임계치 검사 시점 지연으로 인한 시계열 부분 기록 위험 | 심각 | 🟢 해결완료 | `run_daily_sync.py` (시계열 및 DB 쓰기 전 OWNED/MARKET 사전 검증 배치로 쓰기 0건 원천 보장) |
+| **ISSUE-73** | 50대 파일럿의 임의 시나리오를 실측으로 보고하는 혼선 결함 | 높음 | 🟢 해결완료 | `real_observation_50_cars.py` (임의 가공 제거, 전수 PRESENT_AT_OBSERVATION 정직 분류 및 SHA256 매니페스트 산출) |
+| **ISSUE-74** | 일일 동기화 사전 가드와 내부 동기화 간 MARKET 임계치 불일치 결함 | 심각 | 🟢 해결완료 | `scripts/run_daily_sync.py` (MIN_MARKET_OBSERVED_THRESHOLD 1440 통일 및 5개 경계값 테스트 통과) |
+| **ISSUE-75** | 단순 파일명 기반 운영 DB 판별의 환경 분리 취약성 | 높음 | 🟢 해결완료 | `cross_platform_matcher.py` (is_production 환경 플래그 및 CHAFICIAL_ENV 기반 엄격한 운영 저장소 격리) |
+| **ISSUE-76** | MANUAL_VERIFIED 공인 도메인 미검증 및 관리자 승인 부재 결함 | 높음 | 🟢 해결완료 | `cross_platform_matcher.py` (ALLOWED_DOMAINS 화이트리스트, URL 매핑, admin_approved: True 필수화) |
+| **ISSUE-77** | 상세조회 큐 작업의 다중 워커 동시 선점 충돌 위험 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (BEGIN IMMEDIATE 조건부 UPDATE 원자적 선점 및 10스레드 중복 0건 통과) |
 
 ---
 

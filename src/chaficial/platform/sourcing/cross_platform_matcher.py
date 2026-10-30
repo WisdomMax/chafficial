@@ -44,9 +44,22 @@ class MatchResult:
     observation_mode: ObservationMode
     matched_at: str
 
+ALLOWED_DOMAINS = ["kbchachacha.com", "encar.com", "carmanager.co.kr"]
+
 class CrossPlatformMatcher:
-    def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db"):
+    def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db", is_production: Optional[bool] = None):
         self.db_path = db_path
+        # 환경 명시적 분리: 파라미터 우선, 없으면 환경변수 CHAFICIAL_ENV 판별, 둘 다 없으면 DB 경로로 보조 판별
+        if is_production is not None:
+            self.is_production = is_production
+        else:
+            env_val = os.getenv("CHAFICIAL_ENV", "").lower()
+            if env_val in ("production", "prod"):
+                self.is_production = True
+            elif env_val in ("test", "sandbox", "dev"):
+                self.is_production = False
+            else:
+                self.is_production = "chamart_platform_demo.db" in os.path.basename(self.db_path) and "sandbox" not in self.db_path and "test" not in self.db_path
 
     def fetch_kb_candidate(self, plate_number: str) -> Optional[Dict[str, Any]]:
         """
@@ -174,21 +187,31 @@ class CrossPlatformMatcher:
         if not match.external_url or match.status in (MatchingStatus.REJECTED, MatchingStatus.NOT_FOUND):
             return
 
-        is_production_db = "chamart_platform_demo.db" in os.path.basename(self.db_path) and "sandbox" not in self.db_path and "test" not in self.db_path
+        # 1. P0 가드: 운영 환경에서는 OFFLINE_TEST 데이터 쓰기 100% 원천 차단
+        if match.observation_mode == ObservationMode.OFFLINE_TEST and self.is_production:
+            return  # Operational storage protected: No writes permitted for mock/test data!
 
-        # 1. P0 가드: 운영 DB에 OFFLINE_TEST 데이터 쓰기 100% 원천 차단
-        if match.observation_mode == ObservationMode.OFFLINE_TEST and is_production_db:
-            return  # Operational DB protected: No writes permitted for mock/test data!
-
-        # 2. MANUAL_VERIFIED 증거 엄격성 검증
+        # 2. MANUAL_VERIFIED 도메인 화이트리스트 및 증거 엄격성 검증 (TASK 3)
         if match.observation_mode == ObservationMode.MANUAL_VERIFIED:
             ev = match.match_evidence or {}
-            is_valid_url = match.external_url.startswith(("http://", "https://")) and not any(k in match.external_url.lower() for k in ["sample", "dummy", "example.com"])
-            has_car_id = bool(match.external_car_id)
-            has_verifier = bool(ev.get("verified_by"))
+            
+            # 2-1. 공인 도메인 검증
+            url_lower = match.external_url.lower()
+            domain_match = any(d in url_lower for d in ALLOWED_DOMAINS)
+            if not domain_match:
+                raise ValueError(f"MANUAL_VERIFIED external_url must belong to authorized domains ({', '.join(ALLOWED_DOMAINS)}).")
 
-            if not (is_valid_url and has_car_id and has_verifier):
-                raise ValueError("MANUAL_VERIFIED requires valid external_url (non-dummy), external_car_id, and verified_by in evidence.")
+            # 2-2. URL과 external_car_id 대응 검증
+            if not match.external_car_id or match.external_car_id not in match.external_url:
+                raise ValueError("MANUAL_VERIFIED external_car_id must exist and be present in external_url path.")
+
+            # 2-3. 확인자, 확인 시각, 관리자 승인 플래그 검증
+            has_verifier = bool(ev.get("verified_by"))
+            has_timestamp = bool(ev.get("verified_at"))
+            is_admin_approved = ev.get("admin_approved") is True
+
+            if not (has_verifier and has_timestamp and is_admin_approved):
+                raise ValueError("MANUAL_VERIFIED requires verified_by, verified_at, and admin_approved: True in match_evidence.")
 
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()

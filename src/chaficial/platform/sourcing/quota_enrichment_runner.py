@@ -100,18 +100,20 @@ class QuotaEnrichmentRunner:
         # 1. 일일 차량 예산 원자적 검사 및 차감
         self.budget.check_and_deduct_car(v_id)
 
-        # 2. KB차차차 처리
+        # 2. KB차차차 처리 (실제 네트워크 호출이 어댑터를 통해 발생할 때만 HTTP 예산 차감)
         if kb_candidate:
             self.stats["evaluations_count"] += 1
             if mode == ObservationMode.MANUAL_VERIFIED:
                 self.stats["manual_verifications_count"] += 1
-            elif mode == ObservationMode.LIVE_OBSERVED:
-                self.budget.check_and_deduct_kb()
-                self.stats["live_network_requests"] += 1
+            # HTTP 예산 차감은 실 네트워크 어댑터가 실제 HTTP 요청을 보낼 때만 차감 (Task 4)
 
             score, ev, status = self.matcher.validate_candidate(vehicle, kb_candidate)
             if kb_candidate.get("verified_by"):
                 ev["verified_by"] = kb_candidate.get("verified_by")
+            if kb_candidate.get("verified_at"):
+                ev["verified_at"] = kb_candidate.get("verified_at")
+            if kb_candidate.get("admin_approved") is not None:
+                ev["admin_approved"] = kb_candidate.get("admin_approved")
             if status in (MatchingStatus.VERIFIED, MatchingStatus.CANDIDATE):
                 if status == MatchingStatus.VERIFIED:
                     self.stats["verified_matches"] += 1
@@ -135,18 +137,20 @@ class QuotaEnrichmentRunner:
                 self.matcher.record_verified_match(res)
                 return res
 
-        # 3. 2순위 엔카 처리
+        # 3. 2순위 엔카 처리 (실제 네트워크 호출이 어댑터를 통해 발생할 때만 HTTP 예산 차감)
         if encar_candidate:
             self.stats["evaluations_count"] += 1
             if mode == ObservationMode.MANUAL_VERIFIED:
                 self.stats["manual_verifications_count"] += 1
-            elif mode == ObservationMode.LIVE_OBSERVED:
-                self.budget.check_and_deduct_encar()
-                self.stats["live_network_requests"] += 1
+            # HTTP 예산 차감은 실 네트워크 어댑터가 실제 HTTP 요청을 보낼 때만 차감 (Task 4)
 
             score, ev, status = self.matcher.validate_candidate(vehicle, encar_candidate)
             if encar_candidate.get("verified_by"):
                 ev["verified_by"] = encar_candidate.get("verified_by")
+            if encar_candidate.get("verified_at"):
+                ev["verified_at"] = encar_candidate.get("verified_at")
+            if encar_candidate.get("admin_approved") is not None:
+                ev["admin_approved"] = encar_candidate.get("admin_approved")
             if status in (MatchingStatus.VERIFIED, MatchingStatus.CANDIDATE):
                 if status == MatchingStatus.VERIFIED:
                     self.stats["verified_matches"] += 1
@@ -171,3 +175,27 @@ class QuotaEnrichmentRunner:
                 return res
 
         return None
+
+    def fetch_live_kb_and_match(self, vehicle: Dict[str, Any]) -> Optional[MatchResult]:
+        """
+        Executes live network fetch with pre-HTTP atomic budget deduction.
+        Raises NotImplementedError if automated adapter is unauthorized.
+        """
+        plate = vehicle.get("plate_number") or ""
+        # 실제 HTTP 요청 직전에만 예산 차감 및 라이브 요청 카운트 증가
+        self.budget.check_and_deduct_kb()
+        self.stats["live_network_requests"] += 1
+        cand = self.matcher.fetch_kb_candidate(plate)
+        return self.process_vehicle_safe(vehicle, kb_candidate=cand, mode=ObservationMode.LIVE_OBSERVED)
+
+    def fetch_live_encar_and_match(self, vehicle: Dict[str, Any]) -> Optional[MatchResult]:
+        """
+        Executes live network fetch with pre-HTTP atomic budget deduction.
+        Raises NotImplementedError if automated adapter is unauthorized.
+        """
+        plate = vehicle.get("plate_number") or ""
+        # 실제 HTTP 요청 직전에만 예산 차감 및 라이브 요청 카운트 증가
+        self.budget.check_and_deduct_encar()
+        self.stats["live_network_requests"] += 1
+        cand = self.matcher.fetch_encar_candidate(plate)
+        return self.process_vehicle_safe(vehicle, encar_candidate=cand, mode=ObservationMode.LIVE_OBSERVED)

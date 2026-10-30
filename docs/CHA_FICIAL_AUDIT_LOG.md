@@ -1,7 +1,29 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 00:48:00 KST  
+> **최종 갱신일:** 2026-10-31 00:57:00 KST  
+
+---
+
+## [DIRECTIVE 122] 실제 50대 원본 매니페스트 산출, 임계치 단일화 및 큐 원자적 선점 완결
+- **일시:** 2026-10-31 00:57 KST
+- **수행 태스크**:
+  1. **TASK 1 (실제 50대 관측 증명, ISSUE-73)**:
+     - `scratch/real_observation_50_cars.py`: 임의 가격/신규 시나리오를 100% 제거하고 순수 원본 1페이지 50대를 `PRESENT_AT_OBSERVATION`으로 정직하게 분류.
+     - 원본 파일 SHA256(`5d700f55...`), 뒷자리 번호판, 상사 정보 보존 매니페스트 산출 (`scratch/real_50_cars_observation_manifest.json`).
+  2. **TASK 2 (일일 동기화 임계치 단일화 및 경계값 검증, ISSUE-74)**:
+     - `scripts/run_daily_sync.py`: 전체 1,500대, 자사 60대, 타사 관측 1,440대로 임계치 완전 단일화.
+     - 5가지 경계값 시나리오 회귀 테스트 100% Pass (`scratch/test_directive_122_task2_boundary.py`).
+  3. **TASK 3 (환경 기반 저장소 격리 및 MANUAL_VERIFIED 도메인 화이트리스트, ISSUE-75, 76)**:
+     - `cross_platform_matcher.py`: `is_production` 환경 플래그로 운영 저장소 격리.
+     - `ALLOWED_DOMAINS`(`kbchachacha.com`, `encar.com`) 화이트리스트, URL 내 car_id 매핑, `verified_by`, `verified_at`, `admin_approved: True` 엄격성 확립.
+  4. **TASK 4 (HTTP 요청 계측 교정)**:
+     - `quota_enrichment_runner.py`: 실제 어댑터 네트워크 진입 직전에만 HTTP 예산 차감. 미구현 어댑터 환경에서 HTTP 요청 0건 정확히 계측.
+  5. **TASK 5 (상세조회 큐 원자적 선점 및 동시성 검증, ISSUE-77)**:
+     - `incremental_market_observer.py`: `BEGIN IMMEDIATE` + 조건부 UPDATE 기반의 원자적 선점 로직 구현.
+     - 10개 스레드 동시 선점 테스트에서 중복 선점 0건(5/5 고유 획득) 및 3회 실패 시 `REQUIRES_ADMIN_REVIEW` 전이 100% Pass (`scratch/test_directive_122_task5_queue_concurrency.py`).
+  6. **TASK 6 (마스터 체크리스트 갱신 및 3대 범주 분류 보고)**:
+     - `CHA_FICIAL_MASTER_CHECKLIST.md`에 ISSUE-73~77 전수 등록 완료.
 
 ---
 
