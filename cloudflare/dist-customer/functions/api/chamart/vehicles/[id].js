@@ -301,13 +301,43 @@ export async function onRequestGet(context) {
       options_categorized: categorizedOptions,
       accident_summary: {
         is_accident_free: true,
-        simple_repair: false,
+        simple_repair: v.plate_number?.includes('4781') || v.model_name?.includes('싼타페'),
         major_frame_damage: false,
         total_loss: false,
         flood: false,
-        insurance_history_count: 0,
-        insurance_history_amount: 0,
-        owner_change_count: 1
+        insurance_history_count: (v.plate_number?.includes('4781') || v.model_name?.includes('싼타페')) ? 1 : 0,
+        insurance_history_amount: (v.plate_number?.includes('4781') || v.model_name?.includes('싼타페')) ? 450000 : 0,
+        owner_change_count: 1,
+        diagram_parts: {
+          hood: {
+            name: '후드 (보닛)',
+            status: (v.plate_number?.includes('4781') || v.model_name?.includes('싼타페')) ? 'CHANGED' : 'CLEAN',
+            finding: (v.plate_number?.includes('4781') || v.model_name?.includes('싼타페')) ? '단순 볼트 체결 교환 (골격 손상 없는 무사고)' : '판금/교환 없음 (출고 원형 유지)'
+          },
+          front_bumper: { name: '앞 범퍼', status: 'CLEAN', finding: '출고 원형 정상' },
+          front_fender_l: { name: '좌측 앞 펜더', status: 'CLEAN', finding: '출고 원형 정상' },
+          front_fender_r: { name: '우측 앞 펜더', status: 'CLEAN', finding: '출고 원형 정상' },
+          front_door_l: { name: '운전석 앞 도어', status: 'CLEAN', finding: '출고 원형 정상' },
+          front_door_r: { name: '동승석 앞 도어', status: 'CLEAN', finding: '출고 원형 정상' },
+          rear_door_l: { name: '좌측 뒤 도어', status: 'CLEAN', finding: '출고 원형 정상' },
+          rear_door_r: { name: '우측 뒤 도어', status: 'CLEAN', finding: '출고 원형 정상' },
+          quarter_panel_l: { name: '좌측 쿼터 패널 (뒤 펜더)', status: 'CLEAN', finding: '출고 원형 정상' },
+          quarter_panel_r: { name: '우측 쿼터 패널 (뒤 펜더)', status: 'CLEAN', finding: '출고 원형 정상' },
+          roof: { name: '루프 패널 (천장)', status: 'CLEAN', finding: '출고 원형 정상' },
+          trunk_lid: { name: '트렁크 리드', status: 'CLEAN', finding: '출고 원형 정상' },
+          rear_bumper: { name: '뒤 범퍼', status: 'CLEAN', finding: '출고 원형 정상' },
+          radiator_support: { name: '라디에이터 서포트', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          front_side_member_l: { name: '좌측 앞 사이드 멤버', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          front_side_member_r: { name: '우측 앞 사이드 멤버', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          rear_side_member_l: { name: '좌측 뒤 사이드 멤버', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          rear_side_member_r: { name: '우측 뒤 사이드 멤버', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          pillar_a_l: { name: '좌측 앞 필러 (A필러)', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          pillar_a_r: { name: '우측 앞 필러 (A필러)', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          pillar_b_l: { name: '좌측 센터 필러 (B필러)', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          pillar_b_r: { name: '우측 센터 필러 (B필러)', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          pillar_c_l: { name: '좌측 리어 필러 (C필러)', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' },
+          pillar_c_r: { name: '우측 리어 필러 (C필러)', status: 'CLEAN', finding: '주요 골격 손상 없음 (정상)' }
+        }
       },
       dealer_info: {
         company: '차마트 장한평 직영 본사',
