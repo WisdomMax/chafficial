@@ -774,8 +774,8 @@ class VehicleDetailRenderer {
               </button>
               ` : ''}
 
-              <!-- 1:1 직통 전화 문의 카드 (방문 신청 폼 대신 직통 연결) -->
-              <div class="pt-3 border-t border-slate-100 space-y-2">
+              <!-- 데스크톱 전용 1:1 직통 전화 문의 카드 (모바일은 하단 고정 CTA 바가 있으므로 중복 노출 차단: hidden sm:block) -->
+              <div class="hidden sm:block pt-3 border-t border-slate-100 space-y-2">
                 <a href="tel:${escapeHtml(dealerPhone || '010-1111-9999')}" class="w-full py-3 bg-[#171B1E] hover:bg-black text-[#9FE870] font-bold text-xs rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs">
                   <i data-lucide="phone-call" class="w-4 h-4 mr-2 text-[#9FE870]"></i>
                   1:1 직통 전화 문의 (${escapeHtml(dealerPhone || '010-1111-9999')})
@@ -996,58 +996,82 @@ class VehicleDetailRenderer {
         </div>
       </div>
 
-      <!-- 오프라인 쇼룸 공식 지도 길찾기 모달 (DIRECTIVE 062) -->
-      <div id="vdrWayfindingModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4 animate-in fade-in duration-150">
-        <div class="bg-white rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4 border border-[#E7E9E5]">
+      <!-- 오프라인 쇼룸 공식 지도 길찾기 모달 (첫 번째 직영 전시장 모달 디자인으로 100% 통일) -->
+      <div id="vdrWayfindingModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 animate-in fade-in duration-150">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4 border border-[#E5E8EC] relative">
+          <!-- 모달 헤더 -->
           <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div class="flex items-center space-x-2">
-              <i data-lucide="navigation" class="w-5 h-5 text-[#171B1E]"></i>
-              <h3 class="text-base font-bold text-[#171B1E]">전시장 오시는 길 (길찾기)</h3>
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-black text-[#C8FF3D] flex items-center justify-center shrink-0">
+                <i data-lucide="map-pin" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="text-base sm:text-lg font-bold text-[#171B1E] tracking-tight">차마트 장한평 직영 전시장</h3>
+                <p class="text-[11px] text-slate-500">실차 전수 검증 직영 쇼룸 및 고객상담센터</p>
+              </div>
             </div>
-            <button onclick="window.__vdrInstance.closeWayfindingModal()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+            <button type="button" onclick="window.__vdrInstance.closeWayfindingModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg cursor-pointer transition-colors" aria-label="닫기">
               <i data-lucide="x" class="w-5 h-5"></i>
             </button>
           </div>
 
-          <div class="space-y-3 text-xs text-slate-700">
-            <!-- 공식 도로명 주소 및 실측 좌표 안내 (DIRECTIVE 064: 정직한 제휴 전시장) -->
-            <div class="bg-slate-50 p-3.5 rounded-lg border border-[#E7E9E5] space-y-1.5 text-xs">
-              <div class="flex items-center justify-between">
-                <span class="font-bold text-[#171B1E] text-sm">차마트 제휴 전시장 (장한평)</span>
-                <span class="text-[10px] bg-slate-200 text-slate-700 font-medium px-1.5 py-0.5 rounded">제휴 매매단지</span>
-              </div>
-              <div class="text-slate-800 font-medium">서울특별시 성동구 자동차시장1길 70 (용답동)</div>
-              <div class="text-[11px] text-slate-500 font-mono">참고 좌표: 37.56191°N, 127.06424°E</div>
-              <div class="text-[11px] text-slate-400 pt-0.5">※ 지하철 5호선 장한평역 5·6번 출구 인근 (방문 전 1:1 방문 예약 필수)</div>
+          <!-- 1. 전시장 주소 및 원클릭 복사 영역 -->
+          <div class="bg-[#F8F9FA] border border-[#E5E8EC] rounded-xl p-4 space-y-3">
+            <div class="space-y-1">
+              <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">전시장 주소</span>
+              <p class="text-sm sm:text-base font-bold text-[#171B1E] leading-snug break-keep select-all" id="vdrTargetAddressText">
+                서울 성동구 자동차시장 1길 94-47 장안모터프라자 801호 차마트
+              </p>
             </div>
+            <button type="button" onclick="window.__vdrInstance.copyShowroomAddress()" id="vdrBtnCopyAddrInModal" class="w-full py-2.5 px-4 bg-[#171B1E] hover:bg-black active:scale-[0.99] text-white text-xs sm:text-sm font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer">
+              <i data-lucide="copy" class="w-3.5 h-3.5 text-[#C8FF3D]"></i>
+              <span id="vdrCopyModalBtnLabel">주소 복사하기</span>
+            </button>
+          </div>
 
-            <!-- 공식 지도 앱 바로가기 버튼들 -->
-            <div class="space-y-2 pt-1">
-              <a href="https://map.kakao.com/link/to/차마트제휴전시장,37.56191,127.06424" target="_blank" rel="noopener noreferrer" 
-                 class="w-full py-2.5 px-4 bg-[#FEE500] hover:bg-[#FADA0A] text-[#191919] font-bold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors shadow-2xs">
-                <span class="flex items-center">
-                  <i data-lucide="map-pin" class="w-4 h-4 mr-2 text-[#191919]"></i>
-                  카카오맵 길찾기 바로가기
-                </span>
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          <!-- 2. 직통 상담 및 방문 정보 -->
+          <div class="bg-white border border-[#E5E8EC] rounded-xl p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <span class="text-xs font-semibold text-slate-500">1:1 직통 상담</span>
+              <a href="tel:010-1111-9999" class="text-sm font-bold font-mono text-[#171B1E] hover:text-slate-700 transition-colors flex items-center gap-1">
+                <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-700"></i>
+                <span>010-1111-9999</span>
               </a>
+            </div>
+            <div class="flex items-center justify-between text-xs text-slate-600">
+              <span class="text-slate-500">방문 안내</span>
+              <span class="font-medium text-slate-800">매일 09:00 ~ 19:00 (연중무휴)</span>
+            </div>
+            <div class="flex items-center justify-between text-xs text-slate-600">
+              <span class="text-slate-500">주차 시설</span>
+              <span class="font-medium text-slate-800">장안모터프라자 고객 무료 주차</span>
+            </div>
+          </div>
 
-              <a href="https://map.naver.com/v5/directions/-/127.06424,37.56191,차마트제휴전시장/-/car" target="_blank" rel="noopener noreferrer"
-                 class="w-full py-2.5 px-4 bg-[#03C75A] hover:bg-[#02B351] text-white font-bold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors shadow-2xs">
-                <span class="flex items-center">
-                  <i data-lucide="map" class="w-4 h-4 mr-2 text-white"></i>
-                  네이버지도 길찾기 바로가기
-                </span>
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-              </a>
+          <!-- 3. 길찾기 안내 (카카오 노랑, 네이버 녹색 버튼) -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <a href="https://map.kakao.com/link/search/서울 성동구 자동차시장 1길 94-47" target="_blank" rel="noopener noreferrer" 
+               class="py-3 px-3 rounded-xl bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] text-[#191919] text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#191919]"></i>
+              <span>카카오맵 길찾기</span>
+              <i data-lucide="external-link" class="w-3 h-3 text-[#191919]/70"></i>
+            </a>
+            <a href="https://map.naver.com/v5/search/서울 성동구 자동차시장 1길 94-47" target="_blank" rel="noopener noreferrer" 
+               class="py-3 px-3 rounded-xl bg-[#03C75A] hover:bg-[#02b351] active:scale-[0.99] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm">
+              <i data-lucide="navigation" class="w-3.5 h-3.5 text-white"></i>
+              <span>네이버지도 길찾기</span>
+              <i data-lucide="external-link" class="w-3 h-3 text-white/80"></i>
+            </a>
+          </div>
 
-              <a href="tmap://route?goalname=차마트제휴전시장&goalx=127.06424&goaly=37.56191" 
-                 class="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg flex items-center justify-between cursor-pointer transition-colors">
-                <span class="flex items-center">
-                  <i data-lucide="navigation-2" class="w-3.5 h-3.5 mr-2 text-slate-600"></i>
-                  티맵(TMAP) 내비게이션 실행
-                </span>
-                <span class="text-[10px] text-slate-400">모바일 전용</span>
+          <!-- 닫기 버튼 -->
+          <div class="pt-1">
+            <button type="button" onclick="window.__vdrInstance.closeWayfindingModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs sm:text-sm font-semibold rounded-lg cursor-pointer transition-colors">
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
               </a>
             </div>
           </div>
@@ -2250,8 +2274,12 @@ class VehicleDetailRenderer {
     }
   }
 
-  // DIRECTIVE 062: 공식 지도 길찾기 모달 제어
+  // 공식 지도 길찾기 모달 제어 (전역 직영 모달 우선 호출 및 일체화)
   openWayfindingModal() {
+    if (typeof window.openAddressModal === 'function') {
+      window.openAddressModal();
+      return;
+    }
     const modal = document.getElementById('vdrWayfindingModal');
     if (modal) {
       modal.classList.remove('hidden');
@@ -2261,6 +2289,9 @@ class VehicleDetailRenderer {
   }
 
   closeWayfindingModal() {
+    if (typeof window.closeAddressModal === 'function') {
+      window.closeAddressModal();
+    }
     const modal = document.getElementById('vdrWayfindingModal');
     if (modal) {
       modal.classList.add('hidden');
@@ -2270,13 +2301,18 @@ class VehicleDetailRenderer {
 
   // DIRECTIVE 063: 전시장 공식 도로명 주소 원클릭 클립보드 복사
   copyShowroomAddress() {
-    const addr = this.data?.branch_location || '서울특별시 성동구 자동차시장1길 70 (용답동) 장한평 자동차매매단지';
+    const addr = '서울 성동구 자동차시장 1길 94-47 장안모터프라자 801호 차마트';
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(addr).then(() => {
         const textSpan = document.getElementById('vdrBtnCopyAddrText');
+        const modalBtnSpan = document.getElementById('vdrCopyModalBtnLabel');
         if (textSpan) {
           textSpan.textContent = '복사 완료!';
           setTimeout(() => { textSpan.textContent = '주소 복사'; }, 2000);
+        }
+        if (modalBtnSpan) {
+          modalBtnSpan.textContent = '복사 완료!';
+          setTimeout(() => { modalBtnSpan.textContent = '주소 복사하기'; }, 2000);
         }
       }).catch(() => {
         alert('주소: ' + addr);
