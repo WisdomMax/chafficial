@@ -69,6 +69,7 @@
 | **ISSUE-56** | 운영 DB quota_processed_vehicles 단일 PK 잔존 결함 | 보통 | 🟢 해결완료 | `migrate_quota_processed_vehicles_composite_pk.py` (복합 PK 이전 및 동시성 20회 테스트 완료) |
 | **ISSUE-57** | 중복 병합 대표 마스터 선정 규칙 설명 불일치 및 증적 보강 | 보통 | 🟢 해결완료 | `audit_directive_119_task5_evidence.py` (자사 OWNED 실차량 우선 보존 설명 정정 및 사진 995장 무손실 증적 확보) |
 | **ISSUE-58** | 50대 목록 기반 저부하 증분 관측 아키텍처 부재 | 높음 | 🟢 해결완료 | `incremental_market_observer.py` (50대 목록 비교, 경량 가격 업데이트, 깊은 수집 큐 분리 검증 100% 통과) |
+| **ISSUE-59** | CarManagerSyncService.run_sync()의 min_expected_count 매개변수 누락 결함 | 심각 | 🟢 해결완료 | `carmanager_sync.py` (매개변수 추가, 임계치 미달 차단 및 dry-run 1,764대 전수 통과) |
 
 ---
 

@@ -112,10 +112,26 @@ class CarManagerSyncService:
         self,
         current_snapshot: List[Dict[str, Any]],
         scope: str = "OWNED",
+        min_expected_count: Optional[int] = None,
         dry_run: bool = False
     ) -> Dict[str, Any]:
         started_at = datetime.now().isoformat()
         is_dry = self.dry_run or dry_run
+
+        if min_expected_count is not None and len(current_snapshot) < min_expected_count:
+            return {
+                "sync_id": str(uuid.uuid4()),
+                "scope": scope,
+                "started_at": started_at,
+                "total_inspected": len(current_snapshot),
+                "new_inserted": 0,
+                "price_changed": 0,
+                "sold_count": 0,
+                "unverified_count": 0,
+                "delisted_count": 0,
+                "unchanged_count": 0,
+                "status": f"ABORTED_BELOW_THRESHOLD: Count ({len(current_snapshot)}) < min_expected_count ({min_expected_count})"
+            }
         if is_dry:
             abs_path = os.path.abspath(self.db_path)
             conn = sqlite3.connect(f"file:{abs_path}?mode=ro", uri=True)

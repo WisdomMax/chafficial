@@ -11,6 +11,8 @@
   1. **TASK 1 & TASK 3 (API 통합 및 오프라인 통합 테스트 완결)**:
      - `quota_enrichment_runner.py`와 `cross_platform_matcher.py` 간 API 인터페이스 일치 (`validate_candidate`, `record_verified_match`, `ObservationMode.OFFLINE_TEST`).
      - 예산 차감 예외 타입(`QuotaExhaustedException`) 단일화.
+     - `CarManagerSyncService.run_sync()`에 `min_expected_count` 매개변수 복구 및 임계치 미달 차단 가드 구현 (`ISSUE-59`).
+     - `scripts/run_daily_sync.py --dry-run` 1,764대(OWNED 74대, MARKET 1,690대) 통합 실행 100% 무오류 성공.
      - 후보 차량 모델명 토큰 분리 버그(공백 제거 후 Jaccard 0 버그) 수정.
      - 외부 네트워크 호출 없는 순수 오프라인 통합 테스트(`scratch/test_offline_sync_integration.py`) 작성 및 100% 통과 (VERIFIED -> ACTIVE, CANDIDATE -> REVIEW_PENDING, 일일 한도 초과 차단 입증).
   2. **TASK 2 (시장 관측 자동 공개 차단 및 자사 가격 보호)**:
