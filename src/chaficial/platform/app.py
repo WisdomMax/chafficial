@@ -1224,6 +1224,27 @@ def update_rl_reward(
         raise HTTPException(status_code=400, detail=err_msg)
 
 
+# DIRECTIVE 096: 관리자 전용 카매니저 실동기화 상태 및 수동 트리거 API
+@app.get("/api/admin/sourcing/sync-status")
+def get_admin_sourcing_sync_status(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """카매니저 동기화 감사 로그 및 스코프별 매물 집계 현황 반환 (인증 필수)."""
+    return PlatformService.get_carmanager_sync_status(db)
+
+
+@app.post("/api/admin/sourcing/trigger-sync")
+def trigger_admin_sourcing_sync(
+    req: dict[str, Any] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """카매니저 스냅샷 동기화 수동 실행 (인증 필수, scope 분리 지원)."""
+    scope = (req.get("scope") if req else "OWNED") or "OWNED"
+    return PlatformService.trigger_carmanager_sync(db, scope=scope)
+
+
 @app.get("/api/rl/readiness")
 def get_rl_readiness(
     db: Session = Depends(get_db),
@@ -1912,6 +1933,27 @@ def toggle_admin_vehicle_publish(
         if "찾을 수 없습니다" in err_msg:
             raise HTTPException(status_code=404, detail=err_msg)
         raise HTTPException(status_code=400, detail=err_msg)
+
+
+# DIRECTIVE 096: 관리자 전용 카매니저 실동기화 상태 및 수동 트리거 API
+@app.get("/api/admin/sourcing/sync-status")
+def get_admin_sourcing_sync_status(
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """카매니저 동기화 감사 로그 및 스코프별 매물 집계 현황 반환 (인증 필수)."""
+    return PlatformService.get_carmanager_sync_status(db)
+
+
+@app.post("/api/admin/sourcing/trigger-sync")
+def trigger_admin_sourcing_sync(
+    req: dict[str, Any] = None,
+    db: Session = Depends(get_db),
+    _auth: dict = Depends(require_auth),
+) -> dict[str, Any]:
+    """카매니저 스냅샷 동기화 수동 실행 (인증 필수, scope 분리 지원)."""
+    scope = (req.get("scope") if req else "OWNED") or "OWNED"
+    return PlatformService.trigger_carmanager_sync(db, scope=scope)
 
 
 # -----------------------------------------------------------------------------

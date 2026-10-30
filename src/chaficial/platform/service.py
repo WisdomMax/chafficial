@@ -3182,3 +3182,74 @@ class PlatformService:
             "message": "우선노출 설정이 안전하게 갱신되었습니다.",
         }
 
+    # DIRECTIVE 096: 카매니저 실동기화 현황 조회 및 관리자 수동 트리거 서비스
+    @staticmethod
+    def get_carmanager_sync_status(db: Session) -> dict[str, Any]:
+        """카매니저 동기화 로그 및 스코프별 매물 집계 현황 반환."""
+        from chaficial.platform.sourcing.carmanager_sync import CarManagerSyncService
+        
+        # 1. DB 직접 쿼리를 통한 최근 로그 5건 조회
+        logs = []
+        try:
+            res = db.execute(
+                select(Vehicle.id).limit(1)
+            ) # 세션 핑
+            raw_logs = db.execute(
+                "SELECT id, scope, started_at, finished_at, total_inspected, new_inserted, price_changed, sold_count, unverified_count, delisted_count, status FROM carmanager_sync_logs ORDER BY started_at DESC LIMIT 5"
+            ).fetchall()
+            for row in raw_logs:
+                logs.append({
+                    "id": row[0],
+                    "scope": row[1],
+                    "started_at": str(row[2]),
+                    "finished_at": str(row[3]),
+                    "total_inspected": row[4],
+                    "new_inserted": row[5],
+                    "price_changed": row[6],
+                    "sold_count": row[7],
+                    "unverified_count": row[8],
+                    "delisted_count": row[9],
+                    "status": row[10]
+                })
+        except Exception:
+            pass
+
+        # 2. 스코프별 차량 현황
+        owned_cnt = db.query(Vehicle).filter(Vehicle.listing_ownership_type == "OWNED").count()
+        external_cnt = db.query(Vehicle).filter(Vehicle.listing_ownership_type == "EXTERNAL").count()
+        public_cnt = db.query(Vehicle).filter(Vehicle.is_public == True).count()
+        draft_cnt = db.query(Vehicle).filter(Vehicle.status == "DRAFT").count()
+
+        return {
+            "latest_logs": logs,
+            "counts": {
+                "owned_vehicles": owned_cnt,
+                "external_observed_vehicles": external_cnt,
+                "public_vehicles": public_cnt,
+                "draft_quarantined_vehicles": draft_cnt
+            },
+            "last_sync_time": logs[0]["finished_at"] if logs else None
+        }
+
+    @staticmethod
+    def trigger_carmanager_sync(db: Session, scope: str = "OWNED") -> dict[str, Any]:
+        """카매니저 스냅샷 동기화 수동 실행."""
+        from chaficial.platform.sourcing.carmanager_sync import CarManagerSyncService
+        import json
+
+        service = CarManagerSyncService()
+        if scope == "OWNED":
+            snap_file = "scratch/carmanager_inspect/my_13_cleaned_cars.json"
+        else:
+            snap_file = "scratch/carmanager_inspect/janghanpyeong_20_sampled.json"
+
+        try:
+            with open(snap_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            snapshot = data if isinstance(data, list) else data.get("cars", [])
+            stats = service.run_sync(snapshot, scope=scope)
+            return {"success": True, "stats": stats}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+

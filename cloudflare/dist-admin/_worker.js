@@ -444,6 +444,33 @@ export default {
       }
     }
 
+    // 10. Sourcing Sync Status API (DIRECTIVE 096)
+    if (pathname === '/api/admin/sourcing/sync-status' && request.method === 'GET') {
+      if (!db) return new Response(JSON.stringify({ error: 'DB not found' }), { status: 500 });
+      try {
+        const logs = await db.prepare('SELECT id, scope, started_at, finished_at, total_inspected, new_inserted, price_changed, sold_count, unverified_count, delisted_count, status FROM carmanager_sync_logs ORDER BY started_at DESC LIMIT 5').all();
+        const ownedCnt = await db.prepare("SELECT COUNT(*) as cnt FROM vehicles WHERE listing_ownership_type = 'OWNED'").first();
+        const externalCnt = await db.prepare("SELECT COUNT(*) as cnt FROM vehicles WHERE listing_ownership_type = 'EXTERNAL'").first();
+        const publicCnt = await db.prepare('SELECT COUNT(*) as cnt FROM vehicles WHERE is_public = 1').first();
+        const draftCnt = await db.prepare("SELECT COUNT(*) as cnt FROM vehicles WHERE status = 'DRAFT'").first();
+
+        return new Response(JSON.stringify({
+          latest_logs: logs.results || [],
+          counts: {
+            owned_vehicles: ownedCnt ? ownedCnt.cnt : 0,
+            external_observed_vehicles: externalCnt ? externalCnt.cnt : 0,
+            public_vehicles: publicCnt ? publicCnt.cnt : 0,
+            draft_quarantined_vehicles: draftCnt ? draftCnt.cnt : 0
+          },
+          last_sync_time: (logs.results && logs.results[0]) ? logs.results[0].finished_at : null
+        }), {
+          headers: { 'Content-Type': 'application/json; charset=utf-8' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+      }
+    }
+
     // Static Assets Fallback
     try {
       const response = await env.ASSETS.fetch(request);
