@@ -20,14 +20,18 @@
 .cm-skin .cm-feed-card__monthly { margin:3px 0 12px; font-size:11px; color:#7c8794; white-space:nowrap; }
 .cm-skin .cm-feed-card__body > div:last-child { gap:10px; padding-top:12px; }
 .cm-skin .cm-feed-card__body > div:last-child > * { flex-shrink:0; white-space:nowrap; }
-.cm-skin .cm-list-card { align-items:flex-start; }
-.cm-skin .cm-list-card__body { gap:10px; }
-.cm-skin .cm-list-card__title { white-space:normal; word-break:keep-all; overflow-wrap:anywhere; line-height:1.5; }
+.cm-skin .cm-list-card { align-items:center; padding:10px 14px; }
+.cm-skin .cm-list-card__body { gap:3px; min-width:0; }
+.cm-skin .cm-list-card__title { font-size:14px; font-weight:700; line-height:1.35; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cm-skin .cm-list-card__right { display:flex; flex-direction:column; align-items:flex-end; justify-content:center; gap:5px; flex-shrink:0; text-align:right; }
+.cm-skin .cm-list-card__price { font-size:16px; font-weight:800; line-height:1.2; letter-spacing:-.02em; color:#171B1E; white-space:nowrap; }
 .cm-skin #vdrGalleryViewport .animate-pulse { animation:none; }
 @media(max-width:767px) {
  .cm-skin .cm-feed-card__title { font-size:16px; }
  .cm-skin .cm-card-specs { font-size:11px; }
- .cm-skin .cm-list-card__body > div:last-child { flex-wrap:wrap; gap:6px; }
+ .cm-skin .cm-list-card { padding:8px 10px; gap:10px; }
+ .cm-skin .cm-list-card__title { font-size:13px; }
+ .cm-skin .cm-list-card__price { font-size:15px; }
 }
 
 .cm-skin .cm-vehicle-results.is-feed { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:none;margin-inline:0;align-items:start; }
@@ -39,6 +43,6 @@
 .cm-skin #vehicleGrid article.cm-preferred-card:hover { border-color:#a5d52c; box-shadow:0 0 0 1px #c8ff3d99; }
 .cm-skin #vehicleGrid .cm-preferred-sticker { display:block;width:148px;height:30px;max-width:100%;object-fit:contain;flex-shrink:0; }
 .cm-skin .cm-preferred-album-badge { position:absolute;top:8px;left:8px;z-index:2;max-width:calc(100% - 50px); }
-.cm-skin .cm-list-card .cm-preferred-sticker { margin-bottom:7px; }
+.cm-skin .cm-list-card .cm-preferred-sticker { margin-bottom:2px; height:22px; width:auto; }
 .cm-skin .cm-album-card .cm-preferred-sticker { width:136px;height:auto; }
 @media(max-width:767px) { .cm-skin .cm-album-card .cm-preferred-sticker { width:108px; } }

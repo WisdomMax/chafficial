@@ -3400,7 +3400,7 @@
             `;
         }
 
-        // 2. 당근마켓 스타일 심플 목록형 (좌측 사각 썸네일 + 우측 간결한 제목/가격/스펙)
+        // 2. 당근마켓 스타일 심플 목록형 (가격을 오른쪽으로 배치하여 위아래 높이 폭 대폭 축소)
         function createVehicleDanggeunRow(v, favorites, compareIds) {
             const photoUrl = resolveFrontendCarPhoto(v);
             const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
@@ -3412,33 +3412,38 @@
             const yearDisplay = v.year ? `${v.year}년형` : '';
 
             return `
-                <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-list-card bg-white rounded-xl border border-[#E5E8EC] p-3 flex items-center gap-3 hover:border-slate-400 transition-colors cursor-pointer shadow-2xs" onclick="openVehicleDetail('${v.id}')">
-                    <!-- 좌측: 당근마켓형 정사각 썸네일 -->
-                    <div class="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 bg-slate-100">
+                <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-list-card bg-white rounded-xl border border-[#E5E8EC] p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:border-slate-400 transition-colors cursor-pointer shadow-2xs" onclick="openVehicleDetail('${v.id}')">
+                    <!-- 좌측: 당근마켓형 정사각 썸네일 (컴팩트 64~80px) -->
+                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100">
                         <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='/static/img/real_photos/01_front.jpg'">
                         <span class="absolute top-1 left-1 bg-[#171B1E]/85 backdrop-blur-xs text-[#C8FF3D] text-[9px] font-bold px-1 rounded">무사고</span>
                     </div>
 
-                    <!-- 우측: 핵심 스펙 및 가격 -->
-                    <div class="cm-list-card__body flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                        <div>
-                            ${ChamartPreferred.badge(v)}
-                            <h3 class="cm-list-card__title text-xs sm:text-sm font-bold text-[#171B1E]" title="${titleParts.mainTitle}">
-                                ${titleParts.mainTitle} ${titleParts.subTrim ? `<span class="text-[11px] font-normal text-slate-500">${titleParts.subTrim}</span>` : ''}
-                            </h3>
-                            <div class="cm-card-specs"><span>${yearDisplay}</span><span>${mileageFormatted}</span><span>${v.fuel_type || '가솔린'}</span></div>
+                    <!-- 중앙: 핵심 스펙 및 모델명 -->
+                    <div class="cm-list-card__body flex-1 min-w-0 flex flex-col justify-center">
+                        ${ChamartPreferred.badge(v)}
+                        <h3 class="cm-list-card__title text-xs sm:text-sm font-bold text-[#171B1E] truncate" title="${titleParts.mainTitle} ${titleParts.subTrim || ''}">
+                            ${titleParts.mainTitle} ${titleParts.subTrim ? `<span class="text-[11px] font-normal text-slate-500">${titleParts.subTrim}</span>` : ''}
+                        </h3>
+                        <div class="cm-card-specs text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                            <span>${yearDisplay}</span>
+                            <span>·</span>
+                            <span>${mileageFormatted}</span>
+                            <span>·</span>
+                            <span>${v.fuel_type || '가솔린'}</span>
                         </div>
+                    </div>
 
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-100">
-                            <span class="text-sm sm:text-base font-extrabold text-[#171B1E]">${priceFormatted}</span>
-                            <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
-                                <button type="button" onclick="toggleCompareVehicle('${v.id}', ${!isComp})" class="px-2 py-0.5 rounded text-[10.5px] font-bold border transition-colors ${isComp ? 'bg-[#171B1E] text-[#C8FF3D] border-[#171B1E]' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'}">
-                                    ${isComp ? '비교중' : '비교'}
-                                </button>
-                                <button type="button" onclick="toggleFavoriteVehicle('${v.id}')" class="p-1 rounded text-slate-400 hover:text-rose-500 transition-colors" aria-label="찜">
-                                    <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : 'text-slate-400'}"></i>
-                                </button>
-                            </div>
+                    <!-- 우측: 가격(오른쪽 배치로 위아래 높이 폭 최소화) 및 비교/찜 액션 -->
+                    <div class="cm-list-card__right shrink-0 flex flex-col items-end justify-center text-right pl-2 gap-1.5" onclick="event.stopPropagation()">
+                        <span class="cm-list-card__price text-sm sm:text-base font-extrabold text-[#171B1E] tracking-tight whitespace-nowrap">${priceFormatted}</span>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="toggleCompareVehicle('${v.id}', ${!isComp})" class="px-2 py-0.5 rounded text-[10px] sm:text-[10.5px] font-bold border transition-colors ${isComp ? 'bg-[#171B1E] text-[#C8FF3D] border-[#171B1E]' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'}">
+                                ${isComp ? '비교중' : '비교'}
+                            </button>
+                            <button type="button" onclick="toggleFavoriteVehicle('${v.id}')" class="p-0.5 rounded text-slate-400 hover:text-rose-500 transition-colors" aria-label="찜">
+                                <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : 'text-slate-400'}"></i>
+                            </button>
                         </div>
                     </div>
                 </article>
@@ -3543,7 +3548,7 @@
             `;
         }
 
-        // 2. 당근마켓 스타일 심플 목록형 (좌측 사각 썸네일 + 우측 간결한 제목/가격/스펙)
+        // 2. 당근마켓 스타일 심플 목록형 (가격을 오른쪽으로 배치하여 위아래 높이 폭 대폭 축소)
         function createVehicleDanggeunRow(v, favorites, compareIds) {
             const photoUrl = resolveFrontendCarPhoto(v);
             const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
@@ -3555,33 +3560,38 @@
             const yearDisplay = v.year ? `${v.year}년형` : '';
 
             return `
-                <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-list-card bg-white rounded-xl border border-[#E5E8EC] p-3 flex items-center gap-3 hover:border-slate-400 transition-colors cursor-pointer shadow-2xs" onclick="openVehicleDetail('${v.id}')">
-                    <!-- 좌측: 당근마켓형 정사각 썸네일 -->
-                    <div class="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 bg-slate-100">
+                <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-list-card bg-white rounded-xl border border-[#E5E8EC] p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:border-slate-400 transition-colors cursor-pointer shadow-2xs" onclick="openVehicleDetail('${v.id}')">
+                    <!-- 좌측: 당근마켓형 정사각 썸네일 (컴팩트 64~80px) -->
+                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100">
                         <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='/static/img/real_photos/01_front.jpg'">
                         <span class="absolute top-1 left-1 bg-[#171B1E]/85 backdrop-blur-xs text-[#C8FF3D] text-[9px] font-bold px-1 rounded">무사고</span>
                     </div>
 
-                    <!-- 우측: 핵심 스펙 및 가격 -->
-                    <div class="cm-list-card__body flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                        <div>
-                            ${ChamartPreferred.badge(v)}
-                            <h3 class="cm-list-card__title text-xs sm:text-sm font-bold text-[#171B1E]" title="${titleParts.mainTitle}">
-                                ${titleParts.mainTitle} ${titleParts.subTrim ? `<span class="text-[11px] font-normal text-slate-500">${titleParts.subTrim}</span>` : ''}
-                            </h3>
-                            <div class="cm-card-specs"><span>${yearDisplay}</span><span>${mileageFormatted}</span><span>${v.fuel_type || '가솔린'}</span></div>
+                    <!-- 중앙: 핵심 스펙 및 모델명 -->
+                    <div class="cm-list-card__body flex-1 min-w-0 flex flex-col justify-center">
+                        ${ChamartPreferred.badge(v)}
+                        <h3 class="cm-list-card__title text-xs sm:text-sm font-bold text-[#171B1E] truncate" title="${titleParts.mainTitle} ${titleParts.subTrim || ''}">
+                            ${titleParts.mainTitle} ${titleParts.subTrim ? `<span class="text-[11px] font-normal text-slate-500">${titleParts.subTrim}</span>` : ''}
+                        </h3>
+                        <div class="cm-card-specs text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                            <span>${yearDisplay}</span>
+                            <span>·</span>
+                            <span>${mileageFormatted}</span>
+                            <span>·</span>
+                            <span>${v.fuel_type || '가솔린'}</span>
                         </div>
+                    </div>
 
-                        <div class="flex items-center justify-between pt-1 border-t border-slate-100">
-                            <span class="text-sm sm:text-base font-extrabold text-[#171B1E]">${priceFormatted}</span>
-                            <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
-                                <button type="button" onclick="toggleCompareVehicle('${v.id}', ${!isComp})" class="px-2 py-0.5 rounded text-[10.5px] font-bold border transition-colors ${isComp ? 'bg-[#171B1E] text-[#C8FF3D] border-[#171B1E]' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'}">
-                                    ${isComp ? '비교중' : '비교'}
-                                </button>
-                                <button type="button" onclick="toggleFavoriteVehicle('${v.id}')" class="p-1 rounded text-slate-400 hover:text-rose-500 transition-colors" aria-label="찜">
-                                    <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : 'text-slate-400'}"></i>
-                                </button>
-                            </div>
+                    <!-- 우측: 가격(오른쪽 배치로 위아래 높이 폭 최소화) 및 비교/찜 액션 -->
+                    <div class="cm-list-card__right shrink-0 flex flex-col items-end justify-center text-right pl-2 gap-1.5" onclick="event.stopPropagation()">
+                        <span class="cm-list-card__price text-sm sm:text-base font-extrabold text-[#171B1E] tracking-tight whitespace-nowrap">${priceFormatted}</span>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="toggleCompareVehicle('${v.id}', ${!isComp})" class="px-2 py-0.5 rounded text-[10px] sm:text-[10.5px] font-bold border transition-colors ${isComp ? 'bg-[#171B1E] text-[#C8FF3D] border-[#171B1E]' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'}">
+                                ${isComp ? '비교중' : '비교'}
+                            </button>
+                            <button type="button" onclick="toggleFavoriteVehicle('${v.id}')" class="p-0.5 rounded text-slate-400 hover:text-rose-500 transition-colors" aria-label="찜">
+                                <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : 'text-slate-400'}"></i>
+                            </button>
                         </div>
                     </div>
                 </article>
