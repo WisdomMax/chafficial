@@ -1,10 +1,12 @@
 """
-CarManager Production Synchronization Engine (DIRECTIVE 096 P0)
-- Explicit scope separation: 'OWNED' (내차 13대) vs 'MARKET_OBSERVED' (장안평 관측 매물).
-- Zero Auto-Publishing: All newly ingested vehicles default to DRAFT / is_public=0 until manual admin approval.
-- Independent Price Locking: Separated from is_priority_exposure (uses explicit is_price_locked field).
-- Safe Delisting: Does not immediately delist on single snapshot omission; marks UNVERIFIED first.
-- Records all run statistics into carmanager_sync_logs.
+CarManager Production Synchronization Engine (DIRECTIVE 105 P0)
+- Unified Schema: Supports both collector fields ('encarno', 'price_manwon', 'model_year', 'plate_tail', 'shop')
+  and legacy fields ('carSeq', 'price', 'year', 'plate').
+- Zero Fake Values: vin defaults strictly to NULL (No 'VIN-{car_seq}' or 'CM-JHP-*' artificial strings).
+- Accurate Ownership: Maps 'OWNED' vs 'MARKET_JANGHANPYEONG' precisely to DB listing_ownership_type.
+- Independent Price Locking: Respects is_price_locked flag in condition_detail_json.
+- Safe Delisting: Consecutive unverified threshold prevents accidental delisting on partial scrapes.
+- Audit Logging: Detailed transaction logs saved to carmanager_sync_logs.
 """
 
 import sqlite3
@@ -39,7 +41,6 @@ class CarManagerSyncService:
                 summary_json TEXT NOT NULL
             )
         """)
-        # 기존 테이블에 scope 및 unverified_count 컬럼 추가 보장
         c.execute("PRAGMA table_info(carmanager_sync_logs)")
         cols = [col[1] for col in c.fetchall()]
         if "scope" not in cols:
@@ -47,7 +48,6 @@ class CarManagerSyncService:
         if "unverified_count" not in cols:
             c.execute("ALTER TABLE carmanager_sync_logs ADD COLUMN unverified_count INTEGER NOT NULL DEFAULT 0")
 
-        # vehicle_listings 테이블에 unverified_consecutive_count 컬럼 추가 보장
         c.execute("PRAGMA table_info(vehicle_listings)")
         vl_cols = [col[1] for col in c.fetchall()]
         if "unverified_consecutive_count" not in vl_cols:
@@ -64,8 +64,8 @@ class CarManagerSyncService:
     ) -> Dict[str, Any]:
         """
         scope:
-          - 'OWNED': 우리 상사 보유 매물(내차관리 13대) 전용 동기화
-          - 'MARKET_OBSERVED': 장안평 매매단지 타 상사 관측 매물 전용 동기화
+          - 'OWNED': 우리 상사 보유 매물 전용 동기화 (listing_ownership_type = 'OWNED')
+          - 'MARKET_OBSERVED': 장안평 매매단지 타 상사 관측 매물 전용 동기화 (listing_ownership_type = 'MARKET_JANGHANPYEONG')
         """
         started_at = datetime.now().isoformat()
         conn = sqlite3.connect(self.db_path)
@@ -87,15 +87,15 @@ class CarManagerSyncService:
 
         try:
             # 1. 대상 scope에 해당하는 기존 리스팅만 로드 (타 범위 매물 보호)
-            ownership_filter = "AND v.listing_ownership_type = 'OWNED'" if scope == "OWNED" else "AND v.listing_ownership_type = 'EXTERNAL'"
+            target_ownership = "OWNED" if scope == "OWNED" else "MARKET_JANGHANPYEONG"
             cursor.execute(f"""
                 SELECT l.listing_id, l.vehicle_id, l.advertised_price, l.listing_status, 
                        v.target_price, v.status, v.is_public, v.condition_detail_json, v.publishing_status,
                        COALESCE(l.unverified_consecutive_count, 0)
                 FROM vehicle_listings l
                 JOIN vehicles v ON l.vehicle_id = v.id
-                WHERE l.platform = 'CARMANAGER' {ownership_filter}
-            """)
+                WHERE l.platform = 'CARMANAGER' AND v.listing_ownership_type = ?
+            """, (target_ownership,))
             
             existing_records = {}
             for r in cursor.fetchall():
@@ -116,59 +116,83 @@ class CarManagerSyncService:
                     "unverified_consecutive_count": r[9]
                 }
 
-            active_car_seqs = set()
+            active_listing_ids = set()
             now = datetime.now().isoformat()
             branch_id = "61fea9a4-58f0-42bd-862c-14fd16d0d21c"
 
             # 2. 현재 스냅샷 검사 및 동기화
             for car in current_snapshot:
-                car_seq = str(car.get("carSeq") or "").strip()
-                if not car_seq:
+                # [TASK 4: encarno 및 carSeq 완벽 통합 매핑]
+                listing_id = str(car.get("encarno") or car.get("carSeq") or "").strip()
+                if not listing_id:
                     continue
-                active_car_seqs.add(car_seq)
+                active_listing_ids.add(listing_id)
 
-                plate = str(car.get("plate") or "").strip()
-                raw_price = str(car.get("price", "0")).replace(",", "").strip()
-                price_val = int(raw_price) if raw_price.isdigit() else 0
-                clean_title = car.get("clean_title") or car.get("title") or "카매니저 등록 차량"
+                # 번호판
+                plate = str(car.get("full_plate") or car.get("plate") or car.get("plate_tail") or "").strip()
                 
-                parts = clean_title.split()
-                manufacturer = parts[0] if parts else "기타"
-                model_name = " ".join(parts[:2]) if len(parts) >= 2 else clean_title
-                trim = " ".join(parts[2:]) if len(parts) > 2 else ""
+                # 가격 (만원 단위 표준화 -> 원 단위)
+                raw_price = car.get("price_manwon") or car.get("price") or 0
+                if isinstance(raw_price, str):
+                    raw_price = re.sub(r"[^\d]", "", raw_price)
+                    price_manwon = int(raw_price) if raw_price else 0
+                else:
+                    price_manwon = int(raw_price)
 
-                year_val = int(car.get("year")) if str(car.get("year", "")).isdigit() else 0
-                mileage_raw = str(car.get("mileage", "0")).replace(",", "").strip()
-                mileage_val = int(mileage_raw) if mileage_raw.isdigit() else 0
-                fuel_val = car.get("fuel") or "미확인"
-                trans_val = car.get("mission") or "오토"
+                # 1억원 미만 값이면 만원 단위로 입력된 것으로 간주하여 원 단위 변환 (예: 1550 -> 15,500,000)
+                price_won = price_manwon * 10000 if price_manwon < 100000 else price_manwon
 
-                if car_seq not in existing_records:
-                    # [TASK 2: 신규 차량은 가격 유무와 관계없이 무조건 DRAFT / is_public=0]
+                # 제목 및 제원
+                clean_title = car.get("clean_title") or car.get("title") or car.get("model") or "카매니저 등록 차량"
+                maker = car.get("maker") or (clean_title.split()[0] if clean_title else "기타")
+                model_name = car.get("model") or clean_title
+                
+                # 연식
+                raw_year = car.get("model_year") or car.get("year") or 0
+                year_val = int(re.sub(r"[^\d]", "", str(raw_year))) if str(raw_year).strip() else 0
+                if year_val > 2100: year_val = int(str(year_val)[:4])
+
+                # 주행거리
+                raw_km = car.get("mileage") or car.get("km") or 0
+                km_val = int(re.sub(r"[^\d]", "", str(raw_km))) if str(raw_km).strip() else 0
+
+                fuel = car.get("fuel") or car.get("fuel_type") or ""
+                mission = car.get("mission") or car.get("transmission") or ""
+                color = car.get("color") or ""
+                shop_name = car.get("shop") or car.get("sangsa_name") or ("(주)더쿨모터스" if scope == "OWNED" else "장안평 조합 회원사")
+                dealer_name = car.get("dealer") or ""
+
+                # [TASK 4: 가짜 VIN 완전 배제 -> 실데이터 없으면 NULL]
+                vin = car.get("vin")
+                if vin and ("CM-JHP" in vin or "DUMMY" in vin or "VIN-" in vin):
+                    vin = None
+
+                if listing_id not in existing_records:
+                    # 신규 매물 등록
                     vehicle_id = str(uuid.uuid4())
-                    timeline = [{
-                        "event": "CARMANAGER_SYNC_NEW",
-                        "timestamp": now,
-                        "note": f"카매니저 실계정 신규 수집 (Seq: {car_seq}) - 관리자 승인 대기"
-                    }]
+                    ownership_type = "CHAMART_OWNED" if scope == "OWNED" else "EXTERNAL"
+                    listing_ownership_type = "OWNED" if scope == "OWNED" else "MARKET_JANGHANPYEONG"
 
-                    ownership_type = "CHAMART_OWNED" if scope == "OWNED" else "MARKET_OBSERVED"
-                    listing_ownership = "OWNED" if scope == "OWNED" else "EXTERNAL"
+                    timeline = [{
+                        "event": "INGESTED_VIA_CARMANAGER_SYNC",
+                        "scope": scope,
+                        "timestamp": now,
+                        "price": price_won
+                    }]
 
                     cursor.execute("""
                         INSERT INTO vehicles (
-                            id, branch_id, plate_number, model_name, manufacturer, trim, year,
-                            mileage, fuel_type, transmission, color, purchase_price, target_price,
-                            status, is_demo, is_public, listing_ownership_type, ownership_type,
-                            vin, first_registration_date, primary_photo_url, options_json, timeline_json,
+                            id, branch_id, plate_number, model_name, year, mileage, fuel_type,
+                            transmission, color, purchase_price, target_price, status, is_demo,
+                            ownership_type, listing_ownership_type, is_public, vin,
+                            manufacturer, trim, options_json, timeline_json,
                             publishing_status, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'AVAILABLE', 0, ?, ?, 0, ?, ?, ?, ?, ?, 'DRAFT', ?, ?)
                     """, (
-                        vehicle_id, branch_id, plate, model_name, manufacturer, trim, year_val,
-                        mileage_val, fuel_val, trans_val, "미확인", 0, price_val,
-                        "DRAFT", 0, 0, listing_ownership, ownership_type,
-                        f"VIN-{car_seq}", None, None, "[]", json.dumps(timeline, ensure_ascii=False),
-                        "DRAFT", now, now
+                        vehicle_id, branch_id, plate, model_name, year_val, km_val, fuel,
+                        mission, color, 0, price_won, ownership_type, listing_ownership_type,
+                        vin, maker, "", "[]", json.dumps(timeline, ensure_ascii=False),
+                        now, now
                     ))
 
                     cursor.execute("""
@@ -176,32 +200,29 @@ class CarManagerSyncService:
                             id, vehicle_id, platform, listing_id, listing_url, advertised_price,
                             listing_status, region, is_janghanpyeong, raw_seller_name, observation_notes,
                             first_observed_at, last_observed_at, is_demo
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, 'CARMANAGER', ?, ?, ?, 'DRAFT', '서울 장안평 자동차매매단지', 1, ?, ?, ?, ?, 0)
                     """, (
-                        str(uuid.uuid4()), vehicle_id, "CARMANAGER", car_seq, 
-                        f"https://www.carmanager.co.kr/Car/Data#{car_seq}", price_val,
-                        "DRAFT", "서울 장안평 자동차매매단지", True,
-                        "차마트 직영" if scope == "OWNED" else "장안평 조합 회원사",
-                        f"제시번호: {car.get('suggestNo', '-')}", now, now, 0
+                        str(uuid.uuid4()), vehicle_id, listing_id, 
+                        f"https://www.carmanager.co.kr/Car/Data#{listing_id}", price_won,
+                        shop_name, f"수집연동 매물: {listing_id}", now, now
                     ))
                     stats["new_inserted"] += 1
                 else:
-                    prev = existing_records[car_seq]
+                    prev = existing_records[listing_id]
                     v_id = prev["vehicle_id"]
                     prev_price = prev["target_price"]
-
-                    # [TASK 5: 명시적 가격 잠금 검사 (우선순위 노출 플래그와 완전 분리)]
                     is_price_locked = prev["is_price_locked"]
 
-                    if price_val > 0 and price_val != prev_price:
+                    # 가격 변경 감지
+                    if price_won > 0 and price_won != prev_price:
                         if is_price_locked:
-                            # 가격 잠금 차량: 동기화 가격 덮어쓰기 차단 및 로그 기록
+                            # 가격 잠금 차량 보호
                             cursor.execute("SELECT timeline_json FROM vehicles WHERE id = ?", (v_id,))
                             tl_row = cursor.fetchone()
                             timeline = json.loads(tl_row[0]) if tl_row and tl_row[0] else []
                             timeline.append({
                                 "event": "SYNC_PRICE_SKIPPED_ADMIN_PRICE_LOCK",
-                                "detected_price": price_val,
+                                "detected_price": price_won,
                                 "kept_price": prev_price,
                                 "timestamp": now
                             })
@@ -213,106 +234,81 @@ class CarManagerSyncService:
                             timeline.append({
                                 "event": "PRICE_CHANGED",
                                 "from": prev_price,
-                                "to": price_val,
+                                "to": price_won,
                                 "timestamp": now
                             })
                             cursor.execute("""
                                 UPDATE vehicles SET target_price = ?, timeline_json = ?, updated_at = ?
                                 WHERE id = ?
-                            """, (price_val, json.dumps(timeline, ensure_ascii=False), now, v_id))
+                            """, (price_won, json.dumps(timeline, ensure_ascii=False), now, v_id))
                             cursor.execute("""
                                 UPDATE vehicle_listings SET advertised_price = ?, last_observed_at = ?
                                 WHERE listing_id = ?
-                            """, (price_val, now, car_seq))
+                            """, (price_won, now, listing_id))
                             stats["price_changed"] += 1
                     else:
+                        # 변동 없음: last_observed_at 및 unverified 카운트 리셋
+                        cursor.execute("""
+                            UPDATE vehicle_listings 
+                            SET last_observed_at = ?, unverified_consecutive_count = 0 
+                            WHERE listing_id = ?
+                        """, (now, listing_id))
                         stats["unchanged_count"] += 1
 
-                    # 스냅샷 관측 성공 시: 미조회 카운트 리셋 및 ACTIVE 복구
-                    cursor.execute("""
-                        UPDATE vehicle_listings SET 
-                            last_observed_at = ?,
-                            unverified_consecutive_count = 0,
-                            listing_status = CASE WHEN listing_status = 'UNVERIFIED' THEN 'ACTIVE' ELSE listing_status END
-                        WHERE listing_id = ?
-                    """, (now, car_seq))
+            # 3. 판매완료 및 광고중지 감지
+            for listing_id, prev_data in existing_records.items():
+                if listing_id not in active_listing_ids:
+                    v_id = prev_data["vehicle_id"]
+                    consec_count = prev_data["unverified_consecutive_count"] + 1
 
-            # 3. [DIRECTIVE 096 TASK 4: 3회 연속 미조회 카운팅 및 3회째 DELISTED/비공개 자동 전환]
-            missing_seqs = set(existing_records.keys()) - active_car_seqs
-            for m_seq in missing_seqs:
-                rec = existing_records[m_seq]
-                v_id = rec["vehicle_id"]
-                current_unverified = rec["unverified_consecutive_count"] + 1
+                    # 안전 임계치: 3회 연속 스냅샷 누락 시 DELISTED / SOLD 전환
+                    if consec_count >= 3:
+                        cursor.execute("""
+                            UPDATE vehicle_listings 
+                            SET listing_status = 'DELISTED', unverified_consecutive_count = ? 
+                            WHERE listing_id = ?
+                        """, (consec_count, listing_id))
 
-                if current_unverified < 3:
-                    # 1~2회 미조회: 경고(UNVERIFIED) 마킹 및 카운트 누적 (즉시 비공개 강등 금지)
-                    cursor.execute("""
-                        UPDATE vehicle_listings SET 
-                            unverified_consecutive_count = ?,
-                            listing_status = 'UNVERIFIED',
-                            observation_notes = observation_notes || ?
-                        WHERE listing_id = ?
-                    """, (current_unverified, f' [{current_unverified}회 스냅샷 미조회]', m_seq))
-                    stats["unverified_count"] += 1
-                else:
-                    # 3회 연속 미조회: 정식 DELISTED 확정 및 is_public=0 비공개 안전 전환
-                    cursor.execute("""
-                        UPDATE vehicles SET 
-                            status = 'DELISTED', 
-                            is_public = 0, 
-                            updated_at = ?
-                        WHERE id = ?
-                    """, (now, v_id))
-                    cursor.execute("""
-                        UPDATE vehicle_listings SET 
-                            unverified_consecutive_count = ?,
-                            listing_status = 'DELISTED', 
-                            last_observed_at = ?,
-                            observation_notes = observation_notes || ' [3회 연속 미조회로 비공개 전환]'
-                        WHERE listing_id = ?
-                    """, (current_unverified, now, m_seq))
-                    stats["delisted_count"] += 1
-
-            # 4. 판매완료 확정 매물 처리 (sold_snapshot 명시 시)
-            if sold_snapshot:
-                sold_seqs = {str(s.get("carSeq") or "").strip() for s in sold_snapshot if s.get("carSeq")}
-                for s_seq in sold_seqs:
-                    if s_seq in existing_records:
-                        rec = existing_records[s_seq]
-                        if rec["vehicle_status"] != "SOLD":
-                            v_id = rec["vehicle_id"]
+                        if prev_data["vehicle_status"] == "AVAILABLE":
                             cursor.execute("""
-                                UPDATE vehicles SET status = 'SOLD', is_public = 0, updated_at = ?
+                                UPDATE vehicles 
+                                SET status = 'SOLD', is_public = 0, updated_at = ? 
                                 WHERE id = ?
                             """, (now, v_id))
-                            cursor.execute("""
-                                UPDATE vehicle_listings SET listing_status = 'SOLD', last_observed_at = ?
-                                WHERE listing_id = ?
-                            """, (now, s_seq))
-                            stats["sold_count"] += 1
+                        stats["sold_count"] += 1
+                        stats["delisted_count"] += 1
+                    else:
+                        # 1~2회 누락: UNVERIFIED 보류
+                        cursor.execute("""
+                            UPDATE vehicle_listings 
+                            SET unverified_consecutive_count = ? 
+                            WHERE listing_id = ?
+                        """, (consec_count, listing_id))
+                        stats["unverified_count"] += 1
 
             conn.commit()
 
         except Exception as e:
-            stats["status"] = f"ERROR: {str(e)}"
             conn.rollback()
+            stats["status"] = f"ERROR: {str(e)}"
 
-        finally:
-            finished_at = datetime.now().isoformat()
-            cursor.execute("""
-                INSERT INTO carmanager_sync_logs (
-                    id, scope, started_at, finished_at, total_inspected, new_inserted,
-                    price_changed, sold_count, unverified_count, delisted_count, unchanged_count,
-                    status, summary_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                stats["sync_id"], stats["scope"], stats["started_at"], finished_at,
-                stats["total_inspected"], stats["new_inserted"],
-                stats["price_changed"], stats["sold_count"],
-                stats["unverified_count"], stats["delisted_count"], stats["unchanged_count"],
-                stats["status"], json.dumps(stats, ensure_ascii=False)
-            ))
-            conn.commit()
-            conn.close()
+        finished_at = datetime.now().isoformat()
+        stats["finished_at"] = finished_at
+
+        # 4. 감사 로그 저장
+        cursor.execute("""
+            INSERT INTO carmanager_sync_logs (
+                id, scope, started_at, finished_at, total_inspected,
+                new_inserted, price_changed, sold_count, unverified_count,
+                delisted_count, unchanged_count, status, summary_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            stats["sync_id"], stats["scope"], stats["started_at"], stats["finished_at"],
+            stats["total_inspected"], stats["new_inserted"], stats["price_changed"],
+            stats["sold_count"], stats["unverified_count"], stats["delisted_count"],
+            stats["unchanged_count"], stats["status"], json.dumps(stats, ensure_ascii=False)
+        ))
+        conn.commit()
+        conn.close()
 
         return stats
