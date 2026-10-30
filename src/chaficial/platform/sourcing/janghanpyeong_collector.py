@@ -173,7 +173,8 @@ class JanghanpyeongCollector:
             "average_page_sec": round(total_duration / max(1, len(page_audit)), 2),
             "sample_first_car": all_cars[0] if all_cars else None,
             "sample_last_car": all_cars[-1] if all_cars else None,
-            "page_audit_sample": page_audit[:5] + page_audit[-5:]
+            "page_audit_sample": page_audit[:5] + page_audit[-5:],
+            "cars": all_cars
         }
 
         # 원본 데이터 저장
