@@ -5,6 +5,35 @@
 
 ---
 
+## [DIRECTIVE 112] 데이터 품질 최종 보완, 인증정보/사진 권한 보안 강화 및 60대 통제배치 완수
+- **일시:** 2026-10-30 23:15 KST
+- **지적된 결함 (P0):**
+  1. **ISSUE-29. 운영 DB 가격 미공개 처리 불일치**: `carmanager_sync.py`가 가격 미공개('상담')를 운영 DB `vehicles.target_price`에 다시 0으로 저장하여 시계열 DB와의 정합성 훼손.
+  2. **ISSUE-30. 원본 총건수 NULL 및 느슨한 2% 누락 허용**: `total_found`가 NULL인데도 `is_complete=True`로 승인된 결함.
+  3. **ISSUE-31. 저장소 내 하드코딩 인증정보**: `photo_expansion_pipeline.py`에 ID/PW 기본값이 코드에 잔존한 보안 결함.
+  4. **ISSUE-32. 사진 공개·이용권한 자동 승인**: 권한이 검증되지 않은 사진에 `AUTHORIZED`, `PUBLIC`, `APPROVED`, `allow_video_use=1` 자동 부여 결함.
+- **조치 및 구현:**
+  1. **TASK 1 (운영 DB 가격 미공개 완전 일원화)**:
+     - SQLite `vehicles.target_price` 및 `vehicle_listings.advertised_price` NOT NULL 제약 해제 마이그레이션 완료 (`migrate_operational_nullable_price.py`).
+     - 기존 운영 DB 내 '상담' 매물 1,590건의 가격을 0원에서 `NULL`로 안전 정정 완료.
+     - `carmanager_sync.py` 전면 개편: `price_manwon` None 보존 및 4대 전환 시나리오(상담->확정, 확정->상담, 가격잠금보호) 단위 테스트 100% 통과 (`test_directive_112_price_transition.py`).
+  2. **TASK 2 (카매니저 공식 total_found 정밀 파서 및 100% 일치 강제)**:
+     - 카매니저 DataPart 스크립트 내부 `$("#hdfCarRowCount").val('1764')` 정밀 추출 정규식 구축 (`total_found = 1764` 추출 검증 완료).
+     - 2% 누락 허용 규칙 전면 폐기, `total_found`가 NULL이거나 고유 수집 건수와 불일치 시 `is_complete = False` 강제 차단 로직 적용.
+  3. **TASK 3 (인증정보 제거 및 사진 권한 비공개 전수 격리)**:
+     - `photo_expansion_pipeline.py` 내 하드코딩 계정 제거 및 환경변수 필수화(미설정 시 `ValueError`).
+     - DB `vehicle_photos` 전수 감사: 외부 상사 사진 3,535장 전수를 `public_visibility = 'PRIVATE'`, `approval_status = 'PENDING_REVIEW'`, `allow_video_use = 0`, `usage_rights_status = 'PENDING_VERIFICATION'`으로 즉시 비공개 격리 완료.
+  4. **TASK 4 (B-5 60대 통제 배치 실행 및 증거 확보)**:
+     - 사진 미보유 60대 대상 통제 수집 배치 실행 (`run_directive_112_controlled_batch.py`).
+     - 실측 증거: 카매니저 원본 상세 팝업에서도 해당 60대는 사진이 0장인 '미등록 매물'임을 확인, 반면 확정 가격 매물(K5, XC40 등)은 28~34장의 고화질 사진 완비 대조 입증 (`verify_source_photo_reality.py`).
+     - 상세 증거 JSON 저장: `scratch/directive_112_photo_evidence.json`.
+- **검증 증거:**
+  - `scratch/test_directive_112_price_transition.py` (가격 전환 4대 테스트 통과)
+  - `scratch/directive_112_photo_evidence.json` (60대 통제 배치 증거)
+  - `data/chamart/chamart_platform_demo.db` (외부 사진 3,535장 비공개 격리 및 target_price NULL 정규화)
+
+---
+
 ## [DIRECTIVE 111 - 종합 최종 보고] 1,591건 0원 미스터리 완벽 규명(가격 미공개 '상담' 격리), 동기화 계층 정규화 100% 일원화, 라이브 전수 재수집 및 사진 고화질 자산화 완수
 - **일시:** 2026-10-30 23:00 KST
 - **지적된 핵심 결함 (1차 감사 피드백):**

@@ -1,0 +1,98 @@
+{
+  "directive": "DIRECTIVE 112 TASK 4",
+  "timestamp": "2026-10-30T23:10:11.177006",
+  "batch_size": 60,
+  "vehicles_with_photos": 0,
+  "vehicles_without_photos": 60,
+  "total_downloaded_photos": 0,
+  "total_highres_photos": 0,
+  "total_thumbnails": 0,
+  "corrupt_images": 0,
+  "unique_shas_count": 0,
+  "db_inserted_records": 0,
+  "initial_photod_vehicles": 194,
+  "final_photod_vehicles": 194,
+  "net_new_photod_vehicles": 0,
+  "initial_total_photos": 4380,
+  "final_total_photos": 4380,
+  "net_new_photos": 0,
+  "rights_status_summary": {
+    "usage_rights_status": "PENDING_VERIFICATION (100%)",
+    "public_visibility": "PRIVATE (100%)",
+    "approval_status": "PENDING_REVIEW (100%)",
+    "allow_video_use": "0 (100% Forbidden)"
+  },
+  "commercial_usable_photos": 0,
+  "batch_details_sample": [
+    {
+      "vehicle_id": "69b6e041-fb3f-4266-bc2d-4b115c88a093",
+      "listing_id": "114439510",
+      "model_name": "E-클래스 W213 E200 아방가르드",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    },
+    {
+      "vehicle_id": "68845045-5007-44a7-9155-707852200eef",
+      "listing_id": "114378601",
+      "model_name": "스타리아 4WD 디젤 라운지 인스퍼레이션 9인승",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    },
+    {
+      "vehicle_id": "7e935bfe-1826-4b6c-9d5b-e14848cbefa9",
+      "listing_id": "114367699",
+      "model_name": "G80 3.3 GDI AWD 프리미엄 럭셔리",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    },
+    {
+      "vehicle_id": "9892b616-685e-4094-9ab1-62be98a8ca84",
+      "listing_id": "114323535",
+      "model_name": "랭글러 (JL) 2.0 오버랜드 4도어 파워탑",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    },
+    {
+      "vehicle_id": "9febfff2-eba4-4c86-a43b-6265ba2981d8",
+      "listing_id": "114294771",
+      "model_name": "그랜드 스타렉스 밴 5인승 스마트",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    },
+    {
+      "vehicle_id": "880c8df6-977c-47dc-87ad-6f983340ad15",
+      "listing_id": "114247917",
+      "model_name": "더 뉴 그랜드 스타렉스 2WD 밴 3인승 스마트",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    },
+    {
+      "vehicle_id": "85edf808-d92d-444a-80c2-6d063ac131b9",
+      "listing_id": "114244615",
+      "model_name": "[카고]포터2 1.0톤/슈퍼캡/초장축/(CRDi) 스마트",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    },
+    {
+      "vehicle_id": "6c904333-bceb-438e-a250-6dcc41d81729",
+      "listing_id": "114208783",
+      "model_name": "카이엔(PO536) 3.0 쿠페",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    },
+    {
+      "vehicle_id": "4e6e2a17-e787-464d-a68e-6bed273cce13",
+      "listing_id": "114196866",
+      "model_name": "레인지로버 이보크 2.0 TD4 SE",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    },
+    {
+      "vehicle_id": "044a1da4-ed68-4cbe-a3e4-51393ce5077e",
+      "listing_id": "113974666",
+      "model_name": "쿠퍼 S 클럽맨 JCW",
+      "photos_found": 0,
+      "status": "NO_PHOTOS_ON_SOURCE"
+    }
+  ]
+}

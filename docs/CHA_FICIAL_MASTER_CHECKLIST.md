@@ -40,7 +40,10 @@
 | **ISSUE-25** | run_daily_sync.py의 CarManagerSyncService 생성 시 dry_run 누락 결함 | 심각 | 🟢 해결완료 | `run_daily_sync.py` (CarManagerSyncService(dry_run=dry_run) 전달로 DDL 차단) |
 | **ISSUE-26** | 1,591건(90.2%) 가격 0원 왜곡 현상 (카매니저 '상담' 매물 오파싱) | 심각 | 🟢 해결완료 | `janghanpyeong_collector.py` (<b class="uc_caramount">상담</b> 보존 및 normalizer price_manwon=None 안전 격리) |
 | **ISSUE-27** | carmanager_sync.py의 자체 파서 사용으로 인한 정규화 계층 파편화 위험 | 높음 | 🟢 해결완료 | `carmanager_sync.py` (`normalizer.py` 완전 직결 일원화) |
-| **ISSUE-28** | vehicle_photos에 UI 배경 이미지(img_bgb) 오삽입 위험 | 높음 | 🟢 해결완료 | `photo_expansion_pipeline.py` (순수 고화질 실사진 URL 정밀 필터링 및 420건 오삽입 전수 청소) |
+| **ISSUE-29** | 운영 DB(vehicles) 가격 미공개 처리 불일치 (target_price NOT NULL 제약으로 인한 0원 왜곡) | 심각 | 🟢 해결완료 | `migrate_operational_nullable_price.py` (target_price NULL 허용 마이그레이션 및 1,590건 NULL 정정 완료) |
+| **ISSUE-30** | 원본 총건수 NULL인데 완전 수집(is_complete=True) 승인 및 2% 누락 허용 결함 | 높음 | 🟢 해결완료 | `janghanpyeong_collector.py` (카매니저 스크립트 #hdfCarRowCount 1,764건 정밀 추출 및 100% 일치 강제) |
+| **ISSUE-31** | photo_expansion_pipeline.py 내 하드코딩 인증정보 잔존 결함 | 심각 | 🟢 해결완료 | `photo_expansion_pipeline.py` (환경변수 필수화 및 하드코딩 원천 제거) |
+| **ISSUE-32** | 검증되지 않은 사진에 AUTHORIZED, PUBLIC, APPROVED 자동 부여 결함 | 심각 | 🟢 해결완료 | 외부 상사 사진 3,535장 전수 PRIVATE/PENDING_REVIEW 격리 및 수집기 기본값 비공개 전환 |
 
 ---
 

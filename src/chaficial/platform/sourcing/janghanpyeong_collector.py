@@ -125,6 +125,9 @@ class JanghanpyeongCollector:
                         headers=req_headers
                     )
                     html = await resp.text()
+                    if page_no == 1:
+                        with open("scratch/datapart_page1_live.html", "w", encoding="utf-8") as f:
+                            f.write(html)
                 except Exception as ex:
                     print(f"[-] Page {page_no} request failed: {ex}. Retrying...", flush=True)
                     await asyncio.sleep(1.0)
@@ -147,15 +150,20 @@ class JanghanpyeongCollector:
                 if m_enc:
                     enc_check = m_enc.group(1)
 
-                # 1페이지에서 총 매물 건수 파싱하여 max_pages 동적 계산
+                # 1페이지에서 총 매물 건수 파싱하여 max_pages 동적 계산 (DIRECTIVE 112 P0 정밀 파서)
                 if page_no == 1:
-                    m_total = re.search(r'총\s*([0-9,]+)\s*대', html)
+                    m_total = (
+                        re.search(r'#hdfCarRowCount["\']?\)\.val\([\'"](\d+)[\'"]\)', html) or
+                        re.search(r'reLoadPage\([\'"](\d+)[\'"]', html) or
+                        re.search(r'#ui_totalcount["\']?\)\.html\(remakeNumber\([\'"](\d+)[\'"]\)\)', html) or
+                        re.search(r'총\s*([0-9,]+)\s*대', html)
+                    )
                     if m_total:
                         total_cnt = int(m_total.group(1).replace(",", ""))
                         total_found_cars = total_cnt
                         dynamic_pages = (total_cnt + 19) // 20
+                        print(f"[+] Total verified cars from CarManager: {total_cnt} cars -> Dynamic max_pages: {dynamic_pages}")
                         if dynamic_pages > max_pages:
-                            print(f"[+] Dynamically expanding max_pages from {max_pages} to {dynamic_pages} (Total: {total_cnt} cars)")
                             max_pages = dynamic_pages
 
                 cars_in_page = self.parse_datapart_html(html, page_no)
@@ -192,19 +200,16 @@ class JanghanpyeongCollector:
 
         total_duration = time.time() - start_time
 
-        # [DIRECTIVE 111 TASK 4: 완전 수집 판정 기준 강화]
-        # 1. 실패 페이지 0건
-        # 2. 마지막 페이지 도달 (page_no > max_pages)
-        # 3. 원본 총건수(total_found_cars)와 고유 수집 차량 수(len(all_cars))의 오차가 2% 이내
-        # 4. 최소 1,500대 이상
-        count_matches = False
-        if total_found_cars is not None and total_found_cars > 0:
-            count_diff = abs(total_found_cars - len(all_cars))
-            count_matches = (count_diff / total_found_cars) <= 0.02
-        else:
-            count_matches = len(all_cars) >= 1500
-
-        is_complete = (len(failed_pages) == 0 and page_no > max_pages and len(all_cars) >= 1500 and count_matches)
+        # [DIRECTIVE 112 TASK 2: 카매니저 완전 수집 판정 기준 엄격화]
+        # 1. 원본 총건수(total_found_cars)가 반드시 유효한 정수(>= 1500)로 확인되어야 함 (NULL 불허)
+        # 2. 실패 페이지 0건 (len(failed_pages) == 0)
+        # 3. 마지막 페이지까지 전수 쿼리 완료 (page_no > max_pages)
+        # 4. 수집된 고유 차량 수(len(all_cars))가 원본 총건수(total_found_cars)와 100% 일치해야 함 (임의 2% 누락 허용 폐기)
+        is_complete = False
+        if total_found_cars is not None and total_found_cars >= 1500:
+            if len(failed_pages) == 0 and page_no > max_pages:
+                if len(all_cars) == total_found_cars:
+                    is_complete = True
 
         summary = {
             "total_found": total_found_cars,

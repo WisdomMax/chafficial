@@ -50,8 +50,10 @@ def verify_image_bytes(b: bytes):
 class PhotoExpansionPipeline:
     def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db"):
         self.db_path = db_path
-        self.username = os.getenv("CAR_MANAGER_ID") or os.getenv("CARMANAGER_ID", "k5673")
-        self.password = os.getenv("CAR_MANAGER_PW") or os.getenv("CARMANAGER_PW", "k56735673*")
+        self.username = os.getenv("CAR_MANAGER_ID") or os.getenv("CARMANAGER_ID")
+        self.password = os.getenv("CAR_MANAGER_PW") or os.getenv("CARMANAGER_PW")
+        if not self.username or not self.password:
+            raise ValueError("CAR_MANAGER_ID and CAR_MANAGER_PW must be provided via environment variables. Hardcoding credentials is strictly prohibited.")
 
     def load_checkpoint(self) -> Dict[str, Any]:
         if CHECKPOINT_FILE.exists():
@@ -189,11 +191,12 @@ class PhotoExpansionPipeline:
                         p_id = str(uuid.uuid4())
                         mime = "image/png" if ".png" in url.lower() else "image/jpeg"
                         cat = "EXTERIOR" if p_idx <= 4 else "INTERIOR"
+                        # DIRECTIVE 112 P0 보안 강화: 미확인 사진은 기본값 비공개/미승인/영상불허로 엄격 격리
                         car_photo_records.append((
                             p_id, vehicle_id, url, url, cat,
-                            p_idx, (1 if p_idx == 1 else 0), 1, f"카매니저 고화질 실사진 #{p_idx}",
-                            datetime.now().isoformat(), "VERIFIED", "CARMANAGER", sha,
-                            "AUTHORIZED", str(target_file), "PUBLIC", "APPROVED",
+                            p_idx, (1 if p_idx == 1 else 0), 0, f"카매니저 실사진 #{p_idx}",
+                            datetime.now().isoformat(), "UNVERIFIED", "CARMANAGER", sha,
+                            "PENDING_VERIFICATION", str(target_file), "PRIVATE", "PENDING_REVIEW",
                             mime, len(b)
                         ))
 

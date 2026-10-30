@@ -215,8 +215,8 @@ class CarManagerSyncService:
                 plate_number, plate_tail = parse_plate_info(raw_plate, raw_tail)
                 db_plate_number = plate_number if plate_number else "UNVERIFIED"
                 
-                # 순수 만원 단위 가격 (정규화 계층 해석 결과 활용, 미공개/상담 시 0 및 상태 보존)
-                price_manwon = norm["price_manwon"] if norm["price_manwon"] is not None else 0
+                # 순수 만원 단위 가격 (정규화 계층 결과 보존: 확정가격은 int, 미공개/상담 시 None)
+                price_manwon = norm["price_manwon"]
                 is_unannounced = (norm["price_manwon"] is None)
 
                 # 제목 및 제원
@@ -292,8 +292,9 @@ class CarManagerSyncService:
                     prev_price = prev["target_price"]
                     is_price_locked = prev["is_price_locked"]
 
-                    # 가격 변경 감지 (순수 만원 단위 비교)
-                    if price_manwon > 0 and price_manwon != prev_price:
+                    # 가격 변경 감지 (NULL 및 정수 만원 단위 완전 대응: 상담 <-> 확정가격 전환 감지)
+                    price_has_changed = (prev_price != price_manwon)
+                    if price_has_changed:
                         if is_price_locked:
                             # 가격 잠금 차량 보호
                             if not is_dry:
