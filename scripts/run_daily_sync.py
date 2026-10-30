@@ -90,28 +90,37 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
         print("[!] Aborting database writes completely to protect owned inventory.", file=sys.stderr)
         sys.exit(1)
 
-    # 3. 우리 상사 동기화 (최소 60대 기대)
+    # [DIRECTIVE 110-R TASK 2: 시계열 관측 저장을 운영 DB 변경보다 반드시 먼저 선행]
+    # 3. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록 (선행)
+    ts_engine = MarketTimeSeriesEngine(db_path="data/chamart/chamart_platform_demo.db", dry_run=dry_run)
+    ts_res = ts_engine.record_snapshot(all_cars, dry_run=dry_run)
+    print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
+
+    # 시계열 저장이 성공하지 않았으면 운영 차량 가격/상태 변경을 절대 시작하지 않음
+    if "SUCCESS" not in ts_res.get("status", ""):
+        print(f"[!] CRITICAL GUARD: Market TimeSeries failed with status '{ts_res.get('status')}'. Aborting operational database sync.", file=sys.stderr)
+        sys.exit(1)
+
+    # 4. 우리 상사 운영 동기화 (시계열 성공 확인 후 실행)
     owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_THRESHOLD, dry_run=dry_run)
     print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
     if "ERROR" in owned_res["status"]:
         print(f"[!] Owned Sync Error: {owned_res['status']}", file=sys.stderr)
         sys.exit(1)
 
-    # 4. 장한평 시장 동기화 (최소 1,500대 기대)
+    # 5. 장한평 시장 운영 동기화
     market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_THRESHOLD, dry_run=dry_run)
     print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, New={market_res['new_inserted']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
     if "ERROR" in market_res["status"]:
         print(f"[!] Market Sync Error: {market_res['status']}", file=sys.stderr)
         sys.exit(1)
 
-    # 5. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록
-    ts_engine = MarketTimeSeriesEngine()
-    ts_res = ts_engine.record_snapshot(all_cars, dry_run=dry_run)
-    print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
-
-    # 타임스탬프 스냅샷 아카이빙
-    today_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    archive_path = SNAPSHOT_DIR / f"snapshot_{today_str}.json"
+    # 타임스탬프 스냅샷 아카이빙 (dry_run 시에는 dry_run 임시 파일로 분리)
+    if dry_run:
+        archive_path = SNAPSHOT_DIR / "dry_run_test_snapshot.json"
+    else:
+        today_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        archive_path = SNAPSHOT_DIR / f"snapshot_{today_str}.json"
     with open(archive_path, "w", encoding="utf-8") as f:
         json.dump({
             "timestamp": datetime.now().isoformat(),

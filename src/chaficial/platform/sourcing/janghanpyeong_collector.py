@@ -83,6 +83,8 @@ class JanghanpyeongCollector:
             all_cars = []
             seen_car_keys = set()
             page_audit = []
+            failed_pages = []
+            total_found_cars = None
             
             api_request = context.request
 
@@ -115,6 +117,7 @@ class JanghanpyeongCollector:
                     "Referer": "https://www.carmanager.co.kr/Car/Data"
                 }
 
+                html = ""
                 try:
                     resp = await api_request.post(
                         "https://www.carmanager.co.kr/Car/DataPart",
@@ -125,12 +128,20 @@ class JanghanpyeongCollector:
                 except Exception as ex:
                     print(f"[-] Page {page_no} request failed: {ex}. Retrying...", flush=True)
                     await asyncio.sleep(1.0)
-                    resp = await api_request.post(
-                        "https://www.carmanager.co.kr/Car/DataPart",
-                        data=json.dumps(payload),
-                        headers=req_headers
-                    )
-                    html = await resp.text()
+                    try:
+                        resp = await api_request.post(
+                            "https://www.carmanager.co.kr/Car/DataPart",
+                            data=json.dumps(payload),
+                            headers=req_headers
+                        )
+                        html = await resp.text()
+                    except Exception as retry_ex:
+                        print(f"[!] Page {page_no} retry failed: {retry_ex}", flush=True)
+                        failed_pages.append(page_no)
+
+                if not html:
+                    if page_no not in failed_pages:
+                        failed_pages.append(page_no)
 
                 m_enc = re.search(r'EncCheck["\']?\s*val\([\'"]([^\'"]+)[\'"]\)', html)
                 if m_enc:
@@ -141,6 +152,7 @@ class JanghanpyeongCollector:
                     m_total = re.search(r'총\s*([0-9,]+)\s*대', html)
                     if m_total:
                         total_cnt = int(m_total.group(1).replace(",", ""))
+                        total_found_cars = total_cnt
                         dynamic_pages = (total_cnt + 19) // 20
                         if dynamic_pages > max_pages:
                             print(f"[+] Dynamically expanding max_pages from {max_pages} to {dynamic_pages} (Total: {total_cnt} cars)")
@@ -179,8 +191,13 @@ class JanghanpyeongCollector:
             await browser.close()
 
         total_duration = time.time() - start_time
+        is_complete = (len(failed_pages) == 0 and page_no > max_pages and len(all_cars) > 0)
         summary = {
+            "total_found": total_found_cars,
+            "max_pages": max_pages,
             "total_pages_queried": len(page_audit),
+            "failed_pages": failed_pages,
+            "is_complete": is_complete,
             "total_cars_collected": len(all_cars),
             "total_unique_keys": len(seen_car_keys),
             "total_duration_sec": round(total_duration, 2),
@@ -191,7 +208,7 @@ class JanghanpyeongCollector:
             "cars": all_cars
         }
 
-        # 원자적 임시 저장 및 1,500대 검증 후 덮어쓰기
+        # 원자적 임시 저장 및 완전성 검증(실패 페이지 0 & 1,500대 이상) 후 덮어쓰기
         tmp_out = self.raw_dir / "janghanpyeong_full_collection.tmp.json"
         with open(tmp_out, "w", encoding="utf-8") as f:
             json.dump({
@@ -201,12 +218,12 @@ class JanghanpyeongCollector:
             }, f, ensure_ascii=False, indent=2)
 
         out_file = self.raw_dir / "janghanpyeong_full_collection.json"
-        if len(all_cars) >= 1500:
+        if len(all_cars) >= 1500 and len(failed_pages) == 0:
             import shutil
             shutil.move(str(tmp_out), str(out_file))
             print(f"[+] Full collection completed! Total {len(all_cars)} cars atomically updated to {out_file}")
         else:
-            print(f"[!] Harvest count ({len(all_cars)}) is below 1,500. Existing verified snapshot preserved safely at {out_file}.")
+            print(f"[!] Harvest incomplete or below 1,500 (count={len(all_cars)}, failed_pages={failed_pages}). Existing verified snapshot preserved safely at {out_file}.")
         print(f"    Elapsed: {total_duration:.2f}s, Avg per page: {summary['average_page_sec']}s")
         return summary
 

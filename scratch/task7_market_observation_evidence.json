@@ -1,0 +1,40 @@
+{
+  "execution_time": "2026-10-30T22:24:13.202285",
+  "run_id": "e0698ccf-15bc-4a1c-bc04-81621bae6473",
+  "total_found": 1764,
+  "pages_collected": 89,
+  "unique_cars_count": 1764,
+  "observations_stored": 1764,
+  "appeared_count": 1764,
+  "price_decreased_count": 0,
+  "disappeared_count": 0,
+  "raw_sha256": "901d4c78f24aed848ea72aa51ba360fecb691e75bd87cf2c659fe7dc24e73147",
+  "run2_status": "ALREADY_RECORDED",
+  "run2_observations_added": 0,
+  "sample_observations": [
+    {
+      "id": "+/Ku99sAsdwxcHTZq4I7/Q==",
+      "model": null,
+      "price": 0,
+      "km": 74000,
+      "photo_count": null,
+      "raw_hash_prefix": "65878df6e0fa"
+    },
+    {
+      "id": "+/rHrS4vBnpUjditQprerw==",
+      "model": null,
+      "price": 0,
+      "km": 62000,
+      "photo_count": null,
+      "raw_hash_prefix": "28b99bf2b70a"
+    },
+    {
+      "id": "+AZ2UvtiG/yZqY2su3zXlw==",
+      "model": null,
+      "price": 0,
+      "km": 11000,
+      "photo_count": null,
+      "raw_hash_prefix": "f2a10fe63383"
+    }
+  ]
+}

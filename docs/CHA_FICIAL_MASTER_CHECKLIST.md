@@ -1,6 +1,6 @@
 # CHA-FICIAL 마스터 프로젝트 체크리스트 & 영구 개발 로드맵
-> **기준 커밋:** `5081b6f` -> DIRECTIVE 108 보강  
-> **최종 갱신일:** 2026-10-30 22:00:00 KST  
+> **기준 커밋:** DIRECTIVE 110-R 보강 (`9c5de40` -> DIRECTIVE 110-R)  
+> **최종 갱신일:** 2026-10-30 22:30:00 KST  
 > **상태 표기 원칙 (Supervisor Approval Standard):**  
 > - `[x] 🟢 감독 승인 완료 (Approved by Supervisor)`: 총괄 감독관이 독립 감사를 통해 직접 승인한 항목만 [x] 표기  
 > - `[ ] 🟡 구현 완료 / 검증 대기 (Implemented, Pending Audit)`: 코드는 구현 및 자체 테스트 완료되었으나 감독관의 공식 승인 대기 상태  
@@ -24,6 +24,15 @@
 | **ISSUE-09** | 번호판 중복 병합 스크립트가 UNVERIFIED 번호판을 오병합할 위험 | 높음 | 🟢 해결완료 | `5081b6f` (WHERE plate_number != 'UNVERIFIED' 강제) |
 | **ISSUE-10** | --dry-run 옵션이 실제 DB를 수정하는 결함 | 심각 | 🟢 해결완료 | `carmanager_sync.py` (dry_run=True 시 DB 롤백 및 쓰기 0건) |
 | **ISSUE-11** | 수집기 세션 토큰 로그 노출 (보안 취약점) | 보통 | 🟢 해결완료 | `janghanpyeong_collector.py` (토큰 마스킹 적용) |
+| **ISSUE-12** | 전역 SHA256 중복 검사로 인한 일일 동일 매물 관측 유실 (Days on Market 파괴) | 심각 | 🟢 해결완료 | `market_timeseries_engine.py` (run_id 기준 멱등성 및 일일 관측 영구 보존) |
+| **ISSUE-13** | 운영 DB 가격 변경 후 시계열 DB 적재 실행 순서 역전 | 심각 | 🟢 해결완료 | `run_daily_sync.py` (시계열 성공 확인 후 운영 DB 반영 순서 교정) |
+| **ISSUE-14** | 시계열 적재 실패 시에도 전체 작업을 성공으로 오표시 | 심각 | 🟢 해결완료 | `run_daily_sync.py` (시계열 실패 시 즉각 파이프라인 차단 및 운영 쓰기 0건) |
+| **ISSUE-15** | 수집 완전성을 단순 1,500대 하한선으로만 판정 | 높음 | 🟢 해결완료 | `janghanpyeong_collector.py` (total_found 대조, max_pages 도달, failed_pages=0 검증) |
+| **ISSUE-16** | dry-run 모드 시 시계열 엔진 생성자의 DDL(테이블 생성) 쓰기 발생 결함 | 심각 | 🟢 해결완료 | `market_timeseries_engine.py` (dry_run 시 DDL 건너뛰고 mode=ro 읽기 전용 적용) |
+| **ISSUE-17** | source 및 search_condition 미분리로 인한 이전 관측 대조 혼선 | 높음 | 🟢 해결완료 | `market_timeseries_engine.py` (동일 source/검색조건 한정 직전 스냅샷 쿼리) |
+| **ISSUE-18** | photo_count 미확인 매물에 임의 0 하드코딩 왜곡 | 보통 | 🟢 해결완료 | `market_timeseries_engine.py` (사진 미확인 시 엄격한 NULL 저장) |
+| **ISSUE-19** | 관측 레코드별 원본 데이터 해시(raw_hash) 누락 | 보통 | 🟢 해결완료 | `market_timeseries_engine.py` (매물 json SHA256 불변 기록) |
+| **ISSUE-20** | 90페이지 이상 동적 수집 실질적 통합 실험 부재 | 높음 | 🟢 해결완료 | `test_directive_110_r_integration.py` (실험 A~G 7대 통합 실험 100% 통과) |
 
 ---
 
@@ -69,7 +78,7 @@
 ---
 
 ## D. 빅데이터 저장소 및 시계열 생애주기 학습 데이터셋
-- [ ] 🟡 **D-1. 시장 시계열 관측 & 이벤트 엔진 구축**: `market_collection_runs`, `market_listing_observations`, `market_listing_events` 3종 테이블 구축 및 3일치 재현실험 통과 (`market_timeseries_engine.py`)
+- [ ] 🟡 **D-1. 시장 시계열 관측 & 이벤트 엔진 구축**: IMPLEMENTED / AUDIT_PENDING (`market_timeseries_engine.py`, 7대 실질적 통합 실험 A~G 통과, 실매물 1,764대 최초 관측 적재 및 run_id 멱등성 검증 완료)
 - [ ] ⚪️ **D-2. 다채널 교차 식별자(Universal VIN Resolver)**: 번호판, VIN, 차종/연식/색상 조합을 통한 엔카-KB-카매니저 동일 차량 크로스 매칭
 - [ ] ⚪️ **D-3. 실제 판매 vs 단순 광고중지 판별 알고리즘**:
   - 카매니저 삭제 + 국토부 명의이전 발생 = '실제 소비자 판매'

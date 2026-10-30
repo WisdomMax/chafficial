@@ -1,29 +1,38 @@
 """
-Market Time-Series Observation & Event Engine (CHA-FICIAL DIRECTIVE 109 P0)
-- Stores immutable daily listing observations (Runs, Observations, Events).
-- Preserves complete price change history, days on market (DOM), and delisting transitions.
-- Fully decoupled from primary vehicles table: zero risk of operational data corruption.
-- Strict Integer Manwon standard: raw and normalized prices tracked distinctly.
+Market Time-Series & Daily Observation Memory Engine (DIRECTIVE 110-R Standards)
+- Daily Observation Memory: Preserves daily observations indefinitely (Never drops observations even if market is unchanged).
+- Run-level Idempotency: Duplicate runs with identical run_id return ALREADY_RECORDED with 0 rows inserted.
+- Strict Scope Isolation: Prior runs queried strictly within identical (source, search_condition) scope.
+- Zero Fake Values: photo_count stored as exact integer if present, else NULL (no fake 0 defaults).
+- Complete Auditability: Records exact raw_hash per vehicle, total_found, pages_collected, and unique_cars_count.
+- Absolute Dry-Run Safety: In dry-run mode, zero DDL execution (no table creation) and read-only DB connection (mode=ro).
 """
 
 import sqlite3
 import json
 import uuid
 import hashlib
+import re
+import os
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
+
+from chaficial.platform.sourcing.carmanager_sync import parse_price_manwon, parse_mileage_km
 
 
 class MarketTimeSeriesEngine:
-    def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db"):
+    def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db", dry_run: bool = False):
         self.db_path = db_path
-        self._ensure_tables()
+        self.dry_run = dry_run
+        # [DIRECTIVE 110-R TASK 5] dry-run 시 무조건적인 DDL 스키마 생성 차단 (순수 읽기 전용 보장)
+        if not dry_run:
+            self._ensure_tables()
 
     def _ensure_tables(self):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
 
-        # A. Collection Runs
+        # A. Collection Runs (수집 실행 이력 메타데이터)
         c.execute("""
             CREATE TABLE IF NOT EXISTS market_collection_runs (
                 run_id VARCHAR(36) PRIMARY KEY,
@@ -39,7 +48,7 @@ class MarketTimeSeriesEngine:
             )
         """)
 
-        # B. Listing Observations (일일 시계열 스냅샷)
+        # B. Listing Observations (일일 시계열 스냅샷 - 불변 관측 기록)
         c.execute("""
             CREATE TABLE IF NOT EXISTS market_listing_observations (
                 id VARCHAR(36) PRIMARY KEY,
@@ -56,14 +65,15 @@ class MarketTimeSeriesEngine:
                 shop_name VARCHAR(50),
                 region VARCHAR(50),
                 listing_status VARCHAR(20) NOT NULL,
-                photo_count INTEGER NOT NULL DEFAULT 0,
+                photo_count INTEGER,
                 raw_hash VARCHAR(64),
                 FOREIGN KEY (run_id) REFERENCES market_collection_runs(run_id)
             )
         """)
         c.execute("CREATE INDEX IF NOT EXISTS idx_obs_encarno_date ON market_listing_observations(encarno, observed_at)")
+        c.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_obs_run_encarno ON market_listing_observations(run_id, encarno)")
 
-        # C. Listing Events (스냅샷 간 시계열 이벤트)
+        # C. Listing Events (스냅샷 간 시계열 상태/가격 변동 이벤트)
         c.execute("""
             CREATE TABLE IF NOT EXISTS market_listing_events (
                 event_id VARCHAR(36) PRIMARY KEY,
@@ -89,30 +99,42 @@ class MarketTimeSeriesEngine:
         finished_at: Optional[str] = None,
         source: str = "CARMANAGER",
         search_condition: str = "장안평/성동구(1104,1105,1230)",
+        total_found: Optional[int] = None,
         pages_collected: int = 89,
+        run_id: Optional[str] = None,
         dry_run: bool = False
     ) -> Dict[str, Any]:
         """
-        새로운 스냅샷을 시계열 관측 테이블에 적재하고, 이전 최근 스냅샷과 비교하여 이벤트를 산출한다.
+        새로운 스냅샷을 시계열 관측 테이블에 적재하고, 직전 동일 스코프 스냅샷과 비교하여 이벤트를 산출한다.
+        - TASK 1: run_id 기준 재실행 멱등성 보장 (동일 run_id 중복 적재 0건)
+        - TASK 1: 다음 날 동일 매물/가격 관측 영구 보존 (Days on Market 보존)
+        - TASK 4: 동일 source + search_condition 범위에서만 직전 스냅샷 비교
+        - TASK 4: 원본 레코드 해시(raw_hash) 및 실제 사진수(photo_count, 없으면 NULL) 기록
+        - TASK 5: dry_run 시 순수 읽기 전용(mode=ro) 및 쓰기 0건 보장
         """
-        run_id = str(uuid.uuid4())
+        effective_dry_run = dry_run or self.dry_run
+        run_id = run_id or str(uuid.uuid4())
         raw_json_str = json.dumps(snapshot_cars, ensure_ascii=False)
         raw_sha256 = hashlib.sha256(raw_json_str.encode("utf-8")).hexdigest()
-        # 전달받은 시계열 관측 시각 사용 (과거/가상 시점 재생 지원)
+        
         obs_time = started_at or finished_at or datetime.now().isoformat()
         started_at = started_at or obs_time
         finished_at = finished_at or obs_time
 
-        conn = sqlite3.connect(self.db_path)
+        if effective_dry_run:
+            abs_path = os.path.abspath(self.db_path)
+            conn = sqlite3.connect(f"file:{abs_path}?mode=ro", uri=True)
+        else:
+            conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
 
-        # [TASK: 동일 스냅샷 재실행 멱등성 검증 - SHA256 중복 적재 원천 차단]
-        c.execute("SELECT run_id FROM market_collection_runs WHERE raw_sha256 = ? AND status = 'SUCCESS'", (raw_sha256,))
+        # [TASK 1: run_id 기준 재실행 멱등성 검증 - 동일 run_id 중복 적재 원천 차단]
+        c.execute("SELECT run_id FROM market_collection_runs WHERE run_id = ? AND status = 'SUCCESS'", (run_id,))
         existing_run = c.fetchone()
         if existing_run:
             conn.close()
             return {
-                "run_id": existing_run[0],
+                "run_id": run_id,
                 "status": "ALREADY_RECORDED",
                 "observations_count": 0,
                 "events_count": 0,
@@ -120,11 +142,15 @@ class MarketTimeSeriesEngine:
                 "price_decreased_count": 0,
                 "price_increased_count": 0,
                 "disappeared_count": 0,
-                "message": "Identical snapshot already recorded. Skipping duplicate ingestion."
+                "message": f"Execution run_id {run_id} already recorded. Duplicate run skipped."
             }
 
-        # 직전 최신 run_id 조회
-        c.execute("SELECT run_id FROM market_collection_runs WHERE status = 'SUCCESS' ORDER BY finished_at DESC LIMIT 1")
+        # [TASK 4: 동일 source 및 search_condition 범위 내 최신 run_id 조회]
+        c.execute("""
+            SELECT run_id FROM market_collection_runs 
+            WHERE source = ? AND search_condition = ? AND status = 'SUCCESS' AND run_id != ?
+            ORDER BY finished_at DESC LIMIT 1
+        """, (source, search_condition, run_id))
         last_run_row = c.fetchone()
         last_run_id = last_run_row[0] if last_run_row else None
 
@@ -144,51 +170,61 @@ class MarketTimeSeriesEngine:
                     "mileage_km": r[4]
                 }
 
-        events_generated = []
         observations_to_insert = []
+        events_generated = []
         current_encarnos = set()
 
         for car in snapshot_cars:
-            encarno = str(car.get("encarno") or car.get("carSeq") or "").strip()
+            encarno = car.get("encarno") or car.get("car_seq") or car.get("listing_id")
             if not encarno:
+                continue
+
+            # 중복 encarno 방어
+            if encarno in current_encarnos:
                 continue
             current_encarnos.add(encarno)
 
-            # 가격 정규화
-            raw_p = car.get("price_manwon") or car.get("price") or 0
-            if isinstance(raw_p, str):
-                p_digits = "".join(filter(str.isdigit, raw_p))
-                p_val = int(p_digits) if p_digits else 0
-            else:
-                p_val = int(raw_p)
-            price_manwon = p_val // 10000 if p_val >= 100000 else p_val
+            # 가격 정규화 (순수 만원 단위)
+            raw_p = car.get("price")
+            price_manwon = parse_price_manwon(raw_p)
 
-            raw_km = car.get("mileage") or car.get("km")
-            km_val = None
-            if raw_km:
-                s_km = str(raw_km).replace(",", "")
-                import re
-                m_man = re.search(r"(\d+(?:\.\d+)?)\s*만", s_km)
-                if m_man:
-                    km_val = int(float(m_man.group(1)) * 10000)
-                else:
-                    nums = "".join(filter(str.isdigit, s_km))
-                    if nums: km_val = int(nums)
+            # 주행거리 정규화 (5.5만 km -> 55000)
+            km_val = parse_mileage_km(car.get("km") or car.get("mileage"))
 
-            model_name = car.get("clean_title") or car.get("model") or car.get("title") or "미확인차종"
-            shop_name = car.get("shop") or car.get("sangsa_name") or ""
-            fuel = car.get("fuel") or ""
-            mission = car.get("mission") or ""
-            model_year = int(str(car.get("model_year") or car.get("year") or 0)[:4]) if (car.get("model_year") or car.get("year")) else None
+            # 연식 정규화
+            model_year = None
+            caryear_str = str(car.get("caryear", ""))
+            m = re.search(r"(\d{4})", caryear_str)
+            if m:
+                model_year = int(m.group(1))
+
+            model_name = car.get("carname") or car.get("model_name")
+            fuel = car.get("fuel") or car.get("fuel_type")
+            mission = car.get("mission") or car.get("transmission")
+            shop_name = car.get("shopname") or car.get("dealer_shop")
+
+            # [TASK 4: photo_count 및 raw_hash 정밀 산출]
+            # 사진 수가 명시된 경우만 정수 기록, 없으면 NULL (임의 0 기본값 제거)
+            photo_count = None
+            if "photos" in car and isinstance(car["photos"], list):
+                photo_count = len(car["photos"])
+            elif "photo_count" in car and car["photo_count"] is not None:
+                try:
+                    photo_count = int(car["photo_count"])
+                except (ValueError, TypeError):
+                    photo_count = None
+
+            # 원본 레코드 해시
+            raw_car_hash = hashlib.sha256(json.dumps(car, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
 
             obs_id = str(uuid.uuid4())
             observations_to_insert.append((
                 obs_id, run_id, encarno, obs_time, str(raw_p), price_manwon,
                 km_val, model_year, model_name, fuel, mission,
-                shop_name, "장안평", "ACTIVE", 0, ""
+                shop_name, "장안평", "ACTIVE", photo_count, raw_car_hash
             ))
 
-            # 이벤트 비교 (이전 스냅샷 대조)
+            # 시계열 이벤트 생성
             if encarno not in prev_obs:
                 events_generated.append((
                     str(uuid.uuid4()), run_id, encarno, "APPEARED",
@@ -196,7 +232,7 @@ class MarketTimeSeriesEngine:
                 ))
             else:
                 p_prev = prev_obs[encarno]["price_manwon"]
-                if price_manwon > 0 and p_prev > 0 and price_manwon != p_prev:
+                if price_manwon != p_prev:
                     if price_manwon < p_prev:
                         events_generated.append((
                             str(uuid.uuid4()), run_id, encarno, "PRICE_DECREASED",
@@ -216,7 +252,9 @@ class MarketTimeSeriesEngine:
                     p_data["status"], "DISAPPEARED", obs_time, "목록에서 미관측 (광고중지/판매/이동 검토 대상)"
                 ))
 
-        if not dry_run:
+        actual_total_found = total_found if total_found is not None else len(current_encarnos)
+
+        if not effective_dry_run:
             # A. Collection Run 저장
             c.execute("""
                 INSERT INTO market_collection_runs (
@@ -225,7 +263,7 @@ class MarketTimeSeriesEngine:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'SUCCESS')
             """, (
                 run_id, started_at, finished_at, source, search_condition,
-                len(current_encarnos), pages_collected, len(current_encarnos), raw_sha256
+                actual_total_found, pages_collected, len(current_encarnos), raw_sha256
             ))
 
             # B. Observations 배치 저장
@@ -245,20 +283,21 @@ class MarketTimeSeriesEngine:
             """, events_generated)
 
             conn.commit()
-        else:
-            conn.rollback()
 
         conn.close()
 
         summary = {
             "run_id": run_id,
-            "status": "SUCCESS" if not dry_run else "DRY_RUN_SUCCESS",
+            "status": "SUCCESS" if not effective_dry_run else "DRY_RUN_SUCCESS",
+            "total_found": actual_total_found,
+            "unique_cars_count": len(current_encarnos),
             "observations_count": len(observations_to_insert),
             "events_count": len(events_generated),
             "appeared_count": sum(1 for e in events_generated if e[3] == "APPEARED"),
             "price_decreased_count": sum(1 for e in events_generated if e[3] == "PRICE_DECREASED"),
             "price_increased_count": sum(1 for e in events_generated if e[3] == "PRICE_INCREASED"),
             "disappeared_count": sum(1 for e in events_generated if e[3] == "DELISTED_DISAPPEARED"),
-            "dry_run": dry_run
+            "raw_sha256": raw_sha256,
+            "dry_run": effective_dry_run
         }
         return summary

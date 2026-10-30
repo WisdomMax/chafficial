@@ -1,7 +1,47 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-30 22:00:00 KST  
+> **최종 갱신일:** 2026-10-30 22:30:00 KST  
+
+---
+
+## [DIRECTIVE 110-R] 시장 기억장치 신뢰성 확보·일일 학습 데이터 손실 방지·파이프라인 순서 교정
+- **일시:** 2026-10-30 22:30 KST
+- **기준 커밋:** `9c5de40` -> DIRECTIVE 110-R 보강
+- **지적된 결함 (9대 결함):**
+  1. 전역 SHA256 중복 차단으로 다음 날 동일 시장 데이터 유입 시 관측을 버리는 치명적 결함 (체류일수 Days on Market 파괴).
+  2. 운영 차량 DB를 먼저 수정하고 시계열 DB를 나중에 기록하는 실행 순서 역전 (시계열 실패해도 운영 DB 이미 커밋).
+  3. 시계열 DB 적재 실패 시에도 전체 작업을 성공으로 오표시.
+  4. 수집 완전성을 단순 1,500대 하한선만으로 판정.
+  5. `--dry-run` 중에도 시계열 엔진 생성자가 DDL을 실행하여 스키마를 생성하는 결함.
+  6. 이전 관측 비교 시 출처(source) 및 검색조건(search_condition) 미분리로 인한 스코프 혼선.
+  7. photo_count 미확인 매물에 임의 0 하드코딩.
+  8. 매물 레코드별 원본 해시(raw_hash) 누락.
+  9. 90페이지 이상 동적 수집 실질적 통합 실험 부재.
+- **조치 및 구현:**
+  1. `src/chaficial/platform/sourcing/market_timeseries_engine.py`:
+     - 전역 SHA256 중복 폐기 -> `run_id` 기준 실행 멱등성으로 전면 재설계 (동일 run_id 중복 삽입 0건, 다음 날 동일 데이터 정상 관측 영구 보존).
+     - 동일 `(source, search_condition)` 범위 한정 직전 스냅샷 쿼리.
+     - `photo_count` 미확인 시 엄격한 `NULL` 저장 (임의 0 제거), `raw_hash` 불변 sha256 기록.
+     - `dry_run=True` 시 무조건적 DDL 실행 차단 및 SQLite URI `file:...db?mode=ro` 읽기 전용 적용.
+     - `market_listing_observations` 테이블에 `UNIQUE(run_id, encarno)` 제약 추가.
+  2. `src/chaficial/platform/sourcing/janghanpyeong_collector.py`:
+     - `while page_no <= max_pages:` 동적 루프 및 `failed_pages` 추적.
+     - 첫 페이지 원본 총건수(`total_found`) 대조, `is_complete` 판정 (실패 페이지 0건 & 1,500대 이상일 때만 정상 스냅샷 승격).
+  3. `scripts/run_daily_sync.py`:
+     - 파이프라인 처리 순서 교정: **[시계열 관측 적재 선행] -> [성공 검증] -> [운영 차량 DB 증분 반영]**.
+     - 시계열 실패 시 즉각 `sys.exit(1)`로 차단하여 운영 DB 가격/상태 변경 0건 보장.
+     - `dry_run` 시 임시 테스트 스냅샷 파일로 아카이브 분리.
+- **검증 증거:**
+  - `scratch/test_directive_110_r_integration.py`: 7대 실질적 통합 실험 (A~G) 100% 통과:
+    * [실험 A] 3일간 동일 매물 유지: 관측 3건 영구 보존, 가격변경 이벤트 0건, 관측일 3개 보존 (SQL 확인).
+    * [실험 B] 동일 run_id 재실행: `ALREADY_RECORDED`, 추가 관측 0건, 추가 이벤트 0건.
+    * [실험 C] 가격 인하: 1500만 -> 1450만 가격 인하 이벤트 정확히 1건.
+    * [실험 D] 부분 수집 실패: `failed_pages=[42]` 시 가드 즉각 발동, 운영 DB 변경 0건.
+    * [실험 E] 페이지 증가: 89 -> 91 동적 페이지 루프 순회 전수 완료.
+    * [실험 F] 시계열 DB 저장 실패: 운영 DB 가격 변경 0건 차단.
+    * [실험 G] dry-run: SQLite 스키마 및 레코드 수 100% 불변 (0 writes).
+  - `scratch/run_task7_observation.py`: 카매니저 실매물 1,764대 최초 시계열 관측 적재 완료 (Run ID: `e0698ccf-15bc-4a1c-bc04-81621bae6473`, 관측 1,764건, 이벤트 1,764건, 2회차 재실행 시 ALREADY_RECORDED 및 0건 삽입 검증).
 
 ---
 
