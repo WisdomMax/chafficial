@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, "src")
 from chaficial.platform.sourcing.carmanager_sync import CarManagerSyncService
 from chaficial.platform.sourcing.janghanpyeong_collector import JanghanpyeongCollector
+from chaficial.platform.sourcing.market_timeseries_engine import MarketTimeSeriesEngine
 from chaficial.platform.sourcing.carmanager_client import load_env
 
 load_env()
@@ -103,6 +104,11 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
         print(f"[!] Market Sync Error: {market_res['status']}", file=sys.stderr)
         sys.exit(1)
 
+    # 5. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록
+    ts_engine = MarketTimeSeriesEngine()
+    ts_res = ts_engine.record_snapshot(all_cars, dry_run=dry_run)
+    print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
+
     # 타임스탬프 스냅샷 아카이빙
     today_str = datetime.now().strftime("%Y%m%d_%H%M%S")
     archive_path = SNAPSHOT_DIR / f"snapshot_{today_str}.json"
@@ -114,7 +120,8 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
             "owned_cars": len(owned_cars),
             "market_cars": len(market_cars),
             "owned_result": owned_res,
-            "market_result": market_res
+            "market_result": market_res,
+            "timeseries_result": ts_res
         }, f, ensure_ascii=False, indent=2)
 
     print(f"[+] Archived snapshot run to {archive_path}")

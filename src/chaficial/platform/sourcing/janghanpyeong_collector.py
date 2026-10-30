@@ -86,7 +86,8 @@ class JanghanpyeongCollector:
             
             api_request = context.request
 
-            for page_no in range(1, max_pages + 1):
+            page_no = 1
+            while page_no <= max_pages:
                 page_start = time.time()
                 payload = {
                     "para": {
@@ -172,6 +173,8 @@ class JanghanpyeongCollector:
 
                 if throttle_sec > 0:
                     await asyncio.sleep(throttle_sec)
+
+                page_no += 1
 
             await browser.close()
 

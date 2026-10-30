@@ -85,8 +85,8 @@ class MarketTimeSeriesEngine:
     def record_snapshot(
         self,
         snapshot_cars: List[Dict[str, Any]],
-        started_at: str,
-        finished_at: str,
+        started_at: Optional[str] = None,
+        finished_at: Optional[str] = None,
         source: str = "CARMANAGER",
         search_condition: str = "장안평/성동구(1104,1105,1230)",
         pages_collected: int = 89,
@@ -98,10 +98,30 @@ class MarketTimeSeriesEngine:
         run_id = str(uuid.uuid4())
         raw_json_str = json.dumps(snapshot_cars, ensure_ascii=False)
         raw_sha256 = hashlib.sha256(raw_json_str.encode("utf-8")).hexdigest()
-        now = datetime.now().isoformat()
+        # 전달받은 시계열 관측 시각 사용 (과거/가상 시점 재생 지원)
+        obs_time = started_at or finished_at or datetime.now().isoformat()
+        started_at = started_at or obs_time
+        finished_at = finished_at or obs_time
 
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
+
+        # [TASK: 동일 스냅샷 재실행 멱등성 검증 - SHA256 중복 적재 원천 차단]
+        c.execute("SELECT run_id FROM market_collection_runs WHERE raw_sha256 = ? AND status = 'SUCCESS'", (raw_sha256,))
+        existing_run = c.fetchone()
+        if existing_run:
+            conn.close()
+            return {
+                "run_id": existing_run[0],
+                "status": "ALREADY_RECORDED",
+                "observations_count": 0,
+                "events_count": 0,
+                "appeared_count": 0,
+                "price_decreased_count": 0,
+                "price_increased_count": 0,
+                "disappeared_count": 0,
+                "message": "Identical snapshot already recorded. Skipping duplicate ingestion."
+            }
 
         # 직전 최신 run_id 조회
         c.execute("SELECT run_id FROM market_collection_runs WHERE status = 'SUCCESS' ORDER BY finished_at DESC LIMIT 1")
@@ -163,7 +183,7 @@ class MarketTimeSeriesEngine:
 
             obs_id = str(uuid.uuid4())
             observations_to_insert.append((
-                obs_id, run_id, encarno, now, str(raw_p), price_manwon,
+                obs_id, run_id, encarno, obs_time, str(raw_p), price_manwon,
                 km_val, model_year, model_name, fuel, mission,
                 shop_name, "장안평", "ACTIVE", 0, ""
             ))
@@ -172,7 +192,7 @@ class MarketTimeSeriesEngine:
             if encarno not in prev_obs:
                 events_generated.append((
                     str(uuid.uuid4()), run_id, encarno, "APPEARED",
-                    None, str(price_manwon), now, f"신규 매물 등장 ({price_manwon}만원)"
+                    None, str(price_manwon), obs_time, f"신규 매물 등장 ({price_manwon}만원)"
                 ))
             else:
                 p_prev = prev_obs[encarno]["price_manwon"]
@@ -180,12 +200,12 @@ class MarketTimeSeriesEngine:
                     if price_manwon < p_prev:
                         events_generated.append((
                             str(uuid.uuid4()), run_id, encarno, "PRICE_DECREASED",
-                            str(p_prev), str(price_manwon), now, f"가격 인하 ({p_prev}만 -> {price_manwon}만, -{p_prev - price_manwon}만원)"
+                            str(p_prev), str(price_manwon), obs_time, f"가격 인하 ({p_prev}만 -> {price_manwon}만, -{p_prev - price_manwon}만원)"
                         ))
                     else:
                         events_generated.append((
                             str(uuid.uuid4()), run_id, encarno, "PRICE_INCREASED",
-                            str(p_prev), str(price_manwon), now, f"가격 인상 ({p_prev}만 -> {price_manwon}만, +{price_manwon - p_prev}만원)"
+                            str(p_prev), str(price_manwon), obs_time, f"가격 인상 ({p_prev}만 -> {price_manwon}만, +{price_manwon - p_prev}만원)"
                         ))
 
         # 목록에서 사라진 차량 감지 (DISAPPEARED)
@@ -193,7 +213,7 @@ class MarketTimeSeriesEngine:
             if encarno not in current_encarnos:
                 events_generated.append((
                     str(uuid.uuid4()), run_id, encarno, "DELISTED_DISAPPEARED",
-                    p_data["status"], "DISAPPEARED", now, "목록에서 미관측 (광고중지/판매/이동 검토 대상)"
+                    p_data["status"], "DISAPPEARED", obs_time, "목록에서 미관측 (광고중지/판매/이동 검토 대상)"
                 ))
 
         if not dry_run:
@@ -232,6 +252,7 @@ class MarketTimeSeriesEngine:
 
         summary = {
             "run_id": run_id,
+            "status": "SUCCESS" if not dry_run else "DRY_RUN_SUCCESS",
             "observations_count": len(observations_to_insert),
             "events_count": len(events_generated),
             "appeared_count": sum(1 for e in events_generated if e[3] == "APPEARED"),
