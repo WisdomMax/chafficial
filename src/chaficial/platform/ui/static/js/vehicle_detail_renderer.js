@@ -269,41 +269,54 @@ class VehicleDetailRenderer {
         <!-- 상단 관리자 툴바 (isAdmin 시) -->
         ${adminToolbarHtml}
 
-        <!-- 네비게이션 뒤로가기 & 브레드크럼 -->
-        <div class="flex items-center justify-between pb-2 border-b border-[#E5E8EC]">
-          <button id="vdrBtnBack" class="inline-flex items-center text-xs sm:text-sm font-semibold text-slate-600 hover:text-[#171B1E] transition-colors py-1 px-2 rounded hover:bg-slate-100 cursor-pointer">
-            <i data-lucide="arrow-left" class="w-4 h-4 mr-1.5"></i>
-            매물 목록으로 돌아가기
+        <!-- 네비게이션 뒤로가기 & 브레드크럼 (모바일 글자 깨짐 방지 shrink-0 whitespace-nowrap) -->
+        <div class="flex items-center justify-between pb-2 border-b border-[#E5E8EC] gap-2">
+          <button id="vdrBtnBack" class="inline-flex items-center text-xs sm:text-sm font-bold text-slate-700 hover:text-[#171B1E] transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100 cursor-pointer shrink-0 whitespace-nowrap bg-white border border-slate-200 shadow-2xs">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-1.5 text-slate-600"></i>
+            <span>목록으로 돌아가기</span>
           </button>
-          <div class="text-xs text-slate-400 truncate max-w-[220px] sm:max-w-none">
+          <div class="hidden sm:block text-xs text-slate-400 truncate max-w-[280px]">
             차마트 &gt; <span class="text-slate-600">${escapeHtml(d.manufacturer || '국산')}</span> &gt; <strong class="text-slate-800">${escapeHtml(displayTitle)}</strong>
+          </div>
+          <!-- 모바일 우측 간결 안내 -->
+          <div class="sm:hidden text-[11px] text-slate-400 font-mono shrink-0">
+            ${escapeHtml(d.plate_number || '')}
           </div>
         </div>
 
-        <!-- 핵심 타이틀 헤더 (DIRECTIVE 069: 상단 중복 가격 제거, 차량명 및 핵심 제원 집중) -->
-        <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 sm:p-6">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="space-y-2">
-              <div class="flex flex-wrap items-center gap-2">
-                ${this.isRealPhotoVerified 
-                  ? '<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#171B1E] text-[#C8FF3D] shadow-xs">실차인증</span>' 
-                  : '<span class="px-2.5 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200">실차 준비 중 (예시 자료)</span>'}
-                <span class="text-xs text-slate-500 font-medium">
-                  ${escapeHtml(d.plate_number || '차량번호 미기재')} · ${d.year ? d.year + '년식' : '연식 미확인'} · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '주행거리 미확인'} · ${escapeHtml(d.fuel_type || '연료 미확인')}
-                </span>
-              </div>
-              <h1 class="text-xl sm:text-2xl md:text-[26px] font-bold text-[#171B1E] tracking-tight leading-snug break-keep">
-                <span class="inline-block">${escapeHtml(displayTitle)}</span>
-                ${displayTrim ? `<span class="text-slate-500 font-normal text-lg sm:text-xl md:text-2xl inline-block whitespace-nowrap ml-1">${escapeHtml(displayTrim)}</span>` : ''}
+        <!-- 핵심 타이틀 & 대형 정찰 판매가 헤더 (가격 최우선 강조 배치) -->
+        <div class="bg-white rounded-xl border border-[#E5E8EC] p-4 sm:p-6 shadow-2xs space-y-3">
+          <div class="flex flex-wrap items-center gap-1.5">
+            ${this.isRealPhotoVerified 
+              ? '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#171B1E] text-[#C8FF3D] shadow-2xs">실차인증</span>' 
+              : '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200">실차 준비중</span>'}
+            <span class="text-xs text-slate-500 font-medium">
+              ${escapeHtml(d.plate_number || '차량번호 미기재')} · ${d.year ? d.year + '년식' : '연식 미확인'} · ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + 'km' : '주행거리 미확인'} · ${escapeHtml(d.fuel_type || '연료 미확인')}
+            </span>
+          </div>
+
+          <div class="flex flex-col md:flex-row md:items-end justify-between gap-3 pt-1 border-t border-slate-100/80">
+            <!-- 차량 모델명 및 트림 -->
+            <div class="space-y-1 flex-1 min-w-0">
+              <h1 class="text-xl sm:text-2xl md:text-[26px] font-black text-[#171B1E] tracking-tight leading-snug break-keep">
+                <span>${escapeHtml(displayTitle)}</span>
+                ${displayTrim ? `<span class="text-slate-500 font-normal text-base sm:text-xl ml-1">${escapeHtml(displayTrim)}</span>` : ''}
               </h1>
+              <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="bg-slate-100 px-2 py-0.5 rounded text-[11px] font-medium">${escapeHtml(d.branch_location || '차마트 장한평 전시장')}</span>
+                <span class="text-emerald-700 font-semibold flex items-center"><i data-lucide="shield-check" class="w-3.5 h-3.5 mr-0.5"></i>침수·주행거리 100% 보증</span>
+              </div>
             </div>
 
-            <!-- 우측 보조 액션 (찜하기 및 거점 안내) -->
-            <div class="flex items-center space-x-3 shrink-0 pt-2 md:pt-0">
-              <span class="text-xs text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded font-medium">
-                ${escapeHtml(d.branch_location || '차마트 장한평 전시장')}
-              </span>
-              <button id="vdrBtnFavorite" onclick="window.__vdrInstance.toggleFavorite()" class="p-2.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-white transition-all active:scale-95 cursor-pointer shadow-2xs flex items-center space-x-1.5" aria-label="관심 차량 찜하기">
+            <!-- 시원하고 굵은 차량 판매 가격 (최우선 표시) + 찜하기 버튼 -->
+            <div class="flex items-center justify-between md:flex-col md:items-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 shrink-0">
+              <div class="text-left md:text-right">
+                <span class="text-[11px] text-slate-400 block font-semibold">차마트 정찰 판매가</span>
+                <span class="text-2xl sm:text-3xl font-black text-[#171B1E] tracking-tight">
+                  ${targetPriceFormatted}
+                </span>
+              </div>
+              <button id="vdrBtnFavorite" onclick="window.__vdrInstance.toggleFavorite()" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-white transition-all active:scale-95 cursor-pointer shadow-2xs flex items-center space-x-1.5 shrink-0" aria-label="관심 차량 찜하기">
                 <i data-lucide="heart" id="vdrIconFavorite" class="w-4 h-4 text-slate-400"></i>
                 <span class="text-xs font-semibold text-slate-700">찜</span>
               </button>

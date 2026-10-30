@@ -213,9 +213,15 @@
             left: auto !important;
             right: auto !important;
             overflow: visible !important;
-            padding-top: 156px !important; /* 상단 고정 헤더 높이(약 150px) + 안전 여백 */
+            padding-top: 68px !important; /* 슬림 고정 헤더 높이(64px) + 안전 여백 (모바일 빈 공간 완전 제거) */
             min-height: 100vh !important;
             display: block !important;
+        }
+
+        @media (min-width: 640px) {
+            body.is-detail-mode main {
+                padding-top: 72px !important;
+            }
         }
 
         body.is-detail-mode #view-detail {
@@ -223,7 +229,12 @@
             min-height: 100vh !important;
             overflow: visible !important;
             display: block !important;
-            padding-bottom: 60px !important;
+            padding-bottom: 70px !important;
+        }
+
+        /* 상세 뷰 진입 시 홈 플로팅 검색바 숨김 (상세 직통 CTA 바와 충돌 방지) */
+        body.is-detail-mode #mobileFloatingSearchBar {
+            display: none !important;
         }
     </style>
 </head>
