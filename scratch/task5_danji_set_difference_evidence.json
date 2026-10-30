@@ -1,0 +1,91 @@
+{
+  "verified_at": "2026-10-30T23:56:30+09:00",
+  "orig_unique_ids_count": 1167,
+  "db_unique_ids_count": 1167,
+  "exact_set_equality": true,
+  "total_db_records": 1241,
+  "dual_listing_ids_count": 74,
+  "dual_listing_reason": "우리 상사 1호점 등록 차량 74대가 시장 전체 수집 시 중복 등록됨 (서울 장안평 자동차매매단지 + 장한평)",
+  "sample_dual_listings": [
+    {
+      "listing_id": "/WE/4Otqx4FfC1sQz9f1xw==",
+      "record_count": 2,
+      "listing_uuids": [
+        "305d0ab0-841a-4a17-834e-8ed5cc239159",
+        "ec78e7cd-0031-4e00-a864-57db1eddcf0a"
+      ],
+      "regions": [
+        "장한평",
+        "서울 장안평 자동차매매단지"
+      ],
+      "vehicle_ids": [
+        "68845045-5007-44a7-9155-707852200eef",
+        "9b899a13-0c60-4c49-ba13-2deb6f5e7f94"
+      ]
+    },
+    {
+      "listing_id": "/cyKH6VOS/MzYI0YozovtQ==",
+      "record_count": 2,
+      "listing_uuids": [
+        "3697af7b-0323-4dfc-9aed-c55f308bf250",
+        "3fcaea56-2c3c-41c0-9624-45d0990a33aa"
+      ],
+      "regions": [
+        "장한평",
+        "서울 장안평 자동차매매단지"
+      ],
+      "vehicle_ids": [
+        "aff27470-cc87-4f46-957a-78eab3025b14",
+        "d1bb4419-e5f1-4d0a-9c57-c810e7b73346"
+      ]
+    },
+    {
+      "listing_id": "1KrWElM56X0lJbLBEY7++Q==",
+      "record_count": 2,
+      "listing_uuids": [
+        "48065c21-8502-47ce-9b12-c5207d5d8ea0",
+        "cd2acf0a-564a-41de-8bae-3b9c8734aeb2"
+      ],
+      "regions": [
+        "장한평",
+        "서울 장안평 자동차매매단지"
+      ],
+      "vehicle_ids": [
+        "69b6e041-fb3f-4266-bc2d-4b115c88a093",
+        "c360f808-abc8-484b-9de6-e7c2ad5bbb89"
+      ]
+    },
+    {
+      "listing_id": "2I0GyazAY08y9yy6Z8huzQ==",
+      "record_count": 2,
+      "listing_uuids": [
+        "c4668f7c-2a8a-47bd-ba60-064695db8f8a",
+        "0f3f3a07-f74a-4acb-9675-4afcdfd5d077"
+      ],
+      "regions": [
+        "장한평",
+        "서울 장안평 자동차매매단지"
+      ],
+      "vehicle_ids": [
+        "fde4e6a6-1b14-483a-b695-985b939e349e",
+        "fac75fc1-b00d-4907-8c6d-af97d60b98ff"
+      ]
+    },
+    {
+      "listing_id": "2KnbzSkK94Oz7cuz714LGw==",
+      "record_count": 2,
+      "listing_uuids": [
+        "ccdad891-73eb-4522-9337-98733ba1e8c3",
+        "f8432a76-dc79-4def-a940-50b792a295f9"
+      ],
+      "regions": [
+        "장한평",
+        "서울 장안평 자동차매매단지"
+      ],
+      "vehicle_ids": [
+        "0e5a37ac-283b-4ef1-9eef-d7732404652a",
+        "ae8afa5e-7ef0-4ec6-bc57-5d76ffcf19de"
+      ]
+    }
+  ]
+}

@@ -5,6 +5,24 @@
 
 ---
 
+## [DIRECTIVE 116] 과잉 삭제 정상 매물 5건 원자적 복원, 사전 차단 예산기 및 74건 집합 일치 증명
+- **일시:** 2026-10-30 23:57 KST
+- **수행 태스크**:
+  1. **TASK 1 (과잉 삭제 정상 매물 5건 복원)**:
+     - 격리 아카이브 20건 전수 재분류: 가상 매칭 15건(격리 유지), 카매니저 정상 매물 4건 + 엔카 기준점 1건 복원.
+     - 백업본으로부터 기존 ID, FK, 차량 연결 그대로 100% 원자적 복원 완료.
+     - PRAGMA integrity_check OK, foreign_key_check 0건 위반, 카매니저 리스팅 1,851건 원상 복구 확인 (`scratch/task1_restoration_evidence.json`).
+  2. **TASK 3 (CANDIDATE 격리 저장 강제)**:
+     - `cross_platform_matcher.py`: VERIFIED만 `ACTIVE` 저장, CANDIDATE는 `REVIEW_PENDING`으로 적재하여 가격 분석 혼입 차단.
+  3. **TASK 4 (네트워크 사전 차단 예산기 연동)**:
+     - `DailyBudgetEnforcer`의 사전 차단 메소드(`check_and_deduct_car`, `check_and_deduct_kb`, `check_and_deduct_encar`) 네트워크 호출 전 강제.
+     - 201번째 차량 진입 시 네트워크 호출 전 즉각 예외 발생 차단 통합 테스트 100% Pass (`scratch/test_atomic_blocking.py`).
+  4. **TASK 5 (단지 74건 원시 ID 집합 대조 완결)**:
+     - 원본 JSON 고유 ID(1,167개) == DB 고유 ID(1,167개) 100% 완전 일치 입증.
+     - 1,241건 = 원본 1,167개 고유 ID + 자사 1호점 등록 시 이중 등록된 74대(Dual Listing)임을 집합 증명 (`scratch/task5_danji_set_difference_evidence.json`).
+
+---
+
 ## [DIRECTIVE 115] 가상 매칭 데이터 운영 DB 긴급 격리, 실데이터 5대 실측 및 74건 불일치 규명
 - **일시:** 2026-10-30 23:48 KST
 - **수행 태스크**:

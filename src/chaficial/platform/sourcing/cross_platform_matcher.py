@@ -1,11 +1,10 @@
 """
-Cross-Platform Vehicle Matcher (CHA-FICIAL DIRECTIVE 115)
-- Pure multi-attribute verification engine (NO mock generation).
-- Plate tail (4-digits) is used solely as a candidate search hint, never as a standalone key.
-- Strict multi-attribute validation: model, year (±1 yr), fuel, mileage tolerance, color, seller shop.
-- Matching status: VERIFIED (Exact full plate + specs), CANDIDATE, REJECTED, NOT_FOUND.
+Cross-Platform Vehicle Matcher (CHA-FICIAL DIRECTIVE 116)
+- Strict multi-attribute verification engine.
+- Matching status: VERIFIED (Exact full plate + multi-spec match, score >= 0.85) -> listing_status = 'ACTIVE'
+- CANDIDATE -> listing_status = 'REVIEW_PENDING' (quarantined from active pricing/learning)
 - Never overwrites CarManager target_price; records independent platform listing.
-- Photo assets quarantined as PRIVATE / PENDING_REVIEW.
+- Photo assets quarantined as PRIVATE / PENDING_REVIEW / allow_video_use = 0.
 """
 
 import re
@@ -43,9 +42,6 @@ class CrossPlatformMatcher:
         self.db_path = db_path
 
     def get_deficient_vehicles(self, limit: int = 200) -> List[Dict[str, Any]]:
-        """
-        Extracts vehicles deficient in price (NULL) or photos (0 photos).
-        """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
@@ -75,17 +71,6 @@ class CrossPlatformMatcher:
         return rows
 
     def calculate_match_score(self, source_car: Dict[str, Any], candidate_car: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
-        """
-        Strict multi-attribute scoring without arbitrary constants.
-        Weights:
-          - Full exact plate match: +0.50
-          - Tail 4-digit match only: +0.20 (requires multi-spec confirmation)
-          - Model name similarity: up to +0.25
-          - Year match (exact: +0.10, ±1 yr: +0.05)
-          - Fuel type match: +0.05
-          - Color match: +0.05
-          - Mileage tolerance (within 15%): +0.05
-        """
         score = 0.0
         evidence = {}
 
@@ -175,7 +160,6 @@ class CrossPlatformMatcher:
     def classify_match(self, score: float, evidence: Dict[str, Any]) -> MatchingStatus:
         if evidence.get("reason") == "FULL_PLATE_MISMATCH":
             return MatchingStatus.REJECTED
-        # DIRECTIVE 115 Task 3: 번호판 전체 일치가 없으면 절대 VERIFIED 불가
         if score >= 0.85 and evidence.get("plate_match") == "EXACT_FULL":
             return MatchingStatus.VERIFIED
         elif score >= 0.60:
@@ -187,7 +171,10 @@ class CrossPlatformMatcher:
 
     def record_match_in_db(self, match: MatchResult) -> None:
         """
-        Records verified/candidate match in DB safely without corrupting target_price.
+        Records match in DB:
+          - VERIFIED: listing_status = 'ACTIVE'
+          - CANDIDATE: listing_status = 'REVIEW_PENDING' (Directive 116 Task 3: quarantine from active pricing/learning)
+          - REJECTED / NOT_FOUND: Not inserted into vehicle_listings
         """
         if not match.external_url or match.status in (MatchingStatus.REJECTED, MatchingStatus.NOT_FOUND):
             return
@@ -197,6 +184,7 @@ class CrossPlatformMatcher:
         now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
 
         ext_listing_id = match.external_car_id or f"{match.source_platform}_{match.vehicle_id}"
+        db_listing_status = "ACTIVE" if match.status == MatchingStatus.VERIFIED else "REVIEW_PENDING"
 
         c.execute("""
             SELECT id FROM vehicle_listings 
@@ -210,6 +198,7 @@ class CrossPlatformMatcher:
                     listing_id = ?,
                     listing_url = ?,
                     advertised_price = ?,
+                    listing_status = ?,
                     last_observed_at = ?,
                     data_confidence = ?,
                     observation_notes = ?
@@ -218,6 +207,7 @@ class CrossPlatformMatcher:
                 ext_listing_id,
                 match.external_url,
                 match.advertised_price_manwon,
+                db_listing_status,
                 now_iso,
                 match.match_score,
                 f"MatchStatus: {match.status.value}, Evidence: {json.dumps(match.match_evidence, ensure_ascii=False)}",
@@ -231,7 +221,7 @@ class CrossPlatformMatcher:
                     advertised_price, listing_status, first_observed_at, 
                     last_observed_at, data_confidence, observation_notes,
                     is_demo, source_confidence
-                ) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, 0, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
             """, (
                 new_id,
                 match.vehicle_id,
@@ -239,6 +229,7 @@ class CrossPlatformMatcher:
                 ext_listing_id,
                 match.external_url,
                 match.advertised_price_manwon,
+                db_listing_status,
                 now_iso,
                 now_iso,
                 match.match_score,
@@ -246,7 +237,7 @@ class CrossPlatformMatcher:
                 match.match_score
             ))
 
-        # 사진 격리 보존
+        # 사진 격리 보존 (allow_video_use=0, public_visibility='PRIVATE')
         for idx, p_url in enumerate(match.photo_urls):
             photo_id = str(uuid.uuid4())
             c.execute("""

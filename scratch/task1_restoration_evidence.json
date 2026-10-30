@@ -1,0 +1,16 @@
+{
+  "restored_at": "2026-10-30T23:55:00+09:00",
+  "restored_listings": [
+    "KB5+r92iDSPMPoF29e/9mA==",
+    "kBYAJHA7MyKZsNQYunZImQ==",
+    "kBLkL1Hq/p3sxNUvcVR+GA==",
+    "kBG+SmFwDEEas0uMhdq/sw==",
+    "encar_sw_102938"
+  ],
+  "integrity_check": "ok",
+  "foreign_key_violations": 0,
+  "counts": {
+    "CARMANAGER": 1851,
+    "ENCAR": 9
+  }
+}
