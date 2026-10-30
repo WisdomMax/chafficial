@@ -1,7 +1,30 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 02:30:00 KST  
+> **최종 갱신일:** 2026-10-31 02:45:00 KST  
+
+---
+
+## [DIRECTIVE 129] T2 수동 인계 분석기 결함 수정, 운영 DB canonical 절대 경로 격리 및 T2 대기 모드 전환
+- **일시:** 2026-10-31 02:45 KST
+- **수행 태스크**:
+  1. **TASK 1 & TASK 4 (T2 수동 인계 분석기 수정, ISSUE-107)**:
+     - `scripts/run_manual_t2_ingest.py`:
+       * JSON 파싱 전 HTML 태그 감지 시 `UNSUPPORTED_FORMAT`으로 명시적 거부.
+       * 메타데이터 파일(`*.meta.json`) 필수화: `source_capture_id`, `source_capture_at`, `observation_scope` 검증 (누락 시 `INVALID_METADATA`).
+       * 실제 원본 파일의 SHA256 체크섬을 계산하여 메타데이터와 대조, 불일치 시 `HASH_MISMATCH` 거부.
+       * 0건 추출 시 `NO_VALID_LISTINGS_EXTRACTED` 거부.
+       * T1 비교 기준선을 `data/carmanager_raw/janghanpyeong_full_collection.json` (1,764대 고정 JSON)으로 명시 고정.
+       * 6대 핵심 지표(정상 매물 수, T1 일치 수, T1 미존재 신규 수, 가격 변동 수, 상담 매물 수, 비교 불가 수) 분리 출력.
+       * 운영 DB에 대한 쓰기 0건 보장 (100% 읽기 전용 분석기).
+       * 회귀 테스트 `scratch/test_directive_129_t2_ingest.py` 6대 시나리오 100% Pass.
+  2. **TASK 2 & TASK 3 (운영 보호 정책 및 삭제 판정 안전성, ISSUE-108, ISSUE-109)**:
+     - `scripts/run_daily_sync.py`, `src/chaficial/platform/sourcing/carmanager_sync.py`:
+       * 파일명 부분문자열(`test`, `tmp`, `sandbox` 부재 등) 검사를 완전히 폐기하고, **실제 운영 DB canonical 경로(`os.path.realpath(db_path) == os.path.realpath("data/chamart/chamart_platform_demo.db")`) 일치 여부로 정확 식별**.
+       * `HISTORICAL_REPLAY` 모드에서는 대상 DB가 운영 DB일 경우 `allow_historical_test_commit`과 무관하게 `DRY_RUN=True` 강제 및 쓰기 100% 차단.
+       * 첫 페이지 50대 관측은 항상 부분 관측(`is_partial=True`)으로 취급하여 `DELISTED_DISAPPEARED` 이벤트 산출 0건 보장.
+  3. **완료 후 개발 중단 및 대기 모드 전환**:
+     - 실제 카매니저 장한평 50대 T2 원본(`t2_cars.json`, `t2_cars.meta.json`)이 인계될 때까지 추가 기능(신규 크롤러, Feature Store, 강화학습 등) 개발을 동결하고 `REAL_PILOT_PENDING_NEW_CAPTURE` 대기 상태로 전환.
 
 ---
 

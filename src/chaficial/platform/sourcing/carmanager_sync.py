@@ -121,9 +121,10 @@ class CarManagerSyncService:
         started_at = datetime.now().isoformat()
         is_dry = self.dry_run or dry_run
 
-        # [DIRECTIVE 128 P0 GUARD]: 운영 DB 파일에 대해 HISTORICAL_REPLAY 쓰기 시도 시 100% 무조건 DRY_RUN 강제!
+        # [DIRECTIVE 129 TASK 3]: 파일명 부분문자열에 의존하지 않고 실제 운영 DB canonical 경로 일치 여부로 식별!
+        prod_canonical = os.path.realpath("data/chamart/chamart_platform_demo.db")
         real_abs = os.path.realpath(self.db_path)
-        is_real_prod = "chamart_platform_demo.db" in real_abs and "sandbox" not in real_abs and "test" not in real_abs
+        is_real_prod = (real_abs == prod_canonical)
         if is_real_prod and observation_mode == "HISTORICAL_REPLAY":
             is_dry = True
 

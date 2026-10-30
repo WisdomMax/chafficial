@@ -116,6 +116,9 @@
 | **ISSUE-104** | source_capture_id 및 메타데이터 부재로 인한 동일 원본 재실행과 실제 재관측 구분 불가 결함 | 높음 | 🟢 해결완료 | `market_timeseries_engine.py` (source_capture_id, source_capture_at, imported_at, observation_scope, observation_mode 분리 저장, 동일 capture_id 3회 재전송 시 1회 적재 멱등성, 다른 날짜 새 capture_id 시 2회 정상 적재 및 0 변동 이벤트 입증) |
 | **ISSUE-105** | 원본 수집 시각 부재 시 현재 시각으로 임의 승격 위험 및 부분 목록 관측의 허위 DELISTED 산출 결함 | 높음 | 🟢 해결완료 | `market_timeseries_engine.py` (source_capture_at NULL 엄격 유지 및 현재 시각 승격 0건, is_partial=True 및 부분 목록 관측 시 DELISTED/SOLD 산출 0건 가드 적용) |
 | **ISSUE-106** | 실제 T2 장한평 50대 목록 수동 캡처 인수인계 표준 절차 및 차분 도구 부재 | 보통 | 🟢 해결완료 | `docs/CARMANAGER_T2_MANUAL_CAPTURE_GUIDE.md`, `scripts/run_manual_t2_ingest.py` (7단계 SOP 확립, 5대 필수 지표 출력 파이프라인 완비, T2 원본 부재 시 REAL_PILOT_PENDING_NEW_CAPTURE 정직 유지) |
+| **ISSUE-107** | `run_manual_t2_ingest.py` HTML 형식 오인 및 메타데이터 SHA256 미검증 결함 | 보통 | 🟢 해결완료 | `scripts/run_manual_t2_ingest.py` (HTML UNSUPPORTED_FORMAT 명시 거부, 메타데이터 필수화 및 SHA256 대조 강제, 6대 정밀 테스트 100% 통과) |
+| **ISSUE-108** | 운영 DB 판별의 문자열 매칭(`test`, `tmp`, `sandbox` 부재 검사) 취약점 | 보통 | 🟢 해결완료 | `scripts/run_daily_sync.py`, `carmanager_sync.py` (`os.path.realpath` canonical 정확 일치 판별로 전환) |
+| **ISSUE-109** | 실제 T2 수동 인계 대기 상태(`REAL_PILOT_PENDING_NEW_CAPTURE`) 전환 및 추가 기능 확장 동결 | 보통 | 🟢 해결완료 | T2 원본 확보 전까지 신규 크롤러/Feature Store/RL 개발 동결 및 수동 인계 대기 상태 고정 |
 
 ---
 

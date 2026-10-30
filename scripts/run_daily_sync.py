@@ -76,10 +76,11 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
         capture_time = summary.get("collected_at") or "UNKNOWN"
         print(f"[+] Loaded verified historical snapshot with {len(all_cars)} cars (Captured at {capture_time}).")
 
-        # [DIRECTIVE 128 P0 GUARD: 운영 DB 연결 경계 물리적 격리]
-        # 1) allow_historical_test_commit=True가 있더라도 운영 DB(chamart_platform_demo.db)라면 무조건 쓰기 원천 차단
-        real_abs_db = os.path.realpath(db_path)
-        is_target_prod = ("chamart_platform_demo.db" in real_abs_db and "test" not in real_abs_db and "tmp" not in real_abs_db and "sandbox" not in real_abs_db)
+        # [DIRECTIVE 129 TASK 3]: 파일명 부분문자열(test, tmp, sandbox)에 의존하지 않고,
+        # 실제 운영 DB의 canonical 경로(os.path.realpath) 일치 여부로 정확하게 식별!
+        prod_canonical = os.path.realpath("data/chamart/chamart_platform_demo.db")
+        target_canonical = os.path.realpath(db_path)
+        is_target_prod = (target_canonical == prod_canonical)
 
         if not use_live_collector and not dry_run:
             if is_target_prod:
