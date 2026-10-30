@@ -111,6 +111,11 @@
 | **ISSUE-99** | 출처 없는 수집 시각 임의 하드코딩 날짜 왜곡 결함 | 낮음 | 🟢 해결완료 | `scripts/run_daily_sync.py` (임의 날짜 하드코딩 배제, UNKNOWN 유지) |
 | **ISSUE-100** | 큐 재시도 대기 선형 백오프 지적에 따른 지수 백오프 전환 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (60s, 120s, 240s 지수 백오프 공식 적용) |
 | **ISSUE-101** | 롤백 테스트 위양성(assert False 취약점) 및 세부 필드(가격·상태·관측시각) 불변성 검증 부재 | 보통 | 🟢 해결완료 | `test_directive_126_task4_pipeline_integration.py`, `test_directive_126_task1_replay_guard.py` (1,764/1,764대 전수 불변 검증) |
+| **ISSUE-102** | 과거 스냅샷 재생 시 가격/상태/last_observed_at/unverified count 역행 및 신규 마스터 오등록 위험 (P0) | 심각 | 🟢 해결완료 | `carmanager_sync.py` (HISTORICAL_REPLAY 모드에서 target_price, advertised_price, last_observed_at, unverified count 갱신 및 신규 마스터 등록 완전 차단, 6대 회귀 테스트 100% 통과) |
+| **ISSUE-103** | allow_historical_test_commit 플래그의 운영 DB 연결 경계 취약점 (P0) | 심각 | 🟢 해결완료 | `scripts/run_daily_sync.py` (운영 DB(chamart_platform_demo.db) 경로 판별 시 allow_historical_test_commit 여부와 무관하게 쓰기 100% 차단 및 DRY_RUN=True 강제) |
+| **ISSUE-104** | source_capture_id 및 메타데이터 부재로 인한 동일 원본 재실행과 실제 재관측 구분 불가 결함 | 높음 | 🟢 해결완료 | `market_timeseries_engine.py` (source_capture_id, source_capture_at, imported_at, observation_scope, observation_mode 분리 저장, 동일 capture_id 3회 재전송 시 1회 적재 멱등성, 다른 날짜 새 capture_id 시 2회 정상 적재 및 0 변동 이벤트 입증) |
+| **ISSUE-105** | 원본 수집 시각 부재 시 현재 시각으로 임의 승격 위험 및 부분 목록 관측의 허위 DELISTED 산출 결함 | 높음 | 🟢 해결완료 | `market_timeseries_engine.py` (source_capture_at NULL 엄격 유지 및 현재 시각 승격 0건, is_partial=True 및 부분 목록 관측 시 DELISTED/SOLD 산출 0건 가드 적용) |
+| **ISSUE-106** | 실제 T2 장한평 50대 목록 수동 캡처 인수인계 표준 절차 및 차분 도구 부재 | 보통 | 🟢 해결완료 | `docs/CARMANAGER_T2_MANUAL_CAPTURE_GUIDE.md`, `scripts/run_manual_t2_ingest.py` (7단계 SOP 확립, 5대 필수 지표 출력 파이프라인 완비, T2 원본 부재 시 REAL_PILOT_PENDING_NEW_CAPTURE 정직 유지) |
 
 ---
 

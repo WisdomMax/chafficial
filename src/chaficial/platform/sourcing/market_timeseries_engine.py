@@ -99,6 +99,20 @@ class MarketTimeSeriesEngine:
         c.execute("CREATE INDEX IF NOT EXISTS idx_events_encarno_type ON market_listing_events(encarno, event_type)")
         c.execute("CREATE INDEX IF NOT EXISTS idx_runs_raw_sha256 ON market_collection_runs(raw_sha256)")
 
+        # [DIRECTIVE 128 TASK 2]: 메타데이터 분리 컬럼 안전 마이그레이션
+        for col, col_type in [
+            ("source_capture_id", "VARCHAR(64)"),
+            ("source_capture_at", "DATETIME"),
+            ("imported_at", "DATETIME"),
+            ("observation_scope", "VARCHAR(100)"),
+            ("observation_mode", "VARCHAR(30)")
+        ]:
+            try:
+                c.execute(f"ALTER TABLE market_collection_runs ADD COLUMN {col} {col_type};")
+            except sqlite3.OperationalError:
+                pass
+        c.execute("CREATE INDEX IF NOT EXISTS idx_runs_capture_id ON market_collection_runs(source_capture_id)")
+
         conn.commit()
         conn.close()
 
@@ -113,18 +127,29 @@ class MarketTimeSeriesEngine:
         pages_collected: int = 89,
         run_id: Optional[str] = None,
         dry_run: bool = False,
-        connection: Optional[sqlite3.Connection] = None
+        connection: Optional[sqlite3.Connection] = None,
+        source_capture_id: Optional[str] = None,
+        source_capture_at: Optional[str] = None,
+        imported_at: Optional[str] = None,
+        observation_scope: Optional[str] = None,
+        observation_mode: str = "LIVE_OBSERVED",
+        is_partial: bool = False
     ) -> Dict[str, Any]:
         """
         새로운 스냅샷을 시계열 관측 테이블에 적재하고, 직전 동일 스코프 스냅샷과 비교하여 이벤트를 산출한다.
-        - connection: 외부 트랜잭션 공유 시 주입 (미주입 시 자체 연결 및 커밋)
+        DIRECTIVE 128: source_capture_id 기반 안정적 멱등성 및 일자별 연속 관측(Days on Market) 완벽 보존.
         """
         effective_dry_run = dry_run or self.dry_run
         run_id = run_id or str(uuid.uuid4())
         raw_json_str = json.dumps(snapshot_cars, ensure_ascii=False)
         raw_sha256 = hashlib.sha256(raw_json_str.encode("utf-8")).hexdigest()
         
-        obs_time = started_at or finished_at or datetime.now().isoformat()
+        now_iso = datetime.now().isoformat()
+        imported_at = imported_at or now_iso
+        observation_scope = observation_scope or search_condition
+
+        # [DIRECTIVE 128]: 원본 시각(source_capture_at)이 명시되지 않으면 현재 시각으로 임의 승격하지 않음
+        obs_time = source_capture_at or started_at or finished_at or now_iso
         started_at = started_at or obs_time
         finished_at = finished_at or obs_time
 
@@ -158,38 +183,83 @@ class MarketTimeSeriesEngine:
                 "message": f"Execution run_id {run_id} already recorded. Duplicate run skipped."
             }
 
-        # [DIRECTIVE 127 P0: 동일 관측 세션 재전송 중복 차단 (일자별 연속 관측 보존)]
+        # [DIRECTIVE 128 TASK 2: source_capture_id 기준 멱등성 검증]
+        if source_capture_id:
+            c.execute("""
+                SELECT run_id FROM market_collection_runs 
+                WHERE source_capture_id = ? AND status = 'SUCCESS' 
+                LIMIT 1
+            """, (source_capture_id,))
+            existing_cap = c.fetchone()
+            if existing_cap:
+                if owns_conn:
+                    conn.close()
+                return {
+                    "run_id": existing_cap[0],
+                    "status": "ALREADY_RECORDED_CAPTURE_ID",
+                    "observations_count": 0,
+                    "events_count": 0,
+                    "appeared_count": 0,
+                    "price_decreased_count": 0,
+                    "price_increased_count": 0,
+                    "disappeared_count": 0,
+                    "message": f"Source capture ID '{source_capture_id}' already recorded under run_id {existing_cap[0]}. Duplicate run skipped."
+                }
+        elif source_capture_at is None and observation_mode == "HISTORICAL_REPLAY":
+            # [DIRECTIVE 128 P0 결함 2 시정]: 수집 시각이 없는(NULL) 과거 원본 재실행 시, 현재 시각 관측으로 승격하지 않고 기존 해시로 중복 차단!
+            c.execute("""
+                SELECT run_id FROM market_collection_runs 
+                WHERE source = ? AND search_condition = ? AND raw_sha256 = ? AND source_capture_at IS NULL AND status = 'SUCCESS' 
+                LIMIT 1
+            """, (source, search_condition, raw_sha256))
+            existing_null_cap = c.fetchone()
+            if existing_null_cap:
+                if owns_conn:
+                    conn.close()
+                return {
+                    "run_id": existing_null_cap[0],
+                    "status": "ALREADY_RECORDED_HISTORICAL_HASH",
+                    "observations_count": 0,
+                    "events_count": 0,
+                    "appeared_count": 0,
+                    "price_decreased_count": 0,
+                    "price_increased_count": 0,
+                    "disappeared_count": 0,
+                    "message": f"Historical raw_sha256 {raw_sha256} with NULL capture time already recorded under run_id {existing_null_cap[0]}. Duplicate run skipped."
+                }
+        # [DIRECTIVE 127/128: 동일 관측 세션 재전송 중복 차단 (일자별 연속 관측 보존)]
         # 동일 source, search_condition, 관측시점(started_at), 원본 해시(raw_sha256)가 모두 일치하는 동일 실행 재전송만 차단!
-        # 다른 시점(날짜)의 관측은 내용(해시)이 동일하더라도 정상 적재되어 Days on Market 및 체류일수가 보존됨.
-        c.execute("""
-            SELECT run_id FROM market_collection_runs 
-            WHERE source = ? AND search_condition = ? AND raw_sha256 = ? AND started_at = ? AND status = 'SUCCESS' 
-            LIMIT 1
-        """, (source, search_condition, raw_sha256, started_at))
-        existing_same_session = c.fetchone()
-        if existing_same_session:
-            if owns_conn:
-                conn.close()
-            return {
-                "run_id": existing_same_session[0],
-                "status": "ALREADY_RECORDED_SESSION",
-                "observations_count": 0,
-                "events_count": 0,
-                "appeared_count": 0,
-                "price_decreased_count": 0,
-                "price_increased_count": 0,
-                "disappeared_count": 0,
-                "message": f"Session at {started_at} with raw_sha256 {raw_sha256} already successfully recorded under run_id {existing_same_session[0]}. Duplicate transmission blocked."
-            }
+        elif started_at:
+            c.execute("""
+                SELECT run_id FROM market_collection_runs 
+                WHERE source = ? AND search_condition = ? AND raw_sha256 = ? AND started_at = ? AND status = 'SUCCESS' 
+                LIMIT 1
+            """, (source, search_condition, raw_sha256, started_at))
+            existing_same_session = c.fetchone()
+            if existing_same_session:
+                if owns_conn:
+                    conn.close()
+                return {
+                    "run_id": existing_same_session[0],
+                    "status": "ALREADY_RECORDED_SESSION",
+                    "observations_count": 0,
+                    "events_count": 0,
+                    "appeared_count": 0,
+                    "price_decreased_count": 0,
+                    "price_increased_count": 0,
+                    "disappeared_count": 0,
+                    "message": f"Session at {started_at} with raw_sha256 {raw_sha256} already successfully recorded under run_id {existing_same_session[0]}. Duplicate transmission blocked."
+                }
 
-        # [TASK 4: 동일 source 및 search_condition 범위 내 최신 run_id 조회]
+        # [TASK 4: 동일 source, search_condition, observation_scope 범위 내 최신 run_id 조회]
         c.execute("""
-            SELECT run_id FROM market_collection_runs 
-            WHERE source = ? AND search_condition = ? AND status = 'SUCCESS' AND run_id != ?
+            SELECT run_id, unique_cars_count FROM market_collection_runs 
+            WHERE source = ? AND search_condition = ? AND (observation_scope = ? OR (observation_scope IS NULL AND ? IS NULL)) AND status = 'SUCCESS' AND run_id != ?
             ORDER BY finished_at DESC LIMIT 1
-        """, (source, search_condition, run_id))
+        """, (source, search_condition, observation_scope, observation_scope, run_id))
         last_run_row = c.fetchone()
         last_run_id = last_run_row[0] if last_run_row else None
+        prev_unique_count = last_run_row[1] if last_run_row else 0
 
         # 직전 관측 레코드 로드 (encarno -> price_manwon, status, model_name)
         prev_obs = {}
@@ -248,25 +318,33 @@ class MarketTimeSeriesEngine:
                         ))
 
         # 목록에서 사라진 차량 감지 (DISAPPEARED)
-        for encarno, p_data in prev_obs.items():
-            if encarno not in current_encarnos:
-                events_generated.append((
-                    str(uuid.uuid4()), run_id, encarno, "DELISTED_DISAPPEARED",
-                    p_data["status"], "DISAPPEARED", obs_time, "목록에서 미관측 (광고중지/판매/이동 검토 대상)"
-                ))
+        # [DIRECTIVE 128 TASK 2 P0 GUARD]: 부분 목록(is_partial)이거나, 전체 수집량이 직전의 유의미한 규모 미만인 경우 DELISTED/SOLD 산출 금지!
+        allow_disappeared_events = (
+            not is_partial and 
+            (prev_unique_count == 0 or len(current_encarnos) >= prev_unique_count * 0.8)
+        )
+        if allow_disappeared_events:
+            for encarno, p_data in prev_obs.items():
+                if encarno not in current_encarnos:
+                    events_generated.append((
+                        str(uuid.uuid4()), run_id, encarno, "DELISTED_DISAPPEARED",
+                        p_data["status"], "DISAPPEARED", obs_time, "목록에서 미관측 (광고중지/판매/이동 검토 대상)"
+                    ))
 
         actual_total_found = total_found if total_found is not None else len(current_encarnos)
 
         if not effective_dry_run:
-            # A. Collection Run 저장
+            # A. Collection Run 저장 (DIRECTIVE 128: 메타데이터 분리 저장)
             c.execute("""
                 INSERT INTO market_collection_runs (
                     run_id, started_at, finished_at, source, search_condition,
-                    total_found, pages_collected, unique_cars_count, raw_sha256, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'SUCCESS')
+                    total_found, pages_collected, unique_cars_count, raw_sha256, status,
+                    source_capture_id, source_capture_at, imported_at, observation_scope, observation_mode
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'SUCCESS', ?, ?, ?, ?, ?)
             """, (
                 run_id, started_at, finished_at, source, search_condition,
-                actual_total_found, pages_collected, len(current_encarnos), raw_sha256
+                actual_total_found, pages_collected, len(current_encarnos), raw_sha256,
+                source_capture_id, source_capture_at, imported_at, observation_scope, observation_mode
             ))
 
             # B. Observations 배치 저장

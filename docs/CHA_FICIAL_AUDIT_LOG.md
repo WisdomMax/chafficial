@@ -1,7 +1,36 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 02:15:00 KST  
+> **최종 갱신일:** 2026-10-31 02:30:00 KST  
+
+---
+
+## [DIRECTIVE 128] 과거 데이터 불변성(HISTORICAL_REPLAY 불변성 확정 P0 완결), source_capture_id 멱등성 및 실제 T2 수동 캡처 인수인계
+- **일시:** 2026-10-31 02:30 KST
+- **수행 태스크**:
+  1. **TASK 1 (P0: 과거 재생 시 운영 DB 차량·가격·공개상태·재고·관측시각 역행 100% 차단, ISSUE-102, ISSUE-103)**:
+     - `src/chaficial/platform/sourcing/carmanager_sync.py`:
+       * `HISTORICAL_REPLAY` 모드에서는 원본과 기존 가격이 다르더라도(`old_price != price_manwon`) `target_price`, `advertised_price`, `last_observed_at` 쓰기 차단.
+       * `HISTORICAL_REPLAY` 모드에서는 `unverified_consecutive_count` 갱신 및 신규 마스터(`INSERT INTO vehicles`, `vehicle_listings`) 생성 원천 차단 (0 writes).
+       * 운영 DB 경로(`chamart_platform_demo.db`)에 대해 `HISTORICAL_REPLAY` 진입 시 `is_dry = True` 강제 적용.
+     - `scripts/run_daily_sync.py`:
+       * `allow_historical_test_commit=True` 플래그가 있더라도 대상 DB가 운영 DB(`chamart_platform_demo.db`)인 경우 물리적 검증을 통해 쓰기 100% 차단 및 `dry_run = True` 강제.
+     - `scratch/test_directive_128_task1_immutability.py`: 6대 필수 회귀 시나리오 100% Pass (기존 1500/과거 1700, 기존 1500/과거 1200, 기존 NULL/과거 1500, 기존 ACTIVE/과거 상태 동일, 과거에만 있는 신규 ID 마스터 미생성, allow_historical_test_commit 운영 DB 쓰기 0건 입증).
+  2. **TASK 2 (메타데이터 분리 및 source_capture_id 기반 멱등성, ISSUE-104, ISSUE-105)**:
+     - `src/chaficial/platform/sourcing/market_timeseries_engine.py`:
+       * `market_collection_runs`에 `source_capture_id`, `source_capture_at`, `imported_at`, `observation_scope`, `observation_mode` 5대 메타데이터 컬럼 마이그레이션 적용.
+       * 동일 `source_capture_id` 재전송 시 `ALREADY_RECORDED_CAPTURE_ID`로 100% 멱등 처리.
+       * 다른 날짜의 새로운 `source_capture_id`는 내용 해시가 동일하더라도 일자별 관측(Observations) 정상 적재 및 변동 이벤트 0건 산출 (Days on Market 체류일수 보존).
+       * 과거 원본 시각 NULL 시 현재 시각으로 임의 승격 금지 (`source_capture_at IS NULL` 유지, 재실행 시 `ALREADY_RECORDED_HISTORICAL_HASH` 차단).
+       * `is_partial=True` 또는 부분 관측 시 허위 `DELISTED_DISAPPEARED` 이벤트 산출 0건 가드 적용.
+     - `scratch/test_directive_128_task2_capture_id.py`: 5대 필수 멱등성 테스트 100% Pass.
+  3. **TASK 3 (1,764대 실데이터 역행 방지 전수 1:1 대조 실측, ISSUE-102)**:
+     - `scratch/test_directive_128_task3_1764_reversal.py`:
+       * 1,764대에 대해 가격 인상(100대), 가격 인하(100대), 판매완료(100대), 비공개 전환(100대), 관측시각 갱신(100대), 상담가격(NULL) 전환(100대) 등 600대 변형을 적용한 상태에서 과거 스냅샷 재투입.
+       * 실측 결과: 가격 불일치 0/1764, 상태 불일치 0/1764, 관측시각 불일치 0/1764, 공개여부 불일치 0/1764 전수 100% 불변 검증 완료.
+  4. **TASK 4 (실제 T2 캡처 인수인계 가이드 및 차분 분석 도구 완성, ISSUE-106)**:
+     - `docs/CARMANAGER_T2_MANUAL_CAPTURE_GUIDE.md`: 로그인된 운영자 브라우저 Network 탭에서 토큰/쿠키 없이 순수 장한평 50대 목록 응답을 확보하는 7단계 표준 절차(SOP) 제정.
+     - `scripts/run_manual_t2_ingest.py`: T2 원본 인입 시 5대 필수 지표(고유 ID 수, T1 일치 수, T2 신규 ID 수, 가격 변동 수, 비교불가 ID 수) 분석 도구 구축. T2 부재 시 `REAL_PILOT_PENDING_NEW_CAPTURE` 엄격 유지.
 
 ---
 

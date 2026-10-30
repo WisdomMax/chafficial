@@ -121,6 +121,12 @@ class CarManagerSyncService:
         started_at = datetime.now().isoformat()
         is_dry = self.dry_run or dry_run
 
+        # [DIRECTIVE 128 P0 GUARD]: 운영 DB 파일에 대해 HISTORICAL_REPLAY 쓰기 시도 시 100% 무조건 DRY_RUN 강제!
+        real_abs = os.path.realpath(self.db_path)
+        is_real_prod = "chamart_platform_demo.db" in real_abs and "sandbox" not in real_abs and "test" not in real_abs
+        if is_real_prod and observation_mode == "HISTORICAL_REPLAY":
+            is_dry = True
+
         if min_expected_count is not None and len(current_snapshot) < min_expected_count:
             return {
                 "sync_id": str(uuid.uuid4()),
@@ -225,7 +231,8 @@ class CarManagerSyncService:
                     # 가격 변동 감지
                     if old_price != price_manwon:
                         stats["price_changed"] += 1
-                        if not is_dry:
+                        if not is_dry and observation_mode != "HISTORICAL_REPLAY":
+                            # [DIRECTIVE 128 P0]: HISTORICAL_REPLAY 모드에서는 과거 데이터로 기존 운영 가격(target_price, advertised_price) 및 last_observed_at 절대 역행 수정 금지!
                             # DIRECTIVE 119 P0: OWNED 자사 차량은 시장 관측기가 vehicles.target_price를 절대 덮어쓰지 않음!
                             if rec.get("ownership_type") == "OWNED" and scope == "MARKET_OBSERVED":
                                 cursor.execute("""
@@ -241,23 +248,17 @@ class CarManagerSyncService:
                                 """, (price_manwon, now, listing_id))
                     else:
                         stats["unchanged_count"] += 1
-                        if not is_dry:
-                            # [DIRECTIVE 126/127 P0]: HISTORICAL_REPLAY 모드에서는 과거 데이터로 현재 시각의 last_observed_at을 왜곡하지 않음
-                            if observation_mode == "LIVE_OBSERVED":
-                                obs_timestamp = observed_at or now
-                                cursor.execute("""
-                                    UPDATE vehicle_listings SET last_observed_at = ?, unverified_consecutive_count = 0 WHERE platform = 'CARMANAGER' AND listing_id = ?
-                                """, (obs_timestamp, listing_id))
-                            else:
-                                # 과거 재생 모드: consecutive count만 리셋하고 last_observed_at은 보존
-                                cursor.execute("""
-                                    UPDATE vehicle_listings SET unverified_consecutive_count = 0 WHERE platform = 'CARMANAGER' AND listing_id = ?
-                                """, (listing_id,))
+                        if not is_dry and observation_mode == "LIVE_OBSERVED":
+                            # [DIRECTIVE 126/127/128 P0]: LIVE_OBSERVED 모드에서만 last_observed_at 갱신 허용
+                            obs_timestamp = observed_at or now
+                            cursor.execute("""
+                                UPDATE vehicle_listings SET last_observed_at = ?, unverified_consecutive_count = 0 WHERE platform = 'CARMANAGER' AND listing_id = ?
+                            """, (obs_timestamp, listing_id))
                     continue
 
-                # 2) 완전히 새로운 매물인 경우에만 신규 마스터 생성
+                # 2) 완전히 새로운 매물인 경우에만 신규 마스터 생성 (HISTORICAL_REPLAY에서는 운영 마스터 신규 생성 차단)
                 stats["new_inserted"] += 1
-                if not is_dry:
+                if not is_dry and observation_mode != "HISTORICAL_REPLAY":
                     new_veh_id = str(uuid.uuid4())
                     init_target_price = price_manwon
                     # DIRECTIVE 119 P0: 시장 관측 차량은 무조건 DRAFT 및 is_public=0 강제

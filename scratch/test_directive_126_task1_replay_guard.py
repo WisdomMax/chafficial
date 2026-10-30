@@ -14,6 +14,7 @@ import json
 import sqlite3
 import shutil
 import tempfile
+import uuid
 from pathlib import Path
 
 sys.path.insert(0, "src")
@@ -21,6 +22,7 @@ sys.path.insert(0, "scripts")
 
 from chaficial.platform.sourcing.market_timeseries_engine import MarketTimeSeriesEngine
 from chaficial.platform.sourcing.carmanager_sync import CarManagerSyncService
+from chaficial.platform.sourcing.normalizer import normalize_carmanager_record
 from run_daily_sync import run_sync_pipeline
 
 def setup_isolated_db(db_path: str):
@@ -96,6 +98,27 @@ def test_independent_db_invariance():
     temp_dir = tempfile.mkdtemp()
     test_db = os.path.join(temp_dir, "test_invariance_sandbox.db")
     setup_isolated_db(test_db)
+
+    # [DIRECTIVE 128 P0]: HISTORICAL_REPLAY는 신규 마스터 생성을 0건으로 차단하므로,
+    # 베이스라인 1,764대를 먼저 DB에 시딩한 후 불변성을 검증한다.
+    with open("data/carmanager_raw/janghanpyeong_full_collection.json", "r") as f:
+        cars = json.load(f).get("cars", [])
+    conn = sqlite3.connect(test_db)
+    c = conn.cursor()
+    base_t = "2026-10-25T10:00:00"
+    for idx, raw in enumerate(cars):
+        norm = normalize_carmanager_record(raw)
+        v_id = str(uuid.uuid4())
+        c.execute("""
+            INSERT INTO vehicles (id, branch_id, plate_number, model_name, year, mileage, fuel_type, transmission, color, purchase_price, target_price, status, is_demo, timeline_json, created_at, updated_at, publishing_status, is_public, listing_ownership_type)
+            VALUES (?, 'B01', ?, ?, ?, ?, ?, ?, ?, 0, ?, 'DRAFT', 0, '[]', ?, ?, 'PUBLISHED', 1, 'MARKET_JANGHANPYEONG')
+        """, (v_id, f"차{idx}", norm["model_name"], norm["model_year"], norm["mileage_km"] or 50000, norm.get("fuel") or "UNKNOWN", norm.get("mission") or "오토", "은색", norm["price_manwon"], base_t, base_t))
+        c.execute("""
+            INSERT INTO vehicle_listings (id, vehicle_id, platform, listing_id, advertised_price, listing_status, first_observed_at, last_observed_at, is_demo, source_confidence, unverified_consecutive_count)
+            VALUES (?, ?, 'CARMANAGER', ?, ?, 'ACTIVE', ?, ?, 0, 0.95, 0)
+        """, (str(uuid.uuid4()), v_id, norm["encarno"], norm["price_manwon"], base_t, base_t))
+    conn.commit()
+    conn.close()
 
     # First run: run full pipeline on local historical dataset (explicit test commit allowed)
     res1 = run_sync_pipeline(use_live_collector=False, dry_run=False, db_path=test_db, allow_historical_test_commit=True)

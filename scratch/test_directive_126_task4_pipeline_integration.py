@@ -65,13 +65,16 @@ def test_pipeline_integration_clean_run():
     runs_count = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM vehicles")
     veh_count = c.fetchone()[0]
+    c.execute("SELECT COUNT(*) FROM market_listing_observations")
+    obs_count = c.fetchone()[0]
     conn.close()
 
-    assert listings_count == 1764, f"Expected 1764 listings, got {listings_count}"
+    assert listings_count == 0, f"Expected 0 listings created in HISTORICAL_REPLAY, got {listings_count}"
+    assert veh_count == 0, f"Expected 0 vehicles created in HISTORICAL_REPLAY, got {veh_count}"
     assert runs_count == 1, f"Expected 1 collection run, got {runs_count}"
-    assert veh_count == 1764, f"Expected 1764 vehicles created, got {veh_count}"
+    assert obs_count == 1764, f"Expected 1764 observations, got {obs_count}"
 
-    print(f"  -> PASS: Full pipeline executed cleanly with 0 HTTP calls (Listings={listings_count}, Runs={runs_count}, Vehicles={veh_count})")
+    print(f"  -> PASS: Full pipeline executed cleanly with 0 HTTP calls (Observations={obs_count}, Runs={runs_count}, MasterWrites={veh_count})")
     shutil.rmtree(temp_dir)
 
 def test_pipeline_rollback_on_market_error():

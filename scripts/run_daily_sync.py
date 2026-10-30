@@ -15,6 +15,7 @@ import json
 import time
 import asyncio
 import sqlite3
+import hashlib
 from datetime import datetime
 from pathlib import Path
 
@@ -75,11 +76,19 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
         capture_time = summary.get("collected_at") or "UNKNOWN"
         print(f"[+] Loaded verified historical snapshot with {len(all_cars)} cars (Captured at {capture_time}).")
 
-        # [DIRECTIVE 127 결함 1 수정] 파일명 문자열에 의존하지 않고, HISTORICAL_REPLAY 모드는 실제 라이브 수집이 아니므로 운영 커밋 원천 차단!
-        if not use_live_collector and not dry_run and not allow_historical_test_commit:
-            print("[!] CRITICAL P0 GUARD: Historical snapshot (HISTORICAL_REPLAY) CANNOT be committed as live operational data!", file=sys.stderr)
-            print("[!] Live commits strictly require verified real-time T2 observations (--live). Forcing DRY_RUN=True.", file=sys.stderr)
-            dry_run = True
+        # [DIRECTIVE 128 P0 GUARD: 운영 DB 연결 경계 물리적 격리]
+        # 1) allow_historical_test_commit=True가 있더라도 운영 DB(chamart_platform_demo.db)라면 무조건 쓰기 원천 차단
+        real_abs_db = os.path.realpath(db_path)
+        is_target_prod = ("chamart_platform_demo.db" in real_abs_db and "test" not in real_abs_db and "tmp" not in real_abs_db and "sandbox" not in real_abs_db)
+
+        if not use_live_collector and not dry_run:
+            if is_target_prod:
+                print("[!] CRITICAL P0 GUARD: Historical snapshot (HISTORICAL_REPLAY) CANNOT be committed to PRODUCTION database under any circumstance!", file=sys.stderr)
+                print("[!] allow_historical_test_commit flag is strictly forbidden on production DB. Forcing DRY_RUN=True.", file=sys.stderr)
+                dry_run = True
+            elif not allow_historical_test_commit:
+                print("[!] CRITICAL P0 GUARD: Historical snapshot (HISTORICAL_REPLAY) requires explicit allow_historical_test_commit=True on isolated test DB. Forcing DRY_RUN=True.", file=sys.stderr)
+                dry_run = True
 
     # 1. 전체 수집량 검증 (최소 1,500대 미만 시 즉시 차단)
     if len(all_cars) < MIN_TOTAL_THRESHOLD:
@@ -127,8 +136,30 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
             atomic_conn.execute("BEGIN IMMEDIATE;")
 
         # 4. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록 (선행)
-        ts_started = None if capture_time == "UNKNOWN" else capture_time
-        ts_res = ts_engine.record_snapshot(all_cars, started_at=ts_started, finished_at=ts_started, dry_run=dry_run, connection=atomic_conn)
+        # [DIRECTIVE 128 TASK 2]: 메타데이터 분리 (source_capture_id, source_capture_at, imported_at, observation_scope, observation_mode)
+        source_capture_at = None if capture_time == "UNKNOWN" else capture_time
+        now_iso = datetime.now().isoformat()
+        if use_live_collector:
+            src_capture_id = f"LIVE_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            imported_at = now_iso
+        else:
+            # 과거 원본의 안정적 capture_id
+            src_capture_id = summary.get("capture_id") or summary.get("source_capture_id") or f"HIST_{hashlib.sha256(open(latest_snapshot_path, 'rb').read()).hexdigest()[:16]}"
+            imported_at = now_iso
+
+        ts_started = source_capture_at  # 원본 시각 없으면 None (현재 시각 승격 금지)
+        ts_res = ts_engine.record_snapshot(
+            all_cars, 
+            started_at=ts_started, 
+            finished_at=ts_started, 
+            dry_run=dry_run, 
+            connection=atomic_conn,
+            source_capture_id=src_capture_id,
+            source_capture_at=source_capture_at,
+            imported_at=imported_at,
+            observation_scope="JANGHANPYEONG_ALL",
+            observation_mode=observation_mode
+        )
         print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
 
         # 시계열 저장이 성공 또는 이미 기록된 해시가 아니면 즉시 롤백 및 중단
