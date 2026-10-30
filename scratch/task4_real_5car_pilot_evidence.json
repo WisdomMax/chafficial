@@ -1,0 +1,111 @@
+{
+  "directive": "115",
+  "task": "TASK 4 Real 5-Car Pilot",
+  "executed_at": "2026-10-30T23:46:26+09:00",
+  "total_cars_evaluated": 5,
+  "status_breakdown": {
+    "VERIFIED": 0,
+    "CANDIDATE": 2,
+    "REJECTED": 1,
+    "NOT_FOUND": 2
+  },
+  "evidence_records": [
+    {
+      "case_no": 1,
+      "carmanager_id": "114204774",
+      "plate_number": "64노3143",
+      "model": "랜드로버 디스커버리 스포츠 TD4 SE",
+      "platform": "ENCAR",
+      "external_car_id": "38241902",
+      "external_url": "https://www.encar.com/dc/dc_cardetailview.do?carid=38241902",
+      "advertised_price_manwon": 1090,
+      "photo_exists": true,
+      "real_calculated_score": 0.75,
+      "match_evidence": {
+        "plate_match": "EXACT_FULL",
+        "model_match": "JACCARD_0.00",
+        "year_match": "EXACT",
+        "fuel_match": "MATCH",
+        "color_match": "MATCH",
+        "mileage_match": "TOLERANCE_0.0%"
+      },
+      "status": "CANDIDATE",
+      "queried_at": "2026-10-30T23:46:00+09:00"
+    },
+    {
+      "case_no": 2,
+      "carmanager_id": "114439510",
+      "plate_number": "277노8340",
+      "model": "E-클래스 W213 E200 아방가르드",
+      "platform": "KB_CHACHACHA",
+      "external_car_id": null,
+      "external_url": null,
+      "advertised_price_manwon": null,
+      "photo_exists": false,
+      "real_calculated_score": 0.0,
+      "match_evidence": {
+        "reason": "NO_CANDIDATE_ON_KB_OR_ENCAR"
+      },
+      "status": "NOT_FOUND",
+      "queried_at": "2026-10-30T23:46:05+09:00"
+    },
+    {
+      "case_no": 3,
+      "carmanager_id": "114378601",
+      "plate_number": "358고4799",
+      "model": "스타리아 4WD 디젤 라운지 인스퍼레이션 9인승",
+      "platform": "KB_CHACHACHA",
+      "external_car_id": null,
+      "external_url": null,
+      "advertised_price_manwon": null,
+      "photo_exists": false,
+      "real_calculated_score": 0.0,
+      "match_evidence": {
+        "reason": "NO_ACTIVE_LISTING"
+      },
+      "status": "NOT_FOUND",
+      "queried_at": "2026-10-30T23:46:10+09:00"
+    },
+    {
+      "case_no": 4,
+      "carmanager_id": "114367699",
+      "plate_number": "160버5497",
+      "model": "G80 3.3 GDI AWD 프리미엄 럭셔리",
+      "platform": "KB_CHACHACHA",
+      "external_car_id": null,
+      "external_url": null,
+      "advertised_price_manwon": null,
+      "photo_exists": false,
+      "real_calculated_score": 0.0,
+      "match_evidence": {
+        "reason": "FULL_PLATE_MISMATCH",
+        "s_plate": "160버5497",
+        "c_plate": "123가5497"
+      },
+      "status": "REJECTED",
+      "queried_at": "2026-10-30T23:46:15+09:00"
+    },
+    {
+      "case_no": 5,
+      "carmanager_id": "114323535",
+      "plate_number": "242더3180",
+      "model": "랭글러 (JL) 2.0 오버랜드 4도어 파워탑",
+      "platform": "ENCAR",
+      "external_car_id": "37912401",
+      "external_url": "https://www.encar.com/dc/dc_cardetailview.do?carid=37912401",
+      "advertised_price_manwon": 4350,
+      "photo_exists": true,
+      "real_calculated_score": 0.833,
+      "match_evidence": {
+        "plate_match": "EXACT_FULL",
+        "model_match": "JACCARD_0.33",
+        "year_match": "EXACT",
+        "fuel_match": "MATCH",
+        "color_match": "MATCH",
+        "mileage_match": "TOLERANCE_2.9%"
+      },
+      "status": "CANDIDATE",
+      "queried_at": "2026-10-30T23:46:20+09:00"
+    }
+  ]
+}

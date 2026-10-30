@@ -1,10 +1,9 @@
 """
-Cross-Platform Vehicle Matcher (CHA-FICIAL DIRECTIVE 114)
-- Identifies and enriches vehicles between CarManager, KB ChaChaCha, and Encar.
-- Search hierarchy: CarManager deficient cars -> 1st KB ChaChaCha -> 2nd Encar.
+Cross-Platform Vehicle Matcher (CHA-FICIAL DIRECTIVE 115)
+- Pure multi-attribute verification engine (NO mock generation).
 - Plate tail (4-digits) is used solely as a candidate search hint, never as a standalone key.
 - Strict multi-attribute validation: model, year (±1 yr), fuel, mileage tolerance, color, seller shop.
-- Matching status: VERIFIED, CANDIDATE, REJECTED, NOT_FOUND.
+- Matching status: VERIFIED (Exact full plate + specs), CANDIDATE, REJECTED, NOT_FOUND.
 - Never overwrites CarManager target_price; records independent platform listing.
 - Photo assets quarantined as PRIVATE / PENDING_REVIEW.
 """
@@ -13,16 +12,16 @@ import re
 import os
 import time
 import json
+import uuid
 import sqlite3
-import random
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum
 
 class MatchingStatus(str, Enum):
-    VERIFIED = "VERIFIED"       # High confidence match (score >= 0.85)
-    CANDIDATE = "CANDIDATE"     # Moderate match requiring review (0.65 <= score < 0.85)
-    REJECTED = "REJECTED"       # Low score / conflict (score < 0.65)
+    VERIFIED = "VERIFIED"       # High confidence match (Exact full plate + multi-spec match, score >= 0.85)
+    CANDIDATE = "CANDIDATE"     # Moderate match requiring manual review (0.60 <= score < 0.85)
+    REJECTED = "REJECTED"       # Low score / spec conflict (score < 0.60)
     NOT_FOUND = "NOT_FOUND"     # No matching car on external platform
 
 @dataclass
@@ -43,13 +42,9 @@ class CrossPlatformMatcher:
     def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db"):
         self.db_path = db_path
 
-    def get_deficient_vehicles(self, limit: int = 200, priority: str = "PRICE_AND_PHOTO") -> List[Dict[str, Any]]:
+    def get_deficient_vehicles(self, limit: int = 200) -> List[Dict[str, Any]]:
         """
         Extracts vehicles deficient in price (NULL) or photos (0 photos).
-        Priority queue:
-          1. price is NULL (consultation)
-          2. photo count == 0
-          3. older verified vehicles
         """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -81,10 +76,11 @@ class CrossPlatformMatcher:
 
     def calculate_match_score(self, source_car: Dict[str, Any], candidate_car: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
         """
-        Calculates multi-attribute match score [0.0 - 1.0].
+        Strict multi-attribute scoring without arbitrary constants.
         Weights:
-          - Plate number (full exact match): +0.50, (tail 4-digit only): +0.20
-          - Model name similarity: +0.25
+          - Full exact plate match: +0.50
+          - Tail 4-digit match only: +0.20 (requires multi-spec confirmation)
+          - Model name similarity: up to +0.25
           - Year match (exact: +0.10, ±1 yr: +0.05)
           - Fuel type match: +0.05
           - Color match: +0.05
@@ -115,7 +111,6 @@ class CrossPlatformMatcher:
         s_model = (source_car.get("model_name") or "").lower().replace(" ", "")
         c_model = (candidate_car.get("model_name") or "").lower().replace(" ", "")
         
-        # 간단한 자카드 유사도 또는 포함 관계
         if s_model and c_model:
             if s_model in c_model or c_model in s_model:
                 score += 0.25
@@ -174,12 +169,14 @@ class CrossPlatformMatcher:
             except Exception:
                 pass
 
-        return min(1.0, round(score, 3)), evidence
+        final_score = min(1.0, round(score, 3))
+        return final_score, evidence
 
     def classify_match(self, score: float, evidence: Dict[str, Any]) -> MatchingStatus:
         if evidence.get("reason") == "FULL_PLATE_MISMATCH":
             return MatchingStatus.REJECTED
-        if score >= 0.80 and evidence.get("plate_match") in ("EXACT_FULL", "TAIL_4DIGIT_ONLY"):
+        # DIRECTIVE 115 Task 3: 번호판 전체 일치가 없으면 절대 VERIFIED 불가
+        if score >= 0.85 and evidence.get("plate_match") == "EXACT_FULL":
             return MatchingStatus.VERIFIED
         elif score >= 0.60:
             return MatchingStatus.CANDIDATE
@@ -190,19 +187,17 @@ class CrossPlatformMatcher:
 
     def record_match_in_db(self, match: MatchResult) -> None:
         """
-        Records the external match safely in DB:
-          - Inserts/Updates vehicle_listings with external platform
-          - Never overwrites vehicles.target_price
-          - Quarantines photo assets as PRIVATE
+        Records verified/candidate match in DB safely without corrupting target_price.
         """
-        import uuid
+        if not match.external_url or match.status in (MatchingStatus.REJECTED, MatchingStatus.NOT_FOUND):
+            return
+
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
 
         ext_listing_id = match.external_car_id or f"{match.source_platform}_{match.vehicle_id}"
 
-        # 1. 기존 listing 여부 확인
         c.execute("""
             SELECT id FROM vehicle_listings 
             WHERE vehicle_id = ? AND platform = ?
@@ -251,7 +246,7 @@ class CrossPlatformMatcher:
                 match.match_score
             ))
 
-        # 2. 사진 격리 적재
+        # 사진 격리 보존
         for idx, p_url in enumerate(match.photo_urls):
             photo_id = str(uuid.uuid4())
             c.execute("""

@@ -1,0 +1,354 @@
+{
+  "quarantined_at": "2026-10-30T23:45:04+09:00",
+  "reason": "CHA-FICIAL DIRECTIVE 115 Fabricated Match Quarantine",
+  "listings_count": 20,
+  "photos_count": 23,
+  "listings": [
+    {
+      "id": "04e6cad9-b337-4423-9abc-7a34372ed990",
+      "vehicle_id": "21d55cd6-ccdd-4005-bab2-1edd433de0ed",
+      "platform": "ENCAR",
+      "listing_id": "encar_sw_102938",
+      "advertised_price": 3080,
+      "notes": "수원 도이치오토월드 매물 (전국 시세 기준점)"
+    },
+    {
+      "id": "02917a4a-48c2-4219-a22b-33a990f173e9",
+      "vehicle_id": "50e30f23-dc6c-4d83-8fbb-f0b8ca93df67",
+      "platform": "CARMANAGER",
+      "listing_id": "KB5+r92iDSPMPoF29e/9mA==",
+      "advertised_price": null,
+      "notes": " [danji:성동구/장안평단지, dealer:박대선]"
+    },
+    {
+      "id": "5f38a574-d220-490e-946d-f0d19a6cd61d",
+      "vehicle_id": "d8418de4-954f-4a43-b91b-ee8a29b8ebbc",
+      "platform": "CARMANAGER",
+      "listing_id": "kBYAJHA7MyKZsNQYunZImQ==",
+      "advertised_price": null,
+      "notes": " [danji:성동구/장안모터프라, dealer:김무현]"
+    },
+    {
+      "id": "50d2356e-ea09-44e3-93d8-b956aeaf9a3e",
+      "vehicle_id": "3ff8fac4-418a-4abc-8de4-123584cf81bd",
+      "platform": "CARMANAGER",
+      "listing_id": "kBLkL1Hq/p3sxNUvcVR+GA==",
+      "advertised_price": null,
+      "notes": " [danji:성동구/장안모터프라, dealer:김민구]"
+    },
+    {
+      "id": "e6568b83-9743-443a-8cd0-a97e60b093f7",
+      "vehicle_id": "75a0970f-d769-44ad-bfbb-bbcfdce7b28a",
+      "platform": "CARMANAGER",
+      "listing_id": "kBG+SmFwDEEas0uMhdq/sw==",
+      "advertised_price": null,
+      "notes": " [danji:성동구/성동구지역, dealer:장인우]"
+    },
+    {
+      "id": "84d803e5-e015-4525-90b5-18b4c8efd2a3",
+      "vehicle_id": "0036e742-dcf3-4f2b-a9be-d36965f2fff3",
+      "platform": "KB_CHACHACHA",
+      "listing_id": "KB_0036e742-dcf3-4f2b-a9be-d36965f2fff3_미상",
+      "advertised_price": 1850,
+      "notes": "MatchStatus: VERIFIED, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"EXACT\"}"
+    },
+    {
+      "id": "04030af0-f192-472f-8a28-1c89a3277d79",
+      "vehicle_id": "0043c27c-9b09-4122-af54-c7ee6ed5a1bf",
+      "platform": "KB_CHACHACHA",
+      "listing_id": "KB_0043c27c-9b09-4122-af54-c7ee6ed5a1bf_미상",
+      "advertised_price": 1850,
+      "notes": "MatchStatus: VERIFIED, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"EXACT\"}"
+    },
+    {
+      "id": "9db010db-5d48-4abd-8d4c-251c712d9d37",
+      "vehicle_id": "006523a1-b96e-4d62-82e0-0e18f978cfdf",
+      "platform": "ENCAR",
+      "listing_id": "ENCAR_006523a1-b96e-4d62-82e0-0e18f978cfdf_미상",
+      "advertised_price": 1420,
+      "notes": "MatchStatus: CANDIDATE, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"WITHIN_1YR\"}"
+    },
+    {
+      "id": "70959efa-69e0-4933-9e80-bb796fb5f133",
+      "vehicle_id": "0098059d-6519-4387-af24-2d25702db1d8",
+      "platform": "KB_CHACHACHA",
+      "listing_id": "KB_0098059d-6519-4387-af24-2d25702db1d8_미상",
+      "advertised_price": 1850,
+      "notes": "MatchStatus: VERIFIED, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"EXACT\"}"
+    },
+    {
+      "id": "b22adce9-8700-4fad-99f0-d1730ded8c46",
+      "vehicle_id": "009cf112-cc57-4756-967e-58bbf65cf5eb",
+      "platform": "ENCAR",
+      "listing_id": "ENCAR_009cf112-cc57-4756-967e-58bbf65cf5eb_미상",
+      "advertised_price": 1420,
+      "notes": "MatchStatus: CANDIDATE, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"WITHIN_1YR\"}"
+    },
+    {
+      "id": "47cb32ee-8ea6-44c0-891f-9ba165284f7b",
+      "vehicle_id": "012b222a-c25f-4fec-b1cd-d4a76de746c0",
+      "platform": "KB_CHACHACHA",
+      "listing_id": "KB_012b222a-c25f-4fec-b1cd-d4a76de746c0_미상",
+      "advertised_price": 1850,
+      "notes": "MatchStatus: VERIFIED, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"EXACT\"}"
+    },
+    {
+      "id": "411aa301-8ad0-4b14-8397-78419edd41f0",
+      "vehicle_id": "0135b856-09e5-4b93-96ff-c410911f9b2e",
+      "platform": "ENCAR",
+      "listing_id": "ENCAR_0135b856-09e5-4b93-96ff-c410911f9b2e_미상",
+      "advertised_price": 1420,
+      "notes": "MatchStatus: CANDIDATE, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"WITHIN_1YR\"}"
+    },
+    {
+      "id": "a8ddcac7-707e-4888-bd8a-247436f94c51",
+      "vehicle_id": "015e754a-f626-45ec-b324-499c7df9a270",
+      "platform": "KB_CHACHACHA",
+      "listing_id": "KB_015e754a-f626-45ec-b324-499c7df9a270_9768",
+      "advertised_price": 1850,
+      "notes": "MatchStatus: VERIFIED, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"EXACT\"}"
+    },
+    {
+      "id": "987ba5bd-bd09-4db2-b614-cf2db33cae62",
+      "vehicle_id": "016526a0-7d64-4044-a5d4-9bb6d2531ad2",
+      "platform": "ENCAR",
+      "listing_id": "ENCAR_016526a0-7d64-4044-a5d4-9bb6d2531ad2_미상",
+      "advertised_price": 1420,
+      "notes": "MatchStatus: CANDIDATE, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"WITHIN_1YR\"}"
+    },
+    {
+      "id": "5d2aa1d3-e35e-48d9-a6ed-ae57889a883f",
+      "vehicle_id": "01c08a67-acd1-4c7c-9e3a-fa61531a470d",
+      "platform": "KB_CHACHACHA",
+      "listing_id": "KB_01c08a67-acd1-4c7c-9e3a-fa61531a470d_미상",
+      "advertised_price": 1850,
+      "notes": "MatchStatus: VERIFIED, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"EXACT\"}"
+    },
+    {
+      "id": "9e9c70c3-bd11-4c09-9842-c1795582198d",
+      "vehicle_id": "01d01c06-5bc4-404c-82d1-f7e55f86c470",
+      "platform": "ENCAR",
+      "listing_id": "ENCAR_01d01c06-5bc4-404c-82d1-f7e55f86c470_미상",
+      "advertised_price": 1420,
+      "notes": "MatchStatus: CANDIDATE, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"WITHIN_1YR\"}"
+    },
+    {
+      "id": "7e4e158d-1fc6-45ca-96d9-de355f2f26f9",
+      "vehicle_id": "01e17a31-842c-4874-b2d3-7f91a77bdc75",
+      "platform": "KB_CHACHACHA",
+      "listing_id": "KB_01e17a31-842c-4874-b2d3-7f91a77bdc75_미상",
+      "advertised_price": 1850,
+      "notes": "MatchStatus: VERIFIED, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"EXACT\"}"
+    },
+    {
+      "id": "fbebb3c3-3d37-4c73-8e40-1ca97a00831e",
+      "vehicle_id": "01e353fd-073d-4534-8fbd-6fdddb9d2ad2",
+      "platform": "ENCAR",
+      "listing_id": "ENCAR_01e353fd-073d-4534-8fbd-6fdddb9d2ad2_미상",
+      "advertised_price": 1420,
+      "notes": "MatchStatus: CANDIDATE, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"WITHIN_1YR\"}"
+    },
+    {
+      "id": "3c811538-365b-44aa-a681-b5cfef1fc55d",
+      "vehicle_id": "020e7784-6938-4bc1-a601-fc700990e58f",
+      "platform": "KB_CHACHACHA",
+      "listing_id": "KB_020e7784-6938-4bc1-a601-fc700990e58f_미상",
+      "advertised_price": 1850,
+      "notes": "MatchStatus: VERIFIED, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"EXACT\"}"
+    },
+    {
+      "id": "dbfc297b-7587-41b2-aa33-5fedc2d4b65c",
+      "vehicle_id": "0211abc8-6c17-4908-a44d-a7d490ded1c5",
+      "platform": "ENCAR",
+      "listing_id": "ENCAR_0211abc8-6c17-4908-a44d-a7d490ded1c5_미상",
+      "advertised_price": 1420,
+      "notes": "MatchStatus: CANDIDATE, Evidence: {\"plate_match\": \"TAIL_4DIGIT_ONLY\", \"model_match\": \"HIGH_SUBSTRING\", \"year_match\": \"WITHIN_1YR\"}"
+    }
+  ],
+  "photos": [
+    {
+      "id": "9eac84a3-b8fc-423c-be34-a14e7d6ee101",
+      "vehicle_id": "0036e742-dcf3-4f2b-a9be-d36965f2fff3",
+      "photo_url": "https://img.kbchachacha.com/car/sample_0036e742-dcf3-4f2b-a9be-d36965f2fff3_1.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "b280afae-061c-4381-b787-6f614871f6c2",
+      "vehicle_id": "0036e742-dcf3-4f2b-a9be-d36965f2fff3",
+      "photo_url": "https://img.kbchachacha.com/car/sample_0036e742-dcf3-4f2b-a9be-d36965f2fff3_2.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "42b26a8f-7db8-4b84-807d-35b9033d7c0b",
+      "vehicle_id": "0043c27c-9b09-4122-af54-c7ee6ed5a1bf",
+      "photo_url": "https://img.kbchachacha.com/car/sample_0043c27c-9b09-4122-af54-c7ee6ed5a1bf_1.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "74c6e907-7047-422d-b252-fd1f33c19b56",
+      "vehicle_id": "0043c27c-9b09-4122-af54-c7ee6ed5a1bf",
+      "photo_url": "https://img.kbchachacha.com/car/sample_0043c27c-9b09-4122-af54-c7ee6ed5a1bf_2.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "67635a96-bf3f-4918-a9cd-77e391404dc4",
+      "vehicle_id": "006523a1-b96e-4d62-82e0-0e18f978cfdf",
+      "photo_url": "https://ci.encar.com/carpicture/sample_006523a1-b96e-4d62-82e0-0e18f978cfdf_1.jpg",
+      "photo_source": "ENCAR",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "55433a99-757a-42b7-8454-087d6f6da94b",
+      "vehicle_id": "0098059d-6519-4387-af24-2d25702db1d8",
+      "photo_url": "https://img.kbchachacha.com/car/sample_0098059d-6519-4387-af24-2d25702db1d8_1.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "829392aa-0631-4926-8360-7975025c17ac",
+      "vehicle_id": "0098059d-6519-4387-af24-2d25702db1d8",
+      "photo_url": "https://img.kbchachacha.com/car/sample_0098059d-6519-4387-af24-2d25702db1d8_2.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "bcc147df-9623-4632-9498-69318fdcb377",
+      "vehicle_id": "009cf112-cc57-4756-967e-58bbf65cf5eb",
+      "photo_url": "https://ci.encar.com/carpicture/sample_009cf112-cc57-4756-967e-58bbf65cf5eb_1.jpg",
+      "photo_source": "ENCAR",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "f7c6b46b-62d7-4726-ba71-0e001580f080",
+      "vehicle_id": "012b222a-c25f-4fec-b1cd-d4a76de746c0",
+      "photo_url": "https://img.kbchachacha.com/car/sample_012b222a-c25f-4fec-b1cd-d4a76de746c0_1.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "d98d1dcc-a4c1-4b8b-9183-bff7b0c5c227",
+      "vehicle_id": "012b222a-c25f-4fec-b1cd-d4a76de746c0",
+      "photo_url": "https://img.kbchachacha.com/car/sample_012b222a-c25f-4fec-b1cd-d4a76de746c0_2.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "32b546bf-3e1e-43d6-87bc-0d39e023b523",
+      "vehicle_id": "0135b856-09e5-4b93-96ff-c410911f9b2e",
+      "photo_url": "https://ci.encar.com/carpicture/sample_0135b856-09e5-4b93-96ff-c410911f9b2e_1.jpg",
+      "photo_source": "ENCAR",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "95ca8a9f-bf69-4db1-b3d5-d0956ecc6a24",
+      "vehicle_id": "015e754a-f626-45ec-b324-499c7df9a270",
+      "photo_url": "https://img.kbchachacha.com/car/sample_015e754a-f626-45ec-b324-499c7df9a270_1.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "9ddb3372-606f-45e4-8321-184b76f71f10",
+      "vehicle_id": "015e754a-f626-45ec-b324-499c7df9a270",
+      "photo_url": "https://img.kbchachacha.com/car/sample_015e754a-f626-45ec-b324-499c7df9a270_2.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "f070722f-3de1-4035-b5dd-dd21e2e9d27e",
+      "vehicle_id": "016526a0-7d64-4044-a5d4-9bb6d2531ad2",
+      "photo_url": "https://ci.encar.com/carpicture/sample_016526a0-7d64-4044-a5d4-9bb6d2531ad2_1.jpg",
+      "photo_source": "ENCAR",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "7d6f2781-e2a2-4c48-9ab0-5eae70359dfa",
+      "vehicle_id": "01c08a67-acd1-4c7c-9e3a-fa61531a470d",
+      "photo_url": "https://img.kbchachacha.com/car/sample_01c08a67-acd1-4c7c-9e3a-fa61531a470d_1.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "a8e909f7-8112-4717-b7ca-fa588cf1d198",
+      "vehicle_id": "01c08a67-acd1-4c7c-9e3a-fa61531a470d",
+      "photo_url": "https://img.kbchachacha.com/car/sample_01c08a67-acd1-4c7c-9e3a-fa61531a470d_2.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "43ce33ca-8ec1-4413-9ae6-9324c6495996",
+      "vehicle_id": "01d01c06-5bc4-404c-82d1-f7e55f86c470",
+      "photo_url": "https://ci.encar.com/carpicture/sample_01d01c06-5bc4-404c-82d1-f7e55f86c470_1.jpg",
+      "photo_source": "ENCAR",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "03f4fa8b-e2df-4563-9f0c-7f76ef8775d8",
+      "vehicle_id": "01e17a31-842c-4874-b2d3-7f91a77bdc75",
+      "photo_url": "https://img.kbchachacha.com/car/sample_01e17a31-842c-4874-b2d3-7f91a77bdc75_1.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "c4fcffdd-58f4-4605-a784-2e55cf698ce8",
+      "vehicle_id": "01e17a31-842c-4874-b2d3-7f91a77bdc75",
+      "photo_url": "https://img.kbchachacha.com/car/sample_01e17a31-842c-4874-b2d3-7f91a77bdc75_2.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "74b78c3a-2fc7-48a5-a8ff-09199bb6bcfe",
+      "vehicle_id": "01e353fd-073d-4534-8fbd-6fdddb9d2ad2",
+      "photo_url": "https://ci.encar.com/carpicture/sample_01e353fd-073d-4534-8fbd-6fdddb9d2ad2_1.jpg",
+      "photo_source": "ENCAR",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "745f8d00-95eb-461c-a5d3-2e84e7aa4a30",
+      "vehicle_id": "020e7784-6938-4bc1-a601-fc700990e58f",
+      "photo_url": "https://img.kbchachacha.com/car/sample_020e7784-6938-4bc1-a601-fc700990e58f_1.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "745df686-ebf9-4993-a37f-7e381b773698",
+      "vehicle_id": "020e7784-6938-4bc1-a601-fc700990e58f",
+      "photo_url": "https://img.kbchachacha.com/car/sample_020e7784-6938-4bc1-a601-fc700990e58f_2.jpg",
+      "photo_source": "KB_CHACHACHA",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    },
+    {
+      "id": "85635ab0-9f4e-4d22-a21e-587d3a64b212",
+      "vehicle_id": "0211abc8-6c17-4908-a44d-a7d490ded1c5",
+      "photo_url": "https://ci.encar.com/carpicture/sample_0211abc8-6c17-4908-a44d-a7d490ded1c5_1.jpg",
+      "photo_source": "ENCAR",
+      "public_visibility": "PRIVATE",
+      "approval_status": "PENDING_REVIEW"
+    }
+  ]
+}
