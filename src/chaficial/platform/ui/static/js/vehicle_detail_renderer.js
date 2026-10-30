@@ -768,17 +768,6 @@ class VehicleDetailRenderer {
                 카카오톡 1:1 빠른 상담
               </button>
               ` : ''}
-
-              <!-- 데스크톱 전용 1:1 직통 전화 문의 카드 (모바일은 하단 고정 CTA 바가 있으므로 중복 노출 차단: hidden sm:block) -->
-              <div class="hidden sm:block pt-3 border-t border-slate-100 space-y-2">
-                <a href="tel:${escapeHtml(dealerPhone || '010-1111-9999')}" class="w-full py-3 bg-[#171B1E] hover:bg-black text-[#9FE870] font-bold text-xs rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs">
-                  <i data-lucide="phone-call" class="w-4 h-4 mr-2 text-[#9FE870]"></i>
-                  1:1 직통 전화 문의 (${escapeHtml(dealerPhone || '010-1111-9999')})
-                </a>
-                <p class="text-[11px] text-slate-400 text-center">
-                  평일·주말 09:00 ~ 20:00 실시간 상담 가능
-                </p>
-              </div>
             </div>
 
           </div>
@@ -1046,13 +1035,15 @@ class VehicleDetailRenderer {
           <!-- 3. 길찾기 안내 (카카오 노랑, 네이버 녹색 버튼) -->
           <div class="grid grid-cols-2 gap-2.5">
             <a href="https://map.kakao.com/link/search/서울 성동구 자동차시장 1길 94-47" target="_blank" rel="noopener noreferrer" 
-               class="py-3 px-3 rounded-xl bg-[#FEE500] hover:bg-[#FADA0A] active:scale-[0.99] text-[#191919] text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm">
+               style="background-color: #FEE500 !important; color: #191919 !important;"
+               class="py-3 px-3 rounded-xl hover:opacity-95 active:scale-[0.99] text-[#191919] text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm">
               <i data-lucide="map-pin" class="w-3.5 h-3.5 text-[#191919]"></i>
               <span>카카오맵 길찾기</span>
               <i data-lucide="external-link" class="w-3 h-3 text-[#191919]/70"></i>
             </a>
             <a href="https://map.naver.com/v5/search/서울 성동구 자동차시장 1길 94-47" target="_blank" rel="noopener noreferrer" 
-               class="py-3 px-3 rounded-xl bg-[#03C75A] hover:bg-[#02b351] active:scale-[0.99] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm">
+               style="background-color: #03C75A !important; color: #ffffff !important;"
+               class="py-3 px-3 rounded-xl hover:opacity-95 active:scale-[0.99] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm">
               <i data-lucide="navigation" class="w-3.5 h-3.5 text-white"></i>
               <span>네이버지도 길찾기</span>
               <i data-lucide="external-link" class="w-3 h-3 text-white/80"></i>
@@ -1063,17 +1054,6 @@ class VehicleDetailRenderer {
           <div class="pt-1">
             <button type="button" onclick="window.__vdrInstance.closeWayfindingModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs sm:text-sm font-semibold rounded-lg cursor-pointer transition-colors">
               닫기
-            </button>
-          </div>
-        </div>
-      </div>
-              </a>
-            </div>
-          </div>
-
-          <div class="pt-2 border-t border-slate-100 text-right">
-            <button onclick="window.__vdrInstance.closeWayfindingModal()" class="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-semibold rounded-lg cursor-pointer">
-              확인 닫기
             </button>
           </div>
         </div>
