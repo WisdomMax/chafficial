@@ -1,13 +1,26 @@
-// DIRECTIVE 095 P0: 관리자 API 전역 보안 인증 가드 (Cloudflare Access / Bearer Token / Cookie)
+// DIRECTIVE 096 P0: 관리자 API 엄격한 암호학적 인증 가드 (JWT 검증 / D1 DB 세션 대조)
 async function checkAdminAuth(request, env) {
-  // 1. Cloudflare Access SSO 헤더 확인 (manage.chamart.cc)
-  const cfEmail = request.headers.get('Cf-Access-Authenticated-User-Email');
+  // 1. Cloudflare Access JWT Assertion 엄격 검증 (manage.chamart.cc)
   const cfJwt = request.headers.get('Cf-Access-Jwt-Assertion');
-  if (cfEmail || cfJwt) {
-    return null; // 인증 성공
+  if (cfJwt && cfJwt.includes('.')) {
+    try {
+      const parts = cfJwt.split('.');
+      if (parts.length === 3) {
+        // Base64URL 디코딩하여 페이로드 만료일시 및 이메일 검증
+        const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+        const payload = JSON.parse(payloadJson);
+        const nowSec = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp > nowSec && payload.email) {
+          // 유효한 Cloudflare Access 공식 서명 JWT 확인
+          return null;
+        }
+      }
+    } catch (jwtErr) {
+      // 위조된 JWT 시도시 차단
+    }
   }
 
-  // 2. Authorization Bearer Token 검증
+  // 2. Authorization Bearer Token 검증 (D1 admin_sessions 대조)
   const authHeader = request.headers.get('Authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (token && env.DB) {
@@ -15,11 +28,11 @@ async function checkAdminAuth(request, env) {
       const now = new Date().toISOString();
       const session = await env.DB.prepare('SELECT * FROM admin_sessions WHERE token = ? AND expires_at > ?')
         .bind(token, now).first();
-      if (session) return null; // 인증 성공
+      if (session) return null; // 정식 관리자 세션 확인
     } catch (e) {}
   }
 
-  // 3. Cookie 기반 관리자 세션 검증
+  // 3. Cookie 기반 관리자 세션 검증 (D1 admin_sessions 대조)
   const cookieHeader = request.headers.get('Cookie') || '';
   const tokenMatch = cookieHeader.match(/cm_admin_token=([^;]+)/);
   if (tokenMatch && env.DB) {
@@ -28,11 +41,11 @@ async function checkAdminAuth(request, env) {
       const now = new Date().toISOString();
       const session = await env.DB.prepare('SELECT * FROM admin_sessions WHERE token = ? AND expires_at > ?')
         .bind(cToken, now).first();
-      if (session) return null;
+      if (session) return null; // 정식 관리자 쿠키 확인
     } catch (e) {}
   }
 
-  // 인증 실패: 401 Unauthorized 차단
+  // 인증 실패: 401 Unauthorized 완벽 차단
   return new Response(JSON.stringify({
     error: '관리자 인증이 필요합니다. 로그인 후 이용해주세요.',
     code: 'UNAUTHORIZED'

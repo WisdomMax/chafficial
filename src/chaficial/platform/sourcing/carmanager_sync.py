@@ -46,6 +46,13 @@ class CarManagerSyncService:
             c.execute("ALTER TABLE carmanager_sync_logs ADD COLUMN scope VARCHAR(30) NOT NULL DEFAULT 'OWNED'")
         if "unverified_count" not in cols:
             c.execute("ALTER TABLE carmanager_sync_logs ADD COLUMN unverified_count INTEGER NOT NULL DEFAULT 0")
+
+        # vehicle_listings 테이블에 unverified_consecutive_count 컬럼 추가 보장
+        c.execute("PRAGMA table_info(vehicle_listings)")
+        vl_cols = [col[1] for col in c.fetchall()]
+        if "unverified_consecutive_count" not in vl_cols:
+            c.execute("ALTER TABLE vehicle_listings ADD COLUMN unverified_consecutive_count INTEGER NOT NULL DEFAULT 0")
+
         conn.commit()
         conn.close()
 
@@ -83,7 +90,8 @@ class CarManagerSyncService:
             ownership_filter = "AND v.listing_ownership_type = 'OWNED'" if scope == "OWNED" else "AND v.listing_ownership_type = 'EXTERNAL'"
             cursor.execute(f"""
                 SELECT l.listing_id, l.vehicle_id, l.advertised_price, l.listing_status, 
-                       v.target_price, v.status, v.is_public, v.condition_detail_json, v.publishing_status
+                       v.target_price, v.status, v.is_public, v.condition_detail_json, v.publishing_status,
+                       COALESCE(l.unverified_consecutive_count, 0)
                 FROM vehicle_listings l
                 JOIN vehicles v ON l.vehicle_id = v.id
                 WHERE l.platform = 'CARMANAGER' {ownership_filter}
@@ -104,7 +112,8 @@ class CarManagerSyncService:
                     "vehicle_status": r[5],
                     "is_public": r[6],
                     "is_price_locked": bool(cond_json.get("is_price_locked")),
-                    "publishing_status": r[8]
+                    "publishing_status": r[8],
+                    "unverified_consecutive_count": r[9]
                 }
 
             active_car_seqs = set()
@@ -219,20 +228,50 @@ class CarManagerSyncService:
                     else:
                         stats["unchanged_count"] += 1
 
-                    cursor.execute("UPDATE vehicle_listings SET last_observed_at = ? WHERE listing_id = ?", (now, car_seq))
+                    # 스냅샷 관측 성공 시: 미조회 카운트 리셋 및 ACTIVE 복구
+                    cursor.execute("""
+                        UPDATE vehicle_listings SET 
+                            last_observed_at = ?,
+                            unverified_consecutive_count = 0,
+                            listing_status = CASE WHEN listing_status = 'UNVERIFIED' THEN 'ACTIVE' ELSE listing_status END
+                        WHERE listing_id = ?
+                    """, (now, car_seq))
 
-            # 3. [TASK 4: 미조회 안전 처리 - 단일 스냅샷 미조회 시 UNVERIFIED 경고, 연속 누락 시만 DELISTED]
+            # 3. [DIRECTIVE 096 TASK 4: 3회 연속 미조회 카운팅 및 3회째 DELISTED/비공개 자동 전환]
             missing_seqs = set(existing_records.keys()) - active_car_seqs
             for m_seq in missing_seqs:
                 rec = existing_records[m_seq]
                 v_id = rec["vehicle_id"]
-                if rec["listing_status"] != "UNVERIFIED" and rec["vehicle_status"] not in ("SOLD", "DELISTED"):
-                    # 1단계: 미조회 경고(UNVERIFIED) 마킹 (즉시 삭제·비공개 강등 금지)
+                current_unverified = rec["unverified_consecutive_count"] + 1
+
+                if current_unverified < 3:
+                    # 1~2회 미조회: 경고(UNVERIFIED) 마킹 및 카운트 누적 (즉시 비공개 강등 금지)
                     cursor.execute("""
-                        UPDATE vehicle_listings SET listing_status = 'UNVERIFIED', observation_notes = observation_notes || ' [1회 스냅샷 미조회]'
+                        UPDATE vehicle_listings SET 
+                            unverified_consecutive_count = ?,
+                            listing_status = 'UNVERIFIED',
+                            observation_notes = observation_notes || ?
                         WHERE listing_id = ?
-                    """, (m_seq,))
+                    """, (current_unverified, f' [{current_unverified}회 스냅샷 미조회]', m_seq))
                     stats["unverified_count"] += 1
+                else:
+                    # 3회 연속 미조회: 정식 DELISTED 확정 및 is_public=0 비공개 안전 전환
+                    cursor.execute("""
+                        UPDATE vehicles SET 
+                            status = 'DELISTED', 
+                            is_public = 0, 
+                            updated_at = ?
+                        WHERE id = ?
+                    """, (now, v_id))
+                    cursor.execute("""
+                        UPDATE vehicle_listings SET 
+                            unverified_consecutive_count = ?,
+                            listing_status = 'DELISTED', 
+                            last_observed_at = ?,
+                            observation_notes = observation_notes || ' [3회 연속 미조회로 비공개 전환]'
+                        WHERE listing_id = ?
+                    """, (current_unverified, now, m_seq))
+                    stats["delisted_count"] += 1
 
             # 4. 판매완료 확정 매물 처리 (sold_snapshot 명시 시)
             if sold_snapshot:

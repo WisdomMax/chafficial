@@ -3232,22 +3232,40 @@ class PlatformService:
         }
 
     @staticmethod
-    def trigger_carmanager_sync(db: Session, scope: str = "OWNED") -> dict[str, Any]:
-        """카매니저 스냅샷 동기화 수동 실행."""
+    def trigger_carmanager_sync(db: Session, scope: str = "OWNED", use_live: bool = True) -> dict[str, Any]:
+        """카매니저 실시간 세션 접속 및 스냅샷 동기화 실행 (DIRECTIVE 096)."""
         from chaficial.platform.sourcing.carmanager_sync import CarManagerSyncService
+        from chaficial.platform.sourcing.carmanager_client import CarManagerLiveClient
         import json
 
         service = CarManagerSyncService()
-        if scope == "OWNED":
-            snap_file = "scratch/carmanager_inspect/my_13_cleaned_cars.json"
-        else:
-            snap_file = "scratch/carmanager_inspect/janghanpyeong_20_sampled.json"
+        snapshot = []
+        source_mode = "LIVE"
 
         try:
-            with open(snap_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            snapshot = data if isinstance(data, list) else data.get("cars", [])
+            if scope == "OWNED":
+                if use_live:
+                    try:
+                        client = CarManagerLiveClient()
+                        snapshot = client.fetch_live_my_cars()
+                        source_mode = "LIVE_CARMANAGER_SESSION"
+                    except Exception as live_err:
+                        # 네트워크 일시 오류 시 안전하게 캐시 스냅샷 폴백
+                        with open("scratch/carmanager_inspect/my_13_cleaned_cars.json", "r", encoding="utf-8") as f:
+                            snapshot = json.load(f)
+                        source_mode = f"CACHE_FALLBACK ({str(live_err)[:60]})"
+                else:
+                    with open("scratch/carmanager_inspect/my_13_cleaned_cars.json", "r", encoding="utf-8") as f:
+                        snapshot = json.load(f)
+                    source_mode = "CACHE_FILE"
+            else:
+                with open("scratch/carmanager_inspect/janghanpyeong_20_sampled.json", "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                snapshot = data if isinstance(data, list) else data.get("cars", [])
+                source_mode = "JANGHANPYEONG_OBSERVED_REAL"
+
             stats = service.run_sync(snapshot, scope=scope)
+            stats["source_mode"] = source_mode
             return {"success": True, "stats": stats}
         except Exception as e:
             return {"success": False, "error": str(e)}
