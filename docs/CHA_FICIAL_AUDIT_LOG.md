@@ -1,7 +1,37 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 01:38:00 KST  
+> **최종 갱신일:** 2026-10-31 02:00:00 KST  
+
+---
+
+## [DIRECTIVE 126] 과거 스냅샷 운영 오염 방지(HISTORICAL_REPLAY 격리), 관리자 승인 NULL 차단, 큐 백오프 및 통합 테스트 완결
+- **일시:** 2026-10-31 02:00 KST
+- **수행 태스크**:
+  1. **TASK 1 (P0: 과거 스냅샷 운영 DB 오염 방지 및 raw_sha256 중복 이벤트 차단, ISSUE-92)**:
+     - `scripts/run_daily_sync.py`: 로컬 JSON 스냅샷 로드 시 `HISTORICAL_REPLAY` 모드로 명시. 운영 DB(`chamart_platform_demo.db`)에 대해 쓰기 시도 시 예외 및 `DRY_RUN=True` 강제 적용으로 과거 데이터의 오늘 날짜 변조 원천 차단.
+     - `src/chaficial/platform/sourcing/market_timeseries_engine.py`: `raw_sha256` 해시 기준 멱등성 검증 추가 및 인덱스(`idx_runs_raw_sha256`) 구축. 동일 원본 반복 투입 시 `status='ALREADY_RECORDED_HASH'` 반환으로 중복 이벤트 0건 보장.
+     - `src/chaficial/platform/sourcing/carmanager_sync.py`: 신규 마스터 INSERT 시 `fuel_type` NOT NULL 제약조건 결함 방어 (`fuel or 'UNKNOWN'`).
+     - 회귀 테스트(`scratch/test_directive_126_task1_replay_guard.py`) 100% Pass (운영 DB 쓰기 차단, 중복 해시 0건 이벤트, 독립 DB 반복 실행 시 불변 입증).
+  2. **TASK 2 (관리자 승인 NULL/빈값 차단 및 큐 next_retry_at 백오프/lease_expires_at 필수화, ISSUE-93, 94)**:
+     - `cross_platform_matcher.py`: `admin_approvals` 레코드 검증 시 `platform` 또는 `external_car_id`가 NULL이거나 빈 문자열이면 즉시 `PermissionError` 거부. 승인 레코드와 매칭 대상 간 `platform`, `vehicle_id`, `external_car_id` 100% 일치 강제.
+     - `incremental_market_observer.py`:
+       * `market_detail_fetch_queue`에 `next_retry_at DATETIME` 스키마 마이그레이션 적용.
+       * `mark_queue_item_failed`: 실패 시 지수 백오프 `next_retry_at = now + 60s * retry_count` 부여.
+       * `claim_next_queue_item`: `(queue_status = 'PENDING' OR (queue_status = 'FAILED' AND (next_retry_at IS NULL OR next_retry_at <= now)))` 조건 적용으로 백오프 기간 동안 재선점 차단.
+       * `mark_queue_item_completed` 및 `mark_queue_item_failed`: `lease_expires_at IS NOT NULL` 필수 강제 (NULL 시 작업 거부).
+     - 회귀 테스트(`scratch/test_directive_126_task2_lease_retry.py`) 100% Pass.
+  3. **TASK 3 (카매니저 실시간 T2 관측 원본(50대) 상태 확정, ISSUE-95)**:
+     - `scratch/datapart_page1_real.html`은 4,721바이트 빈 프레임 셸임을 실측 확인 완료.
+     - 실시간 로그인 세션을 통한 신규 관측 캡처 전까지 정직하게 `REAL_PILOT_PENDING_NEW_CAPTURE` 유지.
+  4. **TASK 4 (일일 동기화 db_path 파라미터 완전 존중 및 외부 HTTP 0건 보장 통합 검증, ISSUE-96)**:
+     - `scripts/run_daily_sync.py`: 하드코딩된 DB 경로 제거하고 `db_path` 인자를 일일 파이프라인 전체(시계열, 자사 동기화, 시장 동기화)에 일관 주입.
+     - `scratch/test_directive_126_task4_pipeline_integration.py`:
+       * socket 연결 차단 가드로 외부 HTTP 요청 0건 물리적 보장.
+       * 독립 DB에서 T1 재생, 1,764대 리스팅, 1회 수집 실행, 1,764대 차량 정상 적재 완주.
+       * MARKET 동기화 단계 오류 주입 시 시계열·자사·시장 전 단계 100% 원자적 롤백(잔류 레코드 0건) 실측 검증.
+  5. **TASK 5 (마스터 체크리스트 갱신 및 3대 범주 분류 준수)**:
+     - `docs/CHA_FICIAL_MASTER_CHECKLIST.md`에 ISSUE-92~96 등록 완료.
 
 ---
 

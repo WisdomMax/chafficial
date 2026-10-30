@@ -43,6 +43,10 @@ class IncrementalMarketObserver:
         self.db_path = db_path
         self._ensure_queue_table()
 
+    def ensure_schema(self):
+        """명시적 스키마 초기화 메서드"""
+        self._ensure_queue_table()
+
     def _ensure_queue_table(self):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
@@ -62,11 +66,12 @@ class IncrementalMarketObserver:
                 worker_id VARCHAR(50),
                 claim_token VARCHAR(64),
                 lease_expires_at DATETIME,
+                next_retry_at DATETIME,
                 PRIMARY KEY (platform, listing_id)
             );
         """)
-        # 컬럼 마이그레이션 (DIRECTIVE 124 TASK 2, ISSUE-83)
-        for col, col_type in [("worker_id", "VARCHAR(50)"), ("claim_token", "VARCHAR(64)"), ("lease_expires_at", "DATETIME")]:
+        # 컬럼 마이그레이션 (DIRECTIVE 124 TASK 2, ISSUE-83 & DIRECTIVE 126 TASK 2, ISSUE-94)
+        for col, col_type in [("worker_id", "VARCHAR(50)"), ("claim_token", "VARCHAR(64)"), ("lease_expires_at", "DATETIME"), ("next_retry_at", "DATETIME")]:
             try:
                 c.execute(f"ALTER TABLE market_detail_fetch_queue ADD COLUMN {col} {col_type};")
             except sqlite3.OperationalError:
@@ -240,26 +245,36 @@ class IncrementalMarketObserver:
         claimed_row = None
         with conn:
             c.execute("BEGIN IMMEDIATE;")
-            # PENDING 및 FAILED 상태 모두 선점 대상 (단, PENDING 우선, retry_count 미달)
+            # DIRECTIVE 126 TASK 2 (ISSUE-94): PENDING 및 재시도 기한(next_retry_at) 도래한 FAILED 상태 선점
             c.execute("""
                 SELECT platform, listing_id, plate_number, model_name, raw_location, retry_count, queue_status
                 FROM market_detail_fetch_queue
-                WHERE platform = ? AND queue_status IN ('PENDING', 'FAILED') AND retry_count < ?
+                WHERE platform = ? 
+                  AND (
+                      queue_status = 'PENDING' 
+                      OR (queue_status = 'FAILED' AND (next_retry_at IS NULL OR next_retry_at <= ?))
+                  )
+                  AND retry_count < ?
                 ORDER BY CASE WHEN queue_status = 'PENDING' THEN 0 ELSE 1 END, discovered_at ASC
                 LIMIT 1
-            """, (platform, max_retries))
+            """, (platform, now_iso, max_retries))
             row = c.fetchone()
             if row:
-                # 조건부 UPDATE로 원자적 상태 변경 (IN_PROGRESS with lease & token)
+                # 조건부 UPDATE로 원자적 상태 변경 (IN_PROGRESS with lease & token, next_retry_at 리셋)
                 c.execute("""
                     UPDATE market_detail_fetch_queue SET
                         queue_status = 'IN_PROGRESS',
                         worker_id = ?,
                         claim_token = ?,
                         lease_expires_at = ?,
+                        next_retry_at = NULL,
                         updated_at = ?
-                    WHERE platform = ? AND listing_id = ? AND queue_status IN ('PENDING', 'FAILED')
-                """, (active_worker_id, claim_token, lease_expires_iso, now_iso, row[0], row[1]))
+                    WHERE platform = ? AND listing_id = ? 
+                      AND (
+                          queue_status = 'PENDING' 
+                          OR (queue_status = 'FAILED' AND (next_retry_at IS NULL OR next_retry_at <= ?))
+                      )
+                """, (active_worker_id, claim_token, lease_expires_iso, now_iso, row[0], row[1], now_iso))
                 if c.rowcount == 1:
                     claimed_row = row
 
@@ -283,8 +298,8 @@ class IncrementalMarketObserver:
     def mark_queue_item_completed(self, platform: str, listing_id: str, claim_token: str) -> bool:
         """
         Marks item completed. 
-        DIRECTIVE 125 TASK 2: claim_token is STRICTLY REQUIRED (None prohibited).
-        Verifies token match, IN_PROGRESS status, and active lease validity (lease_expires_at >= now).
+        DIRECTIVE 125/126 TASK 2: claim_token is STRICTLY REQUIRED (None prohibited).
+        DIRECTIVE 126 TASK 2: lease_expires_at MUST NOT be NULL and must be active (lease_expires_at >= now).
         """
         if not claim_token or not isinstance(claim_token, str):
             raise ValueError("claim_token is strictly required to mark queue item completed.")
@@ -296,12 +311,17 @@ class IncrementalMarketObserver:
             c.execute("""
                 UPDATE market_detail_fetch_queue SET
                     queue_status = 'COMPLETED',
+                    worker_id = NULL,
+                    claim_token = NULL,
+                    lease_expires_at = NULL,
+                    next_retry_at = NULL,
                     updated_at = ?
                 WHERE platform = ? 
                   AND listing_id = ? 
                   AND claim_token = ? 
                   AND queue_status = 'IN_PROGRESS'
-                  AND (lease_expires_at IS NULL OR lease_expires_at >= ?)
+                  AND lease_expires_at IS NOT NULL
+                  AND lease_expires_at >= ?
             """, (now_iso, platform, listing_id, claim_token, now_iso))
             success = (c.rowcount > 0)
         conn.close()
@@ -317,44 +337,55 @@ class IncrementalMarketObserver:
     ) -> bool:
         """
         Marks item failed. 
-        DIRECTIVE 125 TASK 2: claim_token is strictly required.
-        Verifies token, IN_PROGRESS status, and lease validity.
-        Resets worker_id, claim_token, lease_expires_at so it can be reclaimed if retries remain.
-        If retry_count reaches max_retries, permanently transitions to REQUIRES_ADMIN_REVIEW.
+        DIRECTIVE 125/126 TASK 2: claim_token is strictly required.
+        DIRECTIVE 126 TASK 2 (ISSUE-94): 
+        - lease_expires_at MUST NOT be NULL and must be active (lease_expires_at >= now).
+        - Assigns backoff next_retry_at = now + 60s * retry_count.
+        - Resets worker_id, claim_token, lease_expires_at so it can be reclaimed after backoff.
+        - If retry_count reaches max_retries, permanently transitions to REQUIRES_ADMIN_REVIEW.
         """
         if not claim_token or not isinstance(claim_token, str):
             raise ValueError("claim_token is strictly required to mark queue item failed.")
 
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
-        with conn:
-            c.execute("""
-                SELECT retry_count FROM market_detail_fetch_queue 
-                WHERE platform = ? AND listing_id = ? AND claim_token = ? AND queue_status = 'IN_PROGRESS'
-                  AND (lease_expires_at IS NULL OR lease_expires_at >= ?)
-            """, (platform, listing_id, claim_token, now_iso))
-            r = c.fetchone()
-            if not r:
-                conn.close()
-                return False
+        now_epoch = time.time()
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00", time.localtime(now_epoch))
+        success = False
+        try:
+            with conn:
+                c.execute("""
+                    SELECT retry_count FROM market_detail_fetch_queue 
+                    WHERE platform = ? AND listing_id = ? AND claim_token = ? AND queue_status = 'IN_PROGRESS'
+                      AND lease_expires_at IS NOT NULL
+                      AND lease_expires_at >= ?
+                """, (platform, listing_id, claim_token, now_iso))
+                r = c.fetchone()
+                if r:
+                    cur_retries = r[0] + 1
+                    if cur_retries >= max_retries:
+                        next_status = "REQUIRES_ADMIN_REVIEW"
+                        next_retry_iso = None
+                    else:
+                        next_status = "FAILED"
+                        backoff_seconds = 60 * cur_retries
+                        next_retry_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00", time.localtime(now_epoch + backoff_seconds))
 
-            cur_retries = r[0] + 1
-            next_status = "REQUIRES_ADMIN_REVIEW" if cur_retries >= max_retries else "FAILED"
-
-            c.execute("""
-                UPDATE market_detail_fetch_queue SET
-                    queue_status = ?,
-                    retry_count = ?,
-                    error_message = ?,
-                    worker_id = NULL,
-                    claim_token = NULL,
-                    lease_expires_at = NULL,
-                    updated_at = ?
-                WHERE platform = ? AND listing_id = ? AND claim_token = ?
-            """, (next_status, cur_retries, error_msg, now_iso, platform, listing_id, claim_token))
-            success = (c.rowcount > 0)
-        conn.close()
+                    c.execute("""
+                        UPDATE market_detail_fetch_queue SET
+                            queue_status = ?,
+                            retry_count = ?,
+                            error_message = ?,
+                            worker_id = NULL,
+                            claim_token = NULL,
+                            lease_expires_at = NULL,
+                            next_retry_at = ?,
+                            updated_at = ?
+                        WHERE platform = ? AND listing_id = ? AND claim_token = ?
+                    """, (next_status, cur_retries, error_msg, next_retry_iso, now_iso, platform, listing_id, claim_token))
+                    success = (c.rowcount > 0)
+        finally:
+            conn.close()
         return success
 
     def get_pending_queue_items(self, limit: int = 50) -> List[Dict[str, Any]]:

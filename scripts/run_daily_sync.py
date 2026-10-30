@@ -39,12 +39,14 @@ async def collect_live_snapshot(max_pages: int = 89):
     result = await collector.run_full_collection(max_pages=max_pages, throttle_sec=0.35)
     return result
 
-def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry_run: bool = False):
+def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry_run: bool = False, db_path: str = "data/chamart/chamart_platform_demo.db"):
     print("========================================================")
-    print(f"[*] Chaficial Live Daily Sync: {datetime.now().isoformat()} (LIVE_COLLECTOR={use_live_collector}, DRY_RUN={dry_run})")
+    print(f"[*] Chaficial Daily Sync Pipeline: {datetime.now().isoformat()} (LIVE_COLLECTOR={use_live_collector}, DRY_RUN={dry_run})")
     print("========================================================")
 
     all_cars = []
+    capture_time = datetime.now().isoformat()
+    observation_mode = "LIVE_OBSERVED" if use_live_collector else "HISTORICAL_REPLAY"
 
     if use_live_collector:
         print(f"[*] [LIVE MODE] Executing live CarManager crawler for up to {max_pages} pages...")
@@ -60,7 +62,7 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
             print(f"[!] Live collection failed with exception: {e}", file=sys.stderr)
             sys.exit(1)
     else:
-        print("[!] [DRY-RUN / FALLBACK MODE] Loading snapshot from local disk...")
+        print("[!] [HISTORICAL_REPLAY MODE] Loading historical snapshot from local disk...")
         latest_snapshot_path = "data/carmanager_raw/janghanpyeong_full_collection.json"
         if not os.path.exists(latest_snapshot_path):
             print(f"[!] Snapshot file {latest_snapshot_path} not found.", file=sys.stderr)
@@ -68,15 +70,24 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
         with open(latest_snapshot_path, "r", encoding="utf-8") as f:
             full_data = json.load(f)
         all_cars = full_data.get("cars", [])
-        print(f"[+] Loaded verified snapshot with {len(all_cars)} cars.")
+        # 원본 생성 시각 보존
+        summary = full_data.get("summary", {})
+        capture_time = summary.get("collected_at") or "2026-10-27T10:00:00+09:00"
+        print(f"[+] Loaded verified historical snapshot with {len(all_cars)} cars (Captured at {capture_time}).")
+
+        # DIRECTIVE 126 TASK 1 (P0, ISSUE-92): 과거 스냅샷으로 운영 DB에 오늘 날짜 신규 관측/가격변동을 기록하는 행위 원천 차단!
+        real_db_abs = os.path.realpath(db_path)
+        is_real_prod = "chamart_platform_demo.db" in real_db_abs and "sandbox" not in real_db_abs and "test" not in real_db_abs
+        if is_real_prod and not dry_run:
+            print("[!] CRITICAL P0 GUARD: Historical snapshot (HISTORICAL_REPLAY) CANNOT be committed to operational production DB!", file=sys.stderr)
+            print("[!] Production commits require verified real-time T2 observations. Forcing DRY_RUN=True.", file=sys.stderr)
+            dry_run = True
 
     # 1. 전체 수집량 검증 (최소 1,500대 미만 시 즉시 차단)
     if len(all_cars) < MIN_TOTAL_THRESHOLD:
         print(f"[!] CRITICAL GUARD: Total harvested vehicle count ({len(all_cars)}) is below strict threshold ({MIN_TOTAL_THRESHOLD}).", file=sys.stderr)
         print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
-        sys.exit(1)
-
-    service = CarManagerSyncService(db_path="data/chamart/chamart_platform_demo.db", dry_run=dry_run)
+        raise RuntimeError(f"Total harvested vehicle count ({len(all_cars)}) is below strict threshold ({MIN_TOTAL_THRESHOLD}).")
 
     # 우리 상사 매물 분리 ((주)더쿨모터스 및 더쿨모터스)
     owned_cars = []
@@ -94,18 +105,16 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
     if len(owned_cars) < MIN_OWNED_THRESHOLD:
         print(f"[!] CRITICAL GUARD: Owned vehicle count ({len(owned_cars)}) is below strict threshold ({MIN_OWNED_THRESHOLD}).", file=sys.stderr)
         print("[!] Aborting database writes completely to protect owned inventory.", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError(f"Owned vehicle count ({len(owned_cars)}) is below strict threshold ({MIN_OWNED_THRESHOLD}).")
 
     # 3. 시장 관측 수집량 임계치 사전 검증 (시계열 및 운영 DB 쓰기 전 사전 차단)
     if len(market_cars) < MIN_MARKET_OBSERVED_THRESHOLD:
         print(f"[!] CRITICAL GUARD: Market observed vehicle count ({len(market_cars)}) is below threshold ({MIN_MARKET_OBSERVED_THRESHOLD}).", file=sys.stderr)
         print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError(f"Market observed vehicle count ({len(market_cars)}) is below threshold ({MIN_MARKET_OBSERVED_THRESHOLD}).")
 
     # [DIRECTIVE 125 TASK 3, ISSUE-89: 스키마 사전 준비(트랜잭션 락 충돌 방지) 및 원자적 트랜잭션]
-    db_path = "data/chamart/chamart_platform_demo.db"
-    
-    # 1. 트랜잭션 진입 전 스키마 사전 확인 (BEGIN IMMEDIATE 락 충돌 원천 방지)
+    # [DIRECTIVE 126 TASK 4, ISSUE-96: db_path 파라미터 완전 존중 (독립 테스트 DB 지원)]
     ts_engine = MarketTimeSeriesEngine(db_path=db_path, dry_run=dry_run)
     service = CarManagerSyncService(db_path=db_path, dry_run=dry_run)
 
@@ -120,11 +129,11 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
             atomic_conn.execute("BEGIN IMMEDIATE;")
 
         # 4. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록 (선행)
-        ts_res = ts_engine.record_snapshot(all_cars, dry_run=dry_run, connection=atomic_conn)
+        ts_res = ts_engine.record_snapshot(all_cars, started_at=capture_time, finished_at=capture_time, dry_run=dry_run, connection=atomic_conn)
         print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
 
-        # 시계열 저장이 성공하지 않았으면 즉시 롤백 및 중단
-        if "SUCCESS" not in ts_res.get("status", ""):
+        # 시계열 저장이 성공 또는 이미 기록된 해시가 아니면 즉시 롤백 및 중단
+        if "SUCCESS" not in ts_res.get("status", "") and "ALREADY_RECORDED" not in ts_res.get("status", ""):
             raise RuntimeError(f"Market TimeSeries failed with status '{ts_res.get('status')}'.")
 
         # 5. 우리 상사 운영 동기화 (시계열 성공 확인 후 실행)
@@ -147,11 +156,7 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
         if not dry_run:
             atomic_conn.rollback()
             print(f"[!] CRITICAL GUARD: Sync pipeline aborted. ATOMIC ROLLBACK completed: {ex}", file=sys.stderr)
-        try:
-            atomic_conn.close()
-        except Exception:
-            pass
-        sys.exit(1)
+        raise ex
     finally:
         try:
             atomic_conn.close()
@@ -180,6 +185,15 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
     print("========================================================")
     print(f"[+] Live Sync Completed Successfully at {datetime.now().isoformat()} (DRY_RUN={dry_run})")
     print("========================================================")
+    return {
+        "status": "SUCCESS",
+        "dry_run": dry_run,
+        "db_path": db_path,
+        "total_cars": len(all_cars),
+        "owned_result": owned_res,
+        "market_result": market_res,
+        "timeseries_result": ts_res
+    }
 
 if __name__ == "__main__":
     # DIRECTIVE 125 TASK 3: 고속 89페이지 실시간 수집은 기본 비활성화 (--live 명시 시에만 가동)

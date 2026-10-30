@@ -33,6 +33,10 @@ class MarketTimeSeriesEngine:
         if not dry_run:
             self._ensure_tables()
 
+    def ensure_schema(self):
+        """명시적 스키마 초기화 메서드"""
+        self._ensure_tables()
+
     def _ensure_tables(self):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
@@ -93,6 +97,7 @@ class MarketTimeSeriesEngine:
             )
         """)
         c.execute("CREATE INDEX IF NOT EXISTS idx_events_encarno_type ON market_listing_events(encarno, event_type)")
+        c.execute("CREATE INDEX IF NOT EXISTS idx_runs_raw_sha256 ON market_collection_runs(raw_sha256)")
 
         conn.commit()
         conn.close()
@@ -151,6 +156,24 @@ class MarketTimeSeriesEngine:
                 "price_increased_count": 0,
                 "disappeared_count": 0,
                 "message": f"Execution run_id {run_id} already recorded. Duplicate run skipped."
+            }
+
+        # [DIRECTIVE 126 TASK 1 (ISSUE-92): raw_sha256 기준 재실행 멱등성 검증 - 동일 원본 해시 중복 이벤트 차단]
+        c.execute("SELECT run_id FROM market_collection_runs WHERE raw_sha256 = ? AND status = 'SUCCESS' LIMIT 1", (raw_sha256,))
+        existing_hash_run = c.fetchone()
+        if existing_hash_run:
+            if owns_conn:
+                conn.close()
+            return {
+                "run_id": existing_hash_run[0],
+                "status": "ALREADY_RECORDED_HASH",
+                "observations_count": 0,
+                "events_count": 0,
+                "appeared_count": 0,
+                "price_decreased_count": 0,
+                "price_increased_count": 0,
+                "disappeared_count": 0,
+                "message": f"Snapshot with raw_sha256 {raw_sha256} already successfully recorded under run_id {existing_hash_run[0]}. Duplicate event generation blocked."
             }
 
         # [TASK 4: 동일 source 및 search_condition 범위 내 최신 run_id 조회]

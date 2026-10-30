@@ -256,6 +256,8 @@ class CarManagerSyncService:
                     ownership_to_set = "OWNED" if scope == "OWNED" else "MARKET_JANGHANPYEONG"
 
                     db_km_val = norm["mileage_km"]
+                    fuel_val = norm.get("fuel") or "UNKNOWN"
+                    mission_val = norm.get("mission") or "오토"
                     cursor.execute("""
                         INSERT INTO vehicles (
                             id, branch_id, plate_number, model_name, year, mileage, 
@@ -265,7 +267,7 @@ class CarManagerSyncService:
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', 0, '[]', ?, ?, ?, ?, ?, ?)
                     """, (
                         new_veh_id, branch_id, db_plate_number, norm["model_name"],
-                        norm["model_year"], db_km_val, norm.get("fuel"), norm.get("mission"),
+                        norm["model_year"], db_km_val, fuel_val, mission_val,
                         norm.get("color") or raw_car.get("color") or "미상", 0, init_target_price, now, now, init_pub_status, init_is_public,
                         ownership_to_set, json.dumps({"plate_tail": plate_tail, "is_price_unannounced": is_unannounced})
                     ))

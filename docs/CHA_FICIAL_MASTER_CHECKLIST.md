@@ -101,6 +101,11 @@
 | **ISSUE-89** | 일일 동기화 MARKET 함수 내부 SQL 오류 시 롤백 및 트랜잭션 락 충돌 위험 | 심각 | 🟢 해결완료 | `scripts/run_daily_sync.py` (트랜잭션 진입 전 스키마 확인, MARKET 내부 실제 오류 롤백 100% 입증) |
 | **ISSUE-90** | 근거 약한 차량의 연료 임의 가솔린 추측 왜곡 결함 | 보통 | 🟢 해결완료 | `audit_directive_124_task3_fuel.py` (스타렉스/CLS 2건 UNKNOWN(conf:0.0) 보정, 4.7KB 빈 셸 Git 동기화) |
 | **ISSUE-91** | 일일 동기화 기본 실행의 89페이지 고속 실시간 수집 활성화 결함 | 높음 | 🟢 해결완료 | `scripts/run_daily_sync.py` (기본값 안전 검증 모드 전환, --live 플래그 명시 시에만 네트워크 가동) |
+| **ISSUE-92** | 과거 스냅샷(`janghanpyeong_full_collection.json`)의 운영 DB 오염 및 동일 원본 이벤트 중복 결함 | 심각 | 🟢 해결완료 | `run_daily_sync.py`, `market_timeseries_engine.py` (HISTORICAL_REPLAY 강제 및 raw_sha256 중복 이벤트 차단) |
+| **ISSUE-93** | 관리자 승인 platform / external_car_id NULL 허용 보안 취약점 | 보통 | 🟢 해결완료 | `cross_platform_matcher.py` (NULL/빈값 무조건 승인 거부, 승인 레코드 100% 필수 일치 강제) |
+| **ISSUE-94** | 상세조회 큐 FAILED 항목 무제한 즉시 재선점 및 lease_expires_at NULL 우회 결함 | 높음 | 🟢 해결완료 | `incremental_market_observer.py` (next_retry_at 백오프 부여, lease_expires_at NULL 엄격 차단) |
+| **ISSUE-95** | 카매니저 실시간 T2 관측 원본(50대) 미확보 상태 규명 | 보통 | 🟡 관측대기 | `datapart_page1_real.html` 4.7KB 빈 셸 확인, 신규 캡처 페이로드 대기 상태(REAL_PILOT_PENDING_NEW_CAPTURE) 정직 유지 |
+| **ISSUE-96** | 일일 동기화 파이프라인 db_path 하드코딩으로 인한 독립 테스트 격리 실패 | 보통 | 🟢 해결완료 | `scripts/run_daily_sync.py` (db_path 파라미터 완전 존중, 외부 HTTP 0건 보장 통합 테스트 완료) |
 
 ---
 

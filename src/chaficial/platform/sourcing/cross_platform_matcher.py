@@ -259,11 +259,15 @@ class CrossPlatformMatcher:
                 status_found = row[0] if row else "NOT_FOUND"
                 raise PermissionError(f"MANUAL_VERIFIED denied: No matching APPROVED record found in admin_approvals table for approval_id='{admin_approval['approval_id']}', status='{status_found}'.")
             
-            # 매칭 대상 플랫폼 및 external_car_id 일치 물리적 검증 (도용 원천 차단)
-            appr_plat, appr_ext_id = row[1], row[2]
-            if appr_plat and appr_plat != match.source_platform:
+            # DIRECTIVE 126 TASK 2 (ISSUE-93): platform 또는 external_car_id가 NULL/빈값이면 무조건 승인 거부!
+            # 승인 레코드와 매칭 대상 간 platform, vehicle_id, external_car_id 100% 필수 일치 강제
+            appr_plat = (row[1] or "").strip()
+            appr_ext_id = (row[2] or "").strip()
+            if not appr_plat or not appr_ext_id:
+                raise PermissionError(f"MANUAL_VERIFIED denied: Incomplete approval record. platform='{appr_plat}', external_car_id='{appr_ext_id}' cannot be null or empty.")
+            if appr_plat != match.source_platform:
                 raise PermissionError(f"MANUAL_VERIFIED denied: Platform mismatch. Approval is for '{appr_plat}', but match is '{match.source_platform}'.")
-            if appr_ext_id and appr_ext_id != match.external_car_id:
+            if appr_ext_id != match.external_car_id:
                 raise PermissionError(f"MANUAL_VERIFIED denied: External Car ID mismatch. Approval is for '{appr_ext_id}', but match is '{match.external_car_id}'.")
 
         conn = sqlite3.connect(self.db_path)
