@@ -48,9 +48,10 @@ for idx, car in enumerate(cars_50, 1):
             confidence = 0.85
             reason = "모델명에 가솔린/GDi/터보 가솔린 계열 명시"
         else:
-            inferred = "가솔린" # 한국 내수 통상 일반 승용 기본 트림
-            confidence = 0.60
-            reason = "특수 엔진 미표기 승용차 기본값 (도메인 추론)"
+            # DIRECTIVE 125 TASK 4: 엔진/트림 명시가 없는 차량에 가솔린 임의 추측 배제 -> UNKNOWN 보정
+            inferred = "UNKNOWN"
+            confidence = 0.0
+            reason = "모델명에 연료/엔진 명시 없음 (임의 추측 배제, 원본 미표기 유지)"
 
         missing_fuel_items.append({
             "sample_index": idx,

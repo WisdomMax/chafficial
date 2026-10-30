@@ -1,5 +1,5 @@
 """
-DIRECTIVE 124 TASK 5: 일일 운영 가드 중간 실패 시 부분 커밋 방지 및 원자적 롤백 검증 (ISSUE-86)
+DIRECTIVE 125 TASK 3: MARKET 함수 내부 실제 SQL 오류 주입 및 단일 트랜잭션 전체 롤백 무결성 검증 (ISSUE-89)
 """
 
 import os
@@ -13,7 +13,7 @@ TEST_DB = "scratch/test_atomic_rollback.db"
 def setup_test_db():
     if os.path.exists(TEST_DB):
         os.remove(TEST_DB)
-    # 초기 스키마 및 더미 차량 1건 생성
+    # 초기 스키마 및 초기 기준 차량 1건 생성
     conn = sqlite3.connect(TEST_DB)
     c = conn.cursor()
     c.execute("""
@@ -68,44 +68,56 @@ def setup_test_db():
     conn.commit()
     conn.close()
 
-def test_atomic_rollback_on_intermediate_failure():
+def test_market_internal_sql_error_atomic_rollback():
     setup_test_db()
 
-    # 모의 차량 데이터
+    # 스키마 사전 확인 (BEGIN IMMEDIATE 락 충돌 방지 검증)
+    ts_engine = MarketTimeSeriesEngine(db_path=TEST_DB)
+    sync_service = CarManagerSyncService(db_path=TEST_DB)
+
     mock_all_cars = [
         {"encarno": "enc_owned_new", "model": "자사 신규차량", "shop": "더쿨모터스", "price": "2000", "mileage": "3만km", "year": "2022"},
-        {"encarno": "enc_market_new", "model": "시장 신규차량", "shop": "타사상사", "price": "1500", "mileage": "4만km", "year": "2021"}
+        {"encarno": "enc_market_bad", "model": "시장 결함차량", "shop": "타사상사", "price": "1500", "mileage": "4만km", "year": "2021"}
     ]
     owned_cars = [mock_all_cars[0]]
     market_cars = [mock_all_cars[1]]
 
-    ts_engine = MarketTimeSeriesEngine(db_path=TEST_DB)
-    sync_service = CarManagerSyncService(db_path=TEST_DB)
-
-    # 1. 단일 원자적 트랜잭션 개시
     atomic_conn = sqlite3.connect(TEST_DB)
     atomic_conn.execute("BEGIN IMMEDIATE;")
     rolled_back = False
 
     try:
-        # 1-1. 시계열 기록 (4단계) - 성공
+        # 1. 4단계: 시계열 관측 기록 (정상 실행)
         ts_res = ts_engine.record_snapshot(mock_all_cars, connection=atomic_conn)
         assert ts_res["status"] == "SUCCESS"
-        print("[+] Phase 4 (TimeSeries) executed in transaction")
+        print("[+] Phase 4: TimeSeries executed successfully in transaction")
 
-        # 1-2. OWNED 자사 차량 동기화 (5단계) - 성공
+        # 2. 5단계: OWNED 자사 차량 동기화 (정상 실행 - DB 쓰기 발생)
         owned_res = sync_service.run_sync(current_snapshot=owned_cars, scope="OWNED", connection=atomic_conn)
         assert owned_res["status"] == "SUCCESS"
-        print("[+] Phase 5 (Owned Sync) executed in transaction")
+        assert owned_res["new_inserted"] == 1
+        print("[+] Phase 5: Owned Sync executed successfully (1 car staged in transaction)")
 
-        # 1-3. MARKET 시장 동기화 (6단계) 도중 치명적 장애 발생 시뮬레이션!
-        raise RuntimeError("Simulated network timeout or threshold failure in Phase 6 (Market Scope)")
+        # 3. 6단계: MARKET 동기화 함수 내부에서 실제 SQL 장애 주입!
+        # (예: 외래키/NOT NULL 제약 위반 또는 의도된 문법 오류를 sync_service에 주입)
+        class FaultySyncService(CarManagerSyncService):
+            def run_sync(self, *args, **kwargs):
+                # 내부 cursor로 잘못된 쿼리를 직접 실행하여 sqlite3.OperationalError 발생
+                conn = kwargs.get("connection")
+                c = conn.cursor()
+                c.execute("INSERT INTO non_existent_corrupted_table VALUES (1, 2, 3);")
+                return super().run_sync(*args, **kwargs)
 
-        # 정상이라면 commit 수행
+        faulty_market_service = FaultySyncService(db_path=TEST_DB)
+        market_res = faulty_market_service.run_sync(
+            current_snapshot=market_cars, 
+            scope="MARKET_OBSERVED", 
+            connection=atomic_conn
+        )
         atomic_conn.commit()
 
     except Exception as ex:
-        print("[!] Exception caught, rolling back atomically:", ex)
+        print("[!] Phase 6 내부 실제 SQL 에러 발생 확인:", ex)
         atomic_conn.rollback()
         rolled_back = True
     finally:
@@ -113,17 +125,14 @@ def test_atomic_rollback_on_intermediate_failure():
 
     assert rolled_back is True, "트랜잭션이 롤백되지 않았습니다!"
 
-    # 2. 롤백 후 DB 상태 전수 검사
+    # 4. 롤백 후 DB 전수 검증: 4단계 시계열 및 5단계 OWNED 차량이 단 1건도 잔류하지 않고 100% 롤백되었는지 검증!
     verify_conn = sqlite3.connect(TEST_DB)
     c = verify_conn.cursor()
 
-    # 시계열 테이블 검사: 단 1건도 커밋되지 않았어야 함 (0건)
     c.execute("SELECT COUNT(*) FROM market_collection_runs")
     run_count = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM market_listing_observations")
     obs_count = c.fetchone()[0]
-
-    # 차량 테이블 검사: 초기 1대만 존재해야 함 (신규 자사 차량 커밋 방지)
     c.execute("SELECT COUNT(*) FROM vehicles")
     veh_count = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM vehicle_listings")
@@ -131,18 +140,18 @@ def test_atomic_rollback_on_intermediate_failure():
 
     verify_conn.close()
 
-    print(f"\n[Rollback Verification Audit]:")
-    print(f"  - market_collection_runs count: {run_count} (기대값: 0)")
-    print(f"  - market_listing_observations count: {obs_count} (기대값: 0)")
-    print(f"  - vehicles count: {veh_count} (기대값: 1 - 초기 차량 유지)")
-    print(f"  - vehicle_listings count: {list_count} (기대값: 1 - 초기 매물 유지)")
+    print(f"\n[Post-Rollback Exhaustive Audit]:")
+    print(f"  - market_collection_runs: {run_count} (기대값: 0 - 4단계 롤백 완료)")
+    print(f"  - market_listing_observations: {obs_count} (기대값: 0 - 4단계 롤백 완료)")
+    print(f"  - vehicles count: {veh_count} (기대값: 1 - 5단계 신규차량 롤백 완료, 초기차량만 보존)")
+    print(f"  - vehicle_listings count: {list_count} (기대값: 1 - 5단계 신규매물 롤백 완료, 초기매물만 보존)")
 
-    assert run_count == 0, f"market_collection_runs에 잔류 데이터 존재: {run_count}"
-    assert obs_count == 0, f"market_listing_observations에 잔류 데이터 존재: {obs_count}"
-    assert veh_count == 1, f"vehicles에 중간 커밋된 신규 차량 존재: {veh_count}"
-    assert list_count == 1, f"vehicle_listings에 중간 커밋된 리스팅 존재: {list_count}"
+    assert run_count == 0, "market_collection_runs가 롤백되지 않음!"
+    assert obs_count == 0, "market_listing_observations가 롤백되지 않음!"
+    assert veh_count == 1, "5단계에서 추가된 신규 차량이 롤백되지 않고 잔류함!"
+    assert list_count == 1, "5단계에서 추가된 신규 리스팅이 롤백되지 않고 잔류함!"
 
-    print("\n[+] DIRECTIVE 124 TASK 5 (ISSUE-86) 단일 원자적 롤백 및 스테이징 무결성 100% PASS!")
+    print("\n[+] DIRECTIVE 125 TASK 3 (ISSUE-89) MARKET 내부 실제 SQL 오류 시 전체 원자적 롤백 100% PASS!")
 
 if __name__ == "__main__":
-    test_atomic_rollback_on_intermediate_failure()
+    test_market_internal_sql_error_atomic_rollback()

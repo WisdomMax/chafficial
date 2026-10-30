@@ -96,6 +96,11 @@
 | **ISSUE-84** | 원본 50대 연료 미표기 15건의 원본 누락 규명 및 데이터 무결성 보존 | 보통 | 🟢 해결완료 | `audit_directive_124_task3_fuel.py` (원본 fuel 빈문자열 100% 보존 및 fuel_inferred/confidence 분리 완료) |
 | **ISSUE-85** | 실시간 50대 관측 미확보 시 가짜 차분 통계 생성 위험 | 높음 | 🟢 해결완료 | `datapart_page1_real.html` 4.6KB 셸 규명 및 REAL_PILOT_PENDING_NEW_CAPTURE 정직 분류 확립 |
 | **ISSUE-86** | 일일 동기화 중간 실패 시 시계열/OWNED 부분 커밋(Dirty Commit) 위험 | 심각 | 🟢 해결완료 | `scripts/run_daily_sync.py` (단일 BEGIN IMMEDIATE 트랜잭션 롤백 및 스테이징 무결성 100% 검증 통과) |
+| **ISSUE-87** | CrossPlatformMatcher 생성자의 임의 DDL 쓰기 및 관리자 승인 플랫폼/ID 미검증 | 심각 | 🟢 해결완료 | `cross_platform_matcher.py` (생성자 DDL 제거, 승인 DB platform/external_car_id 물리적 일치 강제) |
+| **ISSUE-88** | 큐 재시도 경로 부재(FAILED 선점 불가) 및 claim_token 선택적 우회 취약점 | 높음 | 🟢 해결완료 | `incremental_market_observer.py` (FAILED 재선점 지원, claim_token 필수 강제 및 임대 유효성 검증) |
+| **ISSUE-89** | 일일 동기화 MARKET 함수 내부 SQL 오류 시 롤백 및 트랜잭션 락 충돌 위험 | 심각 | 🟢 해결완료 | `scripts/run_daily_sync.py` (트랜잭션 진입 전 스키마 확인, MARKET 내부 실제 오류 롤백 100% 입증) |
+| **ISSUE-90** | 근거 약한 차량의 연료 임의 가솔린 추측 왜곡 결함 | 보통 | 🟢 해결완료 | `audit_directive_124_task3_fuel.py` (스타렉스/CLS 2건 UNKNOWN(conf:0.0) 보정, 4.7KB 빈 셸 Git 동기화) |
+| **ISSUE-91** | 일일 동기화 기본 실행의 89페이지 고속 실시간 수집 활성화 결함 | 높음 | 🟢 해결완료 | `scripts/run_daily_sync.py` (기본값 안전 검증 모드 전환, --live 플래그 명시 시에만 네트워크 가동) |
 
 ---
 

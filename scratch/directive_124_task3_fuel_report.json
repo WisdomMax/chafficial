@@ -99,9 +99,9 @@
       "maker": "현대",
       "model_year": "2014",
       "raw_fuel": "",
-      "fuel_inferred": "가솔린",
-      "fuel_inference_confidence": 0.6,
-      "inference_reason": "특수 엔진 미표기 승용차 기본값 (도메인 추론)"
+      "fuel_inferred": "UNKNOWN",
+      "fuel_inference_confidence": 0.0,
+      "inference_reason": "모델명에 연료/엔진 명시 없음 (임의 추측 배제, 원본 미표기 유지)"
     },
     {
       "sample_index": 31,
@@ -159,9 +159,9 @@
       "maker": "벤츠",
       "model_year": "2023",
       "raw_fuel": "",
-      "fuel_inferred": "가솔린",
-      "fuel_inference_confidence": 0.6,
-      "inference_reason": "특수 엔진 미표기 승용차 기본값 (도메인 추론)"
+      "fuel_inferred": "UNKNOWN",
+      "fuel_inference_confidence": 0.0,
+      "inference_reason": "모델명에 연료/엔진 명시 없음 (임의 추측 배제, 원본 미표기 유지)"
     },
     {
       "sample_index": 45,

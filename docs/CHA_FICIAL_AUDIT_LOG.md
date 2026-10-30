@@ -1,7 +1,35 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 01:25:00 KST  
+> **최종 갱신일:** 2026-10-31 01:38:00 KST  
+
+---
+
+## [DIRECTIVE 125] 관리자 승인 도용 차단, 큐 재시도 경로 및 토큰 필수화, MARKET 내부 오류 롤백 완결
+- **일시:** 2026-10-31 01:38 KST
+- **수행 태스크**:
+  1. **TASK 1 (관리자 승인 및 운영 DB 쓰기 보호, ISSUE-87)**:
+     - `cross_platform_matcher.py`: 생성자 내 무조건적인 DDL 호출(`_ensure_tables()`) 제거 (`ensure_schema()`로 명시 분리).
+     - `record_verified_match`: DB `admin_approvals` 레코드 검증 시 `platform` 및 `external_car_id` 물리적 일치 강제 (타 플랫폼/차량 승인 도용 원천 차단).
+     - 회귀 테스트(`scratch/test_directive_121_task1_matcher_guard.py`) 100% Pass (플랫폼 불일치 차단, 정상 승인 통과).
+  2. **TASK 2 (큐 재시도 사이클 및 Lease 보안 수정, ISSUE-88)**:
+     - `incremental_market_observer.py`: `claim_next_queue_item()`에서 `queue_status IN ('PENDING', 'FAILED')` 선점 지원으로 실패 작업 재시도 경로 확립.
+     - `mark_queue_item_completed()` 및 `mark_queue_item_failed()`에 `claim_token` 필수(Required) 파라미터 강제 (None 차단).
+     - 토큰 일치, `IN_PROGRESS` 상태, 임대 유효성(`lease_expires_at >= now`) 동시 검증.
+     - 재시도 한도(`max_retries=2`) 초과 시 `REQUIRES_ADMIN_REVIEW` 안전 전이.
+     - 전체 사이클 회귀 테스트(`scratch/test_directive_124_task2_lease_queue.py`) 100% Pass.
+  3. **TASK 3 (일일 동기화 실제 원자성 최종 검증, ISSUE-89, 91)**:
+     - `scripts/run_daily_sync.py`: 트랜잭션(`BEGIN IMMEDIATE`) 진입 전 스키마 사전 확인으로 락 충돌 방지.
+     - 89페이지 고속 실시간 수집 기본 비활성화 (`--live` 플래그 명시 시에만 가동, 기본값 안전 검증 모드).
+     - MARKET 동기화 함수 내부에서 실제 SQL 장애 발생 시 4단계 시계열 및 5단계 OWNED 차량까지 단 1건도 잔류하지 않고 전체 롤백됨을 독립 테스트(`scratch/test_directive_124_task5_rollback.py`)로 100% 입증.
+  4. **TASK 4 (연료 추론 UNKNOWN 엄격 보정 및 빈 셸 Git 동기화, ISSUE-90)**:
+     - `scratch/audit_directive_124_task3_fuel.py`: 모델명에 명시가 없는 2건(그랜드 스타렉스 밴, 벤츠 CLS 53 AMG)의 가솔린 임의 추측을 배제하고 `UNKNOWN (conf: 0.00)`으로 엄격 보정.
+     - 4,721바이트 빈 프레임 셸(`scratch/datapart_page1_real.html`) Git 추적 대상에 포함하여 무결성 공유.
+     - 실시간 T2 관측 상태: `REAL_PILOT_PENDING_NEW_CAPTURE` 유지.
+  5. **TASK 5 (마스터 체크리스트 갱신 및 3대 범주 분류 준수)**:
+     - `docs/CHA_FICIAL_MASTER_CHECKLIST.md`에 ISSUE-87~91 등록 완료.
+
+---
 
 ---
 

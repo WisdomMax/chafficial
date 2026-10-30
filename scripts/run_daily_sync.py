@@ -39,9 +39,9 @@ async def collect_live_snapshot(max_pages: int = 89):
     result = await collector.run_full_collection(max_pages=max_pages, throttle_sec=0.35)
     return result
 
-def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_run: bool = False):
+def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry_run: bool = False):
     print("========================================================")
-    print(f"[*] Chaficial Live Daily Sync: {datetime.now().isoformat()} (DRY_RUN={dry_run})")
+    print(f"[*] Chaficial Live Daily Sync: {datetime.now().isoformat()} (LIVE_COLLECTOR={use_live_collector}, DRY_RUN={dry_run})")
     print("========================================================")
 
     all_cars = []
@@ -102,8 +102,13 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
         print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
         sys.exit(1)
 
-    # [DIRECTIVE 124 TASK 5, ISSUE-86: 시계열·OWNED·MARKET 단계의 중간 실패 시 부분 커밋 방지 원자적 트랜잭션]
+    # [DIRECTIVE 125 TASK 3, ISSUE-89: 스키마 사전 준비(트랜잭션 락 충돌 방지) 및 원자적 트랜잭션]
     db_path = "data/chamart/chamart_platform_demo.db"
+    
+    # 1. 트랜잭션 진입 전 스키마 사전 확인 (BEGIN IMMEDIATE 락 충돌 원천 방지)
+    ts_engine = MarketTimeSeriesEngine(db_path=db_path, dry_run=dry_run)
+    service = CarManagerSyncService(db_path=db_path, dry_run=dry_run)
+
     if dry_run:
         abs_path = os.path.abspath(db_path)
         atomic_conn = sqlite3.connect(f"file:{abs_path}?mode=ro", uri=True)
@@ -115,7 +120,6 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
             atomic_conn.execute("BEGIN IMMEDIATE;")
 
         # 4. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록 (선행)
-        ts_engine = MarketTimeSeriesEngine(db_path=db_path, dry_run=dry_run)
         ts_res = ts_engine.record_snapshot(all_cars, dry_run=dry_run, connection=atomic_conn)
         print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
 
@@ -178,6 +182,8 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
     print("========================================================")
 
 if __name__ == "__main__":
-    # 기본값: LIVE 실시간 크롤링 실행 (--dry-run 명시 시에만 읽기 전용 및 로컬 파일 사용)
-    is_dry_run = "--dry-run" in sys.argv
-    run_sync_pipeline(use_live_collector=(not is_dry_run), dry_run=is_dry_run)
+    # DIRECTIVE 125 TASK 3: 고속 89페이지 실시간 수집은 기본 비활성화 (--live 명시 시에만 가동)
+    # 기본값: 검증된 로컬 스냅샷 기반 안전 동기화
+    is_live = "--live" in sys.argv
+    is_dry_run = "--dry-run" in sys.argv or (not is_live and "--commit" not in sys.argv)
+    run_sync_pipeline(use_live_collector=is_live, dry_run=is_dry_run)

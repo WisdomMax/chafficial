@@ -54,7 +54,7 @@ ALLOWED_HOSTS = {
 class CrossPlatformMatcher:
     def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db", is_production: Optional[bool] = None):
         self.db_path = db_path
-        self._ensure_tables()
+        # DIRECTIVE 125 TASK 1: 생성자 내 무조건적인 DDL 쓰기(_ensure_tables) 원천 제거 (스키마 변경은 별도 마이그레이션에서만 실행)
         # 운영 저장소 물리적 판별: 절대 경로 및 파일 기반 불변 판별 (환경변수 조작 우회 차단)
         real_abs = os.path.realpath(self.db_path)
         is_real_prod_file = "chamart_platform_demo.db" in real_abs and "sandbox" not in real_abs and "test" not in real_abs
@@ -67,25 +67,31 @@ class CrossPlatformMatcher:
             env_val = os.getenv("CHAFICIAL_ENV", "").lower()
             self.is_production = (env_val in ("production", "prod"))
 
-    def _ensure_tables(self):
-        try:
-            conn = sqlite3.connect(self.db_path)
-            c = conn.cursor()
-            c.execute("""
-                CREATE TABLE IF NOT EXISTS admin_approvals (
-                    approval_id TEXT PRIMARY KEY,
-                    vehicle_id TEXT NOT NULL,
-                    admin_id TEXT NOT NULL,
-                    approval_type TEXT NOT NULL DEFAULT 'MANUAL_MATCH',
-                    status TEXT NOT NULL, -- 'APPROVED', 'REJECTED', 'PENDING'
-                    approved_at TEXT NOT NULL,
-                    notes TEXT
-                );
-            """)
-            conn.commit()
-            conn.close()
-        except Exception:
-            pass
+    def ensure_schema(self):
+        """별도 마이그레이션 또는 테스트 준비 시에만 명시적으로 호출"""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS admin_approvals (
+                approval_id TEXT PRIMARY KEY,
+                vehicle_id TEXT NOT NULL,
+                platform TEXT NOT NULL,
+                external_car_id TEXT NOT NULL,
+                admin_id TEXT NOT NULL,
+                approval_type TEXT NOT NULL DEFAULT 'MANUAL_MATCH',
+                status TEXT NOT NULL, -- 'APPROVED', 'REJECTED', 'PENDING'
+                approved_at TEXT NOT NULL,
+                notes TEXT
+            );
+        """)
+        # 컬럼 마이그레이션 (platform, external_car_id 안전 추가)
+        for col, col_type in [("platform", "TEXT"), ("external_car_id", "TEXT")]:
+            try:
+                c.execute(f"ALTER TABLE admin_approvals ADD COLUMN {col} {col_type};")
+            except sqlite3.OperationalError:
+                pass
+        conn.commit()
+        conn.close()
 
     def fetch_kb_candidate(self, plate_number: str) -> Optional[Dict[str, Any]]:
         """
@@ -236,18 +242,29 @@ class CrossPlatformMatcher:
             if not isinstance(admin_approval, dict) or not admin_approval.get("approval_id") or not admin_approval.get("admin_id") or not admin_approval.get("approved_at"):
                 raise ValueError("MANUAL_VERIFIED requires valid admin_approval dict with 'approval_id', 'admin_id' and 'approved_at'.")
 
-            # 2-4. 타깃 DB admin_approvals 테이블에서 실제 승인(APPROVED) 레코드 물리적 검증 (TASK 1, ISSUE-82)
+            # 2-4. 타깃 DB admin_approvals 테이블에서 실제 승인(APPROVED) 레코드 물리적 검증 (DIRECTIVE 125 TASK 1, ISSUE-87)
             check_conn = sqlite3.connect(self.db_path)
             check_c = check_conn.cursor()
-            check_c.execute("""
-                SELECT status FROM admin_approvals 
-                WHERE approval_id = ? AND vehicle_id = ? AND admin_id = ?
-            """, (admin_approval["approval_id"], match.vehicle_id, admin_approval["admin_id"]))
-            row = check_c.fetchone()
+            try:
+                check_c.execute("""
+                    SELECT status, platform, external_car_id FROM admin_approvals 
+                    WHERE approval_id = ? AND vehicle_id = ? AND admin_id = ?
+                """, (admin_approval["approval_id"], match.vehicle_id, admin_approval["admin_id"]))
+                row = check_c.fetchone()
+            except sqlite3.OperationalError as op_err:
+                check_conn.close()
+                raise PermissionError(f"MANUAL_VERIFIED denied: admin_approvals verification failed ({op_err}).")
             check_conn.close()
             if not row or row[0] != "APPROVED":
                 status_found = row[0] if row else "NOT_FOUND"
                 raise PermissionError(f"MANUAL_VERIFIED denied: No matching APPROVED record found in admin_approvals table for approval_id='{admin_approval['approval_id']}', status='{status_found}'.")
+            
+            # 매칭 대상 플랫폼 및 external_car_id 일치 물리적 검증 (도용 원천 차단)
+            appr_plat, appr_ext_id = row[1], row[2]
+            if appr_plat and appr_plat != match.source_platform:
+                raise PermissionError(f"MANUAL_VERIFIED denied: Platform mismatch. Approval is for '{appr_plat}', but match is '{match.source_platform}'.")
+            if appr_ext_id and appr_ext_id != match.external_car_id:
+                raise PermissionError(f"MANUAL_VERIFIED denied: External Car ID mismatch. Approval is for '{appr_ext_id}', but match is '{match.external_car_id}'.")
 
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()

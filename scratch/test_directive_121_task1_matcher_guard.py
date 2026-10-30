@@ -164,14 +164,42 @@ def test_matcher_guards():
         print("[+] DB 내 승인 레코드 부재 정상 차단:", e)
 
     # 6. 정상 MANUAL_VERIFIED 저장 검증 (실제 DB admin_approvals에 APPROVED 레코드 사전 등록)
+    sandbox_matcher.ensure_schema()
     conn = sqlite3.connect(SANDBOX_DB)
     c = conn.cursor()
     c.execute("""
-        INSERT INTO admin_approvals (approval_id, vehicle_id, admin_id, approval_type, status, approved_at, notes)
-        VALUES ('appr_valid_001', 'veh_02', 'expert_human_inspector', 'MANUAL_MATCH', 'APPROVED', '2026-10-31T00:55:00+09:00', 'Direct inspection verified')
+        INSERT INTO admin_approvals (approval_id, vehicle_id, platform, external_car_id, admin_id, approval_type, status, approved_at, notes)
+        VALUES ('appr_valid_001', 'veh_02', 'KB_CHACHACHA', 'real_02', 'expert_human_inspector', 'MANUAL_MATCH', 'APPROVED', '2026-10-31T00:55:00+09:00', 'Direct inspection verified')
     """)
     conn.commit()
     conn.close()
+
+    # 6-1. 플랫폼 불일치(승인은 ENCAR인데 KB_CHACHACHA로 매칭 제출) 시 차단 확인
+    mismatch_platform_match = MatchResult(
+        vehicle_id="veh_02",
+        plate_number="34나5678",
+        source_platform="ENCAR", # 불일치
+        external_car_id="real_02",
+        external_url="https://www.encar.com/car/real_02",
+        advertised_price_manwon=1800,
+        photo_urls=[],
+        status=MatchingStatus.VERIFIED,
+        match_score=0.90,
+        match_evidence={
+            "admin_approval": {
+                "approval_id": "appr_valid_001",
+                "admin_id": "expert_human_inspector",
+                "approved_at": "2026-10-31T00:55:00+09:00"
+            }
+        },
+        observation_mode=ObservationMode.MANUAL_VERIFIED,
+        matched_at="2026-10-31T00:55:00+09:00"
+    )
+    try:
+        sandbox_matcher.record_verified_match(mismatch_platform_match)
+        assert False, "Should raise PermissionError on platform mismatch"
+    except PermissionError as e:
+        print("[+] 승인 플랫폼 불일치 정상 차단:", e)
 
     valid_manual = MatchResult(
         vehicle_id="veh_02",
