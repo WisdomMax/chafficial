@@ -69,7 +69,7 @@
 ---
 
 ## D. 빅데이터 저장소 및 시계열 생애주기 학습 데이터셋
-- [ ] 🟡 **D-1. 차량별 시계열 타임라인 엔진**: `vehicles.timeline_json`을 통한 입고, 가격변경, 상태변동 시계열 추적
+- [ ] 🟡 **D-1. 시장 시계열 관측 & 이벤트 엔진 구축**: `market_collection_runs`, `market_listing_observations`, `market_listing_events` 3종 테이블 구축 및 3일치 재현실험 통과 (`market_timeseries_engine.py`)
 - [ ] ⚪️ **D-2. 다채널 교차 식별자(Universal VIN Resolver)**: 번호판, VIN, 차종/연식/색상 조합을 통한 엔카-KB-카매니저 동일 차량 크로스 매칭
 - [ ] ⚪️ **D-3. 실제 판매 vs 단순 광고중지 판별 알고리즘**:
   - 카매니저 삭제 + 국토부 명의이전 발생 = '실제 소비자 판매'

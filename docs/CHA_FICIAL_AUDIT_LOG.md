@@ -5,6 +5,28 @@
 
 ---
 
+## [DIRECTIVE 109] 시장 기억장치(Time-Series) 엔진 구축·동적 페이지 계산·3일치 재현실험 통과
+- **일시:** 2026-10-30 22:10 KST
+- **지적된 결함:**
+  1. 단순 매물 목록 교체 방식으로는 가격 변동, 체류 일수, 재등장 이력을 장기 학습할 수 없음.
+  2. 수집 실패 시 기존 정상 스냅샷 JSON이 덮어써질 위험.
+  3. 89페이지 고정으로 90페이지 이상 매물 증가 시 누락 위험.
+- **조치 및 구현:**
+  1. `src/chaficial/platform/sourcing/market_timeseries_engine.py` 신설:
+     - `market_collection_runs`: 수집 실행 이력 (run_id, pages_collected, unique_cars, sha256).
+     - `market_listing_observations`: 일일 차량별 상태 시계열 스냅샷.
+     - `market_listing_events`: 관측 스냅샷 간 이벤트 산출 (APPEARED, PRICE_DECREASED, DELISTED_DISAPPEARED 등).
+     - 운영 `vehicles` 테이블과 100% 분격 격리.
+  2. `src/chaficial/platform/sourcing/janghanpyeong_collector.py`:
+     - 원자적 임시 저장 (`*.tmp.json` -> 1,500대 검증 후 `shutil.move`).
+     - 1페이지 총건수 기반 `max_pages` 동적 확장 로직 구현.
+  3. `src/chaficial/platform/sourcing/carmanager_sync.py`:
+     - SQLite URI `file:...db?mode=ro` 읽기 전용 모드 및 쓰기 쿼리 전면 차단.
+- **검증 증거:**
+  - `scratch/test_directive_109_timeseries.py`: 3일치 재현 실험(차량 A 1500->1450->1390 인하 2건, 차량 B 사라짐 1건, 가짜 SOLD 0건) SQL 100% 통과.
+
+---
+
 ## [DIRECTIVE 108] 마스터 체크리스트 표기 시정·P0 이슈 추적표 신설·--dry-run 완전 읽기전용화
 - **일시:** 2026-10-30 22:00 KST
 - **지적된 결함:**

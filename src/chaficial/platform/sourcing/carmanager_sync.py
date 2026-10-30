@@ -83,9 +83,11 @@ def parse_plate_info(raw_plate: Any, raw_tail: Any = None) -> Tuple[Optional[str
 
 
 class CarManagerSyncService:
-    def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db"):
+    def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db", dry_run: bool = False):
         self.db_path = db_path
-        self._ensure_log_table()
+        self.dry_run = dry_run
+        if not self.dry_run:
+            self._ensure_log_table()
 
     def _ensure_log_table(self):
         conn = sqlite3.connect(self.db_path)
@@ -138,8 +140,15 @@ class CarManagerSyncService:
           - True: DB 쓰기 및 커밋을 100% 차단하고 변경 예상치만 리포트 (True Read-Only Mode)
         """
         started_at = datetime.now().isoformat()
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        is_dry = self.dry_run or dry_run
+        if is_dry:
+            # 완전한 SQLite Read-Only 모드 (URI mode=ro: 어떤 쓰기 시도도 엔진 레벨 차단)
+            abs_path = os.path.abspath(self.db_path)
+            conn = sqlite3.connect(f"file:{abs_path}?mode=ro", uri=True)
+            cursor = conn.cursor()
+        else:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
 
         stats = {
             "sync_id": str(uuid.uuid4()),
@@ -246,37 +255,38 @@ class CarManagerSyncService:
                         "price_manwon": price_manwon
                     }]
 
-                    # 번호판이 없으면 NULL 저장
-                    cursor.execute("""
-                        INSERT INTO vehicles (
-                            id, branch_id, plate_number, model_name, year, mileage, fuel_type,
-                            transmission, color, purchase_price, target_price, status, is_demo,
-                            ownership_type, listing_ownership_type, is_public, vin,
-                            manufacturer, trim, options_json, timeline_json,
-                            publishing_status, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'AVAILABLE', 0, ?, ?, 0, ?, ?, ?, ?, ?, 'DRAFT', ?, ?)
-                    """, (
-                        vehicle_id, branch_id, db_plate_number, model_name, year_val, db_km_val, fuel,
-                        mission, color, 0, price_manwon, ownership_type, listing_ownership_type,
-                        vin, maker, "", "[]", json.dumps(timeline, ensure_ascii=False),
-                        now, now
-                    ))
-
                     obs_note = f"수집연동 매물: {listing_id}"
                     if plate_tail and not plate_number:
                         obs_note += f" (끝번호: {plate_tail})"
 
-                    cursor.execute("""
-                        INSERT INTO vehicle_listings (
-                            id, vehicle_id, platform, listing_id, listing_url, advertised_price,
-                            listing_status, region, is_janghanpyeong, raw_seller_name, observation_notes,
-                            first_observed_at, last_observed_at, is_demo
-                        ) VALUES (?, ?, 'CARMANAGER', ?, ?, ?, 'DRAFT', '서울 장안평 자동차매매단지', 1, ?, ?, ?, ?, 0)
-                    """, (
-                        str(uuid.uuid4()), vehicle_id, listing_id, 
-                        f"https://www.carmanager.co.kr/Car/Data#{listing_id}", price_manwon,
-                        shop_name, obs_note, now, now
-                    ))
+                    if not is_dry:
+                        # 번호판이 없으면 UNVERIFIED 저장
+                        cursor.execute("""
+                            INSERT INTO vehicles (
+                                id, branch_id, plate_number, model_name, year, mileage, fuel_type,
+                                transmission, color, purchase_price, target_price, status, is_demo,
+                                ownership_type, listing_ownership_type, is_public, vin,
+                                manufacturer, trim, options_json, timeline_json,
+                                publishing_status, created_at, updated_at
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'AVAILABLE', 0, ?, ?, 0, ?, ?, ?, ?, ?, 'DRAFT', ?, ?)
+                        """, (
+                            vehicle_id, branch_id, db_plate_number, model_name, year_val, db_km_val, fuel,
+                            mission, color, 0, price_manwon, ownership_type, listing_ownership_type,
+                            vin, maker, "", "[]", json.dumps(timeline, ensure_ascii=False),
+                            now, now
+                        ))
+
+                        cursor.execute("""
+                            INSERT INTO vehicle_listings (
+                                id, vehicle_id, platform, listing_id, listing_url, advertised_price,
+                                listing_status, region, is_janghanpyeong, raw_seller_name, observation_notes,
+                                first_observed_at, last_observed_at, is_demo
+                            ) VALUES (?, ?, 'CARMANAGER', ?, ?, ?, 'DRAFT', '서울 장안평 자동차매매단지', 1, ?, ?, ?, ?, 0)
+                        """, (
+                            str(uuid.uuid4()), vehicle_id, listing_id, 
+                            f"https://www.carmanager.co.kr/Car/Data#{listing_id}", price_manwon,
+                            shop_name, obs_note, now, now
+                        ))
                     stats["new_inserted"] += 1
                 else:
                     prev = existing_records[listing_id]
@@ -288,42 +298,45 @@ class CarManagerSyncService:
                     if price_manwon > 0 and price_manwon != prev_price:
                         if is_price_locked:
                             # 가격 잠금 차량 보호
-                            cursor.execute("SELECT timeline_json FROM vehicles WHERE id = ?", (v_id,))
-                            tl_row = cursor.fetchone()
-                            timeline = json.loads(tl_row[0]) if tl_row and tl_row[0] else []
-                            timeline.append({
-                                "event": "SYNC_PRICE_SKIPPED_ADMIN_PRICE_LOCK",
-                                "detected_price_manwon": price_manwon,
-                                "kept_price_manwon": prev_price,
-                                "timestamp": now
-                            })
-                            cursor.execute("UPDATE vehicles SET timeline_json = ?, updated_at = ? WHERE id = ?", (json.dumps(timeline, ensure_ascii=False), now, v_id))
+                            if not is_dry:
+                                cursor.execute("SELECT timeline_json FROM vehicles WHERE id = ?", (v_id,))
+                                tl_row = cursor.fetchone()
+                                timeline = json.loads(tl_row[0]) if tl_row and tl_row[0] else []
+                                timeline.append({
+                                    "event": "SYNC_PRICE_SKIPPED_ADMIN_PRICE_LOCK",
+                                    "detected_price_manwon": price_manwon,
+                                    "kept_price_manwon": prev_price,
+                                    "timestamp": now
+                                })
+                                cursor.execute("UPDATE vehicles SET timeline_json = ?, updated_at = ? WHERE id = ?", (json.dumps(timeline, ensure_ascii=False), now, v_id))
                         else:
-                            cursor.execute("SELECT timeline_json FROM vehicles WHERE id = ?", (v_id,))
-                            tl_row = cursor.fetchone()
-                            timeline = json.loads(tl_row[0]) if tl_row and tl_row[0] else []
-                            timeline.append({
-                                "event": "PRICE_CHANGED",
-                                "from_manwon": prev_price,
-                                "to_manwon": price_manwon,
-                                "timestamp": now
-                            })
-                            cursor.execute("""
-                                UPDATE vehicles SET target_price = ?, timeline_json = ?, updated_at = ?
-                                WHERE id = ?
-                            """, (price_manwon, json.dumps(timeline, ensure_ascii=False), now, v_id))
-                            cursor.execute("""
-                                UPDATE vehicle_listings SET advertised_price = ?, last_observed_at = ?
-                                WHERE listing_id = ?
-                            """, (price_manwon, now, listing_id))
+                            if not is_dry:
+                                cursor.execute("SELECT timeline_json FROM vehicles WHERE id = ?", (v_id,))
+                                tl_row = cursor.fetchone()
+                                timeline = json.loads(tl_row[0]) if tl_row and tl_row[0] else []
+                                timeline.append({
+                                    "event": "PRICE_CHANGED",
+                                    "from_manwon": prev_price,
+                                    "to_manwon": price_manwon,
+                                    "timestamp": now
+                                })
+                                cursor.execute("""
+                                    UPDATE vehicles SET target_price = ?, timeline_json = ?, updated_at = ?
+                                    WHERE id = ?
+                                """, (price_manwon, json.dumps(timeline, ensure_ascii=False), now, v_id))
+                                cursor.execute("""
+                                    UPDATE vehicle_listings SET advertised_price = ?, last_observed_at = ?
+                                    WHERE listing_id = ?
+                                """, (price_manwon, now, listing_id))
                             stats["price_changed"] += 1
                     else:
                         # 변동 없음: last_observed_at 갱신 및 unverified 카운트 리셋
-                        cursor.execute("""
-                            UPDATE vehicle_listings 
-                            SET last_observed_at = ?, unverified_consecutive_count = 0 
-                            WHERE listing_id = ?
-                        """, (now, listing_id))
+                        if not is_dry:
+                            cursor.execute("""
+                                UPDATE vehicle_listings 
+                                SET last_observed_at = ?, unverified_consecutive_count = 0 
+                                WHERE listing_id = ?
+                            """, (now, listing_id))
                         stats["unchanged_count"] += 1
 
             # 3. 판매완료 및 안전 광고중지 감지
@@ -336,26 +349,28 @@ class CarManagerSyncService:
 
                         if consec_count >= 3:
                             # 3회 연속 미출현: DELISTED(광고중지/비공개) 전환
-                            cursor.execute("""
-                                UPDATE vehicle_listings 
-                                SET listing_status = 'DELISTED', unverified_consecutive_count = ? 
-                                WHERE listing_id = ?
-                            """, (consec_count, listing_id))
+                            if not is_dry:
+                                cursor.execute("""
+                                    UPDATE vehicle_listings 
+                                    SET listing_status = 'DELISTED', unverified_consecutive_count = ? 
+                                    WHERE listing_id = ?
+                                """, (consec_count, listing_id))
 
-                            # 차량 상태는 AVAILABLE 상태였다면 비공개(is_public = 0)로 보호하고 DELISTED 처리
-                            cursor.execute("""
-                                UPDATE vehicles 
-                                SET is_public = 0, updated_at = ? 
-                                WHERE id = ?
-                            """, (now, v_id))
+                                # 차량 상태는 AVAILABLE 상태였다면 비공개(is_public = 0)로 보호하고 DELISTED 처리
+                                cursor.execute("""
+                                    UPDATE vehicles 
+                                    SET is_public = 0, updated_at = ? 
+                                    WHERE id = ?
+                                """, (now, v_id))
                             stats["delisted_count"] += 1
                         else:
                             # 1~2회 미출현: unverified 카운트만 증가
-                            cursor.execute("""
-                                UPDATE vehicle_listings 
-                                SET unverified_consecutive_count = ? 
-                                WHERE listing_id = ?
-                            """, (consec_count, listing_id))
+                            if not is_dry:
+                                cursor.execute("""
+                                    UPDATE vehicle_listings 
+                                    SET unverified_consecutive_count = ? 
+                                    WHERE listing_id = ?
+                                """, (consec_count, listing_id))
                             stats["unverified_count"] += 1
 
             # 명시적 판매완료 스냅샷 처리 (카매니저에서 SOLD로 직접 조회된 건)
@@ -364,8 +379,9 @@ class CarManagerSyncService:
                     s_id = str(s_car.get("encarno") or s_car.get("carSeq") or "").strip()
                     if s_id in existing_records:
                         v_id = existing_records[s_id]["vehicle_id"]
-                        cursor.execute("UPDATE vehicles SET status = 'SOLD', is_public = 0, updated_at = ? WHERE id = ?", (now, v_id))
-                        cursor.execute("UPDATE vehicle_listings SET listing_status = 'SOLD' WHERE listing_id = ?", (s_id,))
+                        if not is_dry:
+                            cursor.execute("UPDATE vehicles SET status = 'SOLD', is_public = 0, updated_at = ? WHERE id = ?", (now, v_id))
+                            cursor.execute("UPDATE vehicle_listings SET listing_status = 'SOLD' WHERE listing_id = ?", (s_id,))
                         stats["sold_count"] += 1
 
             if dry_run:

@@ -135,6 +135,16 @@ class JanghanpyeongCollector:
                 if m_enc:
                     enc_check = m_enc.group(1)
 
+                # 1페이지에서 총 매물 건수 파싱하여 max_pages 동적 계산
+                if page_no == 1:
+                    m_total = re.search(r'총\s*([0-9,]+)\s*대', html)
+                    if m_total:
+                        total_cnt = int(m_total.group(1).replace(",", ""))
+                        dynamic_pages = (total_cnt + 19) // 20
+                        if dynamic_pages > max_pages:
+                            print(f"[+] Dynamically expanding max_pages from {max_pages} to {dynamic_pages} (Total: {total_cnt} cars)")
+                            max_pages = dynamic_pages
+
                 cars_in_page = self.parse_datapart_html(html, page_no)
                 page_duration = time.time() - page_start
                 
@@ -178,16 +188,22 @@ class JanghanpyeongCollector:
             "cars": all_cars
         }
 
-        # 원본 데이터 저장
-        out_file = self.raw_dir / "janghanpyeong_full_collection.json"
-        with open(out_file, "w", encoding="utf-8") as f:
+        # 원자적 임시 저장 및 1,500대 검증 후 덮어쓰기
+        tmp_out = self.raw_dir / "janghanpyeong_full_collection.tmp.json"
+        with open(tmp_out, "w", encoding="utf-8") as f:
             json.dump({
                 "summary": summary,
                 "cars": all_cars,
                 "page_audit": page_audit
             }, f, ensure_ascii=False, indent=2)
 
-        print(f"[+] Full collection completed! Total {len(all_cars)} cars saved to {out_file}")
+        out_file = self.raw_dir / "janghanpyeong_full_collection.json"
+        if len(all_cars) >= 1500:
+            import shutil
+            shutil.move(str(tmp_out), str(out_file))
+            print(f"[+] Full collection completed! Total {len(all_cars)} cars atomically updated to {out_file}")
+        else:
+            print(f"[!] Harvest count ({len(all_cars)}) is below 1,500. Existing verified snapshot preserved safely at {out_file}.")
         print(f"    Elapsed: {total_duration:.2f}s, Avg per page: {summary['average_page_sec']}s")
         return summary
 
