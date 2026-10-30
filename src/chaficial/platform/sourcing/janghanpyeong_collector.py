@@ -191,7 +191,21 @@ class JanghanpyeongCollector:
             await browser.close()
 
         total_duration = time.time() - start_time
-        is_complete = (len(failed_pages) == 0 and page_no > max_pages and len(all_cars) > 0)
+
+        # [DIRECTIVE 111 TASK 4: 완전 수집 판정 기준 강화]
+        # 1. 실패 페이지 0건
+        # 2. 마지막 페이지 도달 (page_no > max_pages)
+        # 3. 원본 총건수(total_found_cars)와 고유 수집 차량 수(len(all_cars))의 오차가 2% 이내
+        # 4. 최소 1,500대 이상
+        count_matches = False
+        if total_found_cars is not None and total_found_cars > 0:
+            count_diff = abs(total_found_cars - len(all_cars))
+            count_matches = (count_diff / total_found_cars) <= 0.02
+        else:
+            count_matches = len(all_cars) >= 1500
+
+        is_complete = (len(failed_pages) == 0 and page_no > max_pages and len(all_cars) >= 1500 and count_matches)
+
         summary = {
             "total_found": total_found_cars,
             "max_pages": max_pages,
@@ -208,7 +222,7 @@ class JanghanpyeongCollector:
             "cars": all_cars
         }
 
-        # 원자적 임시 저장 및 완전성 검증(실패 페이지 0 & 1,500대 이상) 후 덮어쓰기
+        # 원자적 임시 저장 및 완전 수집 검증(is_complete == True) 후 최종 승격
         tmp_out = self.raw_dir / "janghanpyeong_full_collection.tmp.json"
         with open(tmp_out, "w", encoding="utf-8") as f:
             json.dump({
@@ -218,12 +232,12 @@ class JanghanpyeongCollector:
             }, f, ensure_ascii=False, indent=2)
 
         out_file = self.raw_dir / "janghanpyeong_full_collection.json"
-        if len(all_cars) >= 1500 and len(failed_pages) == 0:
+        if is_complete:
             import shutil
             shutil.move(str(tmp_out), str(out_file))
-            print(f"[+] Full collection completed! Total {len(all_cars)} cars atomically updated to {out_file}")
+            print(f"[+] Full collection VERIFIED & COMPLETE! Total {len(all_cars)} cars atomically updated to {out_file}")
         else:
-            print(f"[!] Harvest incomplete or below 1,500 (count={len(all_cars)}, failed_pages={failed_pages}). Existing verified snapshot preserved safely at {out_file}.")
+            print(f"[!] Harvest incomplete (is_complete=False, count={len(all_cars)}, target={total_found_cars}, failed_pages={failed_pages}). Existing verified snapshot preserved safely at {out_file}.")
         print(f"    Elapsed: {total_duration:.2f}s, Avg per page: {summary['average_page_sec']}s")
         return summary
 
@@ -281,9 +295,13 @@ class JanghanpyeongCollector:
             color_m = re.search(r'<td class="uc_carcolor">([가-힣A-Za-z]+)</td>', r)
             color = color_m.group(1).strip() if color_m else ""
 
-            # 가격
-            price_m = re.search(r'<b class="uc_caramount drm_n">([\d,]+)</b>', r)
-            price = price_m.group(1).strip() if price_m else "0"
+            # 가격 (숫자 또는 '상담' 정확한 원본 추출, 가짜 '0' 기본값 폐기)
+            price_m = re.search(r'<b class="uc_caramount[^"]*">(.*?)</b>', r)
+            if price_m:
+                raw_price_text = re.sub(r'<[^>]+>', '', price_m.group(1)).strip()
+                price = raw_price_text if raw_price_text else "상담"
+            else:
+                price = "상담"
 
             # 단지 / 상사명
             shop_m = re.search(r'<td class="uc_cararea">(.*?)</td>', r, re.DOTALL)

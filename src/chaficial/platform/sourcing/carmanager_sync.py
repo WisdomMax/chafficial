@@ -16,6 +16,8 @@ import os
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
 
+from chaficial.platform.sourcing.normalizer import normalize_carmanager_record
+
 
 def parse_price_manwon(val: Any) -> int:
     """모든 입력 가격을 순수 '만원 단위 정수'로 표준화"""
@@ -199,47 +201,42 @@ class CarManagerSyncService:
             now = datetime.now().isoformat()
             branch_id = "61fea9a4-58f0-42bd-862c-14fd16d0d21c"
 
-            # 2. 현재 스냅샷 검사 및 동기화
-            for car in current_snapshot:
-                listing_id = str(car.get("encarno") or car.get("carSeq") or "").strip()
+            # 2. 현재 스냅샷 검사 및 동기화 (공통 정규화 계층 사용으로 일원화)
+            for raw_car in current_snapshot:
+                norm = normalize_carmanager_record(raw_car)
+                listing_id = norm["encarno"]
                 if not listing_id:
                     continue
                 active_listing_ids.add(listing_id)
 
                 # 번호판 분격 파싱 (전체 번호판 미확인 시 스키마 허용 미확인값 UNVERIFIED 저장)
-                raw_plate = car.get("full_plate") or car.get("plate")
-                raw_tail = car.get("plate_tail") or car.get("carNo_tail")
+                raw_plate = raw_car.get("full_plate") or raw_car.get("plate")
+                raw_tail = raw_car.get("plate_tail") or raw_car.get("carNo_tail")
                 plate_number, plate_tail = parse_plate_info(raw_plate, raw_tail)
                 db_plate_number = plate_number if plate_number else "UNVERIFIED"
                 
-                # 순수 만원 단위 가격
-                price_manwon = parse_price_manwon(car.get("price_manwon") or car.get("price") or 0)
+                # 순수 만원 단위 가격 (정규화 계층 해석 결과 활용, 미공개/상담 시 0 및 상태 보존)
+                price_manwon = norm["price_manwon"] if norm["price_manwon"] is not None else 0
+                is_unannounced = (norm["price_manwon"] is None)
 
                 # 제목 및 제원
-                clean_title = car.get("clean_title") or car.get("title") or car.get("model") or "카매니저 등록 차량"
-                maker = car.get("maker") or (clean_title.split()[0] if clean_title else "기타")
-                model_name = car.get("model") or clean_title
+                clean_title = norm["model_name"] or "카매니저 등록 차량"
+                maker = raw_car.get("maker") or (clean_title.split()[0] if clean_title else "기타")
+                model_name = clean_title
                 
-                # 연식 파싱
-                raw_year = car.get("model_year") or car.get("year") or 0
-                year_digits = re.sub(r"[^\d]", "", str(raw_year))
-                year_val = int(year_digits) if year_digits else None
-                if year_val and year_val > 2100: 
-                    year_val = int(str(year_val)[:4])
-                if year_val and (year_val < 1980 or year_val > 2030):
-                    year_val = None
+                # 연식 파싱 (정규화 계층 4자리 정수)
+                year_val = norm["model_year"]
 
-                # 주행거리 견고 파싱 ('5.5만 km' 등 완벽 대응, 미확인 시 0)
-                km_val = parse_mileage_km(car.get("mileage") or car.get("km"))
-                db_km_val = km_val if km_val is not None else 0
+                # 주행거리 견고 파싱 (정규화 계층 결과, 미확인 시 0)
+                db_km_val = norm["mileage_km"] if norm["mileage_km"] is not None else 0
 
-                fuel = car.get("fuel") or car.get("fuel_type") or ""
-                mission = car.get("mission") or car.get("transmission") or ""
-                color = car.get("color") or ""
-                shop_name = car.get("shop") or car.get("sangsa_name") or ("(주)더쿨모터스" if scope == "OWNED" else "장안평 조합 회원사")
+                fuel = raw_car.get("fuel") or raw_car.get("fuel_type") or ""
+                mission = raw_car.get("mission") or raw_car.get("transmission") or ""
+                color = raw_car.get("color") or ""
+                shop_name = norm["shop_name"] or ("(주)더쿨모터스" if scope == "OWNED" else "장안평 조합 회원사")
 
                 # VIN 검증 (가짜 VIN 배제)
-                vin = car.get("vin")
+                vin = raw_car.get("vin")
                 if vin and ("CM-JHP" in vin or "DUMMY" in vin or "VIN-" in vin):
                     vin = None
 

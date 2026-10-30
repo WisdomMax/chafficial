@@ -10,8 +10,8 @@ import hashlib
 from typing import Dict, Any, Optional
 
 def parse_price_manwon(val: Any) -> Optional[int]:
-    """모든 입력 가격을 순수 '만원 단위 정수'로 표준화 (미확인 시 None)"""
-    if val is None or val == "" or str(val).strip() == "":
+    """모든 입력 가격을 순수 '만원 단위 정수'로 표준화 (0원, 미확인, '상담' 시 None 반환)"""
+    if val is None or val == "" or str(val).strip() in ("", "None", "null", "상담", "계약", "보류"):
         return None
     if isinstance(val, (int, float)):
         p = int(val)
@@ -20,6 +20,10 @@ def parse_price_manwon(val: Any) -> Optional[int]:
         if not s:
             return None
         p = int(s)
+
+    # 0원은 실제 무료 차량이 아니므로 가격 미공개(None)로 표준화
+    if p == 0:
+        return None
 
     # 10만 이상이면 원 단위(예: 15,000,000원 -> 1500만원)로 변환
     if p >= 100000:

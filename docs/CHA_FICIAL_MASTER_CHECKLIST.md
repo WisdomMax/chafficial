@@ -38,6 +38,9 @@
 | **ISSUE-23** | 원본 총건수와 고유 ID 수 일치 미검증 결함 | 높음 | 🟢 해결완료 | `janghanpyeong_collector.py` (total_found, failed_pages, is_complete 전수 대조) |
 | **ISSUE-24** | 실제 크롤러 및 운영 러너 오류 주입 통합 검증 결함 | 높음 | 🟢 해결완료 | 실질적 함수 호출 기반 7대 통합 실험 및 복구 검증 |
 | **ISSUE-25** | run_daily_sync.py의 CarManagerSyncService 생성 시 dry_run 누락 결함 | 심각 | 🟢 해결완료 | `run_daily_sync.py` (CarManagerSyncService(dry_run=dry_run) 전달로 DDL 차단) |
+| **ISSUE-26** | 1,591건(90.2%) 가격 0원 왜곡 현상 (카매니저 '상담' 매물 오파싱) | 심각 | 🟢 해결완료 | `janghanpyeong_collector.py` (<b class="uc_caramount">상담</b> 보존 및 normalizer price_manwon=None 안전 격리) |
+| **ISSUE-27** | carmanager_sync.py의 자체 파서 사용으로 인한 정규화 계층 파편화 위험 | 높음 | 🟢 해결완료 | `carmanager_sync.py` (`normalizer.py` 완전 직결 일원화) |
+| **ISSUE-28** | vehicle_photos에 UI 배경 이미지(img_bgb) 오삽입 위험 | 높음 | 🟢 해결완료 | `photo_expansion_pipeline.py` (순수 고화질 실사진 URL 정밀 필터링 및 420건 오삽입 전수 청소) |
 
 ---
 
@@ -63,8 +66,8 @@
   - 실제 고해상도 자산: **2,694장 (84.2%)** (1024x768 2,419장 + 와이드 275장)
   - 인덱싱/썸네일: **505장 (15.8%)** (80x80 400장 + 300x225 105장)
   - PIL 디코딩 전수 통과 (손상 0장), 고유 SHA256 2,765개 (`audit_500_highres_photos.py`)
-- [ ] 🟡 **B-4. DB vehicle_photos 고화질 연결**: 카매니저 encarno 기준 3,179장 매핑 완료 (전체 4,780장 중 카매니저 실물 523대 확보)
-- [ ] ⚪️ **B-5. 장한평 잔여 1,241대 고화질 사진 확대 수집**: 500대 이후 매물에 대한 팝업 상세창 원본 URL 파싱 및 증분 다운로드
+- [ ] 🟡 **B-4. DB vehicle_photos 고화질 연결**: 카매니저 encarno 기준 고화질 실사진 4,079장 매핑 완료 (173대 정식 등록 매물 전수 확보, UI 배경 420건 전수 정제 완료)
+- [ ] 🟡 **B-5. 장한평 잔여 고화질 사진 확대 수집 파이프라인**: `photo_expansion_pipeline.py` 구축 완료, 1,591대 사진 미등록 매물(카매니저 자체 미업로드)과 173대 고화질 실사진 완비 매물 구조 규명 완료
 - [ ] ⚪️ **B-6. 원본 무손실 보존 & Cloudflare R2 배포**: 로컬 합성 영구 봉인 유지, 원본 사진 R2 버킷 동기화 파이프라인
 
 ---

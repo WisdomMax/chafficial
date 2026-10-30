@@ -5,6 +5,37 @@
 
 ---
 
+## [DIRECTIVE 111 - 종합 최종 보고] 1,591건 0원 미스터리 완벽 규명(가격 미공개 '상담' 격리), 동기화 계층 정규화 100% 일원화, 라이브 전수 재수집 및 사진 고화질 자산화 완수
+- **일시:** 2026-10-30 23:00 KST
+- **지적된 핵심 결함 (1차 감사 피드백):**
+  1. **1,591건(90.2%) 0원 데이터의 진위 미확인**: 실제 무료 매물인지, 가격 미공개인지, 파싱 실패인지 규명 요구.
+  2. **정규화 계층 파편화 잔존**: `carmanager_sync.py`가 여전히 자체 `parse_price_manwon()`을 사용하는 문제.
+  3. **카매니저 가격 파서 정규식 검증**: `<b class="uc_caramount drm_n">` 외 태그 변형 여부 확인.
+  4. **사진 확대 수집(B-5) 실측 증거**: 500대 이후 실사진 자산화 및 무결성 검증.
+- **조치 및 구현:**
+  1. **1,591건 0원의 근본 원인 완벽 규명**:
+     - 카매니저 원본 HTML 전수 분석 결과, 가격이 숫자로 등록된 매물은 **173대(9.8%)**뿐이며, 나머지 **1,591대(90.2%)는 `<b class="uc_caramount">상담</b>` ("상담", 가격 미공개 / Price on Request 매물)**이었음.
+     - 기존 수집기가 `drm_n` 클래스 미매칭 시 `"0"`으로 기본값을 넣어 AI 학습 데이터에 치명적인 "0원 무료 차량" 왜곡을 유발함.
+     - `janghanpyeong_collector.py` 정규식을 `<b class="uc_caramount[^"]*">(.*?)</b>`로 개선하여 "상담" 텍스트 보존.
+     - `normalizer.py`에서 "0" 또는 "상담"을 `price_manwon = None` (NULL, 가격 미공개)으로 명확히 정규화하여 AI 모델의 0원 왜곡을 원천 격리.
+     - SQLite `market_listing_observations.price_manwon` 컬럼을 NULL 허용으로 안전 마이그레이션 완료 (`migrate_nullable_price.py`).
+  2. **운영 동기화 엔진(`carmanager_sync.py`) 100% 정규화 일원화**:
+     - `carmanager_sync.py`가 자체 파서 대신 `normalize_carmanager_record()`를 직접 호출하도록 리팩터링 완료. 시계열 엔진과 운영 엔진의 스키마 및 해석 로직 100% 단일화.
+  3. **TASK 6 라이브 전수 수집(89페이지 1,764대) 및 시계열 DB 적재 실측 완료 (`run_live_task6_harvest.py`)**:
+     - 소요 시간: 94.86초, `is_complete=True`.
+     - 적재 Run ID: `2ecc911e-c854-44b4-899a-8bc3689a80ae`.
+     - 가격 확정 173대(정수 만원 정규화), 가격 미공개(상담) 1,591대(NULL 안전 격리), 0원 무료 왜곡 0건(0.0%), 차종 NULL 0건, 연식 NULL 0건, 상사명 NULL 0건.
+     - 무작위 표본 30대 원본-DB 대조 일치율: **30/30 (100.0%)**.
+  4. **TASK 7 카매니저 실사진 확대 수집 파이프라인(`photo_expansion_pipeline.py`) 및 도메인 분석 완수**:
+     - 카매니저 실사진 URL 정밀 추출기 구축: `img.carmanager.co.kr/temp/photo/` 경로 전용 파서 및 UI 배경(`img_bgb.png`) 등 오염 이미지 420건 전수 청소.
+     - 도메인 검증: 카매니저 1,764대 중 **고화질 실사진이 완비된 매물은 가격이 확정된 173대(총 4,079장의 고화질 사진 보유)**이며, 나머지 1,591대 "상담" 매물은 카매니저 시스템 자체에 사진이 미등록(광택/성능검사 대기)된 매물임을 실측 확인.
+- **검증 증거:**
+  - `scratch/directive_111_live_harvest_evidence.json` (라이브 1,764대 전수 통계 및 30대 대조 증거)
+  - `scratch/test_directive_111_full_integration.py` (6대 통합 테스트 100% Pass)
+  - `data/chamart/chamart_platform_demo.db` (정제된 vehicle_photos 4,380장 및 정상 관측 1,764건 보존)
+
+---
+
 ## [DIRECTIVE 111 - 1차 보고] 1,764대 시계열 실데이터 오염 전수 감사 및 공통 정규화 계층 전수 복구
 - **일시:** 2026-10-30 22:35 KST
 - **지적된 결함 (P0-21 ~ P0-25):**

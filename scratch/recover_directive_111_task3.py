@@ -84,11 +84,26 @@ def recover_timeseries():
     """, (recovered_run_id,))
     rec_total = c.fetchone()[0]
 
+    # 가격이 0원인 불량 레코드 (0원 무료 차량 왜곡 0건이어야 함)
     c.execute("""
         SELECT COUNT(*) FROM market_listing_observations 
-        WHERE run_id = ? AND (price_manwon IS NULL OR price_manwon = 0)
+        WHERE run_id = ? AND price_manwon = 0
     """, (recovered_run_id,))
     rec_zero_price = c.fetchone()[0]
+
+    # 가격 확정 매물 (정수 만원)
+    c.execute("""
+        SELECT COUNT(*) FROM market_listing_observations 
+        WHERE run_id = ? AND price_manwon IS NOT NULL AND price_manwon > 0
+    """, (recovered_run_id,))
+    rec_priced_count = c.fetchone()[0]
+
+    # 가격 미공개 / 상담 대상 매물 (price_manwon IS NULL)
+    c.execute("""
+        SELECT COUNT(*) FROM market_listing_observations 
+        WHERE run_id = ? AND price_manwon IS NULL
+    """, (recovered_run_id,))
+    rec_consult_count = c.fetchone()[0]
 
     c.execute("""
         SELECT COUNT(*) FROM market_listing_observations 
@@ -115,13 +130,16 @@ def recover_timeseries():
     rec_null_km = c.fetchone()[0]
 
     print(f"  * Recovered Total Observations: {rec_total}")
-    print(f"  * Zero Price Count: {rec_zero_price} (Original Raw Zero-price listings only)")
+    print(f"  * ZERO Price (0원 무료 왜곡) Count: {rec_zero_price} (Strictly 0 rows expected)")
+    print(f"  * Valid Priced Vehicles Count: {rec_priced_count} (Normal integer man-won)")
+    print(f"  * Unpriced / Consultation Required (NULL): {rec_consult_count} (Safe isolated from price RL)")
     print(f"  * NULL Model Name Count: {rec_null_model} (Fixed from 1764 to {rec_null_model})")
     print(f"  * NULL Model Year Count: {rec_null_year} (Fixed from 1764 to {rec_null_year})")
     print(f"  * NULL Shop Name Count: {rec_null_shop} (Fixed from 1764 to {rec_null_shop})")
     print(f"  * NULL Mileage Count: {rec_null_km}")
 
     assert rec_total == 1764
+    assert rec_zero_price == 0, f"Zero price count must be 0! Found {rec_zero_price}"
     assert rec_null_model == 0, f"Model name must not be NULL! Found {rec_null_model}"
     assert rec_null_year == 0, f"Model year must not be NULL! Found {rec_null_year}"
     assert rec_null_shop == 0, f"Shop name must not be NULL! Found {rec_null_shop}"

@@ -48,8 +48,12 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
         print(f"[*] [LIVE MODE] Executing live CarManager crawler for up to {max_pages} pages...")
         try:
             collect_res = asyncio.run(collect_live_snapshot(max_pages=max_pages))
+            if not collect_res.get("is_complete", False):
+                print(f"[!] CRITICAL GUARD: Live harvest incomplete (is_complete=False, failed_pages={collect_res.get('failed_pages')}).", file=sys.stderr)
+                print("[!] Aborting database writes completely (0 writes performed) to prevent false delisting.", file=sys.stderr)
+                sys.exit(1)
             all_cars = collect_res.get("cars", [])
-            print(f"[+] Successfully harvested {len(all_cars)} live cars from CarManager.")
+            print(f"[+] Successfully harvested {len(all_cars)} verified complete cars from CarManager.")
         except Exception as e:
             print(f"[!] Live collection failed with exception: {e}", file=sys.stderr)
             sys.exit(1)
