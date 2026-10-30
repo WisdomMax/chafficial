@@ -409,9 +409,18 @@ class VehicleDetailRenderer {
                     <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">최초등록일</span>
                     <span class="text-[#171B1E] font-semibold text-right">${escapeHtml(d.first_registration_date || '미확인')}</span>
                   </div>
-                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
-                    <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">주행거리</span>
-                    <span class="text-[#171B1E] font-bold text-right">${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') + ' km' : '미확인'}</span>
+                  <!-- 주행거리 (다른 폰트 & 크고 굵은 글씨로 최우선 가독성 강조) -->
+                  <div class="flex items-center justify-between py-2.5 px-2.5 -mx-2.5 bg-slate-50/90 rounded-lg border border-slate-200/80 my-1">
+                    <span class="text-slate-900 font-bold flex items-center gap-1.5 shrink-0">
+                      <i data-lucide="gauge" class="w-4 h-4 text-[#171B1E]"></i>
+                      <span>주행거리</span>
+                    </span>
+                    <div class="flex items-baseline gap-1 text-right">
+                      <span class="font-mono text-base sm:text-lg font-black text-[#171B1E] tracking-tight">
+                        ${d.mileage ? Number(d.mileage).toLocaleString('ko-KR') : '미확인'}
+                      </span>
+                      <span class="text-xs sm:text-sm font-bold text-slate-700">km</span>
+                    </div>
                   </div>
                   <div class="flex items-center justify-between py-2 border-b border-slate-100">
                     <span class="text-slate-500 font-medium shrink-0 w-24 sm:w-28">배기량</span>
