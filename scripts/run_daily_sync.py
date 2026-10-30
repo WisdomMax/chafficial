@@ -8,91 +8,77 @@ from pathlib import Path
 
 sys.path.insert(0, "src")
 from chaficial.platform.sourcing.carmanager_sync import CarManagerSyncService
+from chaficial.platform.sourcing.janghanpyeong_collector import JanghanpyeongCollector
 from chaficial.platform.sourcing.carmanager_client import load_env
 
 load_env()
-uid = os.getenv("CAR_MANAGER_ID") or os.getenv("CARMANAGER_ID")
-upw = os.getenv("CAR_MANAGER_PW") or os.getenv("CARMANAGER_PW")
-
 SNAPSHOT_DIR = Path("data/carmanager_raw/snapshots")
 SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
-async def live_fetch_carmanager_snapshot():
-    """카매니저 실시간 로그인 및 최신 매물 스냅샷 조회"""
-    from playwright.async_api import async_playwright
+async def collect_live_snapshot(max_pages: int = 89):
+    """카매니저 실시간 시장 매물 수집 실행"""
+    collector = JanghanpyeongCollector()
+    result = await collector.run_full_collection(max_pages=max_pages, throttle_sec=0.3)
+    return result
 
-    print("[*] Connecting to CarManager live session...")
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context()
-        page = await context.new_page()
-
-        # 로그인
-        await page.goto("https://www.carmanager.co.kr/User/Login", wait_until="networkidle", timeout=30000)
-        await page.fill("#userid", uid)
-        await page.fill("#userpwd", upw)
-        btn = await page.query_selector("button[onclick*='commitLogin']")
-        if btn:
-            async with page.expect_navigation(wait_until="networkidle", timeout=15000):
-                await btn.click()
-        await page.wait_for_timeout(2000)
-
-        # 차량검색 페이지 진입
-        await page.goto("https://www.carmanager.co.kr/Car/Data", wait_until="networkidle", timeout=20000)
-        await page.wait_for_timeout(2000)
-
-        # 토큰 획득
-        enc_check = await page.evaluate("() => $('#EncCheck').val() || '5becvnNSfoHCiGE5GKa5ZQ=='")
-        print(f"[+] Authenticated successfully with token: {enc_check}")
-
-        # 장한평 매물 실시간 조회 (1페이지 50건 샘플 테스트)
-        resp = await context.request.post(
-            "https://www.carmanager.co.kr/Car/DataPart/",
-            form={
-                "page": "1",
-                "EncCheck": enc_check,
-                "sel_area": "11",
-                "danji_list": "1104,1105"
-            }
-        )
-        html = await resp.text()
-        print(f"[+] Received DataPart response ({len(html)} bytes)")
-
-        await browser.close()
-        return True, enc_check
-
-def run_sync_pipeline():
+def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89):
     print("========================================================")
     print(f"[*] Chaficial Live Daily Sync: {datetime.now().isoformat()}")
     print("========================================================")
 
-    # 1. 실시간 카매니저 세션 검증
-    success, token = asyncio.run(live_fetch_carmanager_snapshot())
-    if not success:
-        print("[!] Live CarManager session failed. Aborting to protect DB.")
-        return
+    all_cars = []
 
-    # 2. 최신 스냅샷 로드
-    latest_snapshot_path = "data/carmanager_raw/janghanpyeong_full_collection.json"
-    with open(latest_snapshot_path, "r", encoding="utf-8") as f:
-        full_data = json.load(f)
+    if use_live_collector:
+        print(f"[*] Executing live crawler for up to {max_pages} pages...")
+        try:
+            collect_res = asyncio.run(collect_live_snapshot(max_pages=max_pages))
+            all_cars = collect_res.get("cars", [])
+            print(f"[+] Successfully harvested {len(all_cars)} live cars from CarManager.")
+        except Exception as e:
+            print(f"[!] Live collection failed: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        # 안전한 스냅샷 백업 파일 로드 (사전 수집본)
+        latest_snapshot_path = "data/carmanager_raw/janghanpyeong_full_collection.json"
+        if not os.path.exists(latest_snapshot_path):
+            print(f"[!] Snapshot file {latest_snapshot_path} not found.", file=sys.stderr)
+            sys.exit(1)
+        with open(latest_snapshot_path, "r", encoding="utf-8") as f:
+            full_data = json.load(f)
+        all_cars = full_data.get("cars", [])
+        print(f"[+] Loaded verified snapshot with {len(all_cars)} cars.")
 
-    all_cars = full_data.get("cars", [])
-    print(f"[+] Processing {len(all_cars)} vehicles through unified schema sync engine...")
+    if len(all_cars) < 50:
+        print(f"[!] Aborting: collected vehicle count too low ({len(all_cars)} < 50) to protect DB integrity.", file=sys.stderr)
+        sys.exit(1)
 
     service = CarManagerSyncService(db_path="data/chamart/chamart_platform_demo.db")
 
-    # 우리 상사 매물 분리
-    owned_cars = [c for c in all_cars if "(주)더쿨모터스" in c.get("shop", "") or "(주)더쿨모터스" in c.get("sangsa_name", "")]
-    market_cars = [c for c in all_cars if c not in owned_cars]
+    # 우리 상사 매물 분리 ((주)더쿨모터스 및 더쿨모터스)
+    owned_cars = []
+    market_cars = []
+    for c in all_cars:
+        shop = c.get("shop") or c.get("sangsa_name") or ""
+        if "(주)더쿨모터스" in shop or "더쿨모터스" in shop:
+            owned_cars.append(c)
+        else:
+            market_cars.append(c)
 
-    # 우리 상사 동기화
-    owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED")
-    print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
+    print(f"[*] Partitioned vehicles: OWNED={len(owned_cars)}대 | MARKET_OBSERVED={len(market_cars)}대")
 
-    # 장한평 시장 동기화
-    market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED")
-    print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
+    # 1. 우리 상사 동기화 (최소 50대 기대)
+    owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED", min_expected_count=50)
+    print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
+    if "ERROR" in owned_res["status"]:
+        print(f"[!] Owned Sync Error: {owned_res['status']}", file=sys.stderr)
+        sys.exit(1)
+
+    # 2. 장한평 시장 동기화 (최소 1,000대 기대)
+    market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=1000)
+    print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, New={market_res['new_inserted']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
+    if "ERROR" in market_res["status"]:
+        print(f"[!] Market Sync Error: {market_res['status']}", file=sys.stderr)
+        sys.exit(1)
 
     # 타임스탬프 스냅샷 아카이빙
     today_str = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -113,4 +99,5 @@ def run_sync_pipeline():
     print("========================================================")
 
 if __name__ == "__main__":
-    run_sync_pipeline()
+    live_flag = "--live" in sys.argv
+    run_sync_pipeline(use_live_collector=live_flag)
