@@ -180,7 +180,8 @@ class VehicleDetailRenderer {
     this.activePhotoCategory = 'ALL';
 
     // 2. 단일 SSOT 사고·성능 정규화 데이터 바인딩
-    const acc = d.accident_summary || d.accident_history || {};
+    const rawAcc = d.accident_summary || d.accident_history || {};
+    const acc = (rawAcc && typeof rawAcc === 'object') ? rawAcc : { summary: String(rawAcc || '') };
     const docStatus = acc.document_status || (acc.inspection_document_id ? 'VERIFIED' : 'UNVERIFIED');
     const hasDoc = docStatus === 'VERIFIED';
     
@@ -518,23 +519,33 @@ class VehicleDetailRenderer {
               </div>
             </div>
 
-            <!-- 4. 타이어 트레드 깊이 및 소모품 점검 카드 (DIRECTIVE 056 보존) -->
-            <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-[#171C24]">타이어 및 주요 소모품 상태</h3>
-                <span class="text-xs text-slate-400">정밀 디지털 게이지 측정치</span>
-              </div>
+            <!-- 4. 타이어 트레드 깊이 및 소모품 점검 카드 (기본 접힘 아코디언 토글) -->
+            <div class="bg-white rounded-lg border border-[#E5E8EC] overflow-hidden transition-all duration-200">
+              <button type="button" onclick="window.__vdrInstance && window.__vdrInstance.toggleTireConsumables()" class="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-50/70 transition-colors cursor-pointer select-none">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-bold text-[#171C24]">타이어 및 주요 소모품 상태</h3>
+                    <span class="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">선택 확인</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-1">타이어 잔여 트레드 및 소모품 4종 점검표 (누르면 펼쳐집니다)</p>
+                </div>
+                <div id="vdrTireChevron" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition-transform duration-200 shrink-0 ml-2">
+                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </div>
+              </button>
 
-              <!-- 4륜 타이어 트레드 -->
-              <div class="space-y-2">
-                <span class="text-xs font-semibold text-slate-700">타이어 잔여 트레드 깊이 (신품 기준 8.0mm)</span>
-                ${this.renderTireGauges(d)}
-              </div>
+              <div id="vdrTireConsumablesBody" class="hidden px-4 sm:px-5 pb-5 pt-1 space-y-4 border-t border-slate-100">
+                <!-- 4륜 타이어 트레드 -->
+                <div class="space-y-2 pt-2">
+                  <span class="text-xs font-semibold text-slate-700">타이어 잔여 트레드 깊이 (신품 기준 8.0mm)</span>
+                  ${this.renderTireGauges(d)}
+                </div>
 
-              <!-- 소모품 상태 -->
-              <div class="pt-3 border-t border-slate-100 space-y-2">
-                <span class="text-xs font-semibold text-slate-700">주요 소모품 점검</span>
-                ${this.renderConsumablesGrid(d)}
+                <!-- 소모품 상태 -->
+                <div class="pt-3 border-t border-slate-100 space-y-2">
+                  <span class="text-xs font-semibold text-slate-700">주요 소모품 점검</span>
+                  ${this.renderConsumablesGrid(d)}
+                </div>
               </div>
             </div>
 
@@ -556,11 +567,14 @@ class VehicleDetailRenderer {
               </p>
             </div>
 
-            <!-- 6. K Car 스타일 투명 총 구매비용 및 가정한 예시 금리 금융 계산기 -->
-            <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-[#171C24]">투명 총 구매비용 및 금융 시뮬레이터</h3>
-                <span class="text-xs text-slate-400">사전 안내용 투명 견적</span>
+            <!-- 6. K Car 스타일 투명 총 구매비용 및 가정한 예시 금리 금융 계산기 (모바일 2줄 정돈) -->
+            <div class="bg-white rounded-lg border border-[#E5E8EC] p-4 sm:p-5 space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <div class="flex items-center justify-between gap-2">
+                  <h3 class="text-base sm:text-lg font-bold text-[#171C24] tracking-tight">총 구매비용 계산</h3>
+                  <span class="text-[11px] sm:text-xs text-slate-400 shrink-0 font-medium">사전 안내용 견적</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">취등록세·부대비용 포함 실구매 예상 견적</p>
               </div>
               
               <div class="space-y-2 text-xs sm:text-sm">
@@ -724,32 +738,16 @@ class VehicleDetailRenderer {
               </button>
               ` : ''}
 
-              <!-- 데스크톱 방문 예약 간편 폼 (차마트 공식 딥 차콜 CTA) -->
-              <form id="vdrConsultForm" onsubmit="window.__vdrInstance.handleSubmitConsult(event, false)" class="space-y-3 pt-1">
-                <div class="text-xs font-bold text-slate-800">방문 시승 및 실차 확인 신청</div>
-                <div>
-                  <input type="text" id="vdrCustName" placeholder="고객 성함 *" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]" />
-                </div>
-                <div>
-                  <input type="tel" id="vdrCustPhone" placeholder="연락처 * (010-0000-0000)" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]" />
-                </div>
-                <div>
-                  <input type="date" id="vdrCustDate" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded text-slate-600 focus:outline-none focus:border-[#171B1E]" />
-                </div>
-                <div>
-                  <textarea id="vdrCustMemo" rows="2" placeholder="문의 사항 (예: 시승 예약, 대차 상담 등)" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]"></textarea>
-                </div>
-                <div class="flex items-start space-x-2 text-[11px] text-slate-500">
-                  <input type="checkbox" id="vdrPrivacyAgree" required class="mt-0.5 rounded text-[#171B1E] focus:ring-0 cursor-pointer" />
-                  <label for="vdrPrivacyAgree" class="cursor-pointer">
-                    [필수] 방문 상담 예약을 위한 개인정보 수집·이용에 동의합니다.
-                  </label>
-                </div>
-                <button type="submit" id="vdrBtnSubmitConsult" class="w-full py-2.5 bg-[#171B1E] hover:bg-[#000000] text-white font-bold text-xs rounded transition-colors flex items-center justify-center cursor-pointer shadow-xs">
-                  <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1.5 text-white"></i>
-                  방문 예약 신청하기
-                </button>
-              </form>
+              <!-- 1:1 직통 전화 문의 카드 (방문 신청 폼 대신 직통 연결) -->
+              <div class="pt-3 border-t border-slate-100 space-y-2">
+                <a href="tel:${escapeHtml(dealerPhone || '010-1111-9999')}" class="w-full py-3 bg-[#171B1E] hover:bg-black text-[#9FE870] font-bold text-xs rounded-lg transition-colors flex items-center justify-center cursor-pointer shadow-xs">
+                  <i data-lucide="phone-call" class="w-4 h-4 mr-2 text-[#9FE870]"></i>
+                  1:1 직통 전화 문의 (${escapeHtml(dealerPhone || '010-1111-9999')})
+                </a>
+                <p class="text-[11px] text-slate-400 text-center">
+                  평일·주말 09:00 ~ 20:00 실시간 상담 가능
+                </p>
+              </div>
             </div>
 
           </div>
@@ -817,61 +815,17 @@ class VehicleDetailRenderer {
         </div>
       </div>
 
-      <!-- 모바일 하단 고정 CTA 바 (전화상담 + 방문예약, 390x844 / 375x812 최적화) -->
-      <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E5E8EC] p-2 sm:hidden shadow-md">
+      <!-- 모바일 하단 고정 CTA 바 (위치·길찾기 + 1:1 직통 전화 연결) -->
+      <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E5E8EC] p-2.5 sm:hidden shadow-lg">
         <div class="flex items-center space-x-2 max-w-md mx-auto">
-          <a href="tel:${escapeHtml(dealerPhone)}" class="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded flex items-center justify-center border border-slate-200">
-            <i data-lucide="phone" class="w-3.5 h-3.5 mr-1 text-[#171B1E]"></i>
-            전화 상담
-          </a>
-          <button onclick="window.__vdrInstance.openBottomSheet()" class="flex-1 py-2.5 px-3 bg-[#171B1E] hover:bg-[#000000] text-white font-bold text-xs rounded flex items-center justify-center shadow-xs cursor-pointer">
-            <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-white"></i>
-            방문 예약
+          <button type="button" onclick="window.__vdrInstance && window.__vdrInstance.openWayfindingModal()" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-lg flex items-center justify-center border border-slate-200 shrink-0 cursor-pointer">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 mr-1 text-slate-600"></i>
+            위치안내
           </button>
-        </div>
-      </div>
-
-      <!-- 모바일 방문예약 Bottom Sheet 모달 -->
-      <div id="vdrBottomSheetModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end justify-center sm:hidden animate-in fade-in duration-150">
-        <div class="bg-white w-full max-h-[85vh] rounded-t-xl p-5 shadow-2xl overflow-y-auto space-y-4 animate-in slide-in-from-bottom duration-200">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div>
-              <h3 class="text-base font-bold text-slate-800">방문 시승 및 실차 확인 예약</h3>
-              <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(displayTitle)}</p>
-            </div>
-            <button onclick="window.__vdrInstance.closeBottomSheet()" class="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
-              <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-          </div>
-
-          <form id="vdrBsConsultForm" onsubmit="window.__vdrInstance.handleSubmitConsult(event, true)" class="space-y-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">고객 성함 *</label>
-              <input type="text" id="vdrBsCustName" placeholder="예: 김철수" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">연락처 *</label>
-              <input type="tel" id="vdrBsCustPhone" placeholder="010-0000-0000" required class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">방문 희망일자</label>
-              <input type="date" id="vdrBsCustDate" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded text-slate-600 focus:outline-none focus:border-[#171B1E]" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">문의 메모 (선택)</label>
-              <textarea id="vdrBsCustMemo" rows="2" placeholder="시승 희망 여부, 보유차량 대차 견적 문의 등" class="w-full px-3 py-2 text-xs border border-[#E5E8EC] rounded focus:outline-none focus:border-[#171B1E]"></textarea>
-            </div>
-            <div class="flex items-start space-x-2 text-[11px] text-slate-500 pt-1">
-              <input type="checkbox" id="vdrBsPrivacyAgree" required class="mt-0.5 rounded text-[#171B1E] focus:ring-0 cursor-pointer" />
-              <label for="vdrBsPrivacyAgree" class="cursor-pointer">
-                [필수] 방문 상담 예약을 위한 개인정보 수집·이용에 동의합니다.
-              </label>
-            </div>
-            <button type="submit" id="vdrBsBtnSubmit" class="w-full py-2.5 bg-[#171B1E] hover:bg-[#000000] text-white font-bold text-xs rounded shadow-xs transition-colors flex items-center justify-center cursor-pointer mt-2">
-              <i data-lucide="check" class="w-4 h-4 mr-1 text-white"></i>
-              간편 예약 신청 완료
-            </button>
-          </form>
+          <a href="tel:${escapeHtml(dealerPhone || '010-1111-9999')}" class="flex-1 py-3 px-3 bg-[#171B1E] active:bg-black text-[#9FE870] font-bold text-xs rounded-lg flex items-center justify-center shadow-md">
+            <i data-lucide="phone-call" class="w-4 h-4 mr-1.5 text-[#9FE870]"></i>
+            1:1 직통 전화 걸기 (${escapeHtml(dealerPhone || '010-1111-9999')})
+          </a>
         </div>
       </div>
 
@@ -1155,10 +1109,11 @@ class VehicleDetailRenderer {
 
   // 차량 부위별 독자 2D SVG 다이어그램 렌더러 (DIRECTIVE 075-A TASK 2~4)
   renderCarDiagramSvg(acc) {
-    if (!acc.diagram_parts || Object.keys(acc.diagram_parts).length === 0) {
-      acc.diagram_parts = this.buildFallbackDiagramParts(acc, this.data);
+    const accObj = (acc && typeof acc === 'object') ? acc : {};
+    if (!accObj.diagram_parts || Object.keys(accObj.diagram_parts).length === 0) {
+      accObj.diagram_parts = this.buildFallbackDiagramParts(accObj, this.data);
     }
-    const parts = acc.diagram_parts || {};
+    const parts = accObj.diagram_parts || {};
 
     const keyMap = {
       'hood': 'hood',
@@ -1323,7 +1278,8 @@ class VehicleDetailRenderer {
 
   // DIRECTIVE 075-A TASK 2 & 3 & 4: 한글 부위 매핑 및 정밀 진단 판정 선택 핸들러
   selectPart(partKey) {
-    const acc = this.data?.accident_summary || this.data?.accident_history || {};
+    const rawAcc = this.data?.accident_summary || this.data?.accident_history || {};
+    const acc = (rawAcc && typeof rawAcc === 'object') ? rawAcc : { summary: String(rawAcc || '') };
     if (!acc.diagram_parts || Object.keys(acc.diagram_parts).length === 0) {
       acc.diagram_parts = this.buildFallbackDiagramParts(acc, this.data);
     }
@@ -2223,6 +2179,22 @@ class VehicleDetailRenderer {
     if (modal) {
       modal.classList.add('hidden');
       document.body.style.overflow = '';
+    }
+  }
+
+  // 타이어 및 주요 소모품 상태 점검표 접기/펼치기 토글
+  toggleTireConsumables() {
+    const body = document.getElementById('vdrTireConsumablesBody');
+    const chevron = document.getElementById('vdrTireChevron');
+    if (!body) return;
+    const isHidden = body.classList.contains('hidden');
+    if (isHidden) {
+      body.classList.remove('hidden');
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+      if (window.lucide) window.lucide.createIcons();
+    } else {
+      body.classList.add('hidden');
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
     }
   }
 

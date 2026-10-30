@@ -1206,11 +1206,16 @@
 
     <!-- [모바일 스마트 플로팅 검색바: 스크롤 다운 시 매물 시야 확보를 위해 숨김, 스크롤 업 시 매끄럽게 노출] -->
     <div id="mobileFloatingSearchBar" class="md:hidden fixed bottom-4 left-3 right-3 z-40 max-w-md mx-auto transition-all duration-300 transform translate-y-0 opacity-100">
-        <div class="bg-[#171B1E]/95 backdrop-blur-md p-1.5 pl-3 rounded-2xl shadow-xl border border-slate-700/80 flex items-center gap-2">
+        <div class="bg-[#171B1E]/95 backdrop-blur-md p-1.5 pl-3 rounded-2xl shadow-xl border border-slate-700/80 flex items-center gap-1.5">
             <i data-lucide="search" class="w-4 h-4 text-[#C8FF3D] shrink-0"></i>
             <input type="text" id="mobileHomeSearchInput" onkeyup="handleMobileHomeSearch(event)" placeholder="차량명·모델 검색 (예: 싼타페, 그랜저)"
-                   class="flex-1 bg-transparent text-white text-xs placeholder-slate-400 focus:outline-none py-1.5">
-            <button type="button" onclick="executeMobileHomeSearch()" class="px-3.5 py-1.5 rounded-xl bg-[#C8FF3D] hover:bg-[#b8ef2d] text-[#171B1E] text-xs font-bold shrink-0 transition-transform active:scale-95 shadow-xs cursor-pointer">
+                   class="flex-1 min-w-0 bg-transparent text-white text-xs placeholder-slate-400 focus:outline-none py-1.5">
+            <!-- 검색창 바로 옆 상세 필터 버튼 -->
+            <button type="button" onclick="openMobileFilterBottomSheet()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold shrink-0 flex items-center gap-1 border border-slate-700 transition-transform active:scale-95 cursor-pointer" title="상세 필터 열기">
+                <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-[#C8FF3D]"></i>
+                <span>필터</span>
+            </button>
+            <button type="button" onclick="executeMobileHomeSearch()" class="px-3 py-1.5 rounded-xl bg-[#C8FF3D] hover:bg-[#b8ef2d] text-[#171B1E] text-xs font-bold shrink-0 transition-transform active:scale-95 shadow-xs cursor-pointer">
                 검색
             </button>
         </div>
@@ -1365,77 +1370,212 @@
         }
 
         // ==========================================
-        // 엔카 방식 3단계 계층형 차량 선택 (제조사 -> 차종 -> 세부모델)
+        // 엔카 & KB차차차 표준 전 차종 마스터 카탈로그 (전체 제조사/차종/세부모델 계층 트리)
+        // 매물 유무와 무관하게 모든 차종 조사 및 완벽 선택 지원
         // ==========================================
-        const ENCAR_MODEL_FAMILIES = {
-            '현대': ['그랜저', '쏘나타', '아반떼', '싼타페', '팰리세이드', '투싼', '캐스퍼', '코나', '아이오닉', '베뉴', '스타리아', '포터'],
-            '기아': ['쏘렌토', '카니발', '스포티지', 'K5', 'K8', 'K3', 'K7', 'K9', '셀토스', '레이', '모닝', 'EV6', 'EV9', '니로', '봉고'],
-            '제네시스': ['G80', 'GV70', 'GV80', 'G70', 'G90', 'GV60'],
-            '르노코리아': ['QM6', 'XM3', 'SM6', '아르카나'],
-            'KG모빌리티': ['토레스', '티볼리', '렉스턴', '액티언', '코란도', '무쏘'],
-            'BMW': ['5시리즈', '3시리즈', 'X5', 'X3', 'X6', '7시리즈', '4시리즈', '1시리즈'],
-            '벤츠': ['E-클래스', 'C-클래스', 'S-클래스', 'GLC-클래스', 'GLE-클래스', 'A-클래스'],
-            '아우디': ['A6', 'A4', 'Q5', 'A7', 'Q7'],
-            '폭스바겐': ['골프', '티구안', '아테온', '파사트']
+        const ENCAR_MASTER_CATALOG = {
+            "국산": {
+                "현대": {
+                    "그랜저": ["디 올 뉴 그랜저 (GN7)", "더 뉴 그랜저 IG", "그랜저 IG", "그랜저 HG", "그랜저 하이브리드"],
+                    "쏘나타": ["쏘나타 디 엣지", "쏘나타 (DN8)", "쏘나타 뉴 라이즈", "LF 쏘나타", "YF 쏘나타", "쏘나타 하이브리드"],
+                    "아반떼": ["아반떼 (CN7)", "더 뉴 아반떼 AD", "아반떼 AD", "아반떼 MD", "아반떼 하이브리드"],
+                    "싼타페": ["디 올 뉴 싼타페 (MX5)", "싼타페 TM", "싼타페 더 프라임", "싼타페 DM", "싼타페 하이브리드"],
+                    "팰리세이드": ["더 뉴 팰리세이드", "팰리세이드 (LX2)"],
+                    "투싼": ["디 올 뉴 투싼 (NX4)", "올 뉴 투싼 (TL)", "뉴 투싼 ix", "투싼 하이브리드"],
+                    "캐스퍼": ["캐스퍼", "캐스퍼 일렉트릭", "캐스퍼 밴"],
+                    "코나": ["디 올 뉴 코나 (SX2)", "더 뉴 코나", "코나 (OS)", "코나 하이브리드 / EV"],
+                    "스타리아": ["스타리아 라운지", "스타리아 투어러", "스타리아 카고", "스타리아 하이브리드"],
+                    "아이오닉": ["아이오닉 5", "아이오닉 6", "아이오닉 5 N"],
+                    "베뉴": ["베뉴"],
+                    "포터": ["포터 2", "포터 2 일렉트릭"]
+                },
+                "기아": {
+                    "쏘렌토": ["더 뉴 쏘렌토 (MQ4)", "쏘렌토 4세대", "더 뉴 쏘렌토 (UM)", "올 뉴 쏘렌토", "쏘렌토 하이브리드"],
+                    "카니발": ["더 뉴 카니발 (KA4)", "카니발 4세대", "더 뉴 카니발", "올 뉴 카니발", "카니발 하이브리드"],
+                    "스포티지": ["디 올 뉴 스포티지 (NQ5)", "스포티지 더 볼드", "스포티지 4세대 (QL)", "스포티지 하이브리드"],
+                    "K5": ["더 뉴 K5 3세대", "K5 3세대 (DL3)", "더 뉴 K5 2세대", "K5 2세대", "K5 하이브리드"],
+                    "K8": ["더 뉴 K8", "K8 (GL3)", "K8 하이브리드"],
+                    "셀토스": ["더 뉴 셀토스", "셀토스 (SP2)"],
+                    "레이": ["더 뉴 기아 레이", "더 뉴 레이", "레이", "레이 EV"],
+                    "모닝": ["모닝 어반", "올 뉴 모닝 (JA)", "더 뉴 모닝", "모닝"],
+                    "K3": ["더 뉴 K3 2세대", "올 뉴 K3", "더 뉴 K3", "K3"],
+                    "K7": ["K7 프리미어", "올 뉴 K7", "더 뉴 K7", "K7 하이브리드"],
+                    "K9": ["더 뉴 K9 2세대", "THE K9", "뉴 K9"],
+                    "EV6": ["더 뉴 EV6", "EV6", "EV6 GT"],
+                    "EV9": ["EV9"],
+                    "니로": ["디 올 뉴 니로 (SG2)", "더 뉴 니로", "니로 (DE)", "니로 EV/하이브리드"],
+                    "모하비": ["모하비 더 마스터", "모하비"],
+                    "봉고": ["봉고 3", "봉고 3 EV"]
+                },
+                "제네시스": {
+                    "G80": ["G80 (RG3)", "G80 (DH)", "Electrified G80"],
+                    "GV70": ["GV70 (JK1)", "Electrified GV70"],
+                    "GV80": ["GV80 (JX1)", "GV80 쿠페"],
+                    "G70": ["G70 (IK)", "더 뉴 G70", "G70 슈팅브레이크"],
+                    "G90": ["G90 (RS4)", "G90 (HI)", "EQ900"],
+                    "GV60": ["GV60 (JW1)"]
+                },
+                "KG모빌리티(쌍용)": {
+                    "토레스": ["토레스", "토레스 EVX", "토레스 바이퓨얼"],
+                    "티볼리": ["더 뉴 티볼리", "티볼리 에어", "베리 뉴 티볼리", "티볼리 아머", "티볼리"],
+                    "렉스턴": ["렉스턴 뉴 아레나", "올 뉴 렉스턴", "G4 렉스턴", "렉스턴 스포츠 / 칸"],
+                    "액티언": ["액티언 2세대", "액티언 스포츠"],
+                    "코란도": ["뷰:티풀 코란도", "코란도 C", "코란도 투리스모"],
+                    "무쏘": ["무쏘 EV (O100)", "무쏘 스포츠"]
+                },
+                "르노코리아(삼성)": {
+                    "QM6": ["더 뉴 QM6", "뉴 QM6", "QM6"],
+                    "XM3": ["XM3", "XM3 E-TECH 하이브리드", "아르카나"],
+                    "SM6": ["더 뉴 SM6", "SM6"],
+                    "그랑 콜레오스": ["그랑 콜레오스 하이브리드"],
+                    "SM5": ["SM5 노바", "뉴 SM5 플래티넘"],
+                    "SM3": ["SM3 네오", "SM3 Z.E."]
+                },
+                "쉐보레(GM대우)": {
+                    "트랙스": ["트랙스 크로스오버", "더 뉴 트랙스", "트랙스"],
+                    "트레일블레이저": ["더 뉴 트레일블레이저", "트레일블레이저"],
+                    "말리부": ["더 뉴 말리부", "올 뉴 말리부", "말리부"],
+                    "스파크": ["더 뉴 스파크", "더 넥스트 스파크", "스파크"],
+                    "이쿼녹스": ["더 뉴 이쿼녹스", "이쿼녹스"],
+                    "콜로라도": ["올 뉴 콜로라도", "리얼 뉴 콜로라도", "콜로라도"],
+                    "타호": ["타호"],
+                    "볼트": ["볼트 EV", "볼트 EUV"]
+                }
+            },
+            "수입": {
+                "BMW": {
+                    "5시리즈": ["5시리즈 (G60)", "5시리즈 (G30)", "5시리즈 (F10)"],
+                    "3시리즈": ["3시리즈 (G20)", "3시리즈 (F30)"],
+                    "X5": ["X5 (G05)", "X5 (F15)"],
+                    "X3": ["X3 (G45)", "X3 (G01)", "X3 (F25)"],
+                    "X6": ["X6 (G06)", "X6 (F16)"],
+                    "7시리즈": ["7시리즈 (G70)", "7시리즈 (G11/G12)"],
+                    "4시리즈": ["4시리즈 (G22)", "4시리즈 (F32)"],
+                    "1시리즈": ["1시리즈 (F40)", "1시리즈 (F20)"],
+                    "X7": ["X7 (G07)"],
+                    "X1": ["X1 (U11)", "X1 (F48)"]
+                },
+                "벤츠": {
+                    "E-클래스": ["E-클래스 (W214)", "E-클래스 (W213)", "E-클래스 (W212)"],
+                    "C-클래스": ["C-클래스 (W206)", "C-클래스 (W205)"],
+                    "S-클래스": ["S-클래스 (W223)", "S-클래스 (W222)"],
+                    "GLC-클래스": ["GLC-클래스 (X254)", "GLC-클래스 (X253)"],
+                    "GLE-클래스": ["GLE-클래스 (W167)", "GLE-클래스 (W166)"],
+                    "A-클래스": ["A-클래스 (W177)", "A-클래스 (W176)"],
+                    "CLA-클래스": ["CLA-클래스 (C118)"],
+                    "CLS-클래스": ["CLS-클래스 (C257)"],
+                    "G-클래스": ["G-클래스 (W463)"]
+                },
+                "아우디": {
+                    "A6": ["A6 (C8)", "A6 (C7)"],
+                    "A4": ["A4 (B9)", "A4 (B8)"],
+                    "Q5": ["Q5 (FY)", "Q5 (8R)"],
+                    "A7": ["A7 (4K)", "A7 (4G)"],
+                    "Q7": ["Q7 (4M)"],
+                    "Q3": ["Q3 (F3)"]
+                },
+                "폭스바겐": {
+                    "골프": ["골프 8세대", "골프 7세대"],
+                    "티구안": ["티구안 2세대", "티구안 올스페이스"],
+                    "아테온": ["아테온"],
+                    "파사트": ["파사트 GT"]
+                },
+                "볼보": {
+                    "XC60": ["XC60 2세대"],
+                    "XC90": ["XC90 2세대"],
+                    "XC40": ["XC40"],
+                    "S90": ["S90"],
+                    "S60": ["S60 3세대"]
+                },
+                "포르쉐": {
+                    "카이엔": ["카이엔 3세대", "카이엔 쿠페"],
+                    "파나메라": ["파나메라 3세대", "파나메라 2세대"],
+                    "마칸": ["마칸"],
+                    "911": ["911 (992)", "911 (991)"],
+                    "타이칸": ["타이칸"]
+                },
+                "렉서스": {
+                    "ES": ["ES300h 7세대", "ES300h 6세대"],
+                    "NX": ["NX350h", "NX300h"],
+                    "RX": ["RX350h", "RX450h"]
+                }
+            }
         };
 
+        // 전체 제조사 평탄화 맵
+        const ENCAR_ALL_MAKERS = {};
+        for (const origin of Object.keys(ENCAR_MASTER_CATALOG)) {
+            for (const [maker, families] of Object.entries(ENCAR_MASTER_CATALOG[origin])) {
+                ENCAR_ALL_MAKERS[maker] = { origin, families };
+            }
+        }
+
+        // 차량 객체 계층 분석기 (마스터 카탈로그 기준 엄격 매칭)
         function parseVehicleHierarchy(v) {
             const makerRaw = (v.manufacturer || '').trim();
             const modelRaw = (v.model_name || '').trim();
-            const upper = modelRaw.toUpperCase();
+            const upper = (makerRaw + ' ' + modelRaw).toUpperCase();
 
-            let matchedMaker = makerRaw;
+            let matchedMaker = '';
             let matchedFamily = '';
 
-            for (const brand of Object.keys(ENCAR_MODEL_FAMILIES)) {
-                if (makerRaw.includes(brand) || upper.includes(brand.toUpperCase())) {
-                    matchedMaker = brand;
+            // 1. 제조사 매칭
+            for (const maker of Object.keys(ENCAR_ALL_MAKERS)) {
+                if (makerRaw === maker || upper.includes(maker.toUpperCase())) {
+                    matchedMaker = maker;
                     break;
                 }
             }
 
-            const candidateFamilies = ENCAR_MODEL_FAMILIES[matchedMaker] || [];
-            for (const fam of candidateFamilies) {
-                if (upper.includes(fam.toUpperCase())) {
-                    matchedFamily = fam;
-                    break;
-                }
-            }
-            if (!matchedFamily) {
-                for (const [b, fams] of Object.entries(ENCAR_MODEL_FAMILIES)) {
-                    for (const fam of fams) {
-                        if (upper.includes(fam.toUpperCase())) {
-                            matchedMaker = b;
-                            matchedFamily = fam;
-                            break;
-                        }
+            // 제조사가 없으면 '기타'
+            if (!matchedMaker) matchedMaker = makerRaw || '기타';
+
+            // 2. 해당 제조사 산하 대표 차종 매칭
+            const makerData = ENCAR_ALL_MAKERS[matchedMaker];
+            if (makerData) {
+                for (const fam of Object.keys(makerData.families)) {
+                    if (upper.includes(fam.toUpperCase())) {
+                        matchedFamily = fam;
+                        break;
                     }
-                    if (matchedFamily) break;
                 }
             }
+
+            // 차종을 못 찾았으면 모델명의 첫 단어
             if (!matchedFamily) {
                 matchedFamily = modelRaw.split(' ')[0] || '기타';
             }
 
             return {
-                maker: matchedMaker || '기타',
+                maker: matchedMaker,
                 family: matchedFamily,
                 detail: modelRaw
             };
         }
 
+        // 엔카식 3단 계층형 셀렉트 초기화 (차가 없어도 모든 제조사·차종·세부모델 100% 완전 표시)
         function initHierarchyModelSelectors() {
             const makerSel = document.getElementById('mbHierarchyMaker');
-            if (!makerSel || !publicVehicles || publicVehicles.length === 0) return;
+            if (!makerSel) return;
 
-            const makers = Object.keys(ENCAR_MODEL_FAMILIES);
-            let opts = '<option value="">전체 제조사</option>';
-            makers.forEach(m => {
-                const count = publicVehicles.filter(v => parseVehicleHierarchy(v).maker === m).length;
-                if (count > 0) {
-                    opts += `<option value="${m}">${m} (${count}대)</option>`;
-                }
-            });
+            let opts = '<option value="">전체 제조사 (국산·수입 전체)</option>';
+            
+            // 국산 그룹
+            opts += '<optgroup label="── 국산차 ──">';
+            for (const maker of Object.keys(ENCAR_MASTER_CATALOG["국산"])) {
+                const count = (publicVehicles || []).filter(v => parseVehicleHierarchy(v).maker === maker).length;
+                opts += `<option value="${maker}">${maker} ${count > 0 ? `(${count}대)` : '(준비중)'}</option>`;
+            }
+            opts += '</optgroup>';
+
+            // 수입 그룹
+            opts += '<optgroup label="── 수입차 ──">';
+            for (const maker of Object.keys(ENCAR_MASTER_CATALOG["수입"])) {
+                const count = (publicVehicles || []).filter(v => parseVehicleHierarchy(v).maker === maker).length;
+                opts += `<option value="${maker}">${maker} ${count > 0 ? `(${count}대)` : '(준비중)'}</option>`;
+            }
+            opts += '</optgroup>';
+
             makerSel.innerHTML = opts;
             if (mbFilterState.maker) {
                 makerSel.value = mbFilterState.maker;
@@ -1464,13 +1604,17 @@
                 return;
             }
 
-            const pool = publicVehicles.filter(v => parseVehicleHierarchy(v).maker === selectedMaker);
-            const families = Array.from(new Set(pool.map(v => parseVehicleHierarchy(v).family))).filter(Boolean);
+            // 마스터 카탈로그에서 해당 제조사의 모든 대표 차종 목록 추출
+            const makerData = ENCAR_ALL_MAKERS[selectedMaker];
+            const families = makerData ? Object.keys(makerData.families) : [];
 
             let famOpts = '<option value="">대표 차종 전체 (전체 모델)</option>';
             families.forEach(f => {
-                const count = pool.filter(v => parseVehicleHierarchy(v).family === f).length;
-                famOpts += `<option value="${f}">${f} (${count}대)</option>`;
+                const count = (publicVehicles || []).filter(v => {
+                    const h = parseVehicleHierarchy(v);
+                    return h.maker === selectedMaker && h.family === f;
+                }).length;
+                famOpts += `<option value="${f}">${f} ${count > 0 ? `(${count}대)` : '(준비중)'}</option>`;
             });
 
             if (famSel) {
@@ -1500,16 +1644,22 @@
                 return;
             }
 
-            const pool = publicVehicles.filter(v => {
+            // 마스터 카탈로그에서 해당 차종의 모든 세부 모델(세대/트림) 추출
+            const makerData = ENCAR_ALL_MAKERS[mbFilterState.maker];
+            const masterDetails = (makerData && makerData.families[selectedFamily]) ? makerData.families[selectedFamily] : [];
+
+            // 실제 매물에서 추가로 존재하는 세부명 병합
+            const liveDetails = (publicVehicles || []).filter(v => {
                 const h = parseVehicleHierarchy(v);
                 return h.maker === mbFilterState.maker && h.family === selectedFamily;
-            });
-            const details = Array.from(new Set(pool.map(v => v.model_name))).filter(Boolean);
+            }).map(v => v.model_name);
+
+            const allDetails = Array.from(new Set([...masterDetails, ...liveDetails])).filter(Boolean);
 
             let detOpts = '<option value="">세부 모델 전체</option>';
-            details.forEach(d => {
-                const count = pool.filter(v => v.model_name === d).length;
-                detOpts += `<option value="${d}">${d} (${count}대)</option>`;
+            allDetails.forEach(d => {
+                const count = (publicVehicles || []).filter(v => (v.model_name || '').includes(d) || d.includes(v.model_name || '')).length;
+                detOpts += `<option value="${d}">${d} ${count > 0 ? `(${count}대)` : '(준비중)'}</option>`;
             });
 
             if (detSel) {
@@ -1536,7 +1686,6 @@
         }
 
         function renderMbModelChips() {
-            // 엔카식 계층형 드롭다운으로 대체됨
             initHierarchyModelSelectors();
         }
 
