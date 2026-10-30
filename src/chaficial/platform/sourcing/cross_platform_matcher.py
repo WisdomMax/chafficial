@@ -177,7 +177,17 @@ class CrossPlatformMatcher:
         now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
 
         ext_listing_id = match.external_car_id or f"{match.source_platform}_{match.vehicle_id}"
-        db_listing_status = "ACTIVE" if match.status == MatchingStatus.VERIFIED else "REVIEW_PENDING"
+        
+        # P0 가드: OFFLINE_TEST 모드는 절대로 운영 ACTIVE 매물이 될 수 없음 (TEST_MOCK 강제 및 is_demo=1)
+        if match.observation_mode == ObservationMode.OFFLINE_TEST:
+            db_listing_status = "TEST_MOCK"
+            is_demo_val = 1
+        elif match.status == MatchingStatus.VERIFIED:
+            db_listing_status = "ACTIVE"
+            is_demo_val = 0
+        else:
+            db_listing_status = "REVIEW_PENDING"
+            is_demo_val = 0
 
         c.execute("""
             SELECT id FROM vehicle_listings 
@@ -196,7 +206,8 @@ class CrossPlatformMatcher:
                     listing_status = ?,
                     last_observed_at = ?,
                     data_confidence = ?,
-                    observation_notes = ?
+                    observation_notes = ?,
+                    is_demo = ?
                 WHERE id = ?
             """, (
                 ext_listing_id,
@@ -206,6 +217,7 @@ class CrossPlatformMatcher:
                 now_iso,
                 match.match_score,
                 notes,
+                is_demo_val,
                 existing[0]
             ))
         else:
@@ -216,7 +228,7 @@ class CrossPlatformMatcher:
                     advertised_price, listing_status, first_observed_at, 
                     last_observed_at, data_confidence, observation_notes,
                     is_demo, source_confidence
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 new_id,
                 match.vehicle_id,
@@ -229,6 +241,7 @@ class CrossPlatformMatcher:
                 now_iso,
                 match.match_score,
                 notes,
+                is_demo_val,
                 match.match_score
             ))
 

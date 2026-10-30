@@ -1,34 +1,34 @@
 """
-Incremental Market Observer (CHA-FICIAL DIRECTIVE 119 Standards)
+Incremental Market Observer (CHA-FICIAL DIRECTIVE 120 Standards)
 - Low-overhead differential market scanning (50 cars per batch/page).
-- Compares observed listings against existing DB listings:
-  1. NEW_CAR: Schedules for deep detail fetch (photos, options).
-  2. EXISTING_CAR: Updates price/status differences immediately without re-fetching photos.
-  3. UNSEEN_CAR: Increments grace period miss counter (does NOT falsely mark DELISTED immediately).
-- Adheres to atomic daily request budget and 70% CPU cap.
+- Strictly preserves separation between vendor listing status and internal vehicle inventory status.
+- Guarantees ZERO false DELISTED / SOLD on partial observations.
+- SQLite-backed persistent Queue for new car deep fetch (supports idempotency, restart recovery, retry counts).
+- Updates `last_observed_at` even on NO_CHANGE records to maintain market freshness tracking.
 """
 
 import sqlite3
 import time
 import json
+import uuid
 from typing import Dict, List, Any, Tuple, Optional
 from dataclasses import dataclass, asdict
 from enum import Enum
 
 class ObservationAction(str, Enum):
-    SCHEDULE_DEEP_FETCH = "SCHEDULE_DEEP_FETCH" # New car: needs detail page & photos
-    UPDATE_PRICE_STATUS = "UPDATE_PRICE_STATUS" # Existing car: update price/status diff only
-    NO_CHANGE = "NO_CHANGE"                     # Existing car: same price and status
-    INCREMENT_MISS_COUNT = "INCREMENT_MISS_COUNT"# Car not seen in current batch
+    SCHEDULE_DEEP_FETCH = "SCHEDULE_DEEP_FETCH" # New car: queued for detail & photo harvest
+    UPDATE_PRICE_STATUS = "UPDATE_PRICE_STATUS" # Existing car: price or vendor status changed
+    NO_CHANGE = "NO_CHANGE"                     # Existing car: same price and status -> update last_observed_at only
+    UNSEEN_PRESERVED = "UNSEEN_PRESERVED"       # Not present in partial batch -> PRESERVED without delisting
 
 @dataclass
 class MarketListingSummary:
-    listing_id: str             # carSeq or unique vendor ID
+    listing_id: str             # vendor unique car ID (e.g. encarno or carSeq)
     platform: str              # CARMANAGER, etc.
     plate_number: str
     model_name: str
-    advertised_price: int      # manwon
-    status: str                # FOR_SALE, SOLD, etc.
+    advertised_price: Optional[int] # manwon (None for consultation / unpriced)
+    status: str                # vendor listing status: 'ACTIVE', 'SOLD', 'SUSPENDED', etc.
     raw_location: str          # e.g., '장안모터프라자'
     observed_at: str
 
@@ -41,6 +41,27 @@ class DiffResult:
 class IncrementalMarketObserver:
     def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db"):
         self.db_path = db_path
+        self._ensure_queue_table()
+
+    def _ensure_queue_table(self):
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS market_detail_fetch_queue (
+                listing_id VARCHAR(64) PRIMARY KEY,
+                platform VARCHAR(30) NOT NULL,
+                plate_number VARCHAR(30),
+                model_name VARCHAR(100),
+                raw_location VARCHAR(100),
+                queue_status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, IN_PROGRESS, COMPLETED, FAILED
+                retry_count INTEGER DEFAULT 0,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                error_message TEXT
+            );
+        """)
+        conn.commit()
+        conn.close()
 
     def inspect_batch(
         self, 
@@ -48,7 +69,7 @@ class IncrementalMarketObserver:
         platform: str = "CARMANAGER"
     ) -> List[DiffResult]:
         """
-        Compares observed batch against existing DB records.
+        Compares observed 50-car batch against existing DB records.
         Returns differential action plan.
         """
         if not observed_items:
@@ -75,7 +96,7 @@ class IncrementalMarketObserver:
         for item in observed_items:
             lid = item.listing_id
             if lid not in existing_map:
-                # 1. New listing -> deep fetch required
+                # 1. New listing -> schedule for deep fetch in persistent queue
                 diff_results.append(DiffResult(
                     action=ObservationAction.SCHEDULE_DEEP_FETCH,
                     listing_id=lid,
@@ -83,7 +104,8 @@ class IncrementalMarketObserver:
                         "plate_number": item.plate_number,
                         "model_name": item.model_name,
                         "advertised_price": item.advertised_price,
-                        "raw_location": item.raw_location
+                        "raw_location": item.raw_location,
+                        "observed_at": item.observed_at
                     }
                 ))
             else:
@@ -103,43 +125,119 @@ class IncrementalMarketObserver:
                             "old_status": curr["status"],
                             "new_status": item.status,
                             "price_changed": price_diff,
-                            "status_changed": status_diff
+                            "status_changed": status_diff,
+                            "observed_at": item.observed_at
                         }
                     ))
                 else:
+                    # 3. NO_CHANGE -> Must still update last_observed_at (ISSUE-62)
                     diff_results.append(DiffResult(
                         action=ObservationAction.NO_CHANGE,
                         listing_id=lid,
-                        details={"vehicle_id": curr["vehicle_id"]}
+                        details={
+                            "vehicle_id": curr["vehicle_id"],
+                            "observed_at": item.observed_at
+                        }
                     ))
 
         return diff_results
 
-    def apply_lightweight_updates(self, diff_results: List[DiffResult], platform: str = "CARMANAGER") -> int:
+    def apply_batch_updates_and_enqueue(
+        self, 
+        diff_results: List[DiffResult], 
+        platform: str = "CARMANAGER"
+    ) -> Dict[str, int]:
         """
-        Atomically updates existing records (price / status) without expensive photo fetching.
+        Atomically applies:
+          1. Price/status updates (UPDATE_PRICE_STATUS)
+          2. Freshness timestamp updates (NO_CHANGE)
+          3. Enqueues new vehicles into persistent SQLite queue (SCHEDULE_DEEP_FETCH)
         """
-        updates = [d for d in diff_results if d.action == ObservationAction.UPDATE_PRICE_STATUS]
-        if not updates:
-            return 0
-
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
-        applied_count = 0
+        
+        counts = {
+            "price_status_updated": 0,
+            "no_change_timestamp_refreshed": 0,
+            "new_vehicles_enqueued": 0
+        }
 
         with conn:
-            for u in updates:
-                lid = u.listing_id
-                det = u.details
-                c.execute("""
-                    UPDATE vehicle_listings SET
-                        advertised_price = ?,
-                        listing_status = ?,
-                        last_observed_at = ?
-                    WHERE platform = ? AND listing_id = ?
-                """, (det["new_price"], det["new_status"], now_iso, platform, lid))
-                applied_count += c.rowcount
+            for d in diff_results:
+                lid = d.listing_id
+                det = d.details
+
+                if d.action == ObservationAction.UPDATE_PRICE_STATUS:
+                    c.execute("""
+                        UPDATE vehicle_listings SET
+                            advertised_price = ?,
+                            listing_status = ?,
+                            last_observed_at = ?
+                        WHERE platform = ? AND listing_id = ?
+                    """, (det["new_price"], det["new_status"], det.get("observed_at", now_iso), platform, lid))
+                    counts["price_status_updated"] += c.rowcount
+
+                elif d.action == ObservationAction.NO_CHANGE:
+                    # ISSUE-62: Freshness timestamp updated even on NO_CHANGE
+                    c.execute("""
+                        UPDATE vehicle_listings SET
+                            last_observed_at = ?
+                        WHERE platform = ? AND listing_id = ?
+                    """, (det.get("observed_at", now_iso), platform, lid))
+                    counts["no_change_timestamp_refreshed"] += c.rowcount
+
+                elif d.action == ObservationAction.SCHEDULE_DEEP_FETCH:
+                    # ISSUE-64: Persistent queue with restart recovery and idempotency
+                    c.execute("""
+                        INSERT OR IGNORE INTO market_detail_fetch_queue (
+                            listing_id, platform, plate_number, model_name,
+                            raw_location, queue_status, retry_count,
+                            created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)
+                    """, (
+                        lid, platform, det.get("plate_number"), det.get("model_name"),
+                        det.get("raw_location"), now_iso, now_iso
+                    ))
+                    if c.rowcount > 0:
+                        counts["new_vehicles_enqueued"] += 1
 
         conn.close()
-        return applied_count
+        return counts
+
+    def get_pending_queue_items(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieves pending deep fetch tasks with restart recovery support."""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute("""
+            SELECT listing_id, platform, plate_number, model_name, raw_location, retry_count
+            FROM market_detail_fetch_queue
+            WHERE queue_status = 'PENDING'
+            ORDER BY created_at ASC
+            LIMIT ?
+        """, (limit,))
+        rows = c.fetchall()
+        conn.close()
+        return [
+            {
+                "listing_id": r[0],
+                "platform": r[1],
+                "plate_number": r[2],
+                "model_name": r[3],
+                "raw_location": r[4],
+                "retry_count": r[5]
+            } for r in rows
+        ]
+
+    def mark_queue_item_completed(self, listing_id: str) -> None:
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+        with conn:
+            c.execute("""
+                UPDATE market_detail_fetch_queue SET
+                    queue_status = 'COMPLETED',
+                    updated_at = ?
+                WHERE listing_id = ?
+            """, (now_iso, listing_id))
+        conn.close()

@@ -1,7 +1,35 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 00:26:00 KST  
+> **최종 갱신일:** 2026-10-31 00:38:00 KST  
+
+---
+
+## [DIRECTIVE 120] 모의 데이터 운영 격리, 50대 증분 관측기 완성 및 사진 667건 전수 1:1 무손실 증명
+- **일시:** 2026-10-31 00:38 KST
+- **수행 태스크**:
+  1. **TASK 1 (P0: OFFLINE_TEST 데이터 운영 격리, ISSUE-60)**:
+     - `cross_platform_matcher.py`: `OFFLINE_TEST` 모드는 운영 DB 저장 시 무조건 `listing_status = 'TEST_MOCK'`, `is_demo = 1` 강제.
+     - 오직 공인된 `MANUAL_VERIFIED` 및 `LIVE_OBSERVED`만 `ACTIVE` / `is_demo = 0` 저장 허용.
+     - 통합 테스트(`scratch/test_offline_sync_integration.py`) 100% Pass.
+  2. **TASK 2 (P0: 실패 전파 및 일일 동기화 안전망, ISSUE-61)**:
+     - `scripts/run_daily_sync.py`: `status != 'SUCCESS'` 명시적 검사로 `ABORTED_BELOW_THRESHOLD` 발생 시 파이프라인 즉시 안전 중단.
+     - 상태별 실패 전파 통합 테스트(`scratch/test_daily_sync_error_propagation.py`) 100% Pass.
+  3. **TASK 3 (50대 목록 증분 관측기 완성, ISSUE-62, 63, 64)**:
+     - `src/chaficial/platform/sourcing/incremental_market_observer.py`:
+       * `NO_CHANGE` 매물도 `last_observed_at` 최신 시각으로 갱신하여 시장 신선도 유지 (ISSUE-62).
+       * vendor 상태와 internal inventory 상태 엄격 분리, 부분 관측 시 누락 차량 DELISTED/SOLD 오판정 0건 보장 (ISSUE-63).
+       * 신규 매물 상세조회 대기열(`market_detail_fetch_queue`) SQLite 영속화, 멱등성(`INSERT OR IGNORE`) 및 재시작 복원 지원 (ISSUE-64).
+       * 가격 미공개(상담/None) 차량 안전 처리.
+     - 회귀 테스트(`scratch/test_incremental_market_observer_v2.py`) 100% Pass.
+  4. **TASK 4 (요청 예산기 실제 사용량 정합성, ISSUE-66)**:
+     - `quota_enrichment_runner.py`: 실제 후보가 존재하거나 외부 조회를 시도할 때에만 플랫폼별 HTTP 예산을 차감하도록 정합성 확립.
+  5. **TASK 5 (병합 대상 74개 그룹 사진 667건 전수 1:1 무손실 증명, ISSUE-65)**:
+     - 백업 DB(`chamart_pre_consolidation_20261031_000308.db`)와 현재 운영 DB 간 667건 사진 전수 1:1 대조 완수 (`scratch/audit_directive_120_task5_667_photos.py`).
+     - 사진 ID(667건 전수 일치), 원본 URL(100% 보존), 대표 마스터로의 vehicle_id 안전 이전, 공개/승인/영상권한 보존 확인.
+     - 전수 증적 파일 생성: `scratch/task5_667_photos_full_reconciliation.json` (무손실 667 / 667건).
+  6. **TASK 6 (마스터 체크리스트 갱신)**:
+     - `CHA_FICIAL_MASTER_CHECKLIST.md`에 ISSUE-60~66 전수 등록 완료.
 
 ---
 

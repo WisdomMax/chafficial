@@ -70,6 +70,13 @@
 | **ISSUE-57** | 중복 병합 대표 마스터 선정 규칙 설명 불일치 및 증적 보강 | 보통 | 🟢 해결완료 | `audit_directive_119_task5_evidence.py` (자사 OWNED 실차량 우선 보존 설명 정정 및 사진 995장 무손실 증적 확보) |
 | **ISSUE-58** | 50대 목록 기반 저부하 증분 관측 아키텍처 부재 | 높음 | 🟢 해결완료 | `incremental_market_observer.py` (50대 목록 비교, 경량 가격 업데이트, 깊은 수집 큐 분리 검증 100% 통과) |
 | **ISSUE-59** | CarManagerSyncService.run_sync()의 min_expected_count 매개변수 누락 결함 | 심각 | 🟢 해결완료 | `carmanager_sync.py` (매개변수 추가, 임계치 미달 차단 및 dry-run 1,764대 전수 통과) |
+| **ISSUE-60** | OFFLINE_TEST 매칭 결과의 운영 DB ACTIVE 등록 가능 결함 | 심각 | 🟢 해결완료 | `cross_platform_matcher.py` (OFFLINE_TEST는 TEST_MOCK 및 is_demo=1 강제, MANUAL/LIVE만 ACTIVE 허용) |
+| **ISSUE-61** | run_daily_sync.py의 ABORTED_BELOW_THRESHOLD 실패 전파 누락 | 심각 | 🟢 해결완료 | `run_daily_sync.py` (status != SUCCESS 검사로 임계치 미달 시 파이프라인 즉시 중단) |
+| **ISSUE-62** | 50대 목록 증분 관측기 NO_CHANGE 시 last_observed_at 갱신 누락 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (NO_CHANGE 시에도 최신 관측 시각 갱신으로 신선도 유지) |
+| **ISSUE-63** | 외부 매물 상태와 내부 차량 판매 상태 혼용 위험 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (vendor 상태와 internal status 엄격 분리, 부분관측 DELISTED 오판정 0건 보장) |
+| **ISSUE-64** | 신규 매물 상세조회 대기열 미영속화 결함 | 높음 | 🟢 해결완료 | `incremental_market_observer.py` (market_detail_fetch_queue SQLite 영속화, 멱등성 및 재시작 복원 지원) |
+| **ISSUE-65** | 74대 병합 대상 사진 667건 전수 무손실 증명 부족 | 높음 | 🟢 해결완료 | `audit_directive_120_task5_667_photos.py` (백업 vs 운영 DB 667건 전수 1:1 대조 완료, 100% 무손실 입증) |
+| **ISSUE-66** | 모의/미호출 시 요청 예산 차감으로 인한 집계 불일치 위험 | 보통 | 🟢 해결완료 | `quota_enrichment_runner.py` (실제 후보 존재 시에만 플랫폼별 HTTP 예산 차감하도록 정합성 확립) |
 
 ---
 

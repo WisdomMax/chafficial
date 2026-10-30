@@ -90,9 +90,9 @@ class QuotaEnrichmentRunner:
         # 1. 일일 차량 예산 원자적 검사 및 차감 (초과 시 예외 발생하여 네트워크 호출 차단)
         self.budget.check_and_deduct_car(v_id)
 
-        # 2. KB차차차 조회 전 예산 검사 및 차감
-        self.budget.check_and_deduct_kb()
+        # 2. KB차차차 조회 대상이거나 후보가 존재할 때만 예산 검사 및 차감
         if kb_candidate:
+            self.budget.check_and_deduct_kb()
             score, ev, status = self.matcher.validate_candidate(vehicle, kb_candidate)
             if status in (MatchingStatus.VERIFIED, MatchingStatus.CANDIDATE):
                 res = MatchResult(
@@ -112,9 +112,9 @@ class QuotaEnrichmentRunner:
                 self.matcher.record_verified_match(res)
                 return res
 
-        # 3. 2순위 엔카 조회 전 예산 검사 및 차감
-        self.budget.check_and_deduct_encar()
+        # 3. 2순위 엔카 조회 대상이거나 후보가 존재할 때만 예산 검사 및 차감
         if encar_candidate:
+            self.budget.check_and_deduct_encar()
             score, ev, status = self.matcher.validate_candidate(vehicle, encar_candidate)
             if status in (MatchingStatus.VERIFIED, MatchingStatus.CANDIDATE):
                 res = MatchResult(

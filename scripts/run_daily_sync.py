@@ -108,15 +108,15 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
     # 4. 우리 상사 운영 동기화 (시계열 성공 확인 후 실행)
     owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_THRESHOLD, dry_run=dry_run)
     print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
-    if "ERROR" in owned_res["status"]:
-        print(f"[!] Owned Sync Error: {owned_res['status']}", file=sys.stderr)
+    if owned_res.get("status") != "SUCCESS":
+        print(f"[!] Critical Abort in Owned Sync: Status is '{owned_res.get('status')}'.", file=sys.stderr)
         sys.exit(1)
 
     # 5. 장한평 시장 운영 동기화
     market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_THRESHOLD, dry_run=dry_run)
     print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, New={market_res['new_inserted']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
-    if "ERROR" in market_res["status"]:
-        print(f"[!] Market Sync Error: {market_res['status']}", file=sys.stderr)
+    if market_res.get("status") != "SUCCESS":
+        print(f"[!] Critical Abort in Market Sync: Status is '{market_res.get('status')}'.", file=sys.stderr)
         sys.exit(1)
 
     # 타임스탬프 스냅샷 아카이빙 (dry_run 시에는 dry_run 임시 파일로 분리)

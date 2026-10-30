@@ -129,17 +129,52 @@ def test_offline_integration():
     assert res2 is not None
     assert res2.status == MatchingStatus.CANDIDATE
 
-    # DB 격리 상태 검증
+    # DB 격리 상태 검증: OFFLINE_TEST 모드는 무조건 TEST_MOCK / is_demo=1 격리
     conn = sqlite3.connect(SANDBOX_DB)
     c = conn.cursor()
-    c.execute("SELECT vehicle_id, platform, listing_status, advertised_price FROM vehicle_listings ORDER BY vehicle_id")
+    c.execute("SELECT vehicle_id, platform, listing_status, advertised_price, is_demo FROM vehicle_listings ORDER BY vehicle_id")
     rows = c.fetchall()
     conn.close()
 
     print("[DB Rows]:", rows)
     assert len(rows) == 2
-    assert rows[0] == ('car_01', 'KB_CHACHACHA', 'ACTIVE', 1150)
-    assert rows[1] == ('car_02', 'ENCAR', 'REVIEW_PENDING', 1080)
+    assert rows[0] == ('car_01', 'KB_CHACHACHA', 'TEST_MOCK', 1150, 1)
+    assert rows[1] == ('car_02', 'ENCAR', 'TEST_MOCK', 1080, 1)
+
+    # 3. MANUAL_VERIFIED 모드 테스트: 실제 운영 ACTIVE 허용 검증
+    v4 = {
+        "id": "car_03",
+        "plate_number": "56다7890",
+        "model_name": "쏘나타 DN8 2.0 프리미엄",
+        "year": 2020,
+        "mileage": 31000,
+        "fuel_type": "가솔린",
+        "color": "회색"
+    }
+    kb_cand4 = {
+        "car_id": "kb_car_04",
+        "plate_number": "56다7890",
+        "model_name": "쏘나타 DN8 2.0 프리미엄",
+        "year": 2020,
+        "mileage": 31000,
+        "fuel_type": "가솔린",
+        "color": "회색",
+        "price": 2100,
+        "url": "https://www.kbchachacha.com/car_04",
+        "photos": []
+    }
+    # 한도 넉넉한 별도 러너로 MANUAL_VERIFIED 검증
+    manual_runner = QuotaEnrichmentRunner(db_path=SANDBOX_DB, daily_limit=10)
+    res4 = manual_runner.process_vehicle_safe(v4, kb_candidate=kb_cand4, mode=ObservationMode.MANUAL_VERIFIED)
+    assert res4.status == MatchingStatus.VERIFIED
+
+    conn = sqlite3.connect(SANDBOX_DB)
+    c = conn.cursor()
+    c.execute("SELECT listing_status, is_demo FROM vehicle_listings WHERE vehicle_id = 'car_03'")
+    row4 = c.fetchone()
+    conn.close()
+    print("[MANUAL_VERIFIED Row]:", row4)
+    assert row4 == ('ACTIVE', 0)
 
     # 3. Car 03: 일일 차량 한도(2대) 초과 검증 -> QuotaExhaustedException 발생
     v3 = {
