@@ -29,12 +29,24 @@ export async function onRequestPost(context) {
     const vehicleId = crypto.randomUUID();
     const now = new Date().toISOString();
     const branchId = '61fea9a4-58f0-42bd-862c-14fd16d0d21c'; // 장한평 본사
-    const optionsJson = JSON.stringify(options || ['스마트키', '내비게이션', '후방카메라', '열선시트']);
+    
+    // DIRECTIVE 095: 가짜 기본값 전면 폐기 - 입력값 없을 시 빈 상태/NULL 유지
+    const optionsJson = options && Array.isArray(options) ? JSON.stringify(options) : '[]';
     const timelineJson = JSON.stringify([{
       event: 'REGISTERED',
       timestamp: now,
       note: '관리자 신규 차량 등록 (Cloudflare D1)'
     }]);
+
+    const finalYear = year ? parseInt(year, 10) : null;
+    const finalMileage = mileage ? parseInt(mileage, 10) : null;
+    const finalPurchasePrice = purchase_price ? parseInt(purchase_price, 10) : 0;
+    const finalTargetPrice = target_price ? parseInt(target_price, 10) : 0;
+    const finalPhotoUrl = primary_photo_url && primary_photo_url.trim() ? primary_photo_url.trim() : null;
+
+    const canPublish = is_public && finalTargetPrice > 0 && finalPhotoUrl;
+    const publishingStatus = canPublish ? 'APPROVED' : 'DRAFT';
+    const isPublicInt = canPublish ? 1 : 0;
 
     await db.prepare(`
       INSERT INTO vehicles (
@@ -54,24 +66,24 @@ export async function onRequestPost(context) {
       )
     `).bind(
       vehicleId, branchId, plate_number, model_name,
-      manufacturer || '현대',
-      trim || '기본형',
-      parseInt(year || '2023', 10),
-      parseInt(mileage || '30000', 10),
-      fuel_type || '가솔린',
-      transmission || '오토',
-      color || '화이트',
-      parseInt(purchase_price || '1500', 10),
-      parseInt(target_price || '1800', 10),
+      manufacturer ? manufacturer.trim() : '미분류',
+      trim ? trim.trim() : '',
+      finalYear,
+      finalMileage,
+      fuel_type ? fuel_type.trim() : '미확인',
+      transmission ? transmission.trim() : '미확인',
+      color ? color.trim() : '미확인',
+      finalPurchasePrice,
+      finalTargetPrice,
       timelineJson, now, now,
       ownership,
       is_priority_exposure ? 1 : 0,
       is_priority_exposure ? 100 : 0,
-      is_public ? 1 : 0,
-      is_public ? 'APPROVED' : 'DRAFT',
-      primary_photo_url || '/static/img/sample_car.jpg',
-      body_type || '세단',
-      parseInt(displacement_cc || '1999', 10),
+      isPublicInt,
+      publishingStatus,
+      finalPhotoUrl,
+      body_type ? body_type.trim() : '미확인',
+      displacement_cc ? parseInt(displacement_cc, 10) : null,
       optionsJson
     ).run();
 

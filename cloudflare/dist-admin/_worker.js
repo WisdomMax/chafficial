@@ -1,8 +1,61 @@
+// DIRECTIVE 095 P0: 관리자 API 전역 보안 인증 가드 (Cloudflare Access / Bearer Token / Cookie)
+async function checkAdminAuth(request, env) {
+  // 1. Cloudflare Access SSO 헤더 확인 (manage.chamart.cc)
+  const cfEmail = request.headers.get('Cf-Access-Authenticated-User-Email');
+  const cfJwt = request.headers.get('Cf-Access-Jwt-Assertion');
+  if (cfEmail || cfJwt) {
+    return null; // 인증 성공
+  }
+
+  // 2. Authorization Bearer Token 검증
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (token && env.DB) {
+    try {
+      const now = new Date().toISOString();
+      const session = await env.DB.prepare('SELECT * FROM admin_sessions WHERE token = ? AND expires_at > ?')
+        .bind(token, now).first();
+      if (session) return null; // 인증 성공
+    } catch (e) {}
+  }
+
+  // 3. Cookie 기반 관리자 세션 검증
+  const cookieHeader = request.headers.get('Cookie') || '';
+  const tokenMatch = cookieHeader.match(/cm_admin_token=([^;]+)/);
+  if (tokenMatch && env.DB) {
+    try {
+      const cToken = tokenMatch[1].trim();
+      const now = new Date().toISOString();
+      const session = await env.DB.prepare('SELECT * FROM admin_sessions WHERE token = ? AND expires_at > ?')
+        .bind(cToken, now).first();
+      if (session) return null;
+    } catch (e) {}
+  }
+
+  // 인증 실패: 401 Unauthorized 차단
+  return new Response(JSON.stringify({
+    error: '관리자 인증이 필요합니다. 로그인 후 이용해주세요.',
+    code: 'UNAUTHORIZED'
+  }), {
+    status: 401,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'WWW-Authenticate': 'Bearer realm=\"Admin Access\"'
+    }
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const pathname = url.pathname;
     const db = env.DB;
+
+    // DIRECTIVE 095 P0: /api/admin/* 모든 경로 전역 보안 인증 가드 실행
+    if (pathname.startsWith('/api/admin/')) {
+      const authErr = await checkAdminAuth(request, env);
+      if (authErr) return authErr;
+    }
 
     // 1. Dashboard Stats API
     if (pathname === '/api/admin/dashboard') {
@@ -122,8 +175,21 @@ export default {
         const vehicleId = crypto.randomUUID();
         const now = new Date().toISOString();
         const branchId = '61fea9a4-58f0-42bd-862c-14fd16d0d21c';
-        const optionsJson = JSON.stringify(['스마트키', '내비게이션', '후방카메라', '통풍시트', '열선시트']);
+        
+        // DIRECTIVE 095: 가짜 기본값 전면 폐기 - 입력값 없을 시 정직하게 빈 상태/NULL 유지
+        const optionsJson = body.options && Array.isArray(body.options) ? JSON.stringify(body.options) : '[]';
         const timelineJson = JSON.stringify([{ event: 'REGISTERED', timestamp: now, note: '관리자 신규 등록 (D1)' }]);
+        
+        const finalYear = year ? parseInt(year, 10) : null;
+        const finalMileage = mileage ? parseInt(mileage, 10) : null;
+        const finalPurchasePrice = purchase_price ? parseInt(purchase_price, 10) : 0;
+        const finalTargetPrice = target_price ? parseInt(target_price, 10) : 0;
+        const finalPhotoUrl = primary_photo_url && primary_photo_url.trim() ? primary_photo_url.trim() : null;
+        
+        // 가격이 0원이거나 사진이 없으면 자동 DRAFT 격리 (공개 금지)
+        const canPublish = is_public && finalTargetPrice > 0 && finalPhotoUrl;
+        const publishingStatus = canPublish ? 'APPROVED' : 'DRAFT';
+        const isPublicInt = canPublish ? 1 : 0;
 
         await db.prepare(`
           INSERT INTO vehicles (
@@ -137,28 +203,35 @@ export default {
             ?, ?, ?, ?, ?,
             'AVAILABLE', 0, ?, ?, ?,
             ?, ?, ?,
-            ?, ?, ?, '세단', 1999, ?
+            ?, ?, ?, ?, ?, ?
           )
         `).bind(
           vehicleId, branchId, plate_number, model_name,
-          manufacturer || '현대', trim || '기본형',
-          parseInt(year || '2024', 10), parseInt(mileage || '25000', 10),
-          fuel_type || '가솔린', transmission || '오토', color || '화이트',
-          parseInt(purchase_price || '2000', 10), parseInt(target_price || '2300', 10),
+          manufacturer ? manufacturer.trim() : '미분류',
+          trim ? trim.trim() : '',
+          finalYear,
+          finalMileage,
+          fuel_type ? fuel_type.trim() : '미확인',
+          transmission ? transmission.trim() : '미확인',
+          color ? color.trim() : '미확인',
+          finalPurchasePrice,
+          finalTargetPrice,
           timelineJson, now, now,
           ownership,
           is_priority_exposure ? 1 : 0, is_priority_exposure ? 100 : 0,
-          is_public ? 1 : 0, is_public ? 'APPROVED' : 'DRAFT',
-          primary_photo_url || '/static/img/sample_car.jpg',
+          isPublicInt, publishingStatus,
+          finalPhotoUrl,
+          body.body_type ? body.body_type.trim() : '미확인',
+          body.displacement_cc ? parseInt(body.displacement_cc, 10) : null,
           optionsJson
         ).run();
 
-        // Primary photo record
-        if (primary_photo_url) {
+        // Primary photo record (실제 사진 URL이 제공된 경우에만 기록)
+        if (finalPhotoUrl) {
           await db.prepare(`
             INSERT INTO vehicle_photos (id, vehicle_id, photo_url, view_code, category_code, sort_order, is_primary, approval_status, created_at)
             VALUES (?, ?, ?, 'EXT_FRONT', 'EXTERIOR', 1, 1, 'APPROVED', ?)
-          `).bind(crypto.randomUUID(), vehicleId, primary_photo_url, now).run();
+          `).bind(crypto.randomUUID(), vehicleId, finalPhotoUrl, now).run();
         }
 
         return new Response(JSON.stringify({
