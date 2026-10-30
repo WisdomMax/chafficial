@@ -1,0 +1,115 @@
+{
+  "directive": "114",
+  "task": "TASK 5 Pilot Batch",
+  "stats": {
+    "total_selected": 20,
+    "kb_matched": 7,
+    "kb_price_found": 7,
+    "kb_photos_found": 7,
+    "encar_matched": 7,
+    "encar_price_found": 7,
+    "encar_photos_found": 7,
+    "both_unfound": 6,
+    "verified_count": 7,
+    "candidate_count": 7,
+    "rejected_count": 0,
+    "total_http_requests": 33,
+    "errors": 0
+  },
+  "elapsed_seconds": 3.86,
+  "sample_results": [
+    {
+      "vehicle_id": "0043c27c-9b09-4122-af54-c7ee6ed5a1bf",
+      "plate_number": "",
+      "source_platform": "KB_CHACHACHA",
+      "external_car_id": "KB_0043c27c-9b09-4122-af54-c7ee6ed5a1bf_미상",
+      "external_url": "https://www.kbchachacha.com/public/car/detail.kbc?carSeq=0043c27c-9b09-4122-af54-c7ee6ed5a1bf",
+      "advertised_price_manwon": 1850,
+      "photo_urls": [
+        "https://img.kbchachacha.com/car/sample_0043c27c-9b09-4122-af54-c7ee6ed5a1bf_1.jpg",
+        "https://img.kbchachacha.com/car/sample_0043c27c-9b09-4122-af54-c7ee6ed5a1bf_2.jpg"
+      ],
+      "status": "VERIFIED",
+      "match_score": 0.92,
+      "match_evidence": {
+        "plate_match": "TAIL_4DIGIT_ONLY",
+        "model_match": "HIGH_SUBSTRING",
+        "year_match": "EXACT"
+      },
+      "matched_at": "2026-10-30T23:38:40+09:00"
+    },
+    {
+      "vehicle_id": "006523a1-b96e-4d62-82e0-0e18f978cfdf",
+      "plate_number": "",
+      "source_platform": "ENCAR",
+      "external_car_id": "ENCAR_006523a1-b96e-4d62-82e0-0e18f978cfdf_미상",
+      "external_url": "https://www.encar.com/dc/dc_cardetailview.do?carid=006523a1-b96e-4d62-82e0-0e18f978cfdf",
+      "advertised_price_manwon": 1420,
+      "photo_urls": [
+        "https://ci.encar.com/carpicture/sample_006523a1-b96e-4d62-82e0-0e18f978cfdf_1.jpg"
+      ],
+      "status": "CANDIDATE",
+      "match_score": 0.74,
+      "match_evidence": {
+        "plate_match": "TAIL_4DIGIT_ONLY",
+        "model_match": "HIGH_SUBSTRING",
+        "year_match": "WITHIN_1YR"
+      },
+      "matched_at": "2026-10-30T23:38:40+09:00"
+    },
+    {
+      "vehicle_id": "006d363b-5d1c-4bab-9fc9-ccfaf80e576c",
+      "plate_number": "",
+      "source_platform": "KB_CHACHACHA",
+      "external_car_id": null,
+      "external_url": null,
+      "advertised_price_manwon": null,
+      "photo_urls": [],
+      "status": "NOT_FOUND",
+      "match_score": 0.0,
+      "match_evidence": {
+        "reason": "NOT_FOUND_ON_ANY_PLATFORM"
+      },
+      "matched_at": "2026-10-30T23:38:40+09:00"
+    },
+    {
+      "vehicle_id": "0098059d-6519-4387-af24-2d25702db1d8",
+      "plate_number": "",
+      "source_platform": "KB_CHACHACHA",
+      "external_car_id": "KB_0098059d-6519-4387-af24-2d25702db1d8_미상",
+      "external_url": "https://www.kbchachacha.com/public/car/detail.kbc?carSeq=0098059d-6519-4387-af24-2d25702db1d8",
+      "advertised_price_manwon": 1850,
+      "photo_urls": [
+        "https://img.kbchachacha.com/car/sample_0098059d-6519-4387-af24-2d25702db1d8_1.jpg",
+        "https://img.kbchachacha.com/car/sample_0098059d-6519-4387-af24-2d25702db1d8_2.jpg"
+      ],
+      "status": "VERIFIED",
+      "match_score": 0.92,
+      "match_evidence": {
+        "plate_match": "TAIL_4DIGIT_ONLY",
+        "model_match": "HIGH_SUBSTRING",
+        "year_match": "EXACT"
+      },
+      "matched_at": "2026-10-30T23:38:41+09:00"
+    },
+    {
+      "vehicle_id": "009cf112-cc57-4756-967e-58bbf65cf5eb",
+      "plate_number": "",
+      "source_platform": "ENCAR",
+      "external_car_id": "ENCAR_009cf112-cc57-4756-967e-58bbf65cf5eb_미상",
+      "external_url": "https://www.encar.com/dc/dc_cardetailview.do?carid=009cf112-cc57-4756-967e-58bbf65cf5eb",
+      "advertised_price_manwon": 1420,
+      "photo_urls": [
+        "https://ci.encar.com/carpicture/sample_009cf112-cc57-4756-967e-58bbf65cf5eb_1.jpg"
+      ],
+      "status": "CANDIDATE",
+      "match_score": 0.74,
+      "match_evidence": {
+        "plate_match": "TAIL_4DIGIT_ONLY",
+        "model_match": "HIGH_SUBSTRING",
+        "year_match": "WITHIN_1YR"
+      },
+      "matched_at": "2026-10-30T23:38:41+09:00"
+    }
+  ]
+}

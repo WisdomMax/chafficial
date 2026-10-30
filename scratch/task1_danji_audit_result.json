@@ -1,0 +1,16 @@
+{
+  "json_path": "data/carmanager_raw/janghanpyeong_full_collection.json",
+  "json_sha256": "5d700f55c485ad0c123fc05c708db791ae35742b74e519231f706e6839700d8b",
+  "html_path": "scratch/datapart_page1_live.html",
+  "html_sha256": "88eaedc1727d8abc7abd6763a60722a8a21468cb5cc76793453173f0db8ba00c",
+  "total_cars": 1764,
+  "unique_encarnos": 1764,
+  "danji_breakdown": {
+    "성동구/장안모터프라": 1167,
+    "성동구/성동구지역": 370,
+    "성동구/장안평단지": 227,
+    "unclassified": 0
+  },
+  "server_reported_total": "1764",
+  "verified_at": "2026-10-30T23:36:00+09:00"
+}
