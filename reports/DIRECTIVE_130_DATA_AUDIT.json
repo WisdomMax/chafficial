@@ -1,0 +1,141 @@
+{
+  "local": {
+    "tables": [
+      "branches",
+      "document_reviews",
+      "users",
+      "customers",
+      "consultations",
+      "transactions",
+      "media_projects",
+      "dealers",
+      "vehicle_defects",
+      "vehicle_photos",
+      "dealer_rights_ledgers",
+      "rl_decision_logs",
+      "platform_publishing_records",
+      "gemini_usage_logs",
+      "content_lab_sessions",
+      "observed_videos",
+      "content_topic_candidates",
+      "content_script_drafts",
+      "content_topic_feedbacks",
+      "carmanager_sync_logs",
+      "market_collection_runs",
+      "market_listing_events",
+      "market_listing_observations",
+      "vehicle_listings",
+      "vehicles",
+      "macro_economic_observations",
+      "quota_ledger",
+      "quota_processed_vehicles",
+      "admin_approvals",
+      "market_detail_fetch_queue"
+    ],
+    "vehicles_total": 1801,
+    "vehicles_demo": 0,
+    "vehicles_real_or_market": 1801,
+    "vehicles_by_ownership": {
+      "MARKET_JANGHANPYEONG": 1770,
+      "OWNED": 31
+    },
+    "vehicles_by_status": {
+      "AVAILABLE": 73,
+      "DRAFT": 1689,
+      "FOR_SALE": 39
+    },
+    "vehicles_by_is_public": {
+      "0": 1763,
+      "1": 38
+    },
+    "photos_total": 4380,
+    "consultations_count": 29,
+    "transactions_count": 37,
+    "dealer_rights_ledgers_count": 21,
+    "customers_count": 28,
+    "users_count": 2
+  },
+  "d1": {
+    "vehicles_total": [
+      {
+        "count(*)": 268
+      }
+    ],
+    "vehicles_demo": [
+      {
+        "count(*)": 100
+      }
+    ],
+    "vehicles_real": [
+      {
+        "count(*)": 168
+      }
+    ],
+    "vehicles_ownership": [
+      {
+        "listing_ownership_type": "OWNED",
+        "count(*)": 202
+      },
+      {
+        "listing_ownership_type": "PARTNER",
+        "count(*)": 66
+      }
+    ],
+    "vehicles_status": [
+      {
+        "status": "AVAILABLE",
+        "count(*)": 101
+      },
+      {
+        "status": "FOR_SALE",
+        "count(*)": 167
+      }
+    ],
+    "vehicles_is_public": [
+      {
+        "is_public": 1,
+        "count(*)": 268
+      }
+    ],
+    "photos_total": [
+      {
+        "count(*)": 2155
+      }
+    ],
+    "photos_demo": [
+      {
+        "count(*)": 2000
+      }
+    ],
+    "photos_real": [
+      {
+        "count(*)": 155
+      }
+    ],
+    "consultations_count": [
+      {
+        "count(*)": 30
+      }
+    ],
+    "transactions_count": [
+      {
+        "count(*)": 37
+      }
+    ],
+    "dealer_rights_ledgers_count": [
+      {
+        "count(*)": 29
+      }
+    ],
+    "customers_count": [
+      {
+        "count(*)": 29
+      }
+    ],
+    "users_count": [
+      {
+        "count(*)": 2
+      }
+    ]
+  }
+}

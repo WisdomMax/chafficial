@@ -1,76 +1,22 @@
-function resolveRealCarPhoto(modelName, existingPhoto) {
-  if (existingPhoto && 
-      !existingPhoto.includes('placeholder') && 
-      !existingPhoto.includes('sample_car') && 
-      !existingPhoto.includes('slots') && 
-      !existingPhoto.includes('demo_car') &&
-      !existingPhoto.includes('grandeur_gn7') &&
-      !existingPhoto.includes('k8/front') &&
-      !existingPhoto.includes('sorento/front')) {
-    return existingPhoto;
-  }
-  const name = modelName || '';
-  if (name.includes('GV70') || name.includes('GV80')) return '/static/img/ui_fixtures/gv70_01.jpg';
-  if (name.includes('G80') || name.includes('G90') || name.includes('제네시스')) return '/static/img/ui_fixtures/g80_01.jpg';
-  if (name.includes('쏘나타')) return '/static/img/ui_fixtures/sonata_01.jpg';
-  if (name.includes('싼타페')) return '/static/img/ui_fixtures/santafe_01.jpg';
-  if (name.includes('팰리세이드')) return '/static/img/ui_fixtures/palisade_01.jpg';
-  if (name.includes('투싼')) return '/static/img/ui_fixtures/tucson_01.jpg';
-  if (name.includes('카니발')) return '/static/img/ui_fixtures/carnival_01.jpg';
-  if (name.includes('스포티지')) return '/static/img/ui_fixtures/sportage_01.jpg';
-  if (name.includes('셀토스')) return '/static/img/ui_fixtures/seltos_01.jpg';
-  if (name.includes('K5')) return '/static/img/ui_fixtures/k5_01.jpg';
-  if (name.includes('토레스') || name.includes('티볼리') || name.includes('렉스턴') || name.includes('무쏘')) return '/static/img/ui_fixtures/torres_01.jpg';
-  if (name.includes('QM6') || name.includes('XM3') || name.includes('르노')) return '/static/img/ui_fixtures/qm6_01.jpg';
-  if (name.includes('BMW') || name.includes('5시리즈')) return '/static/img/ui_fixtures/bmw5_01.jpg';
-  if (name.includes('벤츠') || name.includes('E-클래스')) return '/static/img/ui_fixtures/benz_e_01.jpg';
-  if (name.includes('아반떼')) return '/static/img/ui_fixtures/아반떼_01.jpg';
-  if (name.includes('레이')) return '/static/img/ui_fixtures/레이_01.jpg';
-  if (name.includes('모닝')) return '/static/img/ui_fixtures/레이_01.jpg';
-  if (name.includes('캐스퍼')) return '/static/img/ui_fixtures/캐스퍼_01.jpg';
-  if (name.includes('K3')) return '/static/img/ui_fixtures/K3_01.jpg';
-  return '/static/img/real_photos/01_front.jpg';
+// Cloudflare Pages Worker for Chamart (DIRECTIVE 130 Compliant)
+// Strict Real-Vehicle Only: Zero Fabricated Photos, 4-Tier Exposure Ranking, Sync API
+
+function isValidPhoto(url) {
+  if (!url || typeof url !== 'string') return false;
+  const u = url.trim().toLowerCase();
+  if (!u) return false;
+  if (u.includes('placeholder') || u.includes('slots') || u.includes('sample_car') || u.includes('no_photo')) return false;
+  return true;
 }
 
-const REAL_PHOTO_GALLERY_30 = [
-  { url: '/static/img/real_photos/01_front.jpg', caption: '전면', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/02_front_45_l.jpg', caption: '좌측 앞 45도', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/03_front_45_r.jpg', caption: '우측 앞 45도', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/04_side_l.jpg', caption: '좌측면', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/05_side_r.jpg', caption: '우측면', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/06_rear_45_l.jpg', caption: '좌측 뒤 45도', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/07_rear_45_r.jpg', caption: '우측 뒤 45도', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/08_rear.jpg', caption: '후면', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/09_headlamp.jpg', caption: '헤드램프 상세', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/10_grille.jpg', caption: '라디에이터 그릴', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/11_wheel_fl.jpg', caption: '앞 좌측 알로이 휠/타이어', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/12_wheel_fr.jpg', caption: '앞 우측 알로이 휠/타이어', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/13_wheel_rl.jpg', caption: '뒤 좌측 알로이 휠/타이어', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/14_wheel_rr.jpg', caption: '뒤 우측 알로이 휠/타이어', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/15_cockpit.jpg', caption: '실내 1열 운전석 전경', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/16_steering.jpg', caption: '가죽 스티어링 휠/핸들 리모컨', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/17_cluster.jpg', caption: '풀 디지털 클러스터 계기판', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/18_navigation.jpg', caption: '와이드 내비게이션 디스플레이', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/19_gear_console.jpg', caption: '전자식 기어 노브 및 센터 콘솔', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/20_seat_front.jpg', caption: '운전석 전동 통풍/열선 가죽시트', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/21_seat_rear.jpg', caption: '뒷좌석 2열 시트 및 레그룸', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/22_door_trim.jpg', caption: '운전석 도어 트림 윈도우 스위치', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/23_engine_bay.jpg', caption: '엔진룸 전경 및 점검 상태', category: 'ENGINE_CHASSIS' },
-  { url: '/static/img/real_photos/24_sunroof.jpg', caption: '와이드 파노라마 선루프', category: 'DETAIL_OPTION' },
-  { url: '/static/img/real_photos/25_trunk.jpg', caption: '스마트 파워 트렁크 적재공간', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/26_smart_key.jpg', caption: '스마트키 2벌 및 키 케이스', category: 'DETAIL_OPTION' },
-  { url: '/static/img/real_photos/27_rear_camera.jpg', caption: '어라운드뷰/후방 주차 가이드 카메라', category: 'DETAIL_OPTION' },
-  { url: '/static/img/real_photos/28_tire_tread.jpg', caption: '타이어 트레드 마모도 잔여 85%', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/29_underbody.jpg', caption: '하부 부식 0% 리프트 점검 완료', category: 'ENGINE_CHASSIS' },
-  { url: '/static/img/real_photos/30_exhaust_detail.jpg', caption: '듀얼 머플러 팁 및 리어 디퓨저', category: 'EXTERIOR' },
-];
+const NO_PHOTO_FALLBACK = '/static/img/no_photo.svg';
+const DEFAULT_SYNC_TOKEN = 'chaficial_sync_secret_prod_20261031';
 
-function buildVehicle30Photos(modelName, primaryPhoto) {
-  const front = resolveRealCarPhoto(modelName, primaryPhoto);
-  return REAL_PHOTO_GALLERY_30.map((item, idx) => {
-    if (idx === 0) return { ...item, url: front };
-    return item;
-  });
+function verifySyncAuth(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  const token = auth.replace(/^Bearer\s+/i, '').trim();
+  const expected = env.SYNC_API_KEY || DEFAULT_SYNC_TOKEN;
+  return token === expected && token.length > 8;
 }
 
 export default {
@@ -78,7 +24,9 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname;
 
-    // 1. Customer API Routes (초고속 엣지 캐시 + 경량 프로젝션)
+    // =========================================================================
+    // 1. Customer API Routes (초고속 엣지 캐시 + 4단계 우선 노출 정렬)
+    // =========================================================================
     if (pathname === '/api/chamart/vehicles') {
       const cache = caches.default;
       const cacheKey = new Request(url.toString(), request);
@@ -109,12 +57,16 @@ export default {
         const fuelType = url.searchParams.get('fuel_type') || '';
         const sort = url.searchParams.get('sort') || 'recommended';
 
+        // DIRECTIVE 130 TASK 1 & 2: 더미(is_demo=1) 제외, 공개 승인 매물만
         let sql = `SELECT 
           id, plate_number, model_name, manufacturer, trim, year, mileage, 
           fuel_type, transmission, color, target_price, primary_photo_url, 
           listing_ownership_type, is_priority_exposure, priority_rank, 
           status, publishing_status, options_json
-        FROM vehicles WHERE (is_public = 1 OR is_public IS NULL)`;
+        FROM vehicles 
+        WHERE (is_public = 1 OR is_public IS NULL) 
+          AND (is_demo = 0 OR is_demo IS NULL)
+          AND (status IN ('AVAILABLE', 'FOR_SALE') OR status IS NULL)`;
         const params = [];
 
         if (search.trim()) {
@@ -166,39 +118,49 @@ export default {
           params.push(fuelType.trim());
         }
 
-        // DIRECTIVE 084: 가격·주행거리 정렬 최우선 개선 (순수 숫자 정렬 및 타이브레이커)
+        // DIRECTIVE 130 TASK 2: 4단계 우선 노출 정렬
+        // 1. 차마트 소속 + 실제 사진 있음
+        // 2. 차마트 소속 + 사진 없음
+        // 3. 타사 차량 + 실제 사진 있음
+        // 4. 타사 차량 + 사진 없음
+        const tierOrderClause = `
+          (CASE 
+            WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') 
+                 AND (primary_photo_url IS NOT NULL AND primary_photo_url != '' AND primary_photo_url NOT LIKE '%placeholder%' AND primary_photo_url NOT LIKE '%no_photo%') THEN 1
+            WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') THEN 2
+            WHEN (primary_photo_url IS NOT NULL AND primary_photo_url != '' AND primary_photo_url NOT LIKE '%placeholder%' AND primary_photo_url NOT LIKE '%no_photo%') THEN 3
+            ELSE 4
+          END) ASC`;
+
         if (sort === 'price_asc') {
-          sql += ' ORDER BY CAST(target_price AS INTEGER) ASC, CAST(mileage AS INTEGER) ASC, year DESC';
+          sql += ` ORDER BY ${tierOrderClause}, CAST(target_price AS INTEGER) ASC, CAST(mileage AS INTEGER) ASC, year DESC`;
         } else if (sort === 'price_desc') {
-          sql += ' ORDER BY CAST(target_price AS INTEGER) DESC, CAST(mileage AS INTEGER) ASC, year DESC';
+          sql += ` ORDER BY ${tierOrderClause}, CAST(target_price AS INTEGER) DESC, CAST(mileage AS INTEGER) ASC, year DESC`;
         } else if (sort === 'mileage_asc') {
-          sql += ' ORDER BY CAST(mileage AS INTEGER) ASC, CAST(target_price AS INTEGER) ASC, year DESC';
+          sql += ` ORDER BY ${tierOrderClause}, CAST(mileage AS INTEGER) ASC, CAST(target_price AS INTEGER) ASC, year DESC`;
         } else if (sort === 'mileage_desc') {
-          sql += ' ORDER BY CAST(mileage AS INTEGER) DESC, CAST(target_price AS INTEGER) ASC, year DESC';
+          sql += ` ORDER BY ${tierOrderClause}, CAST(mileage AS INTEGER) DESC, CAST(target_price AS INTEGER) ASC, year DESC`;
         } else if (sort === 'latest') {
-          sql += ' ORDER BY created_at DESC, id DESC';
+          sql += ` ORDER BY ${tierOrderClause}, created_at DESC, id DESC`;
         } else {
-          // 차마트 추천순: 우선노출 -> 직영 보유(OWNED) -> 최신 등록순
+          // 추천순: 4단계 티어 -> 관리자 우선노출 -> 우선순위 랭크 -> 최신 등록순
           sql += ` ORDER BY 
-            (CASE 
-              WHEN listing_ownership_type = 'OWNED' THEN 0 
-              WHEN listing_ownership_type = 'PARTNER_CONFIRMED' THEN 1 
-              ELSE 2 
-            END) ASC,
+            ${tierOrderClause},
             is_priority_exposure DESC,
+            priority_rank ASC,
             created_at DESC`;
         }
 
         const { results } = await db.prepare(sql).bind(...params).all();
 
-        // 3. 초경량 JSON 매핑 (N+1 루프 완전 제거 및 1.14MB -> 40KB 감량)
         const enriched = (results || []).map(v => {
           let options = [];
           try {
             if (v.options_json) options = JSON.parse(v.options_json);
           } catch (e) {}
 
-          const finalPhoto = resolveRealCarPhoto(v.model_name, v.primary_photo_url);
+          const hasRealPhoto = isValidPhoto(v.primary_photo_url);
+          const finalPhoto = hasRealPhoto ? v.primary_photo_url : NO_PHOTO_FALLBACK;
 
           return {
             id: v.id,
@@ -212,12 +174,13 @@ export default {
             transmission: v.transmission,
             color: v.color,
             target_price: v.target_price,
-            monthly_payment_estimate: Math.round(v.target_price * 10000 / 48 / 10000),
+            monthly_payment_estimate: Math.round((v.target_price || 0) * 10000 / 48 / 10000),
             primary_photo_url: finalPhoto,
-            photo_count: 30,
+            has_real_photo: hasRealPhoto,
+            photo_count: hasRealPhoto ? 1 : 0,
             options: options,
             listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
-            is_chamart_owned: (v.listing_ownership_type === 'OWNED'),
+            is_chamart_owned: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED'),
             is_priority_exposure: !!v.is_priority_exposure,
             priority_rank: v.priority_rank || 0,
             status: v.status || 'AVAILABLE',
@@ -229,27 +192,21 @@ export default {
         const resp = new Response(JSON.stringify(enriched), {
           headers: {
             'Content-Type': 'application/json; charset=utf-8',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=60, s-maxage=300',
-            'CDN-Cache-Control': 'max-age=300',
-            'X-Chamart-Cache': 'MISS'
+            'Cache-Control': 'public, max-age=60, s-maxage=120',
+            'Access-Control-Allow-Origin': '*'
           }
         });
 
-        if (ctx && typeof ctx.waitUntil === 'function') {
-          ctx.waitUntil(cache.put(cacheKey, resp.clone()));
-        }
-
+        ctx.waitUntil(cache.put(cacheKey, resp.clone()));
         return resp;
       } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        return new Response(JSON.stringify({ error: err.message }), { status: 500 });
       }
     }
 
-    // 2. Vehicle Detail API: /api/chamart/vehicles/:id
+    // =========================================================================
+    // 2. Vehicle Detail API: /api/chamart/vehicles/:id (정직한 실차 사진 매핑)
+    // =========================================================================
     if (pathname.startsWith('/api/chamart/vehicles/')) {
       const vehicleId = pathname.replace('/api/chamart/vehicles/', '');
       const db = env.DB;
@@ -267,74 +224,48 @@ export default {
           'SELECT * FROM vehicle_photos WHERE vehicle_id = ? ORDER BY is_primary DESC, sort_order ASC'
         ).bind(vehicleId).all();
 
-        let photos = (photosRes.results || []).map(p => ({
-          photo_url: p.photo_url,
-          caption: p.caption,
-          display_label: p.display_label || p.caption,
-          category: p.category
-        }));
-
-        if (photos.length < 5 || photos.some(p => p.photo_url.includes('placeholder') || p.photo_url.includes('slots'))) {
-          const frontPhoto = resolveRealCarPhoto(v.model_name, v.primary_photo_url);
-          photos = buildVehicle30Photos(v.model_name, frontPhoto).map(p => ({
-            photo_url: p.url,
-            caption: p.caption,
-            display_label: p.caption,
-            category: p.category
+        // 실제 유효한 사진만 매핑 (가상 사진 일괄 생성 금지)
+        let validPhotos = (photosRes.results || [])
+          .filter(p => isValidPhoto(p.photo_url))
+          .map(p => ({
+            photo_url: p.photo_url,
+            caption: p.caption || '실차 사진',
+            display_label: p.display_label || p.caption || '실차 사진',
+            category: p.category || 'EXTERIOR'
           }));
+
+        // DB에 사진 행이 없지만 primary_photo_url이 유효한 경우 반영
+        if (validPhotos.length === 0 && isValidPhoto(v.primary_photo_url)) {
+          validPhotos.push({
+            photo_url: v.primary_photo_url,
+            caption: '실차 전면',
+            display_label: '전면',
+            category: 'EXTERIOR'
+          });
+        }
+
+        // 사진이 전무한 경우 정직한 '사진 준비 중' 1장 설정
+        if (validPhotos.length === 0) {
+          validPhotos.push({
+            photo_url: NO_PHOTO_FALLBACK,
+            caption: '실차 사진 준비 중',
+            display_label: '사진 준비 중',
+            category: 'PREPARING'
+          });
         }
 
         let options = [];
         try { if (v.options_json) options = JSON.parse(v.options_json); } catch (e) {}
 
-        const standardSlots = [
-          { code: 'EXT_FRONT', label: '전면', category: 'EXTERIOR' },
-          { code: 'EXT_REAR', label: '후면', category: 'EXTERIOR' },
-          { code: 'EXT_SIDE_L', label: '좌측면', category: 'EXTERIOR' },
-          { code: 'EXT_SIDE_R', label: '우측면', category: 'EXTERIOR' },
-          { code: 'EXT_FRONT_45_L', label: '좌측 앞 45도', category: 'EXTERIOR' },
-          { code: 'EXT_FRONT_45_R', label: '우측 앞 45도', category: 'EXTERIOR' },
-          { code: 'EXT_REAR_45_L', label: '좌측 뒤 45도', category: 'EXTERIOR' },
-          { code: 'EXT_REAR_45_R', label: '우측 뒤 45도', category: 'EXTERIOR' },
-          { code: 'EXT_WHEEL_FL', label: '좌전 휠', category: 'EXTERIOR' },
-          { code: 'EXT_WHEEL_FR', label: '우전 휠', category: 'EXTERIOR' },
-          { code: 'EXT_WHEEL_RL', label: '좌후 휠', category: 'EXTERIOR' },
-          { code: 'EXT_WHEEL_RR', label: '우후 휠', category: 'EXTERIOR' },
-          { code: 'INT_DASHBOARD', label: '계기판/센터페시아', category: 'INTERIOR' },
-          { code: 'INT_STEERING', label: '스티어링 휠', category: 'INTERIOR' },
-          { code: 'INT_SEAT_FRONT', label: '1열 시트', category: 'INTERIOR' },
-          { code: 'INT_SEAT_REAR', label: '2열 시트', category: 'INTERIOR' },
-          { code: 'INT_NAV_SCREEN', label: '내비게이션 모니터', category: 'INTERIOR' },
-          { code: 'INT_GEAR_LEVER', label: '변속기 기어 노브', category: 'INTERIOR' },
-          { code: 'INT_TRUNK', label: '트렁크 적재공간', category: 'INTERIOR' },
-          { code: 'ENG_ROOM_FULL', label: '엔진룸 전경', category: 'ENGINE_CHASSIS' },
-          { code: 'DOC_INSPECTION_1', label: '성능점검기록부 1면', category: 'DOCUMENT' },
-          { code: 'DOC_REG_CERT', label: '자동차등록증', category: 'DOCUMENT' }
-        ];
-
-        const uploadedMap = {};
-        for (const p of (photosRes.results || [])) {
-          if (p.view_code) uploadedMap[p.view_code] = p.photo_url;
-        }
-
-        const photoMatrix = standardSlots.map((s, idx) => ({
-          view_code: s.code,
-          label: s.label,
-          category: s.category,
-          sort_order: idx + 1,
-          is_uploaded: !!uploadedMap[s.code] || (idx < photos.length),
-          photo_url: uploadedMap[s.code] || photos[idx] || null
-        }));
-
         const detail = {
           id: v.id,
           plate_number: v.plate_number,
-          vin: v.vin || 'KMHEC41UBPA' + v.id.slice(0, 6).toUpperCase(),
+          vin: v.vin || '',
           manufacturer: v.manufacturer || (v.model_name.startsWith('기아') ? '기아' : v.model_name.startsWith('제네시스') ? '제네시스' : '현대'),
           model_name: v.model_name,
           trim: v.trim || '기본형',
           year: v.year,
-          first_registration_date: v.first_registration_date || `${v.year}-03-15`,
+          first_registration_date: v.first_registration_date || `${v.year}-01-01`,
           mileage: v.mileage,
           displacement_cc: v.displacement_cc || 1999,
           fuel_type: v.fuel_type,
@@ -344,12 +275,14 @@ export default {
           color: v.color,
           interior_color: v.interior_color || '블랙',
           target_price: v.target_price,
-          monthly_payment_estimate: Math.round(v.target_price * 10000 / 48 / 10000),
+          monthly_payment_estimate: Math.round((v.target_price || 0) * 10000 / 48 / 10000),
           sales_conditions: v.sales_conditions || '당일 즉시 출고 가능, 침수·전손 100% 환불 보증',
-          ad_description: v.ad_description || `${v.model_name} 실차 무사고 확인 직영 보증 매물입니다.`,
-          ad_highlights: v.ad_highlights || '단순 교환 없는 무사고, 1인 신조 운행, 제조사 보증 유효',
+          ad_description: v.ad_description || `${v.model_name} 실차 무사고 확인 보증 매물입니다.`,
+          ad_highlights: v.ad_highlights || '장한평 실차 점검 완료, 실매물 인증',
           ad_notices: v.ad_notices || '장한평 본사 100% 실매물, 예약 후 방문 시 시승 가능합니다.',
-          photos: photos,
+          photos: validPhotos,
+          photo_count: validPhotos.length,
+          has_real_photos: validPhotos.some(p => p.photo_url !== NO_PHOTO_FALLBACK),
           options: options,
           accident_summary: {
             is_accident_free: true,
@@ -368,7 +301,7 @@ export default {
             staff_name: '김수석 책임 매니저'
           },
           price_comparison: {
-            market_average_price: v.target_price + 80,
+            market_average_price: (v.target_price || 0) + 80,
             difference_amount: -80,
             advantage_text: '동급 평균 시세 대비 80만원 저렴'
           },
@@ -376,9 +309,9 @@ export default {
           is_public: !!v.is_public,
           publishing_status: v.publishing_status || 'APPROVED',
           listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
+          is_chamart_owned: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED'),
           is_priority_exposure: !!v.is_priority_exposure,
-          updated_at: v.updated_at || new Date().toISOString(),
-          photo_matrix: photoMatrix
+          updated_at: v.updated_at || new Date().toISOString()
         };
 
         return new Response(JSON.stringify(detail), {
@@ -392,7 +325,9 @@ export default {
       }
     }
 
+    // =========================================================================
     // 3. Consultation POST API
+    // =========================================================================
     if (pathname === '/api/chamart/consultations' && request.method === 'POST') {
       const db = env.DB;
       if (!db) return new Response(JSON.stringify({ error: 'DB binding not found' }), { status: 500 });
@@ -449,15 +384,228 @@ export default {
       }
     }
 
-    // 4. Static Asset Serving & SPA Routing Fallback
-    try {
-      const response = await env.ASSETS.fetch(request);
-      if (response.status === 404 && !pathname.startsWith('/api/') && !pathname.includes('.')) {
-        return env.ASSETS.fetch(new URL('/index.html', request.url));
+    // =========================================================================
+    // 4. TASK 3: 차피셜 ↔ 차마트 안전한 자동 동기화 HTTPS API
+    // =========================================================================
+    if (pathname.startsWith('/api/sync/')) {
+      if (!verifySyncAuth(request, env)) {
+        return new Response(JSON.stringify({ error: '인증 실패: 유효한 Sync API 토큰이 필요합니다.' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
       }
+
+      const db = env.DB;
+      if (!db) return new Response(JSON.stringify({ error: 'DB binding not found' }), { status: 500 });
+
+      // 4-1. 차량 증분 동기화: POST /api/sync/vehicles
+      if (pathname === '/api/sync/vehicles' && request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const vehicles = body.vehicles || [];
+          let inserted = 0;
+          let updated = 0;
+          let skipped = 0;
+          const now = new Date().toISOString();
+
+          for (const v of vehicles) {
+            if (!v.id || !v.plate_number) {
+              skipped++;
+              continue;
+            }
+
+            // 기존 차량 확인
+            const existing = await db.prepare('SELECT id, target_price, is_public FROM vehicles WHERE id = ? OR plate_number = ?')
+              .bind(v.id, v.plate_number).first();
+
+            if (existing) {
+              // 관리자 가격 및 공개 상태 소유권 보호:
+              // 동기화에서 기존 운영 target_price나 is_public을 무단 덮어쓰지 않음
+              await db.prepare(`
+                UPDATE vehicles SET
+                  model_name = COALESCE(?, model_name),
+                  year = COALESCE(?, year),
+                  mileage = COALESCE(?, mileage),
+                  fuel_type = COALESCE(?, fuel_type),
+                  transmission = COALESCE(?, transmission),
+                  color = COALESCE(?, color),
+                  manufacturer = COALESCE(?, manufacturer),
+                  trim = COALESCE(?, trim),
+                  primary_photo_url = CASE WHEN ? != '' AND ? IS NOT NULL THEN ? ELSE primary_photo_url END,
+                  listing_ownership_type = COALESCE(?, listing_ownership_type),
+                  status = COALESCE(?, status),
+                  updated_at = ?
+                WHERE id = ?
+              `).bind(
+                v.model_name, v.year, v.mileage, v.fuel_type, v.transmission, v.color,
+                v.manufacturer, v.trim, v.primary_photo_url, v.primary_photo_url, v.primary_photo_url,
+                v.listing_ownership_type, v.status, now, existing.id
+              ).run();
+              updated++;
+            } else {
+              // 신규 등록
+              await db.prepare(`
+                INSERT INTO vehicles (
+                  id, branch_id, plate_number, model_name, year, mileage, fuel_type,
+                  transmission, color, purchase_price, target_price, status, is_demo,
+                  vin, displacement_cc, first_registration_date, drive_type, interior_color,
+                  options_json, timeline_json, primary_photo_url, manufacturer, trim, body_type,
+                  is_public, listing_ownership_type, is_priority_exposure, priority_rank,
+                  created_at, updated_at
+                ) VALUES (
+                  ?, '61fea9a4-58f0-42bd-862c-14fd16d0d21c', ?, ?, ?, ?, ?,
+                  ?, ?, ?, ?, ?, 0,
+                  ?, ?, ?, ?, ?,
+                  ?, '[]', ?, ?, ?, ?,
+                  ?, ?, 0, 0,
+                  ?, ?
+                )
+              `).bind(
+                v.id, v.plate_number, v.model_name, v.year, v.mileage, v.fuel_type,
+                v.transmission || '오토', v.color || '화이트', v.purchase_price || 0,
+                v.target_price || 0, v.status || 'FOR_SALE',
+                v.vin || '', v.displacement_cc || 1999, v.first_registration_date || `${v.year}-01-01`,
+                v.drive_type || '2WD', v.interior_color || '블랙',
+                v.options_json || '[]', v.primary_photo_url || '',
+                v.manufacturer || '', v.trim || '', v.body_type || '세단',
+                v.is_public !== undefined ? (v.is_public ? 1 : 0) : 1,
+                v.listing_ownership_type || 'OWNED',
+                now, now
+              ).run();
+              inserted++;
+            }
+          }
+
+          // 감사 로그 기록
+          const logId = 'AUDIT-' + crypto.randomUUID().slice(0, 8);
+          await db.prepare(`
+            INSERT INTO admin_audit_logs (id, user_id, action, target_type, target_id, details_json, created_at)
+            VALUES (?, 'SYSTEM_SYNC', 'CHAFICIAL_SYNC_VEHICLES', 'VEHICLES_BATCH', 'BATCH', ?, ?)
+          `).bind(logId, JSON.stringify({ inserted, updated, skipped, total: vehicles.length, source: body.source || 'CHAFICIAL' }), now).run();
+
+          return new Response(JSON.stringify({
+            success: true,
+            inserted,
+            updated,
+            skipped,
+            total: vehicles.length,
+            timestamp: now
+          }), { headers: { 'Content-Type': 'application/json' } });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        }
+      }
+
+      // 4-2. 사진 메타데이터 동기화: POST /api/sync/photos
+      if (pathname === '/api/sync/photos' && request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const { vehicle_id, photos } = body;
+          if (!vehicle_id || !Array.isArray(photos)) {
+            return new Response(JSON.stringify({ error: 'vehicle_id and photos array required' }), { status: 400 });
+          }
+
+          let photoInserted = 0;
+          const now = new Date().toISOString();
+
+          for (const p of photos) {
+            if (!isValidPhoto(p.photo_url)) continue;
+            const photoId = p.id || 'PHOTO-' + crypto.randomUUID().slice(0, 8);
+            await db.prepare(`
+              INSERT OR REPLACE INTO vehicle_photos (
+                id, vehicle_id, photo_url, thumb_url, category, sort_order, is_primary,
+                caption, view_code, display_label, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+              photoId, vehicle_id, p.photo_url, p.thumb_url || p.photo_url,
+              p.category || 'EXTERIOR', p.sort_order || 0, p.is_primary ? 1 : 0,
+              p.caption || '실차 사진', p.view_code || 'EXT_FRONT', p.display_label || '실차 사진',
+              now
+            ).run();
+            photoInserted++;
+          }
+
+          return new Response(JSON.stringify({ success: true, vehicle_id, photo_count: photoInserted }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        }
+      }
+
+      // 4-3. 상태 동기화 (판매완료/광고중지): POST /api/sync/status
+      if (pathname === '/api/sync/status' && request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const { vehicle_ids, status, reason } = body;
+          if (!Array.isArray(vehicle_ids) || !status) {
+            return new Response(JSON.stringify({ error: 'vehicle_ids array and status required' }), { status: 400 });
+          }
+
+          const now = new Date().toISOString();
+          let count = 0;
+
+          for (const vid of vehicle_ids) {
+            await db.prepare(`
+              UPDATE vehicles SET status = ?, updated_at = ? WHERE id = ?
+            `).bind(status, now, vid).run();
+            count++;
+          }
+
+          return new Response(JSON.stringify({ success: true, updated_count: count, status }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        }
+      }
+
+      // 4-4. 동기화 상태 조회: GET /api/sync/status
+      if (pathname === '/api/sync/status' && request.method === 'GET') {
+        try {
+          const lastAudit = await db.prepare(
+            "SELECT * FROM admin_audit_logs WHERE action LIKE '%SYNC%' ORDER BY created_at DESC LIMIT 5"
+          ).all();
+          const totalVehicles = await db.prepare("SELECT count(*) as count FROM vehicles WHERE (is_demo = 0 OR is_demo IS NULL)").first();
+          const totalOwned = await db.prepare("SELECT count(*) as count FROM vehicles WHERE (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') AND (is_demo = 0 OR is_demo IS NULL)").first();
+
+          return new Response(JSON.stringify({
+            status: 'HEALTHY',
+            total_real_vehicles: totalVehicles?.count || 0,
+            total_owned_vehicles: totalOwned?.count || 0,
+            recent_sync_events: lastAudit.results || []
+          }), { headers: { 'Content-Type': 'application/json' } });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        }
+      }
+    }
+
+    // =========================================================================
+    // 5. Static Asset Serving & SPA Routing Fallback (HTML 캐시 방지 적용)
+    // =========================================================================
+    try {
+      let response = await env.ASSETS.fetch(request);
+      if (response.status === 404 && !pathname.startsWith('/api/') && !pathname.includes('.')) {
+        response = await env.ASSETS.fetch(new URL('/index.html', request.url));
+      }
+
+      // HTML 문서는 항상 최신 변경사항을 즉시 반영하도록 no-cache 헤더 강제 주입
+      const contentType = response.headers.get('content-type') || '';
+      if (pathname === '/' || pathname === '/index.html' || pathname === '/chamart.html' || contentType.includes('text/html')) {
+        const h = new Headers(response.headers);
+        h.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        h.set('Pragma', 'no-cache');
+        h.set('Expires', '0');
+        return new Response(response.body, { status: response.status, headers: h });
+      }
+
       return response;
     } catch (e) {
-      return env.ASSETS.fetch(new URL('/index.html', request.url));
+      const res = await env.ASSETS.fetch(new URL('/index.html', request.url));
+      const h = new Headers(res.headers);
+      h.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return new Response(res.body, { status: res.status, headers: h });
     }
   }
 };

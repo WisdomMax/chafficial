@@ -1,101 +1,32 @@
-// CHA-FICIAL DIRECTIVE 086 P0: 30장 고해상도 실차 부위별 사진 세트 및 차종별 실사 매핑
-function resolveRealCarPhoto(modelName, existingPhoto) {
-  if (existingPhoto && 
-      !existingPhoto.includes('placeholder') && 
-      !existingPhoto.includes('sample_car') && 
-      !existingPhoto.includes('slots') && 
-      !existingPhoto.includes('demo_car') &&
-      !existingPhoto.includes('grandeur_gn7') &&
-      !existingPhoto.includes('k8/front') &&
-      !existingPhoto.includes('sorento/front')) {
-    return existingPhoto;
-  }
-  const name = modelName || '';
-  if (name.includes('GV70') || name.includes('GV80')) return '/static/img/ui_fixtures/gv70_01.jpg';
-  if (name.includes('G80') || name.includes('G90') || name.includes('제네시스')) return '/static/img/ui_fixtures/g80_01.jpg';
-  if (name.includes('쏘나타')) return '/static/img/ui_fixtures/sonata_01.jpg';
-  if (name.includes('싼타페')) return '/static/img/ui_fixtures/santafe_01.jpg';
-  if (name.includes('팰리세이드')) return '/static/img/ui_fixtures/palisade_01.jpg';
-  if (name.includes('투싼')) return '/static/img/ui_fixtures/tucson_01.jpg';
-  if (name.includes('카니발')) return '/static/img/ui_fixtures/carnival_01.jpg';
-  if (name.includes('스포티지')) return '/static/img/ui_fixtures/sportage_01.jpg';
-  if (name.includes('셀토스')) return '/static/img/ui_fixtures/seltos_01.jpg';
-  if (name.includes('K5')) return '/static/img/ui_fixtures/k5_01.jpg';
-  if (name.includes('K3')) return '/static/img/ui_fixtures/K3_01.jpg';
-  if (name.includes('토레스') || name.includes('티볼리') || name.includes('렉스턴') || name.includes('무쏘') || name.includes('KG')) return '/static/img/ui_fixtures/torres_01.jpg';
-  if (name.includes('QM6') || name.includes('XM3') || name.includes('르노') || name.includes('SM6')) return '/static/img/ui_fixtures/qm6_01.jpg';
-  if (name.includes('BMW') || name.includes('520') || name.includes('530')) return '/static/img/ui_fixtures/bmw5_01.jpg';
-  if (name.includes('벤츠') || name.includes('E-클래스') || name.includes('E250') || name.includes('E300')) return '/static/img/ui_fixtures/benz_e_01.jpg';
-  if (name.includes('아반떼')) return '/static/img/ui_fixtures/아반떼_01.jpg';
-  if (name.includes('레이')) return '/static/img/ui_fixtures/레이_01.jpg';
-  if (name.includes('캐스퍼')) return '/static/img/ui_fixtures/캐스퍼_01.jpg';
-  if (name.includes('모닝')) return '/static/img/ui_fixtures/레이_01.jpg';
-  return '/static/img/real_photos/01_front.jpg';
+// Cloudflare Pages Function: /api/chamart/vehicles (DIRECTIVE 130 Compliant)
+// Strict Real-Vehicle Only: 4-Tier Exposure Ranking, Zero Fabricated Photos
+
+function isValidPhoto(url) {
+  if (!url || typeof url !== 'string') return false;
+  const u = url.trim().toLowerCase();
+  if (!u) return false;
+  if (u.includes('placeholder') || u.includes('slots') || u.includes('sample_car') || u.includes('no_photo')) return false;
+  return true;
 }
 
-const REAL_PHOTO_GALLERY_30 = [
-  { url: '/static/img/real_photos/01_front.jpg', caption: '01. 전면 외관', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/02_front_45_l.jpg', caption: '02. 전측면 좌측 45도', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/03_front_45_r.jpg', caption: '03. 전측면 우측 45도', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/04_side_l.jpg', caption: '04. 좌측면 전체', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/05_side_r.jpg', caption: '05. 우측면 전체', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/06_rear_45_l.jpg', caption: '06. 후측면 좌측 45도', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/07_rear_45_r.jpg', caption: '07. 후측면 우측 45도', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/08_rear.jpg', caption: '08. 후면 전체', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/09_headlamp.jpg', caption: '09. 헤드램프 디테일', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/10_grille.jpg', caption: '10. 라디에이터 그릴', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/11_wheel_fl.jpg', caption: '11. 앞 좌측 휠/타이어', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/12_wheel_fr.jpg', caption: '12. 앞 우측 휠/타이어', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/13_wheel_rl.jpg', caption: '13. 뒤 좌측 휠/타이어', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/14_wheel_rr.jpg', caption: '14. 뒤 우측 휠/타이어', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/15_cockpit.jpg', caption: '15. 운전석 콕핏 대시보드', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/16_steering.jpg', caption: '16. 스티어링 휠 핸들 리모컨', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/17_cluster.jpg', caption: '17. 풀 디지털 계기판 실주행거리', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/18_navigation.jpg', caption: '18. 센터 와이드 내비게이션', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/19_gear_console.jpg', caption: '19. 전자식 변속기 센터 콘솔', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/20_seat_front.jpg', caption: '20. 1열 통풍/열선 가죽시트', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/21_seat_rear.jpg', caption: '21. 2열 뒷좌석 레그룸', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/22_door_trim.jpg', caption: '22. 운전석 도어 트림', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/23_engine_bay.jpg', caption: '23. 엔진룸 전경 누유 점검', category: 'ENGINE_CHASSIS' },
-  { url: '/static/img/real_photos/24_sunroof.jpg', caption: '24. 파노라마 선루프', category: 'DETAIL_OPTION' },
-  { url: '/static/img/real_photos/25_trunk.jpg', caption: '25. 스마트 파워 트렁크', category: 'INTERIOR' },
-  { url: '/static/img/real_photos/26_smart_key.jpg', caption: '26. 스마트키 2벌 보유', category: 'DETAIL_OPTION' },
-  { url: '/static/img/real_photos/27_rear_camera.jpg', caption: '27. 후방/어라운드뷰 카메라', category: 'DETAIL_OPTION' },
-  { url: '/static/img/real_photos/28_tire_tread.jpg', caption: '28. 타이어 잔여 트레드', category: 'EXTERIOR' },
-  { url: '/static/img/real_photos/29_underbody.jpg', caption: '29. 리프트 하부 부식 점검', category: 'ENGINE_CHASSIS' },
-  { url: '/static/img/real_photos/30_exhaust_detail.jpg', caption: '30. 머플러 및 하부 방청', category: 'EXTERIOR' },
-];
+const NO_PHOTO_FALLBACK = '/static/img/no_photo.svg';
 
-function buildVehicle30Photos(modelName, frontPhoto) {
-  const front = resolveRealCarPhoto(modelName, frontPhoto);
-  return REAL_PHOTO_GALLERY_30.map((item, idx) => {
-    if (idx === 0) return { ...item, url: front };
-    return item;
-  });
-}
-
-export async function onRequestGet(context) {
-  const { request, env } = context;
+export async function onRequestGet({ request, env, waitUntil }) {
   const url = new URL(request.url);
 
-  // 1. Cloudflare 엣지 캐시(Cache API) 검사 - 히트 시 50ms 미만 초고속 즉시 반환
+  // 1. Edge Cache
   const cache = caches.default;
   const cacheKey = new Request(url.toString(), request);
-  try {
-    const cachedResponse = await cache.match(cacheKey);
-    if (cachedResponse) {
-      const newHeaders = new Headers(cachedResponse.headers);
-      newHeaders.set('X-Chamart-Cache', 'HIT');
-      return new Response(cachedResponse.body, {
-        status: cachedResponse.status,
-        headers: newHeaders
-      });
-    }
-  } catch (e) {}
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    const h = new Headers(cached.headers);
+    h.set('X-Chamart-Cache', 'HIT');
+    return new Response(cached.body, { status: cached.status, headers: h });
+  }
 
   const db = env.DB;
   if (!db) {
-    return new Response(JSON.stringify({ error: 'Database binding DB not found' }), {
+    return new Response(JSON.stringify({ error: 'DB binding not found' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -106,19 +37,22 @@ export async function onRequestGet(context) {
     const maker = url.searchParams.get('maker') || '';
     const minPrice = parseInt(url.searchParams.get('min_price') || '0', 10);
     const maxPrice = parseInt(url.searchParams.get('max_price') || '999999', 10);
+    const minMileage = parseInt(url.searchParams.get('min_mileage') || '0', 10);
+    const maxMileage = parseInt(url.searchParams.get('max_mileage') || '999999', 10);
     const minYear = parseInt(url.searchParams.get('min_year') || '0', 10);
     const maxYear = parseInt(url.searchParams.get('max_year') || '9999', 10);
-    const maxMileage = parseInt(url.searchParams.get('max_mileage') || '999999', 10);
     const fuelType = url.searchParams.get('fuel_type') || '';
     const sort = url.searchParams.get('sort') || 'recommended';
 
-    // 2. 경량 컬럼 단일 프로젝션 SELECT (비정형 대용량 텍스트 컬럼 완전 배제)
     let sql = `SELECT 
       id, plate_number, model_name, manufacturer, trim, year, mileage, 
       fuel_type, transmission, color, target_price, primary_photo_url, 
       listing_ownership_type, is_priority_exposure, priority_rank, 
       status, publishing_status, options_json
-    FROM vehicles WHERE (is_public = 1 OR is_public IS NULL)`;
+    FROM vehicles 
+    WHERE (is_public = 1 OR is_public IS NULL) 
+      AND (is_demo = 0 OR is_demo IS NULL)
+      AND (status IN ('AVAILABLE', 'FOR_SALE') OR status IS NULL)`;
     const params = [];
 
     if (search.trim()) {
@@ -156,6 +90,10 @@ export async function onRequestGet(context) {
       params.push(maxYear);
     }
 
+    if (minMileage > 0) {
+      sql += ' AND mileage >= ?';
+      params.push(minMileage);
+    }
     if (maxMileage < 999999) {
       sql += ' AND mileage <= ?';
       params.push(maxMileage);
@@ -166,37 +104,44 @@ export async function onRequestGet(context) {
       params.push(fuelType.trim());
     }
 
-    // 정렬 기준
+    // DIRECTIVE 130 TASK 2: 4단계 노출 순위
+    const tierOrderClause = `
+      (CASE 
+        WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') 
+             AND (primary_photo_url IS NOT NULL AND primary_photo_url != '' AND primary_photo_url NOT LIKE '%placeholder%' AND primary_photo_url NOT LIKE '%no_photo%') THEN 1
+        WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') THEN 2
+        WHEN (primary_photo_url IS NOT NULL AND primary_photo_url != '' AND primary_photo_url NOT LIKE '%placeholder%' AND primary_photo_url NOT LIKE '%no_photo%') THEN 3
+        ELSE 4
+      END) ASC`;
+
     if (sort === 'price_asc') {
-      sql += ' ORDER BY target_price ASC';
+      sql += ` ORDER BY ${tierOrderClause}, CAST(target_price AS INTEGER) ASC, CAST(mileage AS INTEGER) ASC, year DESC`;
     } else if (sort === 'price_desc') {
-      sql += ' ORDER BY target_price DESC';
-    } else if (sort === 'year_desc') {
-      sql += ' ORDER BY year DESC';
+      sql += ` ORDER BY ${tierOrderClause}, CAST(target_price AS INTEGER) DESC, CAST(mileage AS INTEGER) ASC, year DESC`;
     } else if (sort === 'mileage_asc') {
-      sql += ' ORDER BY mileage ASC';
+      sql += ` ORDER BY ${tierOrderClause}, CAST(mileage AS INTEGER) ASC, CAST(target_price AS INTEGER) ASC, year DESC`;
+    } else if (sort === 'mileage_desc') {
+      sql += ` ORDER BY ${tierOrderClause}, CAST(mileage AS INTEGER) DESC, CAST(target_price AS INTEGER) ASC, year DESC`;
+    } else if (sort === 'latest') {
+      sql += ` ORDER BY ${tierOrderClause}, created_at DESC, id DESC`;
     } else {
       sql += ` ORDER BY 
+        ${tierOrderClause},
         is_priority_exposure DESC,
-        (CASE 
-          WHEN listing_ownership_type = 'OWNED' THEN 0 
-          WHEN listing_ownership_type = 'PARTNER_CONFIRMED' THEN 1 
-          ELSE 2 
-        END) ASC,
+        priority_rank ASC,
         created_at DESC`;
     }
 
-    // 3. 단일 D1 쿼리 실행 (N+1 반복 쿼리 루프 100% 완전 제거!)
     const { results } = await db.prepare(sql).bind(...params).all();
 
-    // 4. 초경량 JSON 매핑 (1.14MB -> 40KB로 압축)
     const enriched = (results || []).map(v => {
       let options = [];
       try {
         if (v.options_json) options = JSON.parse(v.options_json);
       } catch (e) {}
 
-      const finalPrimaryPhoto = resolveRealCarPhoto(v.model_name, v.primary_photo_url);
+      const hasRealPhoto = isValidPhoto(v.primary_photo_url);
+      const finalPhoto = hasRealPhoto ? v.primary_photo_url : NO_PHOTO_FALLBACK;
 
       return {
         id: v.id,
@@ -210,12 +155,13 @@ export async function onRequestGet(context) {
         transmission: v.transmission,
         color: v.color,
         target_price: v.target_price,
-        monthly_payment_estimate: Math.round(v.target_price * 10000 / 48 / 10000),
-        primary_photo_url: finalPrimaryPhoto,
-        photo_count: 30, // 30장 고해상도 보유
+        monthly_payment_estimate: Math.round((v.target_price || 0) * 10000 / 48 / 10000),
+        primary_photo_url: finalPhoto,
+        has_real_photo: hasRealPhoto,
+        photo_count: hasRealPhoto ? 1 : 0,
         options: options,
         listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
-        is_chamart_owned: (v.listing_ownership_type === 'OWNED'),
+        is_chamart_owned: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED'),
         is_priority_exposure: !!v.is_priority_exposure,
         priority_rank: v.priority_rank || 0,
         status: v.status || 'AVAILABLE',
@@ -226,22 +172,17 @@ export async function onRequestGet(context) {
 
     const resp = new Response(JSON.stringify(enriched), {
       headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=60, s-maxage=300',
-        'X-Chamart-Cache': 'MISS'
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'public, max-age=60, s-maxage=120',
+        'Access-Control-Allow-Origin': '*'
       }
     });
 
-    // 엣지 캐시에 비동기 저장
-    try {
-      context.waitUntil(cache.put(cacheKey, resp.clone()));
-    } catch (e) {}
-
+    if (waitUntil) {
+      waitUntil(cache.put(cacheKey, resp.clone()));
+    }
     return resp;
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 }

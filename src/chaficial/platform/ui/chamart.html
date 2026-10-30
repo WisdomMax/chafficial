@@ -3322,31 +3322,13 @@
             syncUrlParams();
         }
 
-        // DIRECTIVE 086 P0: 실차 사진 100% 무결 보장 렌더러 (플레이스홀더 원천 차단)
+        // DIRECTIVE 130 TASK 2: 정직한 실차 사진 렌더러 (타 차량 오연결 및 가짜 사진 매핑 완전 제거)
         function resolveFrontendCarPhoto(v) {
             let p = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url || v.photos[0]) : '');
             if (typeof p !== 'string') p = '';
-            if (!p || p.includes('placeholder') || p.includes('neutral_car') || p.includes('slots') || p.includes('grandeur_gn7') || p.includes('k8/front') || p.includes('sorento/front')) {
-                const name = (v.model_name || '') + ' ' + (v.trim || '');
-                if (name.includes('GV70') || name.includes('GV80')) return '/static/img/ui_fixtures/gv70_01.jpg';
-                if (name.includes('G80') || name.includes('G90') || name.includes('제네시스')) return '/static/img/ui_fixtures/g80_01.jpg';
-                if (name.includes('쏘나타')) return '/static/img/ui_fixtures/sonata_01.jpg';
-                if (name.includes('싼타페')) return '/static/img/ui_fixtures/santafe_01.jpg';
-                if (name.includes('팰리세이드')) return '/static/img/ui_fixtures/palisade_01.jpg';
-                if (name.includes('투싼')) return '/static/img/ui_fixtures/tucson_01.jpg';
-                if (name.includes('카니발')) return '/static/img/ui_fixtures/carnival_01.jpg';
-                if (name.includes('스포티지')) return '/static/img/ui_fixtures/sportage_01.jpg';
-                if (name.includes('셀토스')) return '/static/img/ui_fixtures/seltos_01.jpg';
-                if (name.includes('K5')) return '/static/img/ui_fixtures/k5_01.jpg';
-                if (name.includes('K3')) return '/static/img/ui_fixtures/K3_01.jpg';
-                if (name.includes('토레스') || name.includes('티볼리') || name.includes('렉스턴') || name.includes('무쏘')) return '/static/img/ui_fixtures/torres_01.jpg';
-                if (name.includes('QM6') || name.includes('XM3') || name.includes('르노')) return '/static/img/ui_fixtures/qm6_01.jpg';
-                if (name.includes('BMW') || name.includes('520')) return '/static/img/ui_fixtures/bmw5_01.jpg';
-                if (name.includes('벤츠') || name.includes('E-클래스')) return '/static/img/ui_fixtures/benz_e_01.jpg';
-                if (name.includes('아반떼')) return '/static/img/ui_fixtures/아반떼_01.jpg';
-                if (name.includes('레이')) return '/static/img/ui_fixtures/레이_01.jpg';
-                if (name.includes('캐스퍼')) return '/static/img/ui_fixtures/캐스퍼_01.jpg';
-                return '/static/img/real_photos/01_front.jpg';
+            p = p.trim();
+            if (!p || p.includes('placeholder') || p.includes('slots') || p.includes('no_photo')) {
+                return '/static/img/no_photo.svg';
             }
             return p;
         }
@@ -3365,7 +3347,7 @@
             return `
                 <article class="cm-vehicle-row" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-vehicle-row__photo">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" onerror="this.src='/static/img/real_photos/01_front.jpg'">
+                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" onerror="this.src='/static/img/no_photo.svg'">
                         <span class="cm-vehicle-row__badge">실차인증</span>
                     </div>
                     <div class="cm-vehicle-row__information">
@@ -3415,7 +3397,7 @@
                 <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-list-card bg-white rounded-xl border border-[#E5E8EC] p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:border-slate-400 transition-colors cursor-pointer shadow-2xs" onclick="openVehicleDetail('${v.id}')">
                     <!-- 좌측: 당근마켓형 정사각 썸네일 (컴팩트 64~80px) -->
                     <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='/static/img/real_photos/01_front.jpg'">
+                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='/static/img/no_photo.svg'">
                         <span class="absolute top-1 left-1 bg-[#171B1E]/85 backdrop-blur-xs text-[#C8FF3D] text-[9px] font-bold px-1 rounded">무사고</span>
                     </div>
 
@@ -3467,7 +3449,7 @@
                 <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-feed-card bg-white rounded-2xl border border-[#E5E8EC] overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer w-full mb-3" onclick="openVehicleDetail('${v.id}')">
                     <!-- 상단: 유튜브 16:9 와이드 대형 썸네일 -->
                     <div class="relative w-full aspect-video bg-slate-100 overflow-hidden">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onerror="this.src='/static/img/real_photos/01_front.jpg'">
+                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onerror="this.src='/static/img/no_photo.svg'">
                         <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                             ${ChamartPreferred.badge(v) || '<span class="bg-[#171B1E]/90 text-white text-[11px] font-bold px-2 py-1 rounded">장한평 매물</span>'}
                             <span class="bg-black/60 text-white text-[10.5px] font-semibold px-1.5 py-0.5 rounded">📷 30장 부위별</span>
@@ -3519,7 +3501,7 @@
             return `
                 <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-album-card relative group" tabindex="0" role="link" aria-label="${titleParts.mainTitle} 상세보기" onkeydown="if(event.target===this && event.key==='Enter') openVehicleDetail('${v.id}')" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-album-card__photo relative">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" loading="lazy" onerror="this.src='/static/img/real_photos/01_front.jpg'">
+                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" loading="lazy" onerror="this.src='/static/img/no_photo.svg'">
                         ${ChamartPreferred.isOwned(v) ? '<div class="cm-preferred-album-badge">' + ChamartPreferred.badge(v) + '</div>' : '<span class="cm-album-card__badge-tag">무사고</span>'}
                         
                         <!-- 찜(하트) 버튼 -->
@@ -3542,112 +3524,6 @@
                                 <i data-lucide="scale" class="w-3.5 h-3.5 ${isComp ? 'text-[#C8FF3D]' : 'text-slate-500'}"></i>
                                 <span>${isComp ? '비교중' : '비교'}</span>
                             </label>
-                        </div>
-                    </div>
-                </article>
-            `;
-        }
-
-        // 2. 당근마켓 스타일 심플 목록형 (가격을 오른쪽으로 배치하여 위아래 높이 폭 대폭 축소)
-        function createVehicleDanggeunRow(v, favorites, compareIds) {
-            const photoUrl = resolveFrontendCarPhoto(v);
-            const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
-            const mileageNum = Number(v.mileage || 0);
-            const mileageFormatted = mileageNum > 0 ? (mileageNum >= 10000 ? `${(mileageNum / 10000).toFixed(1).replace('.0', '')}만km` : `${mileageNum.toLocaleString('ko-KR')}km`) : '주행 미확인';
-            const titleParts = formatVehicleTitleParts(v.model_name, v.trim);
-            const isFav = favorites.includes(v.id);
-            const isComp = (compareIds || []).includes(v.id);
-            const yearDisplay = v.year ? `${v.year}년형` : '';
-
-            return `
-                <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-list-card bg-white rounded-xl border border-[#E5E8EC] p-2.5 sm:p-3 flex items-center justify-between gap-3 hover:border-slate-400 transition-colors cursor-pointer shadow-2xs" onclick="openVehicleDetail('${v.id}')">
-                    <!-- 좌측: 당근마켓형 정사각 썸네일 (컴팩트 64~80px) -->
-                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='/static/img/real_photos/01_front.jpg'">
-                        <span class="absolute top-1 left-1 bg-[#171B1E]/85 backdrop-blur-xs text-[#C8FF3D] text-[9px] font-bold px-1 rounded">무사고</span>
-                    </div>
-
-                    <!-- 중앙: 핵심 스펙 및 모델명 -->
-                    <div class="cm-list-card__body flex-1 min-w-0 flex flex-col justify-center">
-                        ${ChamartPreferred.badge(v)}
-                        <h3 class="cm-list-card__title text-xs sm:text-sm font-bold text-[#171B1E] truncate" title="${titleParts.mainTitle} ${titleParts.subTrim || ''}">
-                            ${titleParts.mainTitle} ${titleParts.subTrim ? `<span class="text-[11px] font-normal text-slate-500">${titleParts.subTrim}</span>` : ''}
-                        </h3>
-                        <div class="cm-card-specs text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                            <span>${yearDisplay}</span>
-                            <span>·</span>
-                            <span>${mileageFormatted}</span>
-                            <span>·</span>
-                            <span>${v.fuel_type || '가솔린'}</span>
-                        </div>
-                    </div>
-
-                    <!-- 우측: 가격(오른쪽 배치로 위아래 높이 폭 최소화) 및 비교/찜 액션 -->
-                    <div class="cm-list-card__right shrink-0 flex flex-col items-end justify-center text-right pl-2 gap-1.5" onclick="event.stopPropagation()">
-                        <span class="cm-list-card__price text-sm sm:text-base font-extrabold text-[#171B1E] tracking-tight whitespace-nowrap">${priceFormatted}</span>
-                        <div class="flex items-center gap-1.5">
-                            <button type="button" onclick="toggleCompareVehicle('${v.id}', ${!isComp})" class="px-2 py-0.5 rounded text-[10px] sm:text-[10.5px] font-bold border transition-colors ${isComp ? 'bg-[#171B1E] text-[#C8FF3D] border-[#171B1E]' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'}">
-                                ${isComp ? '비교중' : '비교'}
-                            </button>
-                            <button type="button" onclick="toggleFavoriteVehicle('${v.id}')" class="p-0.5 rounded text-slate-400 hover:text-rose-500 transition-colors" aria-label="찜">
-                                <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : 'text-slate-400'}"></i>
-                            </button>
-                        </div>
-                    </div>
-                </article>
-            `;
-        }
-
-        // 3. 유튜브 스타일 1열 대형 썸네일 피드형
-        function createVehicleYoutubeFeedCard(v, favorites, compareIds) {
-            const photoUrl = resolveFrontendCarPhoto(v);
-            const priceFormatted = v.target_price ? `${Number(v.target_price).toLocaleString('ko-KR')}만원` : '가격 상담';
-            const mileageNum = Number(v.mileage || 0);
-            const mileageFormatted = mileageNum > 0 ? `${mileageNum.toLocaleString('ko-KR')}km` : '주행 미확인';
-            const titleParts = formatVehicleTitleParts(v.model_name, v.trim);
-            const isFav = favorites.includes(v.id);
-            const isComp = (compareIds || []).includes(v.id);
-            const yearDisplay = v.year ? `${v.year}년형` : '';
-
-            const estMonth = v.monthly_payment_estimate || Math.round((v.target_price || 0) * 10000 / 60 / 10000);
-
-            return `
-                <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-feed-card bg-white rounded-2xl border border-[#E5E8EC] overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer w-full mb-3" onclick="openVehicleDetail('${v.id}')">
-                    <!-- 상단: 유튜브 16:9 와이드 대형 썸네일 -->
-                    <div class="relative w-full aspect-video bg-slate-100 overflow-hidden">
-                        <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" onerror="this.src='/static/img/real_photos/01_front.jpg'">
-                        <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                            ${ChamartPreferred.badge(v) || '<span class="bg-[#171B1E]/90 text-white text-[11px] font-bold px-2 py-1 rounded">장한평 매물</span>'}
-                            <span class="bg-black/60 text-white text-[10.5px] font-semibold px-1.5 py-0.5 rounded">📷 30장 부위별</span>
-                        </div>
-                        <div class="absolute top-2.5 right-2.5 flex items-center gap-1.5" onclick="event.stopPropagation()">
-                            <button type="button" onclick="toggleFavoriteVehicle('${v.id}')" class="w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center shadow-xs">
-                                <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : 'text-slate-600'}"></i>
-                            </button>
-                        </div>
-                        <div class="absolute bottom-2.5 right-2.5 bg-black/80 backdrop-blur-xs text-white text-[11px] font-mono px-2 py-0.5 rounded">
-                            ${v.plate_number || ''}
-                        </div>
-                    </div>
-
-                    <!-- 하단: 타이틀, 스펙, 가격 및 월 납입금 -->
-                    <div class="cm-feed-card__body">
-                        <h3 class="cm-feed-card__title">${titleParts.mainTitle}</h3>
-                        ${titleParts.subTrim ? `<p class="cm-feed-card__trim">${titleParts.subTrim}</p>` : ''}
-                        <div class="cm-card-specs">
-                            <span>${yearDisplay}</span><span>${mileageFormatted}</span><span>${v.fuel_type || '가솔린'}</span><span class="text-emerald-700 font-semibold">무사고 진단</span>
-                        </div>
-                        <div class="cm-feed-card__price">${priceFormatted}</div>
-                        <p class="cm-feed-card__monthly">월 약 ${estMonth}만원 (60개월)</p>
-
-                        <div class="flex items-center justify-between pt-2 border-t border-slate-100" onclick="event.stopPropagation()">
-                            <label class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
-                                <input type="checkbox" ${isComp ? 'checked' : ''} onchange="toggleCompareVehicle('${v.id}', this.checked)" class="w-3.5 h-3.5 rounded border-slate-300">
-                                <span class="text-[11px]">비교함 담기</span>
-                            </label>
-                            <button type="button" onclick="openVehicleDetail('${v.id}')" class="px-3 py-1 rounded-lg bg-[#171B1E] hover:bg-black text-white text-[11px] font-bold transition-colors">
-                                실차 상세 보기
-                            </button>
                         </div>
                     </div>
                 </article>
