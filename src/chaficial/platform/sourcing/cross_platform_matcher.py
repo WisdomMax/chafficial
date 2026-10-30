@@ -87,15 +87,17 @@ class CrossPlatformMatcher:
             evidence["plate_match"] = "NONE"
 
         # 2. Model match
-        s_model = (source_car.get("model_name") or "").lower().replace(" ", "")
-        c_model = (candidate_car.get("model_name") or "").lower().replace(" ", "")
+        s_raw = (source_car.get("model_name") or "").lower()
+        c_raw = (candidate_car.get("model_name") or "").lower()
+        s_model = s_raw.replace(" ", "")
+        c_model = c_raw.replace(" ", "")
         if s_model and c_model:
             if s_model in c_model or c_model in s_model:
                 score += 0.25
                 evidence["model_match"] = "HIGH_SUBSTRING"
             else:
-                s_tokens = set(re.findall(r'[a-zA-Z0-9가-힣]+', s_model))
-                c_tokens = set(re.findall(r'[a-zA-Z0-9가-힣]+', c_model))
+                s_tokens = set(re.findall(r'[a-zA-Z0-9가-힣]+', s_raw))
+                c_tokens = set(re.findall(r'[a-zA-Z0-9가-힣]+', c_raw))
                 if s_tokens and c_tokens:
                     jaccard = len(s_tokens & c_tokens) / len(s_tokens | c_tokens)
                     score += 0.25 * jaccard

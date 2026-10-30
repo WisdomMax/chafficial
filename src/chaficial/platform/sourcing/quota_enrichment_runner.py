@@ -13,14 +13,10 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
-from chaficial.platform.sourcing.atomic_budget_enforcer import SqliteAtomicBudgetEnforcer
+from chaficial.platform.sourcing.atomic_budget_enforcer import SqliteAtomicBudgetEnforcer, QuotaExhaustedException
 from chaficial.platform.sourcing.cross_platform_matcher import (
-    CrossPlatformMatcher, MatchResult, MatchingStatus
+    CrossPlatformMatcher, MatchResult, MatchingStatus, ObservationMode
 )
-
-class QuotaExhaustedException(Exception):
-    """Raised when daily car quota or platform HTTP budget is exhausted."""
-    pass
 
 class DailyBudgetEnforcer:
     def __init__(self, checkpoint_path: Path, daily_car_limit: int = 200, kb_req_limit: int = 200, encar_req_limit: int = 200):
@@ -80,7 +76,13 @@ class QuotaEnrichmentRunner:
         self.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         self.budget = SqliteAtomicBudgetEnforcer(self.db_path, daily_car_limit=daily_limit, kb_req_limit=daily_limit, encar_req_limit=daily_limit)
 
-    def process_vehicle_safe(self, vehicle: Dict[str, Any], kb_candidate: Optional[Dict[str, Any]] = None, encar_candidate: Optional[Dict[str, Any]] = None) -> Optional[MatchResult]:
+    def process_vehicle_safe(
+        self, 
+        vehicle: Dict[str, Any], 
+        kb_candidate: Optional[Dict[str, Any]] = None, 
+        encar_candidate: Optional[Dict[str, Any]] = None,
+        mode: ObservationMode = ObservationMode.OFFLINE_TEST
+    ) -> Optional[MatchResult]:
         """
         Executes matching with atomic pre-network budget deduction.
         """
@@ -91,8 +93,7 @@ class QuotaEnrichmentRunner:
         # 2. KB차차차 조회 전 예산 검사 및 차감
         self.budget.check_and_deduct_kb()
         if kb_candidate:
-            score, ev = self.matcher.calculate_match_score(vehicle, kb_candidate)
-            status = self.matcher.classify_match(score, ev)
+            score, ev, status = self.matcher.validate_candidate(vehicle, kb_candidate)
             if status in (MatchingStatus.VERIFIED, MatchingStatus.CANDIDATE):
                 res = MatchResult(
                     vehicle_id=v_id,
@@ -105,16 +106,16 @@ class QuotaEnrichmentRunner:
                     status=status,
                     match_score=score,
                     match_evidence=ev,
+                    observation_mode=mode,
                     matched_at=time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
                 )
-                self.matcher.record_match_in_db(res)
+                self.matcher.record_verified_match(res)
                 return res
 
         # 3. 2순위 엔카 조회 전 예산 검사 및 차감
         self.budget.check_and_deduct_encar()
         if encar_candidate:
-            score, ev = self.matcher.calculate_match_score(vehicle, encar_candidate)
-            status = self.matcher.classify_match(score, ev)
+            score, ev, status = self.matcher.validate_candidate(vehicle, encar_candidate)
             if status in (MatchingStatus.VERIFIED, MatchingStatus.CANDIDATE):
                 res = MatchResult(
                     vehicle_id=v_id,
@@ -127,9 +128,10 @@ class QuotaEnrichmentRunner:
                     status=status,
                     match_score=score,
                     match_evidence=ev,
+                    observation_mode=mode,
                     matched_at=time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
                 )
-                self.matcher.record_match_in_db(res)
+                self.matcher.record_verified_match(res)
                 return res
 
         return None

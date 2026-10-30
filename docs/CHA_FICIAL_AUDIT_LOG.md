@@ -1,7 +1,35 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-30 22:35:00 KST  
+> **최종 갱신일:** 2026-10-31 00:26:00 KST  
+
+---
+
+## [DIRECTIVE 119] 시장 관측 보호, 오프라인 통합 테스트 및 50대 저부하 증분 관측기 구축
+- **일시:** 2026-10-31 00:26 KST
+- **수행 태스크**:
+  1. **TASK 1 & TASK 3 (API 통합 및 오프라인 통합 테스트 완결)**:
+     - `quota_enrichment_runner.py`와 `cross_platform_matcher.py` 간 API 인터페이스 일치 (`validate_candidate`, `record_verified_match`, `ObservationMode.OFFLINE_TEST`).
+     - 예산 차감 예외 타입(`QuotaExhaustedException`) 단일화.
+     - 후보 차량 모델명 토큰 분리 버그(공백 제거 후 Jaccard 0 버그) 수정.
+     - 외부 네트워크 호출 없는 순수 오프라인 통합 테스트(`scratch/test_offline_sync_integration.py`) 작성 및 100% 통과 (VERIFIED -> ACTIVE, CANDIDATE -> REVIEW_PENDING, 일일 한도 초과 차단 입증).
+  2. **TASK 2 (시장 관측 자동 공개 차단 및 자사 가격 보호)**:
+     - `carmanager_sync.py`: 시장 관측 차량 유입 시 무조건 `publishing_status = 'DRAFT'`, `is_public = 0` 강제 설정.
+     - 자사 OWNED 차량은 시장 관측 가격으로 `vehicles.target_price`가 덮어써지지 않도록 보호 로직 추가.
+     - 회귀 테스트(`scratch/test_directive_119_market_owned_safeguards.py`) 100% Pass.
+  3. **TASK 4 (운영 DB SQLite 예산기 스키마 마이그레이션)**:
+     - 운영 DB `quota_processed_vehicles`의 단일 PK를 복합키 `PRIMARY KEY (processed_date, vehicle_id)`로 안전 이전 (`scratch/migrate_quota_processed_vehicles_composite_pk.py`).
+     - 동일 차량 동시 20회 요청 시 1회만 예산 차감되고 19회 pass 처리되는 동시성 검증 100% Pass.
+     - PRAGMA integrity_check OK 확인.
+  4. **TASK 5 (중복 병합 증적 보강 및 선정 사유 정정)**:
+     - 병합 보존된 대표 마스터의 사진 995장 및 개별 ID/URL 무손실 보존 확인 (`scratch/audit_directive_119_task5_evidence.py`, `scratch/task5_consolidation_photos_evidence.json`).
+     - 대표 마스터 선정 규칙 설명 정정: 단순 `EARLIEST_CREATED`가 아닌, 자사 보유 `AVAILABLE/FOR_SALE` 실차량을 최우선 대표 마스터로 영구 보존하고 시장 관측 DRAFT를 병합한 것임을 명문화.
+  5. **TASK 6 (50대 목록 저부하 증분 관측기 구축)**:
+     - `src/chaficial/platform/sourcing/incremental_market_observer.py` 신설.
+     - 50대 목록 기반 신규 매물 스케줄링(`SCHEDULE_DEEP_FETCH`), 기존 매물 경량 업데이트(`UPDATE_PRICE_STATUS`), 변경 없음(`NO_CHANGE`) 분기 처리.
+     - 독립 DB 50대 시뮬레이션 테스트(`scratch/test_incremental_market_observer.py`) 100% Pass (사진 재다운로드 없는 90% 리소스 절감 확인).
+  6. **TASK 7 (마스터 체크리스트 갱신)**:
+     - `CHA_FICIAL_MASTER_CHECKLIST.md`에 ISSUE-53~58 전수 등록 완료.
 
 ---
 

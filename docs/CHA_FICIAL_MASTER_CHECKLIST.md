@@ -63,6 +63,12 @@
 | **ISSUE-50** | 크로스 스코프 동기화 시 자사 보유 차량 중복 마스터 재발 위험 | 심각 | 🟢 해결완료 | `carmanager_sync.py` (전체 플랫폼 리스팅 선조회로 신규 마스터 생성 차단 회귀 테스트 통과) |
 | **ISSUE-51** | SQLite 원자적 예산기의 다음 날 재관측 허용 미보장 결함 | 보통 | 🟢 해결완료 | `atomic_budget_enforcer.py` (quota_processed_vehicles 복합키 (processed_date, vehicle_id) 교정) |
 | **ISSUE-52** | 실제 네트워크 조회와 후보 검증의 인터페이스 혼선 | 보통 | 🟢 해결완료 | `cross_platform_matcher.py` (fetch_kb, fetch_encar, validate, record 4대 인터페이스 분리) |
+| **ISSUE-53** | 시장 관측 차량 자동 공개 위험 (무단 ACTIVE/PUBLISHED) | 심각 | 🟢 해결완료 | `carmanager_sync.py` (시장 관측 차량 publishing_status=DRAFT, is_public=0 강제) |
+| **ISSUE-54** | 자사 보유(OWNED) 차량 target_price 시장 관측 가격 덮어쓰기 결함 | 심각 | 🟢 해결완료 | `carmanager_sync.py` (자사 관리자 target_price 보호 및 회귀 테스트 통과) |
+| **ISSUE-55** | QuotaEnrichmentRunner - CrossPlatformMatcher API 불일치 및 예외 중복 | 보통 | 🟢 해결완료 | `quota_enrichment_runner.py` (validate_candidate, record_verified_match, SqliteAtomicBudgetEnforcer 통일) |
+| **ISSUE-56** | 운영 DB quota_processed_vehicles 단일 PK 잔존 결함 | 보통 | 🟢 해결완료 | `migrate_quota_processed_vehicles_composite_pk.py` (복합 PK 이전 및 동시성 20회 테스트 완료) |
+| **ISSUE-57** | 중복 병합 대표 마스터 선정 규칙 설명 불일치 및 증적 보강 | 보통 | 🟢 해결완료 | `audit_directive_119_task5_evidence.py` (자사 OWNED 실차량 우선 보존 설명 정정 및 사진 995장 무손실 증적 확보) |
+| **ISSUE-58** | 50대 목록 기반 저부하 증분 관측 아키텍처 부재 | 높음 | 🟢 해결완료 | `incremental_market_observer.py` (50대 목록 비교, 경량 가격 업데이트, 깊은 수집 큐 분리 검증 100% 통과) |
 
 ---
 

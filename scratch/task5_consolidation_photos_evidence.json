@@ -1,0 +1,103 @@
+{
+  "directive": "CHA-FICIAL DIRECTIVE 119 TASK 5",
+  "consolidation_strategy": {
+    "declared_previously": "EARLIEST_CREATED",
+    "actual_implemented_rule": "OWNED_SHOP_PRIORITY (자사 상사 관리 대상 AVAILABLE/FOR_SALE 마스터를 대표 마스터로 영구 보존하고, 시장 관측으로 이중 생성된 DRAFT 마스터를 안전 병합)",
+    "justification": "자사 마스터에는 관리자가 책정한 target_price, 실차량 검증 메타데이터가 포함되어 있으므로 단순 생성일시보다 상사 실운영 데이터가 우선 보존됨"
+  },
+  "target_masters_count": 112,
+  "total_associated_photos": 995,
+  "photo_samples": [
+    {
+      "photo_id": "8fd56b2a-d34c-44ec-87d5-db9910e91b76",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "EXTERIOR",
+      "photo_url": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    },
+    {
+      "photo_id": "200e8b79-f0f4-4923-b057-3ff24bb1143d",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "EXTERIOR",
+      "photo_url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    },
+    {
+      "photo_id": "dbe5c4dc-1846-460f-a4ff-1a2530ce44ef",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "EXTERIOR",
+      "photo_url": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    },
+    {
+      "photo_id": "51efbe34-cab6-404c-bd21-5b2dc44472b8",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "EXTERIOR",
+      "photo_url": "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    },
+    {
+      "photo_id": "f858eb71-4667-4f02-b4e4-9c07c7d0db70",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "INTERIOR",
+      "photo_url": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    },
+    {
+      "photo_id": "ad8d72aa-bce1-46e2-b905-8a4f9138abd1",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "INTERIOR",
+      "photo_url": "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    },
+    {
+      "photo_id": "aa5cf0da-a6ce-4185-9095-92a024859ca0",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "ENGINE",
+      "photo_url": "https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    },
+    {
+      "photo_id": "9ac772ab-8f25-449f-bb8d-2418c01b6dc8",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "EXTERIOR",
+      "photo_url": "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    },
+    {
+      "photo_id": "94f98451-fdd6-4611-9700-a63aa691f37e",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "EXTERIOR",
+      "photo_url": "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    },
+    {
+      "photo_id": "7956ccf0-476b-4fe3-b19e-5fe2b46d375d",
+      "vehicle_id": "d3e6fdea-b6b9-4556-a530-fe9ab7b317c4",
+      "category": "EXTERIOR",
+      "photo_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800&q=80",
+      "photo_source": "DEMO_GRAPHIC",
+      "public_visibility": "PUBLIC",
+      "approval_status": "APPROVED"
+    }
+  ],
+  "integrity_check": "PASS_ALL_PHOTOS_PRESERVED"
+}

@@ -202,13 +202,19 @@ class CarManagerSyncService:
                     if old_price != price_manwon:
                         stats["price_changed"] += 1
                         if not is_dry:
-                            new_target = old_target if is_locked else price_manwon
-                            cursor.execute("""
-                                UPDATE vehicles SET target_price = ?, updated_at = ? WHERE id = ?
-                            """, (new_target, now, v_id))
-                            cursor.execute("""
-                                UPDATE vehicle_listings SET advertised_price = ?, last_observed_at = ? WHERE platform = 'CARMANAGER' AND listing_id = ?
-                            """, (price_manwon, now, listing_id))
+                            # DIRECTIVE 119 P0: OWNED 자사 차량은 시장 관측기가 vehicles.target_price를 절대 덮어쓰지 않음!
+                            if rec.get("ownership_type") == "OWNED" and scope == "MARKET_OBSERVED":
+                                cursor.execute("""
+                                    UPDATE vehicle_listings SET advertised_price = ?, last_observed_at = ? WHERE platform = 'CARMANAGER' AND listing_id = ?
+                                """, (price_manwon, now, listing_id))
+                            else:
+                                new_target = old_target if is_locked else price_manwon
+                                cursor.execute("""
+                                    UPDATE vehicles SET target_price = ?, updated_at = ? WHERE id = ?
+                                """, (new_target, now, v_id))
+                                cursor.execute("""
+                                    UPDATE vehicle_listings SET advertised_price = ?, last_observed_at = ? WHERE platform = 'CARMANAGER' AND listing_id = ?
+                                """, (price_manwon, now, listing_id))
                     else:
                         stats["unchanged_count"] += 1
                         if not is_dry:
@@ -222,8 +228,9 @@ class CarManagerSyncService:
                 if not is_dry:
                     new_veh_id = str(uuid.uuid4())
                     init_target_price = price_manwon
-                    init_pub_status = "DRAFT" if is_unannounced else "PUBLISHED"
-                    init_is_public = 0 if is_unannounced else 1
+                    # DIRECTIVE 119 P0: 시장 관측 차량은 무조건 DRAFT 및 is_public=0 강제
+                    init_pub_status = "DRAFT"
+                    init_is_public = 0
                     ownership_to_set = "OWNED" if scope == "OWNED" else "MARKET_JANGHANPYEONG"
 
                     db_km_val = norm["mileage_km"]
