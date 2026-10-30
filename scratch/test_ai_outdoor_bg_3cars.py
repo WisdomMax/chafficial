@@ -1,8 +1,10 @@
 """
-[DECOMMISSIONED BY USER & DIRECTIVE 103]
-로컬 M4 rembg 배경 교체 방식은 사용자 최종 판정(어색한 합성, 차량 왜곡)에 따라 영구 폐기되었습니다.
-운영 서비스 및 관리자 승인 파이프라인에서 완전히 제외되었습니다.
+[DECOMMISSIONED BY USER & DIRECTIVE 104]
+로컬 M4 rembg 배경 교체 방식은 사용자 최종 판정에 따라 영구 폐기 및 실행 차단되었습니다.
 """
+import sys
+raise RuntimeError("[PERMANENTLY DECOMMISSIONED BY USER & DIRECTIVE 104] Local rembg and artificial background synthesis logic is completely disabled.")
+
 import sys
 import time
 import json

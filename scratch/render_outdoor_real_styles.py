@@ -1,4 +1,12 @@
+"""
+[DECOMMISSIONED BY USER & DIRECTIVE 104]
+로컬 M4 rembg 배경 교체 방식은 사용자 최종 판정에 따라 영구 폐기 및 실행 차단되었습니다.
+"""
+import sys
+raise RuntimeError("[PERMANENTLY DECOMMISSIONED BY USER & DIRECTIVE 104] Local rembg and artificial background synthesis logic is completely disabled.")
+
 import os
+
 import time
 from PIL import Image, ImageFilter, ImageEnhance
 from rembg import remove, new_session
