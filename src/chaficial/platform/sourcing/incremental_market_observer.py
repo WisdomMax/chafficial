@@ -368,7 +368,8 @@ class IncrementalMarketObserver:
                         next_retry_iso = None
                     else:
                         next_status = "FAILED"
-                        backoff_seconds = 60 * cur_retries
+                        # [DIRECTIVE 127 결함 3 수정] 진정한 지수 백오프(Exponential Backoff: 60s, 120s, 240s) 적용
+                        backoff_seconds = 60 * (2 ** (cur_retries - 1))
                         next_retry_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00", time.localtime(now_epoch + backoff_seconds))
 
                     c.execute("""

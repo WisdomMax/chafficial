@@ -51,8 +51,8 @@ def test_pipeline_integration_clean_run():
     test_db = os.path.join(temp_dir, "test_pipeline_clean.db")
     setup_isolated_db(test_db)
 
-    # Clean run with local snapshot
-    res = run_sync_pipeline(use_live_collector=False, dry_run=False, db_path=test_db)
+    # Clean run with local snapshot (explicit test commit enabled for isolated sandbox)
+    res = run_sync_pipeline(use_live_collector=False, dry_run=False, db_path=test_db, allow_historical_test_commit=True)
     assert res["status"] == "SUCCESS", f"Pipeline must return SUCCESS, got {res['status']}"
     assert res["total_cars"] == 1764
 
@@ -86,21 +86,28 @@ def test_pipeline_rollback_on_market_error():
     from chaficial.platform.sourcing.carmanager_sync import CarManagerSyncService
     orig_run_sync = CarManagerSyncService.run_sync
 
-    def mocked_run_sync(self, current_snapshot, scope="OWNED", min_expected_count=None, dry_run=False, connection=None):
+    def mocked_run_sync(self, current_snapshot, scope="OWNED", *args, **kwargs):
         if scope == "MARKET_OBSERVED":
             raise sqlite3.OperationalError("Simulated internal SQL syntax failure during MARKET phase!")
-        return orig_run_sync(self, current_snapshot, scope, min_expected_count, dry_run, connection)
+        return orig_run_sync(self, current_snapshot, scope=scope, *args, **kwargs)
 
     CarManagerSyncService.run_sync = mocked_run_sync
 
+    # [DIRECTIVE 127 결함 4 수정]: 위양성 방지 - 정확한 예외 타입(OperationalError) 및 특정 메시지 확인
+    caught_expected_error = False
     try:
-        run_sync_pipeline(use_live_collector=False, dry_run=False, db_path=test_db)
-        assert False, "FAIL: Should have raised exception during pipeline run!"
-    except Exception as e:
-        print(f"  -> Caught expected simulated failure: {e}")
+        run_sync_pipeline(use_live_collector=False, dry_run=False, db_path=test_db, allow_historical_test_commit=True)
+    except sqlite3.OperationalError as e:
+        if "Simulated internal SQL syntax failure during MARKET phase!" in str(e):
+            caught_expected_error = True
+            print(f"  -> Caught expected specific failure: {e}")
+        else:
+            raise e
+    finally:
+        # Restore original function
+        CarManagerSyncService.run_sync = orig_run_sync
 
-    # Restore original function
-    CarManagerSyncService.run_sync = orig_run_sync
+    assert caught_expected_error is True, "FAIL: Expected MARKET phase OperationalError did not occur!"
 
     # Verify ATOMIC ROLLBACK: zero listings, zero vehicles, zero collection runs must remain!
     conn = sqlite3.connect(test_db)

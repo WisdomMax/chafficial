@@ -1,7 +1,26 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 02:00:00 KST  
+> **최종 갱신일:** 2026-10-31 02:15:00 KST  
+
+---
+
+## [DIRECTIVE 127] 시계열 관측 멱등성 재설계(연속 관측·체류일수 보존 P0 완결), 파일명 무관 운영 격리, 지수 백오프 및 위양성 제거
+- **일시:** 2026-10-31 02:15 KST
+- **수행 태스크**:
+  1. **TASK 1 (P0: 동일 원본 해시 글로벌 차단 결함 수정 및 연속 관측 보존, ISSUE-97)**:
+     - `src/chaficial/platform/sourcing/market_timeseries_engine.py`: 글로벌 `raw_sha256` 중복 차단 쿼리를 제거하고, **동일 관측 세션(`source, search_condition, raw_sha256, started_at`)의 중복 재전송만 차단**하도록 수정.
+     - 다음 날(`started_at` 상이) 동일 차량 1,764대가 변동 없이 관측된 경우: 관측 스냅샷(`observations_count=1,764`)은 정상 적재되어 체류일수(Days on Market)가 정확히 보존되고, 가격 변동이 없으므로 이벤트는 `0 events`로 자연 산출됨을 입증.
+     - `src/chaficial/platform/sourcing/carmanager_sync.py`: `HISTORICAL_REPLAY` 모드에서는 무변경 매물의 `last_observed_at`을 오늘 날짜로 변조하지 않고 보존하도록 수정.
+     - `scratch/test_directive_126_task1_replay_guard.py` Test 2 & Test 3 100% Pass (1,764/1,764대 전수 가격·상태·last_observed_at 100% 불변 실측).
+  2. **TASK 2 (과거 스냅샷 방어의 DB 파일명 의존 제거, ISSUE-98)**:
+     - `scripts/run_daily_sync.py`: 파일명 문자열 매칭(`chamart_platform_demo.db`)을 완전히 제거하고, `observation_mode == "HISTORICAL_REPLAY"`인 경우 `--live`가 아니면 어떤 DB든 운영 커밋을 원천 거부(DRY_RUN 강제).
+  3. **TASK 3 (수집 시각 임의 날짜 하드코딩 왜곡 제거, ISSUE-99)**:
+     - `scripts/run_daily_sync.py`: `summary.get("collected_at")` 부재 시 임의 하드코딩 날짜(`2026-10-27T10:00:00+09:00`)를 제거하고 `UNKNOWN` 유지.
+  4. **TASK 4 (진정한 지수 백오프 적용, ISSUE-100)**:
+     - `src/chaficial/platform/sourcing/incremental_market_observer.py`: `backoff_seconds = 60 * (2 ** (cur_retries - 1))` (1회차 60s, 2회차 120s, 3회차 240s) 공식 적용.
+  5. **TASK 5 (롤백 테스트 위양성 제거 및 무결성 보강, ISSUE-101)**:
+     - `scratch/test_directive_126_task4_pipeline_integration.py`: `assert False`가 `except Exception`에 잡히는 위양성 구조를 제거하고 구체적 `sqlite3.OperationalError` 예외와 에러 메시지를 엄격 대조하도록 교정 (100% Pass).
 
 ---
 

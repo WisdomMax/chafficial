@@ -114,7 +114,9 @@ class CarManagerSyncService:
         scope: str = "OWNED",
         min_expected_count: Optional[int] = None,
         dry_run: bool = False,
-        connection: Optional[sqlite3.Connection] = None
+        connection: Optional[sqlite3.Connection] = None,
+        observation_mode: str = "LIVE_OBSERVED",
+        observed_at: Optional[str] = None
     ) -> Dict[str, Any]:
         started_at = datetime.now().isoformat()
         is_dry = self.dry_run or dry_run
@@ -240,9 +242,17 @@ class CarManagerSyncService:
                     else:
                         stats["unchanged_count"] += 1
                         if not is_dry:
-                            cursor.execute("""
-                                UPDATE vehicle_listings SET last_observed_at = ?, unverified_consecutive_count = 0 WHERE platform = 'CARMANAGER' AND listing_id = ?
-                            """, (now, listing_id))
+                            # [DIRECTIVE 126/127 P0]: HISTORICAL_REPLAY 모드에서는 과거 데이터로 현재 시각의 last_observed_at을 왜곡하지 않음
+                            if observation_mode == "LIVE_OBSERVED":
+                                obs_timestamp = observed_at or now
+                                cursor.execute("""
+                                    UPDATE vehicle_listings SET last_observed_at = ?, unverified_consecutive_count = 0 WHERE platform = 'CARMANAGER' AND listing_id = ?
+                                """, (obs_timestamp, listing_id))
+                            else:
+                                # 과거 재생 모드: consecutive count만 리셋하고 last_observed_at은 보존
+                                cursor.execute("""
+                                    UPDATE vehicle_listings SET unverified_consecutive_count = 0 WHERE platform = 'CARMANAGER' AND listing_id = ?
+                                """, (listing_id,))
                     continue
 
                 # 2) 완전히 새로운 매물인 경우에만 신규 마스터 생성

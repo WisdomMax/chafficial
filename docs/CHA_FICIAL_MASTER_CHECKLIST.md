@@ -106,6 +106,11 @@
 | **ISSUE-94** | 상세조회 큐 FAILED 항목 무제한 즉시 재선점 및 lease_expires_at NULL 우회 결함 | 높음 | 🟢 해결완료 | `incremental_market_observer.py` (next_retry_at 백오프 부여, lease_expires_at NULL 엄격 차단) |
 | **ISSUE-95** | 카매니저 실시간 T2 관측 원본(50대) 미확보 상태 규명 | 보통 | 🟡 관측대기 | `datapart_page1_real.html` 4.7KB 빈 셸 확인, 신규 캡처 페이로드 대기 상태(REAL_PILOT_PENDING_NEW_CAPTURE) 정직 유지 |
 | **ISSUE-96** | 일일 동기화 파이프라인 db_path 하드코딩으로 인한 독립 테스트 격리 실패 | 보통 | 🟢 해결완료 | `scripts/run_daily_sync.py` (db_path 파라미터 완전 존중, 외부 HTTP 0건 보장 통합 테스트 완료) |
+| **ISSUE-97** | 글로벌 원본 해시 중복 차단으로 인한 다음 날 연속 관측(Days on Market) 누락 결함 (P0) | 심각 | 🟢 해결완료 | `market_timeseries_engine.py` (동일 관측 세션 재전송만 차단, 일자별 연속 관측 정상 적재 및 0 변동 이벤트 입증) |
+| **ISSUE-98** | 과거 스냅샷 방어의 DB 파일명 의존 취약점 | 보통 | 🟢 해결완료 | `scripts/run_daily_sync.py` (파일명과 무관하게 HISTORICAL_REPLAY 모드의 라이브 커밋 100% 차단) |
+| **ISSUE-99** | 출처 없는 수집 시각 임의 하드코딩 날짜 왜곡 결함 | 낮음 | 🟢 해결완료 | `scripts/run_daily_sync.py` (임의 날짜 하드코딩 배제, UNKNOWN 유지) |
+| **ISSUE-100** | 큐 재시도 대기 선형 백오프 지적에 따른 지수 백오프 전환 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (60s, 120s, 240s 지수 백오프 공식 적용) |
+| **ISSUE-101** | 롤백 테스트 위양성(assert False 취약점) 및 세부 필드(가격·상태·관측시각) 불변성 검증 부재 | 보통 | 🟢 해결완료 | `test_directive_126_task4_pipeline_integration.py`, `test_directive_126_task1_replay_guard.py` (1,764/1,764대 전수 불변 검증) |
 
 ---
 

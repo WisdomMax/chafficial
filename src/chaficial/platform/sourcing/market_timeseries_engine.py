@@ -158,22 +158,28 @@ class MarketTimeSeriesEngine:
                 "message": f"Execution run_id {run_id} already recorded. Duplicate run skipped."
             }
 
-        # [DIRECTIVE 126 TASK 1 (ISSUE-92): raw_sha256 기준 재실행 멱등성 검증 - 동일 원본 해시 중복 이벤트 차단]
-        c.execute("SELECT run_id FROM market_collection_runs WHERE raw_sha256 = ? AND status = 'SUCCESS' LIMIT 1", (raw_sha256,))
-        existing_hash_run = c.fetchone()
-        if existing_hash_run:
+        # [DIRECTIVE 127 P0: 동일 관측 세션 재전송 중복 차단 (일자별 연속 관측 보존)]
+        # 동일 source, search_condition, 관측시점(started_at), 원본 해시(raw_sha256)가 모두 일치하는 동일 실행 재전송만 차단!
+        # 다른 시점(날짜)의 관측은 내용(해시)이 동일하더라도 정상 적재되어 Days on Market 및 체류일수가 보존됨.
+        c.execute("""
+            SELECT run_id FROM market_collection_runs 
+            WHERE source = ? AND search_condition = ? AND raw_sha256 = ? AND started_at = ? AND status = 'SUCCESS' 
+            LIMIT 1
+        """, (source, search_condition, raw_sha256, started_at))
+        existing_same_session = c.fetchone()
+        if existing_same_session:
             if owns_conn:
                 conn.close()
             return {
-                "run_id": existing_hash_run[0],
-                "status": "ALREADY_RECORDED_HASH",
+                "run_id": existing_same_session[0],
+                "status": "ALREADY_RECORDED_SESSION",
                 "observations_count": 0,
                 "events_count": 0,
                 "appeared_count": 0,
                 "price_decreased_count": 0,
                 "price_increased_count": 0,
                 "disappeared_count": 0,
-                "message": f"Snapshot with raw_sha256 {raw_sha256} already successfully recorded under run_id {existing_hash_run[0]}. Duplicate event generation blocked."
+                "message": f"Session at {started_at} with raw_sha256 {raw_sha256} already successfully recorded under run_id {existing_same_session[0]}. Duplicate transmission blocked."
             }
 
         # [TASK 4: 동일 source 및 search_condition 범위 내 최신 run_id 조회]

@@ -39,7 +39,7 @@ async def collect_live_snapshot(max_pages: int = 89):
     result = await collector.run_full_collection(max_pages=max_pages, throttle_sec=0.35)
     return result
 
-def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry_run: bool = False, db_path: str = "data/chamart/chamart_platform_demo.db"):
+def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry_run: bool = False, db_path: str = "data/chamart/chamart_platform_demo.db", allow_historical_test_commit: bool = False):
     print("========================================================")
     print(f"[*] Chaficial Daily Sync Pipeline: {datetime.now().isoformat()} (LIVE_COLLECTOR={use_live_collector}, DRY_RUN={dry_run})")
     print("========================================================")
@@ -70,17 +70,15 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
         with open(latest_snapshot_path, "r", encoding="utf-8") as f:
             full_data = json.load(f)
         all_cars = full_data.get("cars", [])
-        # 원본 생성 시각 보존
+        # [DIRECTIVE 127 결함 2 수정] 원본 생성 시각이 없을 때 임의 날짜 하드코딩 배제 -> 'UNKNOWN' 유지
         summary = full_data.get("summary", {})
-        capture_time = summary.get("collected_at") or "2026-10-27T10:00:00+09:00"
+        capture_time = summary.get("collected_at") or "UNKNOWN"
         print(f"[+] Loaded verified historical snapshot with {len(all_cars)} cars (Captured at {capture_time}).")
 
-        # DIRECTIVE 126 TASK 1 (P0, ISSUE-92): 과거 스냅샷으로 운영 DB에 오늘 날짜 신규 관측/가격변동을 기록하는 행위 원천 차단!
-        real_db_abs = os.path.realpath(db_path)
-        is_real_prod = "chamart_platform_demo.db" in real_db_abs and "sandbox" not in real_db_abs and "test" not in real_db_abs
-        if is_real_prod and not dry_run:
-            print("[!] CRITICAL P0 GUARD: Historical snapshot (HISTORICAL_REPLAY) CANNOT be committed to operational production DB!", file=sys.stderr)
-            print("[!] Production commits require verified real-time T2 observations. Forcing DRY_RUN=True.", file=sys.stderr)
+        # [DIRECTIVE 127 결함 1 수정] 파일명 문자열에 의존하지 않고, HISTORICAL_REPLAY 모드는 실제 라이브 수집이 아니므로 운영 커밋 원천 차단!
+        if not use_live_collector and not dry_run and not allow_historical_test_commit:
+            print("[!] CRITICAL P0 GUARD: Historical snapshot (HISTORICAL_REPLAY) CANNOT be committed as live operational data!", file=sys.stderr)
+            print("[!] Live commits strictly require verified real-time T2 observations (--live). Forcing DRY_RUN=True.", file=sys.stderr)
             dry_run = True
 
     # 1. 전체 수집량 검증 (최소 1,500대 미만 시 즉시 차단)
@@ -129,7 +127,8 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
             atomic_conn.execute("BEGIN IMMEDIATE;")
 
         # 4. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록 (선행)
-        ts_res = ts_engine.record_snapshot(all_cars, started_at=capture_time, finished_at=capture_time, dry_run=dry_run, connection=atomic_conn)
+        ts_started = None if capture_time == "UNKNOWN" else capture_time
+        ts_res = ts_engine.record_snapshot(all_cars, started_at=ts_started, finished_at=ts_started, dry_run=dry_run, connection=atomic_conn)
         print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
 
         # 시계열 저장이 성공 또는 이미 기록된 해시가 아니면 즉시 롤백 및 중단
@@ -137,13 +136,19 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
             raise RuntimeError(f"Market TimeSeries failed with status '{ts_res.get('status')}'.")
 
         # 5. 우리 상사 운영 동기화 (시계열 성공 확인 후 실행)
-        owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_THRESHOLD, dry_run=dry_run, connection=atomic_conn)
+        owned_res = service.run_sync(
+            current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_THRESHOLD, 
+            dry_run=dry_run, connection=atomic_conn, observation_mode=observation_mode, observed_at=ts_started
+        )
         print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
         if owned_res.get("status") != "SUCCESS":
             raise RuntimeError(f"Owned Sync failed with status '{owned_res.get('status')}'.")
 
         # 6. 장한평 시장 운영 동기화
-        market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_OBSERVED_THRESHOLD, dry_run=dry_run, connection=atomic_conn)
+        market_res = service.run_sync(
+            current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_OBSERVED_THRESHOLD, 
+            dry_run=dry_run, connection=atomic_conn, observation_mode=observation_mode, observed_at=ts_started
+        )
         print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, New={market_res['new_inserted']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
         if market_res.get("status") != "SUCCESS":
             raise RuntimeError(f"Market Sync failed with status '{market_res.get('status')}'.")
