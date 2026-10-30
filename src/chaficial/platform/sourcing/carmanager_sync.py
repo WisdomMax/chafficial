@@ -127,12 +127,15 @@ class CarManagerSyncService:
         current_snapshot: List[Dict[str, Any]], 
         sold_snapshot: Optional[List[Dict[str, Any]]] = None,
         scope: str = "OWNED",
-        min_expected_count: int = 1
+        min_expected_count: int = 1,
+        dry_run: bool = False
     ) -> Dict[str, Any]:
         """
         scope:
           - 'OWNED': 우리 상사 보유 매물 전용 동기화 (listing_ownership_type = 'OWNED')
           - 'MARKET_OBSERVED': 장안평 매매단지 타 상사 관측 매물 전용 동기화 (listing_ownership_type = 'MARKET_JANGHANPYEONG')
+        dry_run:
+          - True: DB 쓰기 및 커밋을 100% 차단하고 변경 예상치만 리포트 (True Read-Only Mode)
         """
         started_at = datetime.now().isoformat()
         conn = sqlite3.connect(self.db_path)
@@ -364,6 +367,14 @@ class CarManagerSyncService:
                         cursor.execute("UPDATE vehicles SET status = 'SOLD', is_public = 0, updated_at = ? WHERE id = ?", (now, v_id))
                         cursor.execute("UPDATE vehicle_listings SET listing_status = 'SOLD' WHERE listing_id = ?", (s_id,))
                         stats["sold_count"] += 1
+
+            if dry_run:
+                conn.rollback()
+                stats["status"] = "DRY_RUN_READ_ONLY"
+                finished_at = datetime.now().isoformat()
+                stats["finished_at"] = finished_at
+                conn.close()
+                return stats
 
             conn.commit()
 

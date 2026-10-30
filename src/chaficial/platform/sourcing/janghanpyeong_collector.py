@@ -76,7 +76,8 @@ class JanghanpyeongCollector:
                 const el = document.querySelector('#EncCheck');
                 return el ? el.value : '5becvnNSfoHCiGE5GKa5ZQ==';
             }''')
-            print(f"[+] Initialized session EncCheck token: {enc_check}", flush=True)
+            masked_token = (enc_check[:4] + "****" + enc_check[-4:]) if enc_check and len(enc_check) > 8 else "****"
+            print(f"[+] Initialized session EncCheck token: {masked_token}", flush=True)
 
             # 3. 1페이지부터 max_pages까지 전체 순회
             all_cars = []

@@ -1,6 +1,24 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
+> **최종 갱신일:** 2026-10-30 22:00:00 KST  
+
+---
+
+## [DIRECTIVE 108] 마스터 체크리스트 표기 시정·P0 이슈 추적표 신설·--dry-run 완전 읽기전용화
+- **일시:** 2026-10-30 22:00 KST
+- **지적된 결함:**
+  1. 에이전트 자체 판단 완료와 감독 승인 완료의 혼용.
+  2. P0 결함 추적표 부재 및 실제 사업 운영 F 영역 누락.
+  3. `--dry-run` 모드가 실제로 DB를 수정하는 결함.
+  4. 세션 토큰 로그 노출 (보안 취약점).
+- **조치 및 구현:**
+  1. `docs/CHA_FICIAL_MASTER_CHECKLIST.md`: 표기 기준 엄격 재정비 (감독 승인 [x] 🟢, 검증 대기 [ ] 🟡, 미구현 [ ] ⚪️), P0 이슈 추적표(ISSUE-01~11) 신설, F영역(차마트 상업 운영) 신설.
+  2. `src/chaficial/platform/sourcing/carmanager_sync.py`: `dry_run=True` 지원 -> 커밋 차단 및 롤백, DB 쓰기 0건 완벽한 읽기 전용 모드 확립.
+  3. `scripts/run_daily_sync.py`: `--dry-run` 플래그 시 `dry_run=True` 직결.
+  4. `src/chaficial/platform/sourcing/janghanpyeong_collector.py`: 세션 토큰 마스킹(`enc_check[:4] + "****"`) 적용.
+- **검증 증거:**
+  - `python3 scripts/run_daily_sync.py --dry-run` 실행: `Status=DRY_RUN_READ_ONLY` 및 DB 쓰기 0건 검증 완료.
 
 ---
 
@@ -21,7 +39,6 @@
   6. 사진 해상도 정량 분격: 고해상도 2,694장(84.2%) + 인덱싱/구형 505장(15.8%) 정직하게 분격 보고.
 - **검증 증거:**
   - `scratch/test_directive_107_guards.py`: GUARD 1, GUARD 2, GUARD 3 SQL 전수 통과.
-  - 마스터 체크리스트 `docs/CHA_FICIAL_MASTER_CHECKLIST.md` 및 본 감사 로그 신설.
 
 ---
 
@@ -69,3 +86,27 @@
   1. `scratch/test_ai_outdoor_bg_3cars.py` 등 합성 스크립트 실행부 영구 봉인 (`raise RuntimeError`).
   2. `photo_pipeline.py`에 PIL Image 디코딩 검증 및 이중 SHA256 해시 검사 구현.
   3. DB 고아 레코드 전수 정화: Listings 0건, Photos 0건, Transactions 0건 달성.
+
+---
+
+## [DIRECTIVE 101~103] 장한평 1,764대 시장 관측 데이터베이스 격리
+- **일시:** 2026-10-30 19:30 KST
+- **지적된 결함:** 장한평 매매단지 전체 시장 매물(1,600여 대)이 우리 상사 보유 매물과 혼합되어 고객에게 오표시될 위험.
+- **조치:** `listing_ownership_type`에 `OWNED`와 `MARKET_JANGHANPYEONG`을 엄격 분리하여 DB에 적재.
+
+---
+
+## [DIRECTIVE 098~100] 장한평 89페이지 고속 수집기(JanghanpyeongCollector) 프로토타입
+- **일시:** 2026-10-30 18:00 KST
+- **조치:** Playwright 세션 기반 HTTP POST `/Car/DataPart` 엔드포인트 역공학을 통해 89페이지 1,764대를 0.5초 간격으로 저부하 수집하는 파이프라인 개발.
+
+---
+
+## [DIRECTIVE 095~097] 관리자 보안 점검 및 가짜 기본값(더미) 폐기
+- **일시:** 2026-10-30 14:00 KST
+- **지적된 결함:**
+  1. 관리자 API 서버측 인증 점검 및 가짜 VIN/제원 생성 로직 존재.
+- **조치:**
+  1. Mac mini 로컬 관리자 + Cloudflare Access 보안 정책 강화.
+  2. 가짜 `VIN-{carSeq}` 생성 로직 영구 삭제 -> 실데이터 없으면 `NULL` 유지 원칙 확립.
+  3. 가격 0원 차량 비공개 초안 처리.

@@ -36,9 +36,9 @@ async def collect_live_snapshot(max_pages: int = 89):
     result = await collector.run_full_collection(max_pages=max_pages, throttle_sec=0.35)
     return result
 
-def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89):
+def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_run: bool = False):
     print("========================================================")
-    print(f"[*] Chaficial Live Daily Sync: {datetime.now().isoformat()}")
+    print(f"[*] Chaficial Live Daily Sync: {datetime.now().isoformat()} (DRY_RUN={dry_run})")
     print("========================================================")
 
     all_cars = []
@@ -90,14 +90,14 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89):
         sys.exit(1)
 
     # 3. 우리 상사 동기화 (최소 60대 기대)
-    owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_THRESHOLD)
+    owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_THRESHOLD, dry_run=dry_run)
     print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
     if "ERROR" in owned_res["status"]:
         print(f"[!] Owned Sync Error: {owned_res['status']}", file=sys.stderr)
         sys.exit(1)
 
     # 4. 장한평 시장 동기화 (최소 1,500대 기대)
-    market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_THRESHOLD)
+    market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_THRESHOLD, dry_run=dry_run)
     print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, New={market_res['new_inserted']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
     if "ERROR" in market_res["status"]:
         print(f"[!] Market Sync Error: {market_res['status']}", file=sys.stderr)
@@ -109,6 +109,7 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89):
     with open(archive_path, "w", encoding="utf-8") as f:
         json.dump({
             "timestamp": datetime.now().isoformat(),
+            "dry_run": dry_run,
             "total_cars": len(all_cars),
             "owned_cars": len(owned_cars),
             "market_cars": len(market_cars),
@@ -118,10 +119,10 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89):
 
     print(f"[+] Archived snapshot run to {archive_path}")
     print("========================================================")
-    print(f"[+] Live Sync Completed Successfully at {datetime.now().isoformat()}")
+    print(f"[+] Live Sync Completed Successfully at {datetime.now().isoformat()} (DRY_RUN={dry_run})")
     print("========================================================")
 
 if __name__ == "__main__":
-    # 기본값: LIVE 실시간 크롤링 실행 (--dry-run 명시 시에만 로컬 파일 사용)
+    # 기본값: LIVE 실시간 크롤링 실행 (--dry-run 명시 시에만 읽기 전용 및 로컬 파일 사용)
     is_dry_run = "--dry-run" in sys.argv
-    run_sync_pipeline(use_live_collector=(not is_dry_run))
+    run_sync_pipeline(use_live_collector=(not is_dry_run), dry_run=is_dry_run)
