@@ -70,7 +70,7 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
         print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
         sys.exit(1)
 
-    service = CarManagerSyncService(db_path="data/chamart/chamart_platform_demo.db")
+    service = CarManagerSyncService(db_path="data/chamart/chamart_platform_demo.db", dry_run=dry_run)
 
     # 우리 상사 매물 분리 ((주)더쿨모터스 및 더쿨모터스)
     owned_cars = []

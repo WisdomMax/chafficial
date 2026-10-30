@@ -1,7 +1,31 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-30 22:30:00 KST  
+> **최종 갱신일:** 2026-10-30 22:35:00 KST  
+
+---
+
+## [DIRECTIVE 111 - 1차 보고] 1,764대 시계열 실데이터 오염 전수 감사 및 공통 정규화 계층 전수 복구
+- **일시:** 2026-10-30 22:35 KST
+- **지적된 결함 (P0-21 ~ P0-25):**
+  1. **P0-21. 실데이터 필드 불일치 오염**: 수집기 키(`price_manwon`, `model`, `model_year`, `shop`, `mileage`)와 시계열 엔진 키(`price`, `carname`, `caryear`, `shopname`, `km`) 불일치로 인해 운영 DB 1,764대 전체가 가격 0원, 차종 NULL, 연식 NULL, 상사명 NULL로 저장된 치명적 결함 발견.
+  2. **P0-22. 실시간 관측 증거 불충분**: 과거 JSON 재사용과 실시간 라이브 수집 미분리.
+  3. **P0-23. 불완전 수집 검증 결함**: 원본 총건수와 고유 ID 수 일치 미강제.
+  4. **P0-24. 실제 실행 경로 통합 테스트 부족**.
+  5. **P0-25. dry-run 초기화 경로 재검증 결함**: `run_daily_sync.py`에서 `CarManagerSyncService(dry_run=dry_run)` 미전달로 인한 DDL 발생 가능성.
+- **조치 및 구현:**
+  1. **TASK 1 전수 감사**: 운영 DB 1,764건 SQL 전수 집계 -> 가격 0원 1,764건(100%), 차종 NULL 1,764건(100%), 연식 NULL 1,764건(100%), 상사명 NULL 1,764건(100%) 오염 사실 정확히 입증 (`audit_directive_111_task1.py`).
+  2. **TASK 2 공통 정규화 계층(`normalizer.py`) 구축**:
+     - `src/chaficial/platform/sourcing/normalizer.py` 신설: `normalize_carmanager_record()` 함수를 통해 수집기, 시계열 엔진, 운영 동기화 엔진이 100% 동일한 표준 스키마 딕셔너리를 사용하도록 단일화.
+  3. **TASK 3 시계열 데이터 전수 복구**:
+     - DB 백업 생성: `data/chamart/chamart_platform_demo.db.backup_directive111` (6.6MB).
+     - 오염된 기존 run(`e0698ccf-15bc-4a1c-bc04-81621bae6473`)을 `QUARANTINED_DIRTY_MAPPING`으로 변경하여 AI 학습 데이터에서 즉시 격리.
+     - 원본 1,764대 JSON을 공통 정규화 계층으로 전수 재적재 (`recover_directive_111_task3.py`).
+     - **복구 후 SQL 결과**: 차종 NULL 0건 (100% 정상), 연식 NULL 0건 (100% 정상), 상사명 NULL 0건 (100% 정상), 무작위 표본 30대 원본-DB 대조 일치율 **30/30 (100.0%)** 달성.
+  4. **P0-25 조치**: `scripts/run_daily_sync.py`에서 `CarManagerSyncService(db_path=..., dry_run=dry_run)`으로 `dry_run` 명시 전달.
+- **검증 증거:**
+  - `scratch/directive_111_task1_audit_result.json`: 오염 전수 감사 결과.
+  - `scratch/directive_111_recovery_evidence.json`: 1,764건 복구 및 무작위 30대 100% 일치 증거.
 
 ---
 

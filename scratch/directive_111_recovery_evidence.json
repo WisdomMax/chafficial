@@ -1,0 +1,283 @@
+{
+  "recovered_run_id": "b96c32b6-9e6d-4498-8304-90a9e29aa5cf",
+  "quarantined_dirty_run_id": "e0698ccf-15bc-4a1c-bc04-81621bae6473",
+  "total_recovered": 1764,
+  "zero_price_count": 1591,
+  "null_model_count": 0,
+  "null_year_count": 0,
+  "null_shop_count": 0,
+  "null_mileage_count": 0,
+  "samples_match_rate": "30/30 (100.0%)",
+  "sample_audit_details": [
+    {
+      "encarno": "jNS49TZR+jcT1A4..",
+      "model": "스포티지 더 볼드 2.0 디젤 4WD 인텔리전트",
+      "price": "0만원",
+      "year": 2019,
+      "shop": "더이룸카",
+      "km": "51000km",
+      "match": true
+    },
+    {
+      "encarno": "5owrvC+olGS+Qii..",
+      "model": "몬데오 4세대 2.0 TDCI 트렌드",
+      "price": "0만원",
+      "year": 2016,
+      "shop": "선인자동차",
+      "km": "25000km",
+      "match": true
+    },
+    {
+      "encarno": "/WE/4Otqx4FfC1s..",
+      "model": "스타리아 4WD 디젤 라운지 인스퍼레이션 9인승",
+      "price": "0만원",
+      "year": 2022,
+      "shop": "더쿨모터스",
+      "km": "118000km",
+      "match": true
+    },
+    {
+      "encarno": "r7JHZr3ASOp6Wxz..",
+      "model": "BMW X6 xDrive30d",
+      "price": "0만원",
+      "year": 2018,
+      "shop": "대영랜드자동",
+      "km": "226000km",
+      "match": true
+    },
+    {
+      "encarno": "HvR20EqrS03e7rW..",
+      "model": "EQ900 3.8 GDI AWD 프리미엄 럭셔리",
+      "price": "0만원",
+      "year": 2017,
+      "shop": "서울자동차판",
+      "km": "38000km",
+      "match": true
+    },
+    {
+      "encarno": "Fblsg6iuDL2zxxf..",
+      "model": "G80(RG3) 2.5 가솔린 터보 AWD 스포츠팩",
+      "price": "0만원",
+      "year": 2026,
+      "shop": "준모터스",
+      "km": "12000km",
+      "match": true
+    },
+    {
+      "encarno": "E98TQemdeJVtiNT..",
+      "model": "C30 D3",
+      "price": "0만원",
+      "year": 2019,
+      "shop": "선인자동차",
+      "km": "28000km",
+      "match": true
+    },
+    {
+      "encarno": "87hDXnlycjEOG1n..",
+      "model": "Q5 (FY) 50 TDI 콰트로 프리미엄",
+      "price": "3550만원",
+      "year": 2020,
+      "shop": "와이오토",
+      "km": "81000km",
+      "match": true
+    },
+    {
+      "encarno": "qmnJxgUZfsJks/t..",
+      "model": "기블리 3.0S Q4",
+      "price": "0만원",
+      "year": 2019,
+      "shop": "원진오토모빌",
+      "km": "57000km",
+      "match": true
+    },
+    {
+      "encarno": "57j7tNvsRka6tf+..",
+      "model": "XM3 1.6 GTe RE",
+      "price": "0만원",
+      "year": 2023,
+      "shop": "용정상사(상",
+      "km": "20000km",
+      "match": true
+    },
+    {
+      "encarno": "mR/sP7vKQGeb8my..",
+      "model": "렉스턴 스포츠 칸 디젤 2.2 4WD 5링크 프레스티지 스페셜",
+      "price": "0만원",
+      "year": 2020,
+      "shop": "경기모터스",
+      "km": "142000km",
+      "match": true
+    },
+    {
+      "encarno": "r37nZuxvTXzEcTL..",
+      "model": "아슬란 G300 모던 기본형",
+      "price": "0만원",
+      "year": 2015,
+      "shop": "엠모터스",
+      "km": "301000km",
+      "match": true
+    },
+    {
+      "encarno": "cP5EWkiFFzcbVw2..",
+      "model": "뉴토러스 2.0 SEL 에코부스트",
+      "price": "0만원",
+      "year": 2015,
+      "shop": "선인자동차",
+      "km": "15000km",
+      "match": true
+    },
+    {
+      "encarno": "45KY0IlfaJQj9ru..",
+      "model": "익스플로러 6세대 2.3 리미티드 4WD",
+      "price": "0만원",
+      "year": 2020,
+      "shop": "선인자동차",
+      "km": "6485km",
+      "match": true
+    },
+    {
+      "encarno": "g1OSm9u/x1v0sEt..",
+      "model": "포터Ⅱ (PORTERⅡ)",
+      "price": "0만원",
+      "year": 2025,
+      "shop": "인증자동차",
+      "km": "6626km",
+      "match": true
+    },
+    {
+      "encarno": "SU/1ipsOAuE0/aA..",
+      "model": "삼성16톤카고트럭",
+      "price": "0만원",
+      "year": 1997,
+      "shop": "부부모터스투",
+      "km": "54000km",
+      "match": true
+    },
+    {
+      "encarno": "00tsShK0LjGF1Y6..",
+      "model": "티볼리 에어 2WD 가솔린 1.6 IX",
+      "price": "890만원",
+      "year": 2018,
+      "shop": "한성상사",
+      "km": "87000km",
+      "match": true
+    },
+    {
+      "encarno": "/uIjqsVgLS9g46/..",
+      "model": "뉴 MKZ 하이브리드 리저브",
+      "price": "0만원",
+      "year": 2020,
+      "shop": "선인자동차",
+      "km": "10000km",
+      "match": true
+    },
+    {
+      "encarno": "4h/NpFGsF3onANq..",
+      "model": "쏘나타 하이브리드 (DN8) 프리미엄",
+      "price": "0만원",
+      "year": 2020,
+      "shop": "서울자동차판",
+      "km": "64000km",
+      "match": true
+    },
+    {
+      "encarno": "Dp197JhohKsawWW..",
+      "model": "S8 5.2 FSI 콰트로",
+      "price": "0만원",
+      "year": 2010,
+      "shop": "엠모터스",
+      "km": "71000km",
+      "match": true
+    },
+    {
+      "encarno": "ElFkdTibWeJEPAO..",
+      "model": "S 컨버터블 클래식 런치팩 3세대",
+      "price": "0만원",
+      "year": 2023,
+      "shop": "와이오토",
+      "km": "72000km",
+      "match": true
+    },
+    {
+      "encarno": "ZweTwBM3bISJezg..",
+      "model": "E-클래스 W213 E250 익스클루시브",
+      "price": "0만원",
+      "year": 2021,
+      "shop": "제이제이오토",
+      "km": "109000km",
+      "match": true
+    },
+    {
+      "encarno": "gy+2GSB3Mh8VQxe..",
+      "model": "더 뉴 그랜저 IG 2.5 르블랑",
+      "price": "0만원",
+      "year": 2022,
+      "shop": "서울자동차판",
+      "km": "50000km",
+      "match": true
+    },
+    {
+      "encarno": "/a45HCVNCRRQDjT..",
+      "model": "그랜저 IG 3.0 LPI 모던",
+      "price": "0만원",
+      "year": 2018,
+      "shop": "에스씨오토",
+      "km": "86000km",
+      "match": true
+    },
+    {
+      "encarno": "dU8DIjbNB216Wy4..",
+      "model": "X4 (F26)  xDrive 20d M 스포츠",
+      "price": "0만원",
+      "year": 2017,
+      "shop": "더이룸카",
+      "km": "138000km",
+      "match": true
+    },
+    {
+      "encarno": "CViTQOfpWzMPjPe..",
+      "model": "더 뉴 아반떼 1.6 GDI 스마트",
+      "price": "0만원",
+      "year": 2015,
+      "shop": "중부유즈드카",
+      "km": "74000km",
+      "match": true
+    },
+    {
+      "encarno": "pBdS5XwZFEoYbNw..",
+      "model": "GV80",
+      "price": "0만원",
+      "year": 2023,
+      "shop": "준모터스",
+      "km": "39000km",
+      "match": true
+    },
+    {
+      "encarno": "kIakQ0stps3TLPC..",
+      "model": "G80(RG3) 2.5 가솔린 터보 AWD 기본형",
+      "price": "0만원",
+      "year": 2024,
+      "shop": "(주)바른차",
+      "km": "9185km",
+      "match": true
+    },
+    {
+      "encarno": "nvRhGIMLE/GZRL1..",
+      "model": "SM6 가솔린 2.0 GDe RE",
+      "price": "620만원",
+      "year": 2016,
+      "shop": "디케이드림카",
+      "km": "89000km",
+      "match": true
+    },
+    {
+      "encarno": "SFodVQxuLQb1d7S..",
+      "model": "포터2 1.0톤/더블캡/초장축/(CRDi) 스마트",
+      "price": "0만원",
+      "year": 2022,
+      "shop": "중부유즈드카",
+      "km": "16000km",
+      "match": true
+    }
+  ]
+}

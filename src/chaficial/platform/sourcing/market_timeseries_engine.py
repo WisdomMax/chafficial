@@ -17,7 +17,12 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-from chaficial.platform.sourcing.carmanager_sync import parse_price_manwon, parse_mileage_km
+from chaficial.platform.sourcing.normalizer import (
+    normalize_carmanager_record,
+    parse_price_manwon,
+    parse_mileage_km,
+    parse_model_year
+)
 
 
 class MarketTimeSeriesEngine:
@@ -56,7 +61,7 @@ class MarketTimeSeriesEngine:
                 encarno VARCHAR(64) NOT NULL,
                 observed_at DATETIME NOT NULL,
                 raw_price_str VARCHAR(30),
-                price_manwon INTEGER NOT NULL,
+                price_manwon INTEGER,
                 mileage_km INTEGER,
                 model_year INTEGER,
                 model_name VARCHAR(100),
@@ -174,65 +179,31 @@ class MarketTimeSeriesEngine:
         events_generated = []
         current_encarnos = set()
 
-        for car in snapshot_cars:
-            encarno = car.get("encarno") or car.get("car_seq") or car.get("listing_id")
-            if not encarno:
-                continue
-
-            # 중복 encarno 방어
-            if encarno in current_encarnos:
+        for raw_car in snapshot_cars:
+            norm = normalize_carmanager_record(raw_car)
+            encarno = norm["encarno"]
+            if not encarno or encarno in current_encarnos:
                 continue
             current_encarnos.add(encarno)
 
-            # 가격 정규화 (순수 만원 단위)
-            raw_p = car.get("price")
-            price_manwon = parse_price_manwon(raw_p)
-
-            # 주행거리 정규화 (5.5만 km -> 55000)
-            km_val = parse_mileage_km(car.get("km") or car.get("mileage"))
-
-            # 연식 정규화
-            model_year = None
-            caryear_str = str(car.get("caryear", ""))
-            m = re.search(r"(\d{4})", caryear_str)
-            if m:
-                model_year = int(m.group(1))
-
-            model_name = car.get("carname") or car.get("model_name")
-            fuel = car.get("fuel") or car.get("fuel_type")
-            mission = car.get("mission") or car.get("transmission")
-            shop_name = car.get("shopname") or car.get("dealer_shop")
-
-            # [TASK 4: photo_count 및 raw_hash 정밀 산출]
-            # 사진 수가 명시된 경우만 정수 기록, 없으면 NULL (임의 0 기본값 제거)
-            photo_count = None
-            if "photos" in car and isinstance(car["photos"], list):
-                photo_count = len(car["photos"])
-            elif "photo_count" in car and car["photo_count"] is not None:
-                try:
-                    photo_count = int(car["photo_count"])
-                except (ValueError, TypeError):
-                    photo_count = None
-
-            # 원본 레코드 해시
-            raw_car_hash = hashlib.sha256(json.dumps(car, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
-
+            price_manwon = norm["price_manwon"]
             obs_id = str(uuid.uuid4())
             observations_to_insert.append((
-                obs_id, run_id, encarno, obs_time, str(raw_p), price_manwon,
-                km_val, model_year, model_name, fuel, mission,
-                shop_name, "장안평", "ACTIVE", photo_count, raw_car_hash
+                obs_id, run_id, encarno, obs_time, norm["raw_price_str"], price_manwon,
+                norm["mileage_km"], norm["model_year"], norm["model_name"], norm["fuel"], norm["mission"],
+                norm["shop_name"], norm["danji"], "ACTIVE", norm["photo_count"], norm["raw_hash"]
             ))
 
             # 시계열 이벤트 생성
             if encarno not in prev_obs:
+                price_disp = f"{price_manwon}만원" if price_manwon is not None else "가격미정"
                 events_generated.append((
                     str(uuid.uuid4()), run_id, encarno, "APPEARED",
-                    None, str(price_manwon), obs_time, f"신규 매물 등장 ({price_manwon}만원)"
+                    None, str(price_manwon) if price_manwon is not None else None, obs_time, f"신규 매물 등장 ({price_disp})"
                 ))
             else:
                 p_prev = prev_obs[encarno]["price_manwon"]
-                if price_manwon != p_prev:
+                if price_manwon is not None and p_prev is not None and price_manwon != p_prev:
                     if price_manwon < p_prev:
                         events_generated.append((
                             str(uuid.uuid4()), run_id, encarno, "PRICE_DECREASED",

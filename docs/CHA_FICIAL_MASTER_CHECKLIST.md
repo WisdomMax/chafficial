@@ -33,6 +33,11 @@
 | **ISSUE-18** | photo_count 미확인 매물에 임의 0 하드코딩 왜곡 | 보통 | 🟢 해결완료 | `market_timeseries_engine.py` (사진 미확인 시 엄격한 NULL 저장) |
 | **ISSUE-19** | 관측 레코드별 원본 데이터 해시(raw_hash) 누락 | 보통 | 🟢 해결완료 | `market_timeseries_engine.py` (매물 json SHA256 불변 기록) |
 | **ISSUE-20** | 90페이지 이상 동적 수집 실질적 통합 실험 부재 | 높음 | 🟢 해결완료 | `test_directive_110_r_integration.py` (실험 A~G 7대 통합 실험 100% 통과) |
+| **ISSUE-21** | 수집기-시계열 엔진 필드명 불일치로 인한 1,764대 가격 0원 및 모델/연식/상사 NULL 오염 | 심각 | 🟢 해결완료 | `normalizer.py` (공통 정규화 계층 구축 및 1,764대 100% 정상 복구) |
+| **ISSUE-22** | 실시간 라이브 관측과 과거 JSON 재사용 혼동 위험 | 보통 | 🟢 해결완료 | 라이브 수집과 스냅샷 복구 명확 분리 및 실행 감사 로그 구분 |
+| **ISSUE-23** | 원본 총건수와 고유 ID 수 일치 미검증 결함 | 높음 | 🟢 해결완료 | `janghanpyeong_collector.py` (total_found, failed_pages, is_complete 전수 대조) |
+| **ISSUE-24** | 실제 크롤러 및 운영 러너 오류 주입 통합 검증 결함 | 높음 | 🟢 해결완료 | 실질적 함수 호출 기반 7대 통합 실험 및 복구 검증 |
+| **ISSUE-25** | run_daily_sync.py의 CarManagerSyncService 생성 시 dry_run 누락 결함 | 심각 | 🟢 해결완료 | `run_daily_sync.py` (CarManagerSyncService(dry_run=dry_run) 전달로 DDL 차단) |
 
 ---
 

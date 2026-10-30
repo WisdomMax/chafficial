@@ -1,0 +1,251 @@
+{
+  "total_observations": 1764,
+  "zero_price_count": 1764,
+  "null_model_count": 1764,
+  "null_year_count": 1764,
+  "null_shop_count": 1764,
+  "null_mileage_count": 0,
+  "distinct_encarnos": 1764,
+  "sample_comparisons": [
+    {
+      "encarno": "rvhmIwYXWDfDj5N..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=GV80 가솔린 2.5T 2WD",
+      "year": "DB=None vs RAW=2020",
+      "shop": "DB=None vs RAW=원진오토모빌",
+      "km": "DB=72000km vs RAW=7.2만"
+    },
+    {
+      "encarno": "Mg5VDOGqXt+gnuK..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=K5",
+      "year": "DB=None vs RAW=2012",
+      "shop": "DB=None vs RAW=사우스이스트",
+      "km": "DB=116000km vs RAW=11.6만"
+    },
+    {
+      "encarno": "wTq32RZr9i0rSvx..",
+      "price": "DB=0만원 vs RAW=930만원",
+      "model": "DB=None vs RAW=싼타페 DM 디젤 4WD 2.0 프리",
+      "year": "DB=None vs RAW=2014",
+      "shop": "DB=None vs RAW=용정상사(상",
+      "km": "DB=136000km vs RAW=13.6만"
+    },
+    {
+      "encarno": "cDfx3IrcPMbhCcc..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=더뉴코란도스포츠 CX7(4WD) 클럽",
+      "year": "DB=None vs RAW=2017",
+      "shop": "DB=None vs RAW=용정상사(상",
+      "km": "DB=77000km vs RAW=7.7만"
+    },
+    {
+      "encarno": "3LBnDNwyYK4PBOP..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=[카고]포터2 1.0톤/슈퍼캡/초장축",
+      "year": "DB=None vs RAW=2017",
+      "shop": "DB=None vs RAW=부부모터스투",
+      "km": "DB=232000km vs RAW=23.2만"
+    },
+    {
+      "encarno": "zpQVOsbbuRee3sT..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=스포티지 5세대 하이브리드 (NQ5)",
+      "year": "DB=None vs RAW=2023",
+      "shop": "DB=None vs RAW=카프로모터스",
+      "km": "DB=32000km vs RAW=3.2만"
+    },
+    {
+      "encarno": "aqc24TIeOqgyObn..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=올 뉴 모닝 럭셔리 스포츠",
+      "year": "DB=None vs RAW=2015",
+      "shop": "DB=None vs RAW=경기모터스",
+      "km": "DB=87000km vs RAW=8.7만"
+    },
+    {
+      "encarno": "QI94p37F6r9x45J..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=더 뉴 기아 레이 시그니처",
+      "year": "DB=None vs RAW=2027",
+      "shop": "DB=None vs RAW=미래카월드",
+      "km": "DB=13km vs RAW=13"
+    },
+    {
+      "encarno": "6Jme+qXSlCmYlo+..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=익스플로러 6세대 2.3 리미티드 4",
+      "year": "DB=None vs RAW=2021",
+      "shop": "DB=None vs RAW=선인자동차",
+      "km": "DB=6011km vs RAW=6,011"
+    },
+    {
+      "encarno": "4g5f2haxdAtSAkp..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=싼타페 DM 디젤 2WD 2.0 프리",
+      "year": "DB=None vs RAW=2013",
+      "shop": "DB=None vs RAW=(주)카보스",
+      "km": "DB=109000km vs RAW=10.9만"
+    },
+    {
+      "encarno": "pm9I3E/5yeSKDKc..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=렉스턴 스포츠 4WD 디젤 2.2 노",
+      "year": "DB=None vs RAW=2019",
+      "shop": "DB=None vs RAW=용정상사(상",
+      "km": "DB=76000km vs RAW=7.6만"
+    },
+    {
+      "encarno": "TLrcERg2C7yPwmH..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=팰리세이드(PALISADE)",
+      "year": "DB=None vs RAW=2020",
+      "shop": "DB=None vs RAW=용정상사(상",
+      "km": "DB=32000km vs RAW=3.2만"
+    },
+    {
+      "encarno": "C5Lk3DircnPsmvB..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=올 뉴 쏘렌토 디젤 2WD 2.0 프",
+      "year": "DB=None vs RAW=2016",
+      "shop": "DB=None vs RAW=인증자동차",
+      "km": "DB=78000km vs RAW=7.8만"
+    },
+    {
+      "encarno": "2S8cLGKy2Oo8yWq..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=더 뉴 아반떼 AD 1.6 스마트 초",
+      "year": "DB=None vs RAW=2020",
+      "shop": "DB=None vs RAW=디케이드림카",
+      "km": "DB=41000km vs RAW=4.1만"
+    },
+    {
+      "encarno": "Q8hJExuNCp48pnS..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=911 카레라 991",
+      "year": "DB=None vs RAW=2017",
+      "shop": "DB=None vs RAW=조이오토모빌",
+      "km": "DB=100000km vs RAW=10만"
+    },
+    {
+      "encarno": "ucgJZbOOg9evsn9..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=E-클래스 W212 E350 쿠페",
+      "year": "DB=None vs RAW=2013",
+      "shop": "DB=None vs RAW=새로이모터스",
+      "km": "DB=82000km vs RAW=8.2만"
+    },
+    {
+      "encarno": "LRxPQAhE5bDVFxh..",
+      "price": "DB=0만원 vs RAW=1,380만원",
+      "model": "DB=None vs RAW=올 뉴 카니발 디젤 7인승 리무진 프",
+      "year": "DB=None vs RAW=2016",
+      "shop": "DB=None vs RAW=용정상사(상",
+      "km": "DB=168000km vs RAW=16.8만"
+    },
+    {
+      "encarno": "HR2YOxXNs0sN2sO..",
+      "price": "DB=0만원 vs RAW=2,300만원",
+      "model": "DB=None vs RAW=카니발 4세대 디젤 9인승 노블레스",
+      "year": "DB=None vs RAW=2021",
+      "shop": "DB=None vs RAW=용정상사(상",
+      "km": "DB=116000km vs RAW=11.6만"
+    },
+    {
+      "encarno": "TObCN6LYRpJmwFn..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=E-클래스 W213 E300 아방가르",
+      "year": "DB=None vs RAW=2019",
+      "shop": "DB=None vs RAW=더쿨모터스",
+      "km": "DB=90000km vs RAW=9만"
+    },
+    {
+      "encarno": "46brHTQgMHmcna5..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=더 뉴 기아 레이 프레스티지",
+      "year": "DB=None vs RAW=2024",
+      "shop": "DB=None vs RAW=카메인모터스",
+      "km": "DB=48000km vs RAW=4.8만"
+    },
+    {
+      "encarno": "/JVqpvaQjdWuL4S..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=더 뉴 기아 레이 트렌디",
+      "year": "DB=None vs RAW=2025",
+      "shop": "DB=None vs RAW=디케이드림카",
+      "km": "DB=34000km vs RAW=3.4만"
+    },
+    {
+      "encarno": "hON/NmzFk+arVdS..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=더 뉴 그랜저 IG 2.5 프리미엄 ",
+      "year": "DB=None vs RAW=2021",
+      "shop": "DB=None vs RAW=디케이드림카",
+      "km": "DB=56000km vs RAW=5.6만"
+    },
+    {
+      "encarno": "S+JkqD//d1RmV9h..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=캐스퍼 1.0 가솔린 터보 인스퍼레이",
+      "year": "DB=None vs RAW=2023",
+      "shop": "DB=None vs RAW=호국모터스",
+      "km": "DB=32000km vs RAW=3.2만"
+    },
+    {
+      "encarno": "yzCifxOVfXSy7wA..",
+      "price": "DB=0만원 vs RAW=1,450만원",
+      "model": "DB=None vs RAW=모닝 어반 시그니처",
+      "year": "DB=None vs RAW=2023",
+      "shop": "DB=None vs RAW=용정상사(상",
+      "km": "DB=7298km vs RAW=7,298"
+    },
+    {
+      "encarno": "NnoqXvDic1zcwvL..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=더 뉴 스포티지 R 가솔린 2WD 2",
+      "year": "DB=None vs RAW=2016",
+      "shop": "DB=None vs RAW=경기모터스",
+      "km": "DB=98000km vs RAW=9.8만"
+    },
+    {
+      "encarno": "efArcovKX+8izOE..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=토레스 1.5 GDI-T 2WD T5",
+      "year": "DB=None vs RAW=2023",
+      "shop": "DB=None vs RAW=디케이드림카",
+      "km": "DB=38000km vs RAW=3.8만"
+    },
+    {
+      "encarno": "6dekABfnnbziPad..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=벤츠SL500",
+      "year": "DB=None vs RAW=1995",
+      "shop": "DB=None vs RAW=더이룸카",
+      "km": "DB=89000km vs RAW=8.9만"
+    },
+    {
+      "encarno": "PUOMlsZKc1BAsgF..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=2시리즈 액티브 투어러 (F45) 스",
+      "year": "DB=None vs RAW=2021",
+      "shop": "DB=None vs RAW=용정상사(상",
+      "km": "DB=39000km vs RAW=3.9만"
+    },
+    {
+      "encarno": "PuYdM+BWrw6C3yb..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=BMW",
+      "year": "DB=None vs RAW=1995",
+      "shop": "DB=None vs RAW=엠모터스",
+      "km": "DB=93000km vs RAW=9.3만"
+    },
+    {
+      "encarno": "cIR1OdM6VMTHIAg..",
+      "price": "DB=0만원 vs RAW=0만원",
+      "model": "DB=None vs RAW=[카고]포터2 1.0톤/일반캡/초장축",
+      "year": "DB=None vs RAW=2017",
+      "shop": "DB=None vs RAW=흰돌모터스",
+      "km": "DB=298000km vs RAW=29.8만"
+    }
+  ]
+}
