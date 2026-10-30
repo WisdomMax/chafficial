@@ -88,14 +88,21 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
 
     print(f"[*] Partitioned vehicles: OWNED={len(owned_cars)}대 | MARKET_OBSERVED={len(market_cars)}대")
 
-    # 2. 우리 상사 수집량 임계치 검증
+    # 2. 우리 상사 수집량 임계치 검증 (시계열 및 운영 DB 쓰기 전 사전 차단)
     if len(owned_cars) < MIN_OWNED_THRESHOLD:
         print(f"[!] CRITICAL GUARD: Owned vehicle count ({len(owned_cars)}) is below strict threshold ({MIN_OWNED_THRESHOLD}).", file=sys.stderr)
         print("[!] Aborting database writes completely to protect owned inventory.", file=sys.stderr)
         sys.exit(1)
 
+    # 3. 시장 관측 수집량 임계치 검증 (시계열 및 운영 DB 쓰기 전 사전 차단)
+    min_market_net = MIN_MARKET_THRESHOLD - MIN_OWNED_THRESHOLD
+    if len(market_cars) < min_market_net:
+        print(f"[!] CRITICAL GUARD: Market observed vehicle count ({len(market_cars)}) is below net threshold ({min_market_net}).", file=sys.stderr)
+        print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
+        sys.exit(1)
+
     # [DIRECTIVE 110-R TASK 2: 시계열 관측 저장을 운영 DB 변경보다 반드시 먼저 선행]
-    # 3. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록 (선행)
+    # 4. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록 (선행)
     ts_engine = MarketTimeSeriesEngine(db_path="data/chamart/chamart_platform_demo.db", dry_run=dry_run)
     ts_res = ts_engine.record_snapshot(all_cars, dry_run=dry_run)
     print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
@@ -105,14 +112,14 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
         print(f"[!] CRITICAL GUARD: Market TimeSeries failed with status '{ts_res.get('status')}'. Aborting operational database sync.", file=sys.stderr)
         sys.exit(1)
 
-    # 4. 우리 상사 운영 동기화 (시계열 성공 확인 후 실행)
+    # 5. 우리 상사 운영 동기화 (시계열 성공 확인 후 실행)
     owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_THRESHOLD, dry_run=dry_run)
     print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
     if owned_res.get("status") != "SUCCESS":
         print(f"[!] Critical Abort in Owned Sync: Status is '{owned_res.get('status')}'.", file=sys.stderr)
         sys.exit(1)
 
-    # 5. 장한평 시장 운영 동기화
+    # 6. 장한평 시장 운영 동기화
     market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_THRESHOLD, dry_run=dry_run)
     print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, New={market_res['new_inserted']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
     if market_res.get("status") != "SUCCESS":

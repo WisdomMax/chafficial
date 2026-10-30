@@ -1,7 +1,34 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 00:38:00 KST  
+> **최종 갱신일:** 2026-10-31 00:48:00 KST  
+
+---
+
+## [DIRECTIVE 121] 모의 데이터 운영 쓰기 완전 차단, 50대 실데이터 파일럿 및 사전 임계치 가드 완결
+- **일시:** 2026-10-31 00:48 KST
+- **수행 태스크**:
+  1. **TASK 1 (P0: OFFLINE_TEST 운영 DB 쓰기 완전 차단, ISSUE-67)**:
+     - `cross_platform_matcher.py`: 운영 DB(`chamart_platform_demo.db`)에 `OFFLINE_TEST` 쓰기 요청 시 100% 차단(No-op)하여 `TEST_MOCK`조차 잔존하지 않도록 격리.
+     - 기존 `ACTIVE` 매물에 대한 모의 데이터 덮어쓰기 원천 차단.
+     - `MANUAL_VERIFIED`에 실 URL/외부 car_id/확인자(`verified_by`) 필수 검증 가드 구축 (더미 URL 시 `ValueError`).
+     - 회귀 테스트(`scratch/test_directive_121_task1_matcher_guard.py`) 100% Pass.
+  2. **TASK 2 (상세조회 큐 복합키 및 상태머신 구현, ISSUE-68)**:
+     - `market_detail_fetch_queue`의 기본키를 `PRIMARY KEY (platform, listing_id)` 복합키로 교정.
+     - `claim_next_queue_item()` (PENDING -> IN_PROGRESS), `mark_queue_item_completed()`, `mark_queue_item_failed()` 상태머신 확립.
+     - 최초 발견 시각(`discovered_at`), 재시도 횟수, 오류 메시지 보존.
+  3. **TASK 3 (실제 목록 50대 기반 수동 파일럿 완수, ISSUE-69)**:
+     - 카매니저 원본 1페이지 50대 실데이터를 입력으로 독립 샌드박스 DB에서 파일럿 완수 (`scratch/run_50_car_pilot.py`).
+     - 결과 분석: 기존 변경 없음 25대, 가격 변경/상담 10대, 신규 큐잉 15대, 미관측 매물 20대(거짓 DELISTED/SOLD 0건 보존).
+     - 증적 파일: `scratch/pilot_50_cars_result.json` 산출.
+  4. **TASK 4 (HTTP 요청 예산과 후보 검증 카운터 분리, ISSUE-70)**:
+     - `quota_enrichment_runner.py`: 실제 `LIVE_OBSERVED` 네트워크 호출 시에만 HTTP 예산을 차감하고, 오프라인/수동 검증은 `evaluations_count`, `manual_verifications_count`로 명확히 분리 계측.
+  5. **TASK 5 (일일 동기화 사전 임계치 가드 재배치, ISSUE-71)**:
+     - `scripts/run_daily_sync.py`: OWNED(60대) 및 MARKET(1,440대) 임계치 검사를 시계열 및 운영 DB 쓰기보다 먼저 수행하도록 재배치.
+     - 기준 미달 시 시계열 기록 0건, OWNED/MARKET 부분 커밋 0건으로 데이터 무결성 보장.
+     - 회귀 테스트(`scratch/test_daily_sync_pre_guards.py`) 100% Pass.
+  6. **TASK 6 (마스터 체크리스트 갱신)**:
+     - `CHA_FICIAL_MASTER_CHECKLIST.md`에 ISSUE-67~71 전수 등록 완료.
 
 ---
 

@@ -75,6 +75,15 @@ class QuotaEnrichmentRunner:
         self.checkpoint_path = Path("data/carmanager_raw/enrichment_checkpoint_real.json")
         self.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
         self.budget = SqliteAtomicBudgetEnforcer(self.db_path, daily_car_limit=daily_limit, kb_req_limit=daily_limit, encar_req_limit=daily_limit)
+        
+        # 정합성 카운터: 네트워크 요청과 순수 후보 평가를 엄격 분리
+        self.stats = {
+            "evaluations_count": 0,
+            "manual_verifications_count": 0,
+            "live_network_requests": 0,
+            "verified_matches": 0,
+            "candidate_matches": 0
+        }
 
     def process_vehicle_safe(
         self, 
@@ -85,16 +94,30 @@ class QuotaEnrichmentRunner:
     ) -> Optional[MatchResult]:
         """
         Executes matching with atomic pre-network budget deduction.
+        HTTP budget deducted ONLY when mode is LIVE_OBSERVED (actual network calls).
         """
         v_id = vehicle["id"]
-        # 1. 일일 차량 예산 원자적 검사 및 차감 (초과 시 예외 발생하여 네트워크 호출 차단)
+        # 1. 일일 차량 예산 원자적 검사 및 차감
         self.budget.check_and_deduct_car(v_id)
 
-        # 2. KB차차차 조회 대상이거나 후보가 존재할 때만 예산 검사 및 차감
+        # 2. KB차차차 처리
         if kb_candidate:
-            self.budget.check_and_deduct_kb()
+            self.stats["evaluations_count"] += 1
+            if mode == ObservationMode.MANUAL_VERIFIED:
+                self.stats["manual_verifications_count"] += 1
+            elif mode == ObservationMode.LIVE_OBSERVED:
+                self.budget.check_and_deduct_kb()
+                self.stats["live_network_requests"] += 1
+
             score, ev, status = self.matcher.validate_candidate(vehicle, kb_candidate)
+            if kb_candidate.get("verified_by"):
+                ev["verified_by"] = kb_candidate.get("verified_by")
             if status in (MatchingStatus.VERIFIED, MatchingStatus.CANDIDATE):
+                if status == MatchingStatus.VERIFIED:
+                    self.stats["verified_matches"] += 1
+                else:
+                    self.stats["candidate_matches"] += 1
+
                 res = MatchResult(
                     vehicle_id=v_id,
                     plate_number=vehicle.get("plate_number"),
@@ -112,11 +135,24 @@ class QuotaEnrichmentRunner:
                 self.matcher.record_verified_match(res)
                 return res
 
-        # 3. 2순위 엔카 조회 대상이거나 후보가 존재할 때만 예산 검사 및 차감
+        # 3. 2순위 엔카 처리
         if encar_candidate:
-            self.budget.check_and_deduct_encar()
+            self.stats["evaluations_count"] += 1
+            if mode == ObservationMode.MANUAL_VERIFIED:
+                self.stats["manual_verifications_count"] += 1
+            elif mode == ObservationMode.LIVE_OBSERVED:
+                self.budget.check_and_deduct_encar()
+                self.stats["live_network_requests"] += 1
+
             score, ev, status = self.matcher.validate_candidate(vehicle, encar_candidate)
+            if encar_candidate.get("verified_by"):
+                ev["verified_by"] = encar_candidate.get("verified_by")
             if status in (MatchingStatus.VERIFIED, MatchingStatus.CANDIDATE):
+                if status == MatchingStatus.VERIFIED:
+                    self.stats["verified_matches"] += 1
+                else:
+                    self.stats["candidate_matches"] += 1
+
                 res = MatchResult(
                     vehicle_id=v_id,
                     plate_number=vehicle.get("plate_number"),

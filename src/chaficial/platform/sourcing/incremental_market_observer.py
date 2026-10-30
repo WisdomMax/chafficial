@@ -48,16 +48,18 @@ class IncrementalMarketObserver:
         c = conn.cursor()
         c.execute("""
             CREATE TABLE IF NOT EXISTS market_detail_fetch_queue (
-                listing_id VARCHAR(64) PRIMARY KEY,
                 platform VARCHAR(30) NOT NULL,
+                listing_id VARCHAR(64) NOT NULL,
                 plate_number VARCHAR(30),
                 model_name VARCHAR(100),
                 raw_location VARCHAR(100),
+                raw_vendor_status VARCHAR(50),
                 queue_status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, IN_PROGRESS, COMPLETED, FAILED
                 retry_count INTEGER DEFAULT 0,
-                created_at DATETIME NOT NULL,
+                discovered_at DATETIME NOT NULL,
                 updated_at DATETIME NOT NULL,
-                error_message TEXT
+                error_message TEXT,
+                PRIMARY KEY (platform, listing_id)
             );
         """)
         conn.commit()
@@ -188,22 +190,86 @@ class IncrementalMarketObserver:
                     counts["no_change_timestamp_refreshed"] += c.rowcount
 
                 elif d.action == ObservationAction.SCHEDULE_DEEP_FETCH:
-                    # ISSUE-64: Persistent queue with restart recovery and idempotency
+                    # ISSUE-64, ISSUE-68: Persistent queue with (platform, listing_id) composite PK and lifecycle states
                     c.execute("""
                         INSERT OR IGNORE INTO market_detail_fetch_queue (
-                            listing_id, platform, plate_number, model_name,
-                            raw_location, queue_status, retry_count,
-                            created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)
+                            platform, listing_id, plate_number, model_name,
+                            raw_location, raw_vendor_status, queue_status, retry_count,
+                            discovered_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)
                     """, (
-                        lid, platform, det.get("plate_number"), det.get("model_name"),
-                        det.get("raw_location"), now_iso, now_iso
+                        platform, lid, det.get("plate_number"), det.get("model_name"),
+                        det.get("raw_location"), det.get("raw_vendor_status", "ACTIVE"),
+                        det.get("observed_at", now_iso), now_iso
                     ))
                     if c.rowcount > 0:
                         counts["new_vehicles_enqueued"] += 1
 
         conn.close()
         return counts
+
+    def claim_next_queue_item(self, platform: str = "CARMANAGER") -> Optional[Dict[str, Any]]:
+        """Atomically claims next pending item: PENDING -> IN_PROGRESS."""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+        with conn:
+            c.execute("""
+                SELECT platform, listing_id, plate_number, model_name, raw_location, retry_count
+                FROM market_detail_fetch_queue
+                WHERE platform = ? AND queue_status = 'PENDING'
+                ORDER BY discovered_at ASC
+                LIMIT 1
+            """, (platform,))
+            row = c.fetchone()
+            if not row:
+                conn.close()
+                return None
+
+            c.execute("""
+                UPDATE market_detail_fetch_queue SET
+                    queue_status = 'IN_PROGRESS',
+                    updated_at = ?
+                WHERE platform = ? AND listing_id = ?
+            """, (now_iso, row[0], row[1]))
+
+        conn.close()
+        return {
+            "platform": row[0],
+            "listing_id": row[1],
+            "plate_number": row[2],
+            "model_name": row[3],
+            "raw_location": row[4],
+            "retry_count": row[5]
+        }
+
+    def mark_queue_item_completed(self, platform: str, listing_id: str) -> None:
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+        with conn:
+            c.execute("""
+                UPDATE market_detail_fetch_queue SET
+                    queue_status = 'COMPLETED',
+                    updated_at = ?
+                WHERE platform = ? AND listing_id = ?
+            """, (now_iso, platform, listing_id))
+        conn.close()
+
+    def mark_queue_item_failed(self, platform: str, listing_id: str, error_msg: str) -> None:
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+        with conn:
+            c.execute("""
+                UPDATE market_detail_fetch_queue SET
+                    queue_status = 'FAILED',
+                    retry_count = retry_count + 1,
+                    error_message = ?,
+                    updated_at = ?
+                WHERE platform = ? AND listing_id = ?
+            """, (error_msg, now_iso, platform, listing_id))
+        conn.close()
 
     def get_pending_queue_items(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Retrieves pending deep fetch tasks with restart recovery support."""
@@ -213,7 +279,7 @@ class IncrementalMarketObserver:
             SELECT listing_id, platform, plate_number, model_name, raw_location, retry_count
             FROM market_detail_fetch_queue
             WHERE queue_status = 'PENDING'
-            ORDER BY created_at ASC
+            ORDER BY discovered_at ASC
             LIMIT ?
         """, (limit,))
         rows = c.fetchall()
@@ -228,16 +294,3 @@ class IncrementalMarketObserver:
                 "retry_count": r[5]
             } for r in rows
         ]
-
-    def mark_queue_item_completed(self, listing_id: str) -> None:
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
-        with conn:
-            c.execute("""
-                UPDATE market_detail_fetch_queue SET
-                    queue_status = 'COMPLETED',
-                    updated_at = ?
-                WHERE listing_id = ?
-            """, (now_iso, listing_id))
-        conn.close()

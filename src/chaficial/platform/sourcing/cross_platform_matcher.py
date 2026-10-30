@@ -166,11 +166,29 @@ class CrossPlatformMatcher:
     def record_verified_match(self, match: MatchResult) -> None:
         """
         Saves match:
+          - OFFLINE_TEST -> Strictly blocked on operational DB (Only allowed on sandbox DBs as TEST_MOCK).
+          - MANUAL_VERIFIED -> Requires real URL, car_id, and verified_by evidence.
           - VERIFIED -> listing_status = 'ACTIVE'
           - CANDIDATE -> listing_status = 'REVIEW_PENDING' (isolated from active analytics)
         """
         if not match.external_url or match.status in (MatchingStatus.REJECTED, MatchingStatus.NOT_FOUND):
             return
+
+        is_production_db = "chamart_platform_demo.db" in os.path.basename(self.db_path) and "sandbox" not in self.db_path and "test" not in self.db_path
+
+        # 1. P0 가드: 운영 DB에 OFFLINE_TEST 데이터 쓰기 100% 원천 차단
+        if match.observation_mode == ObservationMode.OFFLINE_TEST and is_production_db:
+            return  # Operational DB protected: No writes permitted for mock/test data!
+
+        # 2. MANUAL_VERIFIED 증거 엄격성 검증
+        if match.observation_mode == ObservationMode.MANUAL_VERIFIED:
+            ev = match.match_evidence or {}
+            is_valid_url = match.external_url.startswith(("http://", "https://")) and not any(k in match.external_url.lower() for k in ["sample", "dummy", "example.com"])
+            has_car_id = bool(match.external_car_id)
+            has_verifier = bool(ev.get("verified_by"))
+
+            if not (is_valid_url and has_car_id and has_verifier):
+                raise ValueError("MANUAL_VERIFIED requires valid external_url (non-dummy), external_car_id, and verified_by in evidence.")
 
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
@@ -178,7 +196,6 @@ class CrossPlatformMatcher:
 
         ext_listing_id = match.external_car_id or f"{match.source_platform}_{match.vehicle_id}"
         
-        # P0 가드: OFFLINE_TEST 모드는 절대로 운영 ACTIVE 매물이 될 수 없음 (TEST_MOCK 강제 및 is_demo=1)
         if match.observation_mode == ObservationMode.OFFLINE_TEST:
             db_listing_status = "TEST_MOCK"
             is_demo_val = 1
@@ -190,10 +207,15 @@ class CrossPlatformMatcher:
             is_demo_val = 0
 
         c.execute("""
-            SELECT id FROM vehicle_listings 
+            SELECT id, listing_status FROM vehicle_listings 
             WHERE vehicle_id = ? AND platform = ?
         """, (match.vehicle_id, match.source_platform))
         existing = c.fetchone()
+
+        # 기존 활성 매물이 존재할 때 OFFLINE_TEST로 덮어쓰기 차단
+        if existing and match.observation_mode == ObservationMode.OFFLINE_TEST and existing[1] == "ACTIVE":
+            conn.close()
+            return
 
         notes = f"Mode: {match.observation_mode.value}, Status: {match.status.value}, Evidence: {json.dumps(match.match_evidence, ensure_ascii=False)}"
 

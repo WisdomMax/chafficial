@@ -77,6 +77,11 @@
 | **ISSUE-64** | 신규 매물 상세조회 대기열 미영속화 결함 | 높음 | 🟢 해결완료 | `incremental_market_observer.py` (market_detail_fetch_queue SQLite 영속화, 멱등성 및 재시작 복원 지원) |
 | **ISSUE-65** | 74대 병합 대상 사진 667건 전수 무손실 증명 부족 | 높음 | 🟢 해결완료 | `audit_directive_120_task5_667_photos.py` (백업 vs 운영 DB 667건 전수 1:1 대조 완료, 100% 무손실 입증) |
 | **ISSUE-66** | 모의/미호출 시 요청 예산 차감으로 인한 집계 불일치 위험 | 보통 | 🟢 해결완료 | `quota_enrichment_runner.py` (실제 후보 존재 시에만 플랫폼별 HTTP 예산 차감하도록 정합성 확립) |
+| **ISSUE-67** | OFFLINE_TEST 운영 DB 저장 가능 및 MANUAL_VERIFIED 허위 증거 위험 | 심각 | 🟢 해결완료 | `cross_platform_matcher.py` (운영 DB OFFLINE_TEST 쓰기 100% 차단 및 MANUAL 실URL/확인자 검증 통과) |
+| **ISSUE-68** | 상세조회 큐 복합키 미분리 및 큐 상태머신 미흡 결함 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (PRIMARY KEY (platform, listing_id) 및 CLAIM/IN_PROGRESS 상태머신 구현) |
+| **ISSUE-69** | 실제 목록 50대 기반 수동 파일럿 증적 부재 | 보통 | 🟢 해결완료 | `run_50_car_pilot.py` (실제 카매니저 1페이지 50대 데이터로 샌드박스 파일럿 완수, pilot_50_cars_result.json) |
+| **ISSUE-70** | HTTP 요청 예산과 오프라인 후보 평가 카운터 혼선 결함 | 보통 | 🟢 해결완료 | `quota_enrichment_runner.py` (LIVE_OBSERVED 실제 호출 시에만 HTTP 차감, evaluation_count 명확 분리) |
+| **ISSUE-71** | 일일 동기화 임계치 검사 시점 지연으로 인한 시계열 부분 기록 위험 | 심각 | 🟢 해결완료 | `run_daily_sync.py` (시계열 및 DB 쓰기 전 OWNED/MARKET 사전 검증 배치로 쓰기 0건 원천 보장) |
 
 ---
 

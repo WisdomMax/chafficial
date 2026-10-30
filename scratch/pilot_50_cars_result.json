@@ -1,0 +1,47 @@
+{
+  "pilot_name": "CARMANAGER_PAGE1_50_CAR_PILOT",
+  "executed_at": "2026-10-31T00:46:13+09:00",
+  "input_source": "data/carmanager_raw/janghanpyeong_full_collection.json",
+  "total_observed": 50,
+  "metrics": {
+    "existing_no_change_refreshed": 25,
+    "existing_price_status_updated": 10,
+    "new_vehicles_enqueued_for_deep_fetch": 15,
+    "unseen_vehicles_preserved_active": 20,
+    "false_delisted_or_sold_count": 0,
+    "duplicate_ids_in_batch": 0
+  },
+  "sample_queued_new_cars": [
+    {
+      "listing_id": "4bdWOw1PD4nNQ4O95cX9Qw==",
+      "plate_number": "미확인",
+      "model_name": "미확인",
+      "raw_location": "(주)알차"
+    },
+    {
+      "listing_id": "xRc34C/Pl3hRv5XCv1COMQ==",
+      "plate_number": "미확인",
+      "model_name": "미확인",
+      "raw_location": "(주)알차"
+    },
+    {
+      "listing_id": "FihPSC/TGxoVQ0VobrAfjg==",
+      "plate_number": "미확인",
+      "model_name": "미확인",
+      "raw_location": "한성상사"
+    },
+    {
+      "listing_id": "HUbdRm2Akw2QwbM+pH0TFg==",
+      "plate_number": "미확인",
+      "model_name": "미확인",
+      "raw_location": "더쿨모터스"
+    },
+    {
+      "listing_id": "QW6ILam8ISHFcV/xWsKrog==",
+      "plate_number": "미확인",
+      "model_name": "미확인",
+      "raw_location": "더쿨모터스"
+    }
+  ],
+  "verdict": "PILOT_100_PERCENT_SUCCESS_OPERATIONAL_DB_PROTECTED"
+}
