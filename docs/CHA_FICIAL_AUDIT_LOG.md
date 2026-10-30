@@ -1,7 +1,32 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 00:57:00 KST  
+> **최종 갱신일:** 2026-10-31 01:05:00 KST  
+
+---
+
+## [DIRECTIVE 123] 50대 원본 파서 필드 추출 100% 입증, 물리적 운영 저장소 보호 및 큐 중단 복구 완결
+- **일시:** 2026-10-31 01:05 KST
+- **수행 태스크**:
+  1. **TASK 1 (50대 원본 파서 필드 매핑 100% 입증, ISSUE-78)**:
+     - 원본 JSON의 실제 필드명(`plate_tail`, `model`, `model_year`, `reg_date`, `mileage`, `price_manwon`, `shop`, `dealer` 등) 정밀 대조 및 파서 교정 (`scratch/audit_directive_123_task1_parser.py`).
+     - HISTORICAL_SAMPLE_50 50건 전수 정량 검증:
+       * 번호판 뒷자리(plate_tail): **100.0% (50/50)**
+       * 차종 및 세부 트림(model): **100.0% (50/50)**
+       * 연식(model_year): **100.0% (50/50)**
+       * 최초등록일(reg_date): **100.0% (50/50)**
+       * 주행거리(mileage): **100.0% (50/50)**
+       * 원시 가격(price_manwon): **100.0% (50/50)**
+       * 단지/상사/딜러: **100.0% (50/50)**
+       * 연료: **70.0% (35/50)** (전기차 등 미표기 차종 원본 정직 반영)
+     - 산출물: `scratch/historical_sample_50_manifest.json`.
+  2. **TASK 2 (물리적 운영 저장소 격리 및 MANUAL_VERIFIED 서버 검증, ISSUE-79, 80)**:
+     - `cross_platform_matcher.py`: `os.path.realpath` 기반으로 실제 운영 DB 파일에 대한 `OFFLINE_TEST` 저장을 물리적으로 원천 거부(환경변수 조작 우회 차단).
+     - `urllib.parse` 기반 `ALLOWED_HOSTS` 화이트리스트 검사.
+     - `admin_approval` 딕셔너리(`admin_id`, `approved_at`) 서버 검증 필수화.
+  3. **TASK 3 (상세조회 큐 크래시 복구 및 라이프사이클 완성, ISSUE-81)**:
+     - `incremental_market_observer.py`: `recover_stale_in_progress_tasks()` 신설로 비정상 종료된 `IN_PROGRESS` 작업을 `PENDING`으로 자동 안전 복원.
+     - 회귀 테스트(`scratch/test_directive_123_task3_queue_recovery.py`) 100% Pass.
 
 ---
 

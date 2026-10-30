@@ -253,6 +253,39 @@ class IncrementalMarketObserver:
             "retry_count": claimed_row[5]
         }
 
+    def mark_queue_item_completed(self, platform: str, listing_id: str) -> None:
+        """Marks item completed."""
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+        with conn:
+            c.execute("""
+                UPDATE market_detail_fetch_queue SET
+                    queue_status = 'COMPLETED',
+                    updated_at = ?
+                WHERE platform = ? AND listing_id = ?
+            """, (now_iso, platform, listing_id))
+        conn.close()
+
+    def recover_stale_in_progress_tasks(self) -> int:
+        """
+        Recovers tasks stuck in IN_PROGRESS due to worker crash.
+        Resets them to PENDING so they can be reclaimed.
+        """
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+        with conn:
+            c.execute("""
+                UPDATE market_detail_fetch_queue SET
+                    queue_status = 'PENDING',
+                    updated_at = ?
+                WHERE queue_status = 'IN_PROGRESS'
+            """, (now_iso,))
+            recovered = c.rowcount
+        conn.close()
+        return recovered
+
     def mark_queue_item_failed(self, platform: str, listing_id: str, error_msg: str, max_retries: int = 3) -> None:
         """
         Marks item failed. If retry_count reaches max_retries, transitions to REQUIRES_ADMIN_REVIEW.

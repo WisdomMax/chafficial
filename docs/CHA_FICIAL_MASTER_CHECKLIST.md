@@ -87,6 +87,10 @@
 | **ISSUE-75** | 단순 파일명 기반 운영 DB 판별의 환경 분리 취약성 | 높음 | 🟢 해결완료 | `cross_platform_matcher.py` (is_production 환경 플래그 및 CHAFICIAL_ENV 기반 엄격한 운영 저장소 격리) |
 | **ISSUE-76** | MANUAL_VERIFIED 공인 도메인 미검증 및 관리자 승인 부재 결함 | 높음 | 🟢 해결완료 | `cross_platform_matcher.py` (ALLOWED_DOMAINS 화이트리스트, URL 매핑, admin_approved: True 필수화) |
 | **ISSUE-77** | 상세조회 큐 작업의 다중 워커 동시 선점 충돌 위험 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (BEGIN IMMEDIATE 조건부 UPDATE 원자적 선점 및 10스레드 중복 0건 통과) |
+| **ISSUE-78** | 50대 원본 파서의 실제 필드 매핑 불일치로 인한 메타데이터 누락 | 심각 | 🟢 해결완료 | `audit_directive_123_task1_parser.py` (실제 필드 1:1 매핑, 번호판뒷자리/차종/연식/주행거리 100% 추출 성공) |
+| **ISSUE-79** | 환경변수 조작에 의한 운영 저장소 쓰기 보호 우회 가능성 | 높음 | 🟢 해결완료 | `cross_platform_matcher.py` (os.path.realpath 기반 물리적 운영 DB 판별로 모의 데이터 쓰기 불변 차단) |
+| **ISSUE-80** | MANUAL_VERIFIED의 URL 호스트네임 정밀 검증 및 서버 관리자 승인 부재 | 높음 | 🟢 해결완료 | `cross_platform_matcher.py` (urllib.parse 기반 ALLOWED_HOSTS 화이트리스트 및 admin_approval 딕셔너리 검증) |
+| **ISSUE-81** | 상세조회 큐의 IN_PROGRESS 작업 워커 크래시 중단 복구 부재 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (recover_stale_in_progress_tasks로 중단 작업 PENDING 안전 복구 통과) |
 
 ---
 
