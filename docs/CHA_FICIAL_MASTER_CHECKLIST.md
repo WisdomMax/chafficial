@@ -91,6 +91,11 @@
 | **ISSUE-79** | 환경변수 조작에 의한 운영 저장소 쓰기 보호 우회 가능성 | 높음 | 🟢 해결완료 | `cross_platform_matcher.py` (os.path.realpath 기반 물리적 운영 DB 판별로 모의 데이터 쓰기 불변 차단) |
 | **ISSUE-80** | MANUAL_VERIFIED의 URL 호스트네임 정밀 검증 및 서버 관리자 승인 부재 | 높음 | 🟢 해결완료 | `cross_platform_matcher.py` (urllib.parse 기반 ALLOWED_HOSTS 화이트리스트 및 admin_approval 딕셔너리 검증) |
 | **ISSUE-81** | 상세조회 큐의 IN_PROGRESS 작업 워커 크래시 중단 복구 부재 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (recover_stale_in_progress_tasks로 중단 작업 PENDING 안전 복구 통과) |
+| **ISSUE-82** | MANUAL_VERIFIED의 단순 딕셔너리 제출을 통한 비인가 승인 우회 위험 | 심각 | 🟢 해결완료 | `cross_platform_matcher.py` (DB 내 실제 admin_approvals 테이블의 APPROVED 레코드 물리적 검증 통과) |
+| **ISSUE-83** | 상세조회 큐의 정상 실행 워커 방해 및 구 워커의 결과 덮어쓰기 결함 | 보통 | 🟢 해결완료 | `incremental_market_observer.py` (임대 만료(Lease Expiration) 기반 크래시 복구 및 claim_token 고유 발급/검증) |
+| **ISSUE-84** | 원본 50대 연료 미표기 15건의 원본 누락 규명 및 데이터 무결성 보존 | 보통 | 🟢 해결완료 | `audit_directive_124_task3_fuel.py` (원본 fuel 빈문자열 100% 보존 및 fuel_inferred/confidence 분리 완료) |
+| **ISSUE-85** | 실시간 50대 관측 미확보 시 가짜 차분 통계 생성 위험 | 높음 | 🟢 해결완료 | `datapart_page1_real.html` 4.6KB 셸 규명 및 REAL_PILOT_PENDING_NEW_CAPTURE 정직 분류 확립 |
+| **ISSUE-86** | 일일 동기화 중간 실패 시 시계열/OWNED 부분 커밋(Dirty Commit) 위험 | 심각 | 🟢 해결완료 | `scripts/run_daily_sync.py` (단일 BEGIN IMMEDIATE 트랜잭션 롤백 및 스테이징 무결성 100% 검증 통과) |
 
 ---
 

@@ -1,0 +1,19 @@
+{
+  "task": "DIRECTIVE_124_TASK_4",
+  "issue": "ISSUE-85",
+  "status": "REAL_PILOT_PENDING_NEW_CAPTURE",
+  "verification_audit": {
+    "inspected_file": "scratch/datapart_page1_real.html",
+    "file_size_bytes": 4721,
+    "file_type": "HTML_SHELL_WITHOUT_DATA_PAYLOAD",
+    "has_car_records": false,
+    "audit_finding": "scratch/datapart_page1_real.html은 4.6KB 크기의 빈 셸(껍데기) HTML로서 실제 50대 차량 행(tr/td) 데이터가 포함되어 있지 않음이 실측 확인됨."
+  },
+  "baseline_historical_data": {
+    "source": "data/carmanager_raw/janghanpyeong_full_collection.json",
+    "total_vehicles": 1764,
+    "historical_sample_50_status": "VERIFIED_100%_PARSED",
+    "db_registered_count": 1801
+  },
+  "honest_reporting_statement": "새로운 시점(T2)의 실제 50대 관측 목록 원본이 온전히 확보되지 않은 상태에서 임의의 가짜 차분 통계(가짜 신규/변경 건수)를 생성하는 것은 허위 보고에 해당하므로, 'REAL_PILOT_PENDING_NEW_CAPTURE'로 정직하게 분류함. 브라우저 세션 기반 2차 수집본이 확보되는 즉시 IncrementalMarketObserver.inspect_batch를 통해 실제 차분(ACTIVE/NEW/PRICE_CHANGE)을 산출할 예정임."
+}

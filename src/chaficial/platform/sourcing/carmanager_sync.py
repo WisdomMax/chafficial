@@ -113,7 +113,8 @@ class CarManagerSyncService:
         current_snapshot: List[Dict[str, Any]],
         scope: str = "OWNED",
         min_expected_count: Optional[int] = None,
-        dry_run: bool = False
+        dry_run: bool = False,
+        connection: Optional[sqlite3.Connection] = None
     ) -> Dict[str, Any]:
         started_at = datetime.now().isoformat()
         is_dry = self.dry_run or dry_run
@@ -132,13 +133,18 @@ class CarManagerSyncService:
                 "unchanged_count": 0,
                 "status": f"ABORTED_BELOW_THRESHOLD: Count ({len(current_snapshot)}) < min_expected_count ({min_expected_count})"
             }
-        if is_dry:
+        
+        owns_conn = False
+        if connection is not None:
+            conn = connection
+        elif is_dry:
             abs_path = os.path.abspath(self.db_path)
             conn = sqlite3.connect(f"file:{abs_path}?mode=ro", uri=True)
-            cursor = conn.cursor()
+            owns_conn = True
         else:
             conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            owns_conn = True
+        cursor = conn.cursor()
 
         stats = {
             "sync_id": str(uuid.uuid4()),
@@ -276,17 +282,18 @@ class CarManagerSyncService:
                         now, now, norm.get("shop"), norm.get("danji")
                     ))
 
-            if not is_dry:
+            if not is_dry and owns_conn:
                 conn.commit()
 
             stats["completed_at"] = datetime.now().isoformat()
             return stats
 
         except Exception as ex:
-            if not is_dry:
+            if not is_dry and owns_conn:
                 conn.rollback()
             stats["status"] = "FAILED"
             stats["error"] = str(ex)
             raise ex
         finally:
-            conn.close()
+            if owns_conn:
+                conn.close()

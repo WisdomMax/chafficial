@@ -54,14 +54,23 @@ class IncrementalMarketObserver:
                 model_name VARCHAR(100),
                 raw_location VARCHAR(100),
                 raw_vendor_status VARCHAR(50),
-                queue_status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, IN_PROGRESS, COMPLETED, FAILED
+                queue_status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, IN_PROGRESS, COMPLETED, FAILED, REQUIRES_ADMIN_REVIEW
                 retry_count INTEGER DEFAULT 0,
                 discovered_at DATETIME NOT NULL,
                 updated_at DATETIME NOT NULL,
                 error_message TEXT,
+                worker_id VARCHAR(50),
+                claim_token VARCHAR(64),
+                lease_expires_at DATETIME,
                 PRIMARY KEY (platform, listing_id)
             );
         """)
+        # 컬럼 마이그레이션 (DIRECTIVE 124 TASK 2, ISSUE-83)
+        for col, col_type in [("worker_id", "VARCHAR(50)"), ("claim_token", "VARCHAR(64)"), ("lease_expires_at", "DATETIME")]:
+            try:
+                c.execute(f"ALTER TABLE market_detail_fetch_queue ADD COLUMN {col} {col_type};")
+            except sqlite3.OperationalError:
+                pass
         conn.commit()
         conn.close()
 
@@ -208,14 +217,25 @@ class IncrementalMarketObserver:
         conn.close()
         return counts
 
-    def claim_next_queue_item(self, platform: str = "CARMANAGER", max_retries: int = 3) -> Optional[Dict[str, Any]]:
+    def claim_next_queue_item(
+        self, 
+        platform: str = "CARMANAGER", 
+        worker_id: Optional[str] = None,
+        lease_seconds: int = 300,
+        max_retries: int = 3
+    ) -> Optional[Dict[str, Any]]:
         """
         Atomically claims next pending item using BEGIN IMMEDIATE and conditional UPDATE.
+        Issues a unique claim_token and sets lease_expires_at (TASK 2, ISSUE-83).
         Guarantees that multiple concurrent workers never claim the same item.
         """
         conn = sqlite3.connect(self.db_path, timeout=30.0)
         c = conn.cursor()
-        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+        now_epoch = time.time()
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00", time.localtime(now_epoch))
+        lease_expires_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00", time.localtime(now_epoch + lease_seconds))
+        active_worker_id = worker_id or f"worker_{uuid.uuid4().hex[:8]}"
+        claim_token = str(uuid.uuid4())
         
         claimed_row = None
         with conn:
@@ -230,13 +250,16 @@ class IncrementalMarketObserver:
             """, (platform, max_retries))
             row = c.fetchone()
             if row:
-                # 조건부 UPDATE로 원자적 상태 변경 (PENDING -> IN_PROGRESS)
+                # 조건부 UPDATE로 원자적 상태 변경 (PENDING -> IN_PROGRESS with lease & token)
                 c.execute("""
                     UPDATE market_detail_fetch_queue SET
                         queue_status = 'IN_PROGRESS',
+                        worker_id = ?,
+                        claim_token = ?,
+                        lease_expires_at = ?,
                         updated_at = ?
                     WHERE platform = ? AND listing_id = ? AND queue_status = 'PENDING'
-                """, (now_iso, row[0], row[1]))
+                """, (active_worker_id, claim_token, lease_expires_iso, now_iso, row[0], row[1]))
                 if c.rowcount == 1:
                     claimed_row = row
 
@@ -250,67 +273,111 @@ class IncrementalMarketObserver:
             "plate_number": claimed_row[2],
             "model_name": claimed_row[3],
             "raw_location": claimed_row[4],
-            "retry_count": claimed_row[5]
+            "retry_count": claimed_row[5],
+            "worker_id": active_worker_id,
+            "claim_token": claim_token,
+            "lease_expires_at": lease_expires_iso
         }
 
-    def mark_queue_item_completed(self, platform: str, listing_id: str) -> None:
-        """Marks item completed."""
+    def mark_queue_item_completed(self, platform: str, listing_id: str, claim_token: Optional[str] = None) -> bool:
+        """
+        Marks item completed. 
+        If claim_token is provided, ensures only the active lease holder can complete it.
+        """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
         with conn:
-            c.execute("""
-                UPDATE market_detail_fetch_queue SET
-                    queue_status = 'COMPLETED',
-                    updated_at = ?
-                WHERE platform = ? AND listing_id = ?
-            """, (now_iso, platform, listing_id))
+            if claim_token:
+                c.execute("""
+                    UPDATE market_detail_fetch_queue SET
+                        queue_status = 'COMPLETED',
+                        updated_at = ?
+                    WHERE platform = ? AND listing_id = ? AND claim_token = ?
+                """, (now_iso, platform, listing_id, claim_token))
+            else:
+                c.execute("""
+                    UPDATE market_detail_fetch_queue SET
+                        queue_status = 'COMPLETED',
+                        updated_at = ?
+                    WHERE platform = ? AND listing_id = ?
+                """, (now_iso, platform, listing_id))
+            success = (c.rowcount > 0)
         conn.close()
+        return success
 
-    def recover_stale_in_progress_tasks(self) -> int:
+    def recover_stale_in_progress_tasks(self, now_iso: Optional[str] = None) -> int:
         """
-        Recovers tasks stuck in IN_PROGRESS due to worker crash.
-        Resets them to PENDING so they can be reclaimed.
+        Recovers ONLY tasks whose lease has expired (TASK 2, ISSUE-83).
+        Active in-progress workers with valid lease remain untouched.
+        Resets expired tasks to PENDING and clears worker_id, claim_token, lease_expires_at.
         """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+        current_time = now_iso or time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
         with conn:
             c.execute("""
                 UPDATE market_detail_fetch_queue SET
                     queue_status = 'PENDING',
+                    worker_id = NULL,
+                    claim_token = NULL,
+                    lease_expires_at = NULL,
                     updated_at = ?
-                WHERE queue_status = 'IN_PROGRESS'
-            """, (now_iso,))
+                WHERE queue_status = 'IN_PROGRESS' 
+                  AND (lease_expires_at IS NULL OR lease_expires_at < ?)
+            """, (current_time, current_time))
             recovered = c.rowcount
         conn.close()
         return recovered
 
-    def mark_queue_item_failed(self, platform: str, listing_id: str, error_msg: str, max_retries: int = 3) -> None:
+    def mark_queue_item_failed(
+        self, 
+        platform: str, 
+        listing_id: str, 
+        error_msg: str, 
+        claim_token: Optional[str] = None,
+        max_retries: int = 3
+    ) -> bool:
         """
         Marks item failed. If retry_count reaches max_retries, transitions to REQUIRES_ADMIN_REVIEW.
+        Verifies claim_token if provided.
         """
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         now_iso = time.strftime("%Y-%m-%dT%H:%M:%S+09:00")
         with conn:
-            c.execute("""
-                SELECT retry_count FROM market_detail_fetch_queue
-                WHERE platform = ? AND listing_id = ?
-            """, (platform, listing_id))
+            query = "SELECT retry_count FROM market_detail_fetch_queue WHERE platform = ? AND listing_id = ?"
+            params = [platform, listing_id]
+            if claim_token:
+                query += " AND claim_token = ?"
+                params.append(claim_token)
+            
+            c.execute(query, params)
             r = c.fetchone()
-            cur_retries = (r[0] if r else 0) + 1
+            if not r:
+                conn.close()
+                return False
+
+            cur_retries = r[0] + 1
             next_status = "REQUIRES_ADMIN_REVIEW" if cur_retries >= max_retries else "FAILED"
 
-            c.execute("""
+            update_q = """
                 UPDATE market_detail_fetch_queue SET
                     queue_status = ?,
                     retry_count = ?,
                     error_message = ?,
                     updated_at = ?
                 WHERE platform = ? AND listing_id = ?
-            """, (next_status, cur_retries, error_msg, now_iso, platform, listing_id))
+            """
+            update_p = [next_status, cur_retries, error_msg, now_iso, platform, listing_id]
+            if claim_token:
+                update_q += " AND claim_token = ?"
+                update_p.append(claim_token)
+
+            c.execute(update_q, update_p)
+            success = (c.rowcount > 0)
         conn.close()
+        return success
 
     def get_pending_queue_items(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Retrieves pending deep fetch tasks with restart recovery support."""

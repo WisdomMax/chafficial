@@ -107,15 +107,12 @@ class MarketTimeSeriesEngine:
         total_found: Optional[int] = None,
         pages_collected: int = 89,
         run_id: Optional[str] = None,
-        dry_run: bool = False
+        dry_run: bool = False,
+        connection: Optional[sqlite3.Connection] = None
     ) -> Dict[str, Any]:
         """
         새로운 스냅샷을 시계열 관측 테이블에 적재하고, 직전 동일 스코프 스냅샷과 비교하여 이벤트를 산출한다.
-        - TASK 1: run_id 기준 재실행 멱등성 보장 (동일 run_id 중복 적재 0건)
-        - TASK 1: 다음 날 동일 매물/가격 관측 영구 보존 (Days on Market 보존)
-        - TASK 4: 동일 source + search_condition 범위에서만 직전 스냅샷 비교
-        - TASK 4: 원본 레코드 해시(raw_hash) 및 실제 사진수(photo_count, 없으면 NULL) 기록
-        - TASK 5: dry_run 시 순수 읽기 전용(mode=ro) 및 쓰기 0건 보장
+        - connection: 외부 트랜잭션 공유 시 주입 (미주입 시 자체 연결 및 커밋)
         """
         effective_dry_run = dry_run or self.dry_run
         run_id = run_id or str(uuid.uuid4())
@@ -126,18 +123,24 @@ class MarketTimeSeriesEngine:
         started_at = started_at or obs_time
         finished_at = finished_at or obs_time
 
-        if effective_dry_run:
+        owns_conn = False
+        if connection is not None:
+            conn = connection
+        elif effective_dry_run:
             abs_path = os.path.abspath(self.db_path)
             conn = sqlite3.connect(f"file:{abs_path}?mode=ro", uri=True)
+            owns_conn = True
         else:
             conn = sqlite3.connect(self.db_path)
+            owns_conn = True
         c = conn.cursor()
 
         # [TASK 1: run_id 기준 재실행 멱등성 검증 - 동일 run_id 중복 적재 원천 차단]
         c.execute("SELECT run_id FROM market_collection_runs WHERE run_id = ? AND status = 'SUCCESS'", (run_id,))
         existing_run = c.fetchone()
         if existing_run:
-            conn.close()
+            if owns_conn:
+                conn.close()
             return {
                 "run_id": run_id,
                 "status": "ALREADY_RECORDED",
@@ -253,9 +256,11 @@ class MarketTimeSeriesEngine:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, events_generated)
 
-            conn.commit()
+            if owns_conn:
+                conn.commit()
 
-        conn.close()
+        if owns_conn:
+            conn.close()
 
         summary = {
             "run_id": run_id,

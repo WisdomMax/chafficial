@@ -1,7 +1,43 @@
 # CHA-FICIAL 공식 기술 감사 로그 (AUDIT LOG)
 > **기록 목적:** 총괄 기술 감독(ChatGPT)과 개발 에이전트(Antigravity) 간의 DIRECTIVE별 지시사항, 독립 감사 결과, 발견된 결함, 조치 커밋 및 검증 증거의 누적 불변 기록.  
 > **최초 작성일:** 2026-10-30 21:55:00 KST  
-> **최종 갱신일:** 2026-10-31 01:05:00 KST  
+> **최종 갱신일:** 2026-10-31 01:25:00 KST  
+
+---
+
+## [DIRECTIVE 124] 관리자 승인 DB 레코드 검증, 큐 임대 만료(Lease Expiration) 복구, 연료 품질 정밀 분석 및 일일 동기화 원자적 롤백 완결
+- **일시:** 2026-10-31 01:25 KST
+- **수행 태스크**:
+  1. **TASK 1 (P0: 관리자 승인 DB 레코드 물리적 검증, ISSUE-82)**:
+     - `admin_approvals` 테이블 신설 (`approval_id`, `vehicle_id`, `admin_id`, `approval_type`, `status`, `approved_at`, `notes`).
+     - `cross_platform_matcher.py`: `MANUAL_VERIFIED` 시 단순 딕셔너리 제출을 불허하고, 실제 DB의 `admin_approvals` 테이블에 `status = 'APPROVED'` 레코드가 존재하는지 물리적 쿼리로 직접 검증 (`PermissionError` 차단).
+     - `scratch/test_directive_121_task1_matcher_guard.py` 갱신 및 100% Pass (미등록 승인 차단, DB 승인 통과 입증).
+  2. **TASK 2 (상세조회 큐 임대 만료(Lease Expiration) 기반 크래시 복구 및 claim_token 선점, ISSUE-83)**:
+     - `market_detail_fetch_queue` 테이블에 `worker_id VARCHAR(50)`, `claim_token VARCHAR(64)`, `lease_expires_at DATETIME` 스키마 마이그레이션 적용.
+     - `claim_next_queue_item()`: 선점 시 UUID `claim_token` 발급 및 `lease_expires_at` (기본 300초) 설정.
+     - `recover_stale_in_progress_tasks()`: 임대 시간이 만료된(`lease_expires_at < current_time`) 작업만 `PENDING`으로 복구 (정상 실행 중인 워커 방해 0건 보장).
+     - `mark_queue_item_completed()` 및 `mark_queue_item_failed()`: `claim_token` 일치 검증으로 오래된 워커의 오염 방지.
+     - 회귀 테스트(`scratch/test_directive_124_task2_lease_queue.py`) 100% Pass.
+  3. **TASK 3 (원본 50대 연료 미표기 15건 정밀 분석 및 fuel_inferred 분리, ISSUE-84)**:
+     - 원본 `data/carmanager_raw/janghanpyeong_full_collection.json` 최초 50대 전수 분석 (`scratch/audit_directive_124_task3_fuel.py`).
+     - 실측 결과: 원본 표기 35건 (70.0%), 미표기 15건 (30.0%).
+     - 미표기 15건의 정밀 도메인 분석:
+       * 디젤/TDI/CRDi 모델명 명시: 10건 (카니발 디젤 3, 올 뉴 쏘렌토 디젤 2, 포터2 CRDi 2, 스타리아 디젤 1, 렉스턴 스포츠 디젤 1, 골프 TDI 1)
+       * 하이브리드/HEV 모델명 명시: 3건 (팰리세이드 하이브리드, 쏘렌토 하이브리드, 쏘나타 하이브리드)
+       * 일반 가솔린/기본 모델: 2건 (그랜드 스타렉스 CVX, 벤츠 CLS 53 AMG)
+     - 원본 무결성 보장: 원본 `fuel` 필드는 빈 문자열('') 그대로 보존하고, 파생 필드 `fuel_inferred` 및 `fuel_inference_confidence`로 분리 (`scratch/directive_124_task3_fuel_report.json`).
+  4. **TASK 4 (최초 실제 50대 목록 관측 상태 점검 및 정직한 상태 보고, ISSUE-85)**:
+     - `scratch/datapart_page1_real.html` 실측 결과 4.6KB의 빈 프레임 셸로 차량 데이터 미포함 입증.
+     - 허위 데이터 조작 없이 상태를 `REAL_PILOT_PENDING_NEW_CAPTURE`로 정직하게 분류 (`scratch/directive_124_task4_real_pilot_status.json`).
+  5. **TASK 5 (일일 운영 가드 원자적 스테이징 및 롤백 검증, ISSUE-86)**:
+     - `MarketTimeSeriesEngine` 및 `CarManagerSyncService`에 `connection` 주입 아키텍처 구현.
+     - `scripts/run_daily_sync.py`: 4단계(시계열), 5단계(OWNED), 6단계(MARKET)를 단일 `BEGIN IMMEDIATE` 트랜잭션으로 통합하여 중간 실패 시 원자적 롤백(`atomic_conn.rollback()`) 보장.
+     - 중간 실패 시뮬레이션 및 롤백 회귀 테스트(`scratch/test_directive_124_task5_rollback.py`) 100% Pass (잔류 데이터 0건 입증).
+     - `scripts/run_daily_sync.py --dry-run` 1,764대 무오류 성공.
+  6. **TASK 6 (마스터 체크리스트 갱신 및 3대 범주 분류 체계 준수)**:
+     - `docs/CHA_FICIAL_MASTER_CHECKLIST.md` 및 `docs/CHA_FICIAL_AUDIT_LOG.md` 최신화 완료.
+
+---
 
 ---
 

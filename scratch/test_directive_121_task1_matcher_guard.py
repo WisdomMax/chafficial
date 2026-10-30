@@ -98,12 +98,14 @@ def test_matcher_guards():
         plate_number="34나5678",
         source_platform="KB_CHACHACHA",
         external_car_id="kb_car_02",
-        external_url="http://dummy.url/car",
+        external_url="http://dummy.url/kb_car_02",
         advertised_price_manwon=1800,
         photo_urls=[],
         status=MatchingStatus.VERIFIED,
         match_score=0.90,
-        match_evidence={"verified_by": "admin"},
+        match_evidence={
+            "admin_approval": {"admin_id": "admin_01", "approved_at": "2026-10-31T01:00:00+09:00"}
+        },
         observation_mode=ObservationMode.MANUAL_VERIFIED,
         matched_at="2026-10-31T00:44:00+09:00"
     )
@@ -111,30 +113,66 @@ def test_matcher_guards():
         sandbox_matcher.record_verified_match(dummy_manual)
         assert False, "Should raise ValueError on dummy URL"
     except ValueError as e:
-        print("[+] 더미 URL 정상 차단:", e)
+        print("[+] 더미 호스트네임 정상 차단:", e)
 
-    # 4. MANUAL_VERIFIED 시 verified_by 누락 차단 확인
+    # 4. MANUAL_VERIFIED 시 admin_approval 누락 차단 확인
     no_verifier_manual = MatchResult(
         vehicle_id="veh_02",
         plate_number="34나5678",
         source_platform="KB_CHACHACHA",
-        external_car_id="kb_car_02",
-        external_url="https://www.kbchachacha.com/real/02",
+        external_car_id="real_02",
+        external_url="https://www.kbchachacha.com/car/real_02",
         advertised_price_manwon=1800,
         photo_urls=[],
         status=MatchingStatus.VERIFIED,
         match_score=0.90,
-        match_evidence={}, # verified_by 누락
+        match_evidence={}, # admin_approval 누락
         observation_mode=ObservationMode.MANUAL_VERIFIED,
         matched_at="2026-10-31T00:44:00+09:00"
     )
     try:
         sandbox_matcher.record_verified_match(no_verifier_manual)
-        assert False, "Should raise ValueError on missing verified_by"
+        assert False, "Should raise ValueError on missing admin_approval"
     except ValueError as e:
-        print("[+] 확인자 누락 정상 차단:", e)
+        print("[+] 관리자 승인 누락 정상 차단:", e)
 
-    # 5. 정상 MANUAL_VERIFIED 저장 검증 (도메인, car_id 매핑, verified_by, verified_at, admin_approved 충족)
+    # 5. DB 내 실제 승인 레코드 부재(가짜 딕셔너리 주입) 차단 확인 (TASK 1, ISSUE-82)
+    fake_dict_manual = MatchResult(
+        vehicle_id="veh_02",
+        plate_number="34나5678",
+        source_platform="KB_CHACHACHA",
+        external_car_id="real_02",
+        external_url="https://www.kbchachacha.com/car/real_02",
+        advertised_price_manwon=1800,
+        photo_urls=[],
+        status=MatchingStatus.VERIFIED,
+        match_score=0.90,
+        match_evidence={
+            "admin_approval": {
+                "approval_id": "appr_fake_999",
+                "admin_id": "fake_admin",
+                "approved_at": "2026-10-31T01:00:00+09:00"
+            }
+        },
+        observation_mode=ObservationMode.MANUAL_VERIFIED,
+        matched_at="2026-10-31T00:44:00+09:00"
+    )
+    try:
+        sandbox_matcher.record_verified_match(fake_dict_manual)
+        assert False, "Should raise PermissionError on unapproved/missing DB approval"
+    except PermissionError as e:
+        print("[+] DB 내 승인 레코드 부재 정상 차단:", e)
+
+    # 6. 정상 MANUAL_VERIFIED 저장 검증 (실제 DB admin_approvals에 APPROVED 레코드 사전 등록)
+    conn = sqlite3.connect(SANDBOX_DB)
+    c = conn.cursor()
+    c.execute("""
+        INSERT INTO admin_approvals (approval_id, vehicle_id, admin_id, approval_type, status, approved_at, notes)
+        VALUES ('appr_valid_001', 'veh_02', 'expert_human_inspector', 'MANUAL_MATCH', 'APPROVED', '2026-10-31T00:55:00+09:00', 'Direct inspection verified')
+    """)
+    conn.commit()
+    conn.close()
+
     valid_manual = MatchResult(
         vehicle_id="veh_02",
         plate_number="34나5678",
@@ -146,9 +184,11 @@ def test_matcher_guards():
         status=MatchingStatus.VERIFIED,
         match_score=0.90,
         match_evidence={
-            "verified_by": "expert_human_inspector",
-            "verified_at": "2026-10-31T00:55:00+09:00",
-            "admin_approved": True
+            "admin_approval": {
+                "approval_id": "appr_valid_001",
+                "admin_id": "expert_human_inspector",
+                "approved_at": "2026-10-31T00:55:00+09:00"
+            }
         },
         observation_mode=ObservationMode.MANUAL_VERIFIED,
         matched_at="2026-10-31T00:55:00+09:00"
@@ -161,10 +201,10 @@ def test_matcher_guards():
     row2 = c.fetchone()
     conn.close()
 
-    print("[Valid MANUAL_VERIFIED Row]:", row2)
+    print("[Valid MANUAL_VERIFIED Row with DB Approval]:", row2)
     assert row2 == ("ACTIVE", 1800, 0)
 
-    print("[+] TASK 1 OFFLINE_TEST 운영 DB 차단 및 MANUAL_VERIFIED 엄격성 검증 100% PASS!")
+    print("[+] TASK 1 OFFLINE_TEST 운영 DB 차단 및 DB 기반 승인 검증 100% PASS!")
 
 if __name__ == "__main__":
     test_matcher_guards()

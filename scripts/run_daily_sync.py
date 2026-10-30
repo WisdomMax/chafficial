@@ -14,6 +14,7 @@ import os
 import json
 import time
 import asyncio
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 
@@ -101,30 +102,57 @@ def run_sync_pipeline(use_live_collector: bool = True, max_pages: int = 89, dry_
         print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
         sys.exit(1)
 
-    # [DIRECTIVE 110-R TASK 2: 시계열 관측 저장을 운영 DB 변경보다 반드시 먼저 선행]
-    # 4. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록 (선행)
-    ts_engine = MarketTimeSeriesEngine(db_path="data/chamart/chamart_platform_demo.db", dry_run=dry_run)
-    ts_res = ts_engine.record_snapshot(all_cars, dry_run=dry_run)
-    print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
+    # [DIRECTIVE 124 TASK 5, ISSUE-86: 시계열·OWNED·MARKET 단계의 중간 실패 시 부분 커밋 방지 원자적 트랜잭션]
+    db_path = "data/chamart/chamart_platform_demo.db"
+    if dry_run:
+        abs_path = os.path.abspath(db_path)
+        atomic_conn = sqlite3.connect(f"file:{abs_path}?mode=ro", uri=True)
+    else:
+        atomic_conn = sqlite3.connect(db_path)
 
-    # 시계열 저장이 성공하지 않았으면 운영 차량 가격/상태 변경을 절대 시작하지 않음
-    if "SUCCESS" not in ts_res.get("status", ""):
-        print(f"[!] CRITICAL GUARD: Market TimeSeries failed with status '{ts_res.get('status')}'. Aborting operational database sync.", file=sys.stderr)
-        sys.exit(1)
+    try:
+        if not dry_run:
+            atomic_conn.execute("BEGIN IMMEDIATE;")
 
-    # 5. 우리 상사 운영 동기화 (시계열 성공 확인 후 실행)
-    owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_THRESHOLD, dry_run=dry_run)
-    print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
-    if owned_res.get("status") != "SUCCESS":
-        print(f"[!] Critical Abort in Owned Sync: Status is '{owned_res.get('status')}'.", file=sys.stderr)
-        sys.exit(1)
+        # 4. 시장 관측 시계열 및 변동 이벤트 엔진 누적 기록 (선행)
+        ts_engine = MarketTimeSeriesEngine(db_path=db_path, dry_run=dry_run)
+        ts_res = ts_engine.record_snapshot(all_cars, dry_run=dry_run, connection=atomic_conn)
+        print(f"[+] Market TimeSeries Recorded: Status={ts_res.get('status')}, RunID={ts_res.get('run_id')}, Observations={ts_res.get('observations_count')}, Events={ts_res.get('events_count')} (Appeared={ts_res.get('appeared_count')}, PriceDec={ts_res.get('price_decreased_count')}, Delisted={ts_res.get('disappeared_count')})")
 
-    # 6. 장한평 시장 운영 동기화
-    market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_OBSERVED_THRESHOLD, dry_run=dry_run)
-    print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, New={market_res['new_inserted']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
-    if market_res.get("status") != "SUCCESS":
-        print(f"[!] Critical Abort in Market Sync: Status is '{market_res.get('status')}'.", file=sys.stderr)
+        # 시계열 저장이 성공하지 않았으면 즉시 롤백 및 중단
+        if "SUCCESS" not in ts_res.get("status", ""):
+            raise RuntimeError(f"Market TimeSeries failed with status '{ts_res.get('status')}'.")
+
+        # 5. 우리 상사 운영 동기화 (시계열 성공 확인 후 실행)
+        owned_res = service.run_sync(current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_THRESHOLD, dry_run=dry_run, connection=atomic_conn)
+        print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
+        if owned_res.get("status") != "SUCCESS":
+            raise RuntimeError(f"Owned Sync failed with status '{owned_res.get('status')}'.")
+
+        # 6. 장한평 시장 운영 동기화
+        market_res = service.run_sync(current_snapshot=market_cars, scope="MARKET_OBSERVED", min_expected_count=MIN_MARKET_OBSERVED_THRESHOLD, dry_run=dry_run, connection=atomic_conn)
+        print(f"[+] Market Scope Sync: Inspected={market_res['total_inspected']}, New={market_res['new_inserted']}, PriceChanged={market_res['price_changed']}, Status={market_res['status']}")
+        if market_res.get("status") != "SUCCESS":
+            raise RuntimeError(f"Market Sync failed with status '{market_res.get('status')}'.")
+
+        if not dry_run:
+            atomic_conn.commit()
+            print("[+] All sync phases (TimeSeries + Owned + Market) committed ATOMICALLY!")
+
+    except Exception as ex:
+        if not dry_run:
+            atomic_conn.rollback()
+            print(f"[!] CRITICAL GUARD: Sync pipeline aborted. ATOMIC ROLLBACK completed: {ex}", file=sys.stderr)
+        try:
+            atomic_conn.close()
+        except Exception:
+            pass
         sys.exit(1)
+    finally:
+        try:
+            atomic_conn.close()
+        except Exception:
+            pass
 
     # 타임스탬프 스냅샷 아카이빙 (dry_run 시에는 dry_run 임시 파일로 분리)
     if dry_run:
