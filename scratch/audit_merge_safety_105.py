@@ -26,7 +26,7 @@ c_bak = conn_bak.cursor()
 c_bak.execute("""
     SELECT plate_number, count(*), group_concat(id)
     FROM vehicles
-    WHERE plate_number != '' AND plate_number IS NOT NULL AND plate_number NOT LIKE '%*%'
+    WHERE plate_number != '' AND plate_number IS NOT NULL AND plate_number NOT LIKE '%*%' AND plate_number != 'UNVERIFIED'
     GROUP BY plate_number
     HAVING count(*) > 1
 """)

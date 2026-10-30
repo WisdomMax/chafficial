@@ -18,7 +18,7 @@ cursor = conn.cursor()
 cursor.execute("""
     SELECT id, plate_number, model_name, status, is_public, created_at 
     FROM vehicles 
-    WHERE plate_number IS NOT NULL AND plate_number != ''
+    WHERE plate_number IS NOT NULL AND plate_number != '' AND plate_number != 'UNVERIFIED'
     ORDER BY plate_number, is_public DESC, created_at ASC
 """)
 all_plated = cursor.fetchall()
@@ -105,7 +105,7 @@ total_vehicles = cursor.fetchone()[0]
 cursor.execute("""
     SELECT plate_number, count(*) 
     FROM vehicles 
-    WHERE plate_number IS NOT NULL AND plate_number != ''
+    WHERE plate_number IS NOT NULL AND plate_number != '' AND plate_number != 'UNVERIFIED'
     GROUP BY plate_number 
     HAVING count(*) > 1
 """)

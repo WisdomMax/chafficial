@@ -17,8 +17,8 @@ echo "========================================================" >> "${LOG_FILE}"
 
 cd "${PROJECT_DIR}"
 
-# CPU 부하 70% 제한 준수 (nice 우선순위 조정)
-nice -n 15 "${VENV_PYTHON}" scripts/run_daily_sync.py >> "${LOG_FILE}" 2>&1
+# CPU 부하 70% 제한 준수 (nice 우선순위 조정) 및 실시간 수집 옵션(--live) 필수 활성화
+nice -n 15 "${VENV_PYTHON}" scripts/run_daily_sync.py --live >> "${LOG_FILE}" 2>&1
 
 echo "========================================================" >> "${LOG_FILE}"
 echo "[+] Daily Sync Completed at $(date)" >> "${LOG_FILE}"
