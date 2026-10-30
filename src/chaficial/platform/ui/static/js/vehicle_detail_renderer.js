@@ -471,70 +471,84 @@ class VehicleDetailRenderer {
               </div>
             </div>
 
-            <!-- 3. 사고 및 성능점검 공식 진단표 & 2D SVG 다이어그램 (DIRECTIVE 062 P0: 허위 증빙 완전 제거) -->
-            <div class="bg-white rounded-lg border border-[#E5E8EC] p-5 space-y-5">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
-                <div>
-                  <h3 class="text-lg font-bold text-[#171C24]">사고 및 성능점검 공식 진단</h3>
-                  <p class="text-xs text-slate-500 mt-0.5">자동차관리법 제58조 제1항에 따른 성능·상태점검 전산 기준</p>
+            <!-- 3. 사고 및 성능점검 공식 진단표 & 2D SVG 다이어그램 (기본 접힘 아코디언 토글) -->
+            <div class="bg-white rounded-lg border border-[#E5E8EC] overflow-hidden transition-all duration-200">
+              <button type="button" onclick="window.__vdrInstance && window.__vdrInstance.toggleAccidentDiagnostics()" class="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-50/70 transition-colors cursor-pointer select-none">
+                <div class="flex-1 min-w-0 pr-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-bold text-[#171C24]">사고 및 성능점검 공식 진단</h3>
+                    <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 font-bold border border-emerald-200/60">공식 전산 기준</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-1">6대 안심 진단 항목 및 부위별 정밀 2D 평면도 (누르면 펼쳐집니다)</p>
                 </div>
-                <div class="flex items-center space-x-2 text-xs">
-                  ${(acc.inspection_document_id && acc.inspection_document_url) 
-                    ? `
-                      <span class="text-slate-600 hidden sm:inline">문서번호: <strong class="font-mono text-slate-800">${escapeHtml(acc.inspection_document_id)}</strong></span>
-                      <a href="${escapeHtml(acc.inspection_document_url)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center cursor-pointer transition-colors shadow-2xs">
-                        <i data-lucide="file-text" class="w-3.5 h-3.5 mr-1 text-teal-400"></i>
-                        검증된 성능기록부 원본
-                      </a>
-                    ` 
-                    : '<span id="vdrInspectionPendingBadge" class="text-slate-600 font-medium bg-slate-100 px-2.5 py-1 rounded border border-slate-200">성능·상태점검기록부 확인 중</span>'}
+                <div id="vdrAccidentChevron" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition-transform duration-200 shrink-0 ml-2">
+                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
                 </div>
-              </div>
+              </button>
 
-              <!-- 상단 6대 신뢰 요약 (단정한 사각형 박스) -->
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
-                ${this.renderDiagnosticCard('주요 골격(프레임) 손상', frameStatus, 'shield')}
-                ${this.renderDiagnosticCard('외판 부위 교환/판금', bodyStatus, 'wrench')}
-                ${this.renderDiagnosticCard('엔진/변속기 미세누유', leakStatus, 'droplet')}
-                ${this.renderDiagnosticCard('침수 및 화재 이력', floodStatus, 'waves')}
-                ${this.renderDiagnosticCard('보험사고 이력', insuranceStatus, 'file-text')}
-                ${this.renderDiagnosticCard('성능점검 기록부', docStatus, 'check-circle')}
-              </div>
-
-              <!-- 차량 부위별 독자 2D 다이어그램 (외판 vs 주요 골격, diagram_parts 바인딩) -->
-              <div class="bg-slate-50 p-4 rounded-lg border border-[#E5E8EC] space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <span class="text-xs font-bold text-slate-800">차량 부위별 정밀 진단 평면도 (클릭 시 세부 판정 확인)</span>
-                  <div class="inline-flex rounded bg-slate-200 p-0.5 text-xs font-medium">
-                    <button onclick="window.__vdrInstance.switchDiagramTab('all')" id="vdrDiagTabAll" class="px-2.5 py-1 rounded bg-white text-slate-900 shadow-2xs cursor-pointer">전체</button>
-                    <button onclick="window.__vdrInstance.switchDiagramTab('outer')" id="vdrDiagTabOuter" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 cursor-pointer">외판 부위</button>
-                    <button onclick="window.__vdrInstance.switchDiagramTab('frame')" id="vdrDiagTabFrame" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 cursor-pointer">주요 골격</button>
+              <div id="vdrAccidentDiagnosticsBody" class="hidden px-4 sm:px-5 pb-5 pt-3 space-y-5 border-t border-slate-100">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                  <div>
+                    <span class="text-xs text-slate-500">자동차관리법 제58조 제1항에 따른 성능·상태점검 전산 기준</span>
+                  </div>
+                  <div class="flex items-center space-x-2 text-xs">
+                    ${(acc.inspection_document_id && acc.inspection_document_url) 
+                      ? `
+                        <span class="text-slate-600 hidden sm:inline">문서번호: <strong class="font-mono text-slate-800">${escapeHtml(acc.inspection_document_id)}</strong></span>
+                        <a href="${escapeHtml(acc.inspection_document_url)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded bg-slate-900 hover:bg-black text-white font-bold text-xs flex items-center cursor-pointer transition-colors shadow-2xs">
+                          <i data-lucide="file-text" class="w-3.5 h-3.5 mr-1 text-teal-400"></i>
+                          검증된 성능기록부 원본
+                        </a>
+                      ` 
+                      : '<span id="vdrInspectionPendingBadge" class="text-slate-600 font-medium bg-slate-100 px-2.5 py-1 rounded border border-slate-200">성능·상태점검기록부 확인 중</span>'}
                   </div>
                 </div>
 
-                <!-- 범례 -->
-                <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 py-1 border-t border-b border-slate-200/70">
-                  <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span>무사고·정상</span>
-                  <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span>단순교환/수리</span>
-                  <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 mr-1.5"></span>주요 골격손상</span>
-                  <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 mr-1.5"></span>미확인</span>
+                <!-- 상단 6대 신뢰 요약 (단정한 사각형 박스) -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                  ${this.renderDiagnosticCard('주요 골격(프레임) 손상', frameStatus, 'shield')}
+                  ${this.renderDiagnosticCard('외판 부위 교환/판금', bodyStatus, 'wrench')}
+                  ${this.renderDiagnosticCard('엔진/변속기 미세누유', leakStatus, 'droplet')}
+                  ${this.renderDiagnosticCard('침수 및 화재 이력', floodStatus, 'waves')}
+                  ${this.renderDiagnosticCard('보험사고 이력', insuranceStatus, 'file-text')}
+                  ${this.renderDiagnosticCard('성능점검 기록부', docStatus, 'check-circle')}
                 </div>
 
-                <!-- SVG 및 우측 상세 패널 -->
-                <div class="flex flex-col md:flex-row items-center justify-center gap-6 py-2">
-                  <div class="relative w-full max-w-[300px] aspect-[3/5] flex items-center justify-center">
-                    ${this.renderCarDiagramSvg(acc)}
-                  </div>
-
-                  <div id="vdrPartDetailPanel" class="w-full md:w-64 bg-white p-4 rounded-lg border border-[#E5E8EC] space-y-2 text-xs">
-                    <div class="font-bold text-slate-800 text-sm flex items-center justify-between border-b border-slate-100 pb-2">
-                      <span id="vdrSelectedPartName">부위를 선택하세요</span>
-                      <span id="vdrSelectedPartBadge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">선택 대기</span>
+                <!-- 차량 부위별 독자 2D 다이어그램 (외판 vs 주요 골격, diagram_parts 바인딩) -->
+                <div class="bg-slate-50 p-4 rounded-lg border border-[#E5E8EC] space-y-4">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-slate-800">차량 부위별 정밀 진단 평면도 (클릭 시 세부 판정 확인)</span>
+                    <div class="inline-flex rounded bg-slate-200 p-0.5 text-xs font-medium">
+                      <button onclick="window.__vdrInstance.switchDiagramTab('all')" id="vdrDiagTabAll" class="px-2.5 py-1 rounded bg-white text-slate-900 shadow-2xs cursor-pointer">전체</button>
+                      <button onclick="window.__vdrInstance.switchDiagramTab('outer')" id="vdrDiagTabOuter" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 cursor-pointer">외판 부위</button>
+                      <button onclick="window.__vdrInstance.switchDiagramTab('frame')" id="vdrDiagTabFrame" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 cursor-pointer">주요 골격</button>
                     </div>
-                    <div class="space-y-1.5 text-slate-600 pt-1">
-                      <div>구분: <span id="vdrSelectedPartCategory" class="font-medium text-slate-800">-</span></div>
-                      <div>판정: <span id="vdrSelectedPartState" class="font-medium text-slate-700">-</span></div>
-                      <div>근거: <span id="vdrSelectedPartEvidence" class="font-mono text-slate-500 text-[11px]">-</span></div>
+                  </div>
+
+                  <!-- 범례 -->
+                  <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 py-1 border-t border-b border-slate-200/70">
+                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span>무사고·정상</span>
+                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span>단순교환/수리</span>
+                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 mr-1.5"></span>주요 골격손상</span>
+                    <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 mr-1.5"></span>미확인</span>
+                  </div>
+
+                  <!-- SVG 및 우측 상세 패널 -->
+                  <div class="flex flex-col md:flex-row items-center justify-center gap-6 py-2">
+                    <div class="relative w-full max-w-[300px] aspect-[3/5] flex items-center justify-center">
+                      ${this.renderCarDiagramSvg(acc)}
+                    </div>
+
+                    <div id="vdrPartDetailPanel" class="w-full md:w-64 bg-white p-4 rounded-lg border border-[#E5E8EC] space-y-2 text-xs">
+                      <div class="font-bold text-slate-800 text-sm flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span id="vdrSelectedPartName">부위를 선택하세요</span>
+                        <span id="vdrSelectedPartBadge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">선택 대기</span>
+                      </div>
+                      <div class="space-y-1.5 text-slate-600 pt-1">
+                        <div>구분: <span id="vdrSelectedPartCategory" class="font-medium text-slate-800">-</span></div>
+                        <div>판정: <span id="vdrSelectedPartState" class="font-medium text-slate-700">-</span></div>
+                        <div>근거: <span id="vdrSelectedPartEvidence" class="font-mono text-slate-500 text-[11px]">-</span></div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2208,6 +2222,22 @@ class VehicleDetailRenderer {
   toggleTireConsumables() {
     const body = document.getElementById('vdrTireConsumablesBody');
     const chevron = document.getElementById('vdrTireChevron');
+    if (!body) return;
+    const isHidden = body.classList.contains('hidden');
+    if (isHidden) {
+      body.classList.remove('hidden');
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+      if (window.lucide) window.lucide.createIcons();
+    } else {
+      body.classList.add('hidden');
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+    }
+  }
+
+  // 사고 및 성능점검 공식 진단표 접기/펼치기 토글
+  toggleAccidentDiagnostics() {
+    const body = document.getElementById('vdrAccidentDiagnosticsBody');
+    const chevron = document.getElementById('vdrAccidentChevron');
     if (!body) return;
     const isHidden = body.classList.contains('hidden');
     if (isHidden) {
