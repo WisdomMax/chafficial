@@ -35,9 +35,10 @@ class SqliteAtomicBudgetEnforcer:
         """)
         c.execute("""
             CREATE TABLE IF NOT EXISTS quota_processed_vehicles (
-                vehicle_id VARCHAR(36) PRIMARY KEY,
                 processed_date VARCHAR(10) NOT NULL,
-                processed_at DATETIME NOT NULL
+                vehicle_id VARCHAR(36) NOT NULL,
+                processed_at DATETIME NOT NULL,
+                PRIMARY KEY (processed_date, vehicle_id)
             );
         """)
         conn.commit()
@@ -61,7 +62,7 @@ class SqliteAtomicBudgetEnforcer:
                 c = conn.cursor()
                 
                 # 중복 처리 확인
-                c.execute("SELECT 1 FROM quota_processed_vehicles WHERE vehicle_id = ?", (vehicle_id,))
+                c.execute("SELECT 1 FROM quota_processed_vehicles WHERE processed_date = ? AND vehicle_id = ?", (today, vehicle_id))
                 if c.fetchone():
                     return  # 이미 처리된 차량은 예산 차감 없이 통과
 
@@ -77,9 +78,9 @@ class SqliteAtomicBudgetEnforcer:
                     raise QuotaExhaustedException(f"Daily car quota limit ({self.daily_car_limit}) exhausted for date {today}.")
 
                 c.execute("""
-                    INSERT INTO quota_processed_vehicles (vehicle_id, processed_date, processed_at)
+                    INSERT OR IGNORE INTO quota_processed_vehicles (processed_date, vehicle_id, processed_at)
                     VALUES (?, ?, ?)
-                """, (vehicle_id, today, now_iso))
+                """, (today, vehicle_id, now_iso))
         finally:
             conn.close()
 

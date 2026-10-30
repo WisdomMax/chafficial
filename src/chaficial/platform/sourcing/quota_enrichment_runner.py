@@ -13,6 +13,7 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
+from chaficial.platform.sourcing.atomic_budget_enforcer import SqliteAtomicBudgetEnforcer
 from chaficial.platform.sourcing.cross_platform_matcher import (
     CrossPlatformMatcher, MatchResult, MatchingStatus
 )
@@ -77,7 +78,7 @@ class QuotaEnrichmentRunner:
         self.matcher = CrossPlatformMatcher(db_path)
         self.checkpoint_path = Path("data/carmanager_raw/enrichment_checkpoint_real.json")
         self.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
-        self.budget = DailyBudgetEnforcer(self.checkpoint_path, daily_car_limit=daily_limit, kb_req_limit=daily_limit, encar_req_limit=daily_limit)
+        self.budget = SqliteAtomicBudgetEnforcer(self.db_path, daily_car_limit=daily_limit, kb_req_limit=daily_limit, encar_req_limit=daily_limit)
 
     def process_vehicle_safe(self, vehicle: Dict[str, Any], kb_candidate: Optional[Dict[str, Any]] = None, encar_candidate: Optional[Dict[str, Any]] = None) -> Optional[MatchResult]:
         """

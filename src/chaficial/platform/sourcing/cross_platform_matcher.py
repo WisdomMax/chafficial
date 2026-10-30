@@ -1,10 +1,11 @@
 """
-Cross-Platform Vehicle Matcher (CHA-FICIAL DIRECTIVE 116)
-- Strict multi-attribute verification engine.
-- Matching status: VERIFIED (Exact full plate + multi-spec match, score >= 0.85) -> listing_status = 'ACTIVE'
-- CANDIDATE -> listing_status = 'REVIEW_PENDING' (quarantined from active pricing/learning)
-- Never overwrites CarManager target_price; records independent platform listing.
-- Photo assets quarantined as PRIVATE / PENDING_REVIEW / allow_video_use = 0.
+Cross-Platform Vehicle Matcher (CHA-FICIAL DIRECTIVE 118 Standards)
+- Standard Interfaces:
+  * fetch_kb_candidate(): Connects to authorized KB API / scrape adapter (raises NotImplementedError if unauthorized)
+  * fetch_encar_candidate(): Connects to authorized Encar API / scrape adapter (raises NotImplementedError if unauthorized)
+  * validate_candidate(): Pure multi-attribute deterministic scoring
+  * record_verified_match(): Saves only VERIFIED as ACTIVE, CANDIDATE as REVIEW_PENDING
+- Explicit Observation Mode: OFFLINE_TEST, MANUAL_VERIFIED, LIVE_OBSERVED.
 """
 
 import re
@@ -17,9 +18,14 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum
 
+class ObservationMode(str, Enum):
+    OFFLINE_TEST = "OFFLINE_TEST"           # Hardcoded sample data for calculation testing
+    MANUAL_VERIFIED = "MANUAL_VERIFIED"     # Verified manually via web UI with evidence URLs
+    LIVE_OBSERVED = "LIVE_OBSERVED"         # Automated live network query via authorized adapter
+
 class MatchingStatus(str, Enum):
-    VERIFIED = "VERIFIED"       # High confidence match (Exact full plate + multi-spec match, score >= 0.85)
-    CANDIDATE = "CANDIDATE"     # Moderate match requiring manual review (0.60 <= score < 0.85)
+    VERIFIED = "VERIFIED"       # High confidence match (Exact full plate + multi-spec match, score >= 0.85) -> ACTIVE
+    CANDIDATE = "CANDIDATE"     # Moderate match requiring manual review (0.60 <= score < 0.85) -> REVIEW_PENDING
     REJECTED = "REJECTED"       # Low score / spec conflict (score < 0.60)
     NOT_FOUND = "NOT_FOUND"     # No matching car on external platform
 
@@ -35,42 +41,31 @@ class MatchResult:
     status: MatchingStatus
     match_score: float
     match_evidence: Dict[str, Any]
+    observation_mode: ObservationMode
     matched_at: str
 
 class CrossPlatformMatcher:
     def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db"):
         self.db_path = db_path
 
-    def get_deficient_vehicles(self, limit: int = 200) -> List[Dict[str, Any]]:
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-
-        query = """
-            SELECT v.id, v.plate_number, v.model_name, v.year, v.mileage, 
-                   v.fuel_type, v.color, v.target_price,
-                   l.listing_id as carmanager_carseq,
-                   l.raw_seller_name as shop,
-                   l.raw_seller_location as danji,
-                   count(p.id) as photo_count
-            FROM vehicles v
-            LEFT JOIN vehicle_listings l ON v.id = l.vehicle_id AND l.platform = 'CARMANAGER'
-            LEFT JOIN vehicle_photos p ON v.id = p.vehicle_id
-            WHERE v.is_demo = 0
-            GROUP BY v.id
-            HAVING (v.target_price IS NULL OR photo_count = 0)
-            ORDER BY 
-              CASE WHEN v.target_price IS NULL THEN 0 ELSE 1 END,
-              CASE WHEN photo_count = 0 THEN 0 ELSE 1 END,
-              v.id ASC
-            LIMIT ?
+    def fetch_kb_candidate(self, plate_number: str) -> Optional[Dict[str, Any]]:
         """
-        c.execute(query, (limit,))
-        rows = [dict(r) for r in c.fetchall()]
-        conn.close()
-        return rows
+        Connects to authorized KB ChaChaCha interface.
+        Throws NotImplementedError until formal scraping / API integration is authorized.
+        """
+        raise NotImplementedError("Live automated KB ChaChaCha query is not authorized. Use manual verification workflow.")
 
-    def calculate_match_score(self, source_car: Dict[str, Any], candidate_car: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
+    def fetch_encar_candidate(self, plate_number: str) -> Optional[Dict[str, Any]]:
+        """
+        Connects to authorized Encar interface.
+        Throws NotImplementedError until formal scraping / API integration is authorized.
+        """
+        raise NotImplementedError("Live automated Encar query is not authorized. Use manual verification workflow.")
+
+    def validate_candidate(self, source_car: Dict[str, Any], candidate_car: Dict[str, Any]) -> Tuple[float, Dict[str, Any], MatchingStatus]:
+        """
+        Pure deterministic multi-attribute scoring.
+        """
         score = 0.0
         evidence = {}
 
@@ -83,9 +78,8 @@ class CrossPlatformMatcher:
                 score += 0.50
                 evidence["plate_match"] = "EXACT_FULL"
             else:
-                score += 0.0
                 evidence["plate_match"] = "FULL_MISMATCH"
-                return 0.0, {"reason": "FULL_PLATE_MISMATCH", "s_plate": s_plate, "c_plate": c_plate}
+                return 0.0, {"reason": "FULL_PLATE_MISMATCH", "s_plate": s_plate, "c_plate": c_plate}, MatchingStatus.REJECTED
         elif s_plate and c_plate and s_plate[-4:] == c_plate[-4:]:
             score += 0.20
             evidence["plate_match"] = "TAIL_4DIGIT_ONLY"
@@ -95,7 +89,6 @@ class CrossPlatformMatcher:
         # 2. Model match
         s_model = (source_car.get("model_name") or "").lower().replace(" ", "")
         c_model = (candidate_car.get("model_name") or "").lower().replace(" ", "")
-        
         if s_model and c_model:
             if s_model in c_model or c_model in s_model:
                 score += 0.25
@@ -155,26 +148,24 @@ class CrossPlatformMatcher:
                 pass
 
         final_score = min(1.0, round(score, 3))
-        return final_score, evidence
-
-    def classify_match(self, score: float, evidence: Dict[str, Any]) -> MatchingStatus:
-        if evidence.get("reason") == "FULL_PLATE_MISMATCH":
-            return MatchingStatus.REJECTED
-        if score >= 0.85 and evidence.get("plate_match") == "EXACT_FULL":
-            return MatchingStatus.VERIFIED
-        elif score >= 0.60:
-            return MatchingStatus.CANDIDATE
-        elif score > 0.0:
-            return MatchingStatus.REJECTED
+        
+        # Classification
+        if evidence.get("plate_match") == "EXACT_FULL" and final_score >= 0.85:
+            status = MatchingStatus.VERIFIED
+        elif final_score >= 0.60:
+            status = MatchingStatus.CANDIDATE
+        elif final_score > 0.0:
+            status = MatchingStatus.REJECTED
         else:
-            return MatchingStatus.NOT_FOUND
+            status = MatchingStatus.NOT_FOUND
 
-    def record_match_in_db(self, match: MatchResult) -> None:
+        return final_score, evidence, status
+
+    def record_verified_match(self, match: MatchResult) -> None:
         """
-        Records match in DB:
-          - VERIFIED: listing_status = 'ACTIVE'
-          - CANDIDATE: listing_status = 'REVIEW_PENDING' (Directive 116 Task 3: quarantine from active pricing/learning)
-          - REJECTED / NOT_FOUND: Not inserted into vehicle_listings
+        Saves match:
+          - VERIFIED -> listing_status = 'ACTIVE'
+          - CANDIDATE -> listing_status = 'REVIEW_PENDING' (isolated from active analytics)
         """
         if not match.external_url or match.status in (MatchingStatus.REJECTED, MatchingStatus.NOT_FOUND):
             return
@@ -191,6 +182,8 @@ class CrossPlatformMatcher:
             WHERE vehicle_id = ? AND platform = ?
         """, (match.vehicle_id, match.source_platform))
         existing = c.fetchone()
+
+        notes = f"Mode: {match.observation_mode.value}, Status: {match.status.value}, Evidence: {json.dumps(match.match_evidence, ensure_ascii=False)}"
 
         if existing:
             c.execute("""
@@ -210,7 +203,7 @@ class CrossPlatformMatcher:
                 db_listing_status,
                 now_iso,
                 match.match_score,
-                f"MatchStatus: {match.status.value}, Evidence: {json.dumps(match.match_evidence, ensure_ascii=False)}",
+                notes,
                 existing[0]
             ))
         else:
@@ -233,27 +226,8 @@ class CrossPlatformMatcher:
                 now_iso,
                 now_iso,
                 match.match_score,
-                f"MatchStatus: {match.status.value}, Evidence: {json.dumps(match.match_evidence, ensure_ascii=False)}",
+                notes,
                 match.match_score
-            ))
-
-        # 사진 격리 보존 (allow_video_use=0, public_visibility='PRIVATE')
-        for idx, p_url in enumerate(match.photo_urls):
-            photo_id = str(uuid.uuid4())
-            c.execute("""
-                INSERT OR IGNORE INTO vehicle_photos (
-                    id, vehicle_id, photo_url, category, sort_order, is_primary,
-                    public_visibility, approval_status, allow_video_use, photo_source,
-                    created_at
-                ) VALUES (?, ?, ?, 'EXTERIOR', ?, ?, 'PRIVATE', 'PENDING_REVIEW', 0, ?, ?)
-            """, (
-                photo_id,
-                match.vehicle_id,
-                p_url,
-                idx,
-                1 if idx == 0 else 0,
-                match.source_platform,
-                now_iso
             ))
 
         conn.commit()

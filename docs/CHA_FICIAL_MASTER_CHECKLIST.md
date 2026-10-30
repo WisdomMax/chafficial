@@ -47,6 +47,22 @@
 | **ISSUE-34** | 원본 확인 없는 기존 0원 가격 일괄 정정 위험 | 높음 | 🟢 해결완료 | `verify_source_photo_reality.py` (173대 확정가격군과 1,591대 미공개 '상담'군 1:1 원본 전수 대조 입증) |
 | **ISSUE-35** | 미확인 주행거리 0km 하드코딩 왜곡 결함 | 심각 | 🟢 해결완료 | `migrate_nullable_mileage.py` (vehicles.mileage NULL 허용 마이그레이션 및 0km 대체 완전 폐기) |
 | **ISSUE-36** | 인증정보 잔존 및 실제 사진 공개 서빙 경로 접근통제 미검증 | 심각 | 🟢 해결완료 | `test_photo_access_control_113.py` (하드코딩 제거 및 공개 API 레벨 PRIVATE 사진 100% 차단 실측) |
+| **ISSUE-37** | 성동구 1,167대 vs 1,764대 단지별 도메인 불일치 | 높음 | 🟢 해결완료 | `1f3f33d` (장안모터프라자 1,167대, 성동구지역 370대, 장안평단지 227대 100% 규명) |
+| **ISSUE-38** | DIRECTIVE 114 가상 교차 매칭 데이터 운영 DB 적재 결함 | 심각 | 🟢 해결완료 | `0f2207a` (가상 15건 매물 및 사진 23건 긴급 격리 아카이브 보존 후 DB 영구 삭제) |
+| **ISSUE-39** | 가상 HTTP 요청 및 매칭 결과 실측 오보고 결함 | 심각 | 🟢 해결완료 | `0f2207a` (idx % 3 모의 생성 로직 100% 영구 폐기, 실차량 5대 순수 실측 전환) |
+| **ISSUE-40** | 번호판 앞자리 불일치 매물 오매칭 및 임의 점수 부여 위험 | 높음 | 🟢 해결완료 | `0f2207a` (번호판 전체 일치 및 다중 제원 검증 없이는 VERIFIED 부여 원천 차단) |
+| **ISSUE-41** | 일일 200대 및 요청 예산 관리의 실제 네트워크 사전 차단 부재 | 높음 | 🟢 해결완료 | `0f2207a` (DailyBudgetEnforcer 사전 차단 단위 테스트 통과) |
+| **ISSUE-42** | 단지 원본(1,167)과 DB(1,241) 간 74건 차이 미규명 결함 | 보통 | 🟢 해결완료 | `0f2207a` (우리 상사 보유 74대 + 시장 1,167대 = 1,241대 100% 입증) |
+| **ISSUE-43** | SQL LIKE 와일드카드(_ )로 인한 Base64 정상 매물 5건 과잉 삭제 | 심각 | 🟢 해결완료 | `0fcca7e` (백업본 대조 컬럼단위 100% 일치 원자적 복원 완료, CARMANAGER 1,851건 원상 복구) |
+| **ISSUE-44** | 오프라인 점수 계산과 실제 플랫폼 조회 명확 분리 결함 | 보통 | 🟢 해결완료 | `0fcca7e` (OFFLINE_TEST 표기 및 파일 명확 분리) |
+| **ISSUE-45** | 일일 예산 관리의 멀티프로세스 경쟁 상태 및 동시성 미보장 | 심각 | 🟢 해결완료 | `f3849f2` (SqliteAtomicBudgetEnforcer 신설, SQLite WAL 기반 10스레드/5프로세스 경쟁 100% Pass) |
+| **ISSUE-46** | CANDIDATE 매칭의 ACTIVE 등록으로 인한 가격 분석/AI 학습 혼입 위험 | 높음 | 🟢 해결완료 | `0fcca7e` (CANDIDATE는 REVIEW_PENDING 격리 저장 강제) |
+| **ISSUE-47** | 장안모터프라자 1,167건 vs DB 1,241건 원시 ID 집합 대조 미입증 | 높음 | 🟢 해결완료 | `0fcca7e` (S_orig == S_db = 1,167개 100% 일치 및 74건 Dual Listing 집합 증명) |
+| **ISSUE-48** | 중복 차량 마스터 74건으로 인한 데이터 파편화 결함 | 심각 | 🟢 해결완료 | `f3849f2` (독립 DB 검증 후 운영 DB 적용, 사진 667건 AVAILABLE 마스터 이전, DRAFT 74대 삭제 완료) |
+| **ISSUE-49** | CANDIDATE 다운스트림 시세 분석 및 Feature Store 제외 미입증 | 높음 | 🟢 해결완료 | `f3849f2` (독립 DB에서 FK=ON 하에 시세 분석/학습 쿼리 REVIEW_PENDING 100% 제외 실측 완료) |
+| **ISSUE-50** | 크로스 스코프 동기화 시 자사 보유 차량 중복 마스터 재발 위험 | 심각 | 🟢 해결완료 | `carmanager_sync.py` (전체 플랫폼 리스팅 선조회로 신규 마스터 생성 차단 회귀 테스트 통과) |
+| **ISSUE-51** | SQLite 원자적 예산기의 다음 날 재관측 허용 미보장 결함 | 보통 | 🟢 해결완료 | `atomic_budget_enforcer.py` (quota_processed_vehicles 복합키 (processed_date, vehicle_id) 교정) |
+| **ISSUE-52** | 실제 네트워크 조회와 후보 검증의 인터페이스 혼선 | 보통 | 🟢 해결완료 | `cross_platform_matcher.py` (fetch_kb, fetch_encar, validate, record 4대 인터페이스 분리) |
 
 ---
 

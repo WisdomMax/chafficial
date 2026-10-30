@@ -5,6 +5,32 @@
 
 ---
 
+## [DIRECTIVE 118] 74대 병합 후 무결성 확정, 중복 재발 방지 및 SQLite 원자적 예산기 통합
+- **일시:** 2026-10-31 00:15 KST
+- **수행 태스크**:
+  1. **TASK 1 (병합 이후 운영 데이터 전수 무결성 감사)**:
+     - 병합 직전 백업(`chamart_pre_consolidation_20261031_000308.db`)과 운영 DB 읽기 전용 전수 대조 완료 (`scratch/audit_directive_118_task1_postmerge.py`).
+     - 동일 CARMANAGER listing_id 중복: **정확히 0건**, 차량 마스터 74대 정상 정리(1,875대 -> 1,801대).
+     - 대표 AVAILABLE 마스터 74대 전수 보존, 삭제 DRAFT 74대 잔존 0대 확인.
+     - 이관 사진 667건 대표 마스터 연결 확인, 고객(28명), 상담(29건), 거래(37건) 무손실 보존.
+     - EARLIEST_CREATED_CANONICAL 1건(`i/+cCv/cow+hCxGuAsTYew==` 디스커버리 스포츠) 최초 생성 마스터 보존 사유 확인.
+     - PRAGMA integrity_check OK, foreign_key_check 0건 위반.
+  2. **TASK 2 (중복 재발 방지)**:
+     - `carmanager_sync.py`: 스코프 필터 없이 전체 CARMANAGER 리스팅 선조회로 자사 OWNED 차량이 시장 관측 시 중복 마스터 생성되는 결함 원천 차단.
+     - 회귀 테스트(`scratch/test_duplicate_prevention_regression.py`) 100% Pass.
+  3. **TASK 3 (SQLite 원자적 예산기 실제 러너 연동 및 멀티프로세스 동시성)**:
+     - `quota_enrichment_runner.py`에 `SqliteAtomicBudgetEnforcer` 연동.
+     - `quota_processed_vehicles` 복합키 `(processed_date, vehicle_id)` 교정으로 다음 날 재관측 허용.
+     - 5개 독립 프로세스 150회 동시 차감 경쟁 테스트 -> 정확히 50건 성공, 100건 차단 PASS (`scratch/test_multiprocess_atomic_enforcer.py`).
+  4. **TASK 4 (실제 네트워크 조회와 후보 검증의 명확한 분리)**:
+     - `cross_platform_matcher.py`에 4대 표준 인터페이스(`fetch_kb_candidate`, `fetch_encar_candidate`, `validate_candidate`, `record_verified_match`) 및 `ObservationMode` 열거형 확립.
+  5. **TASK 5 (독립 DB 기반 CANDIDATE 격리 검증)**:
+     - 독립 테스트 DB에서 `PRAGMA foreign_keys = ON;` 하에 시세 분석 및 Feature Store 쿼리에서 REVIEW_PENDING 혼입 0건 실측 검증 완료 (`scratch/test_candidate_quarantine_standalone_db.py`).
+  6. **TASK 6 (마스터 문서 실제 복구)**:
+     - `CHA_FICIAL_MASTER_CHECKLIST.md` 테이블에 ISSUE-37~52 반영 및 C-8, C-9 [IMPLEMENTED / AUDIT_PENDING] 등록 완료.
+
+---
+
 ## [DIRECTIVE 117] 74건 중복 차량 마스터 정밀 병합 완수 및 SQLite 원자적 예산기 구축
 - **일시:** 2026-10-31 00:05 KST
 - **수행 태스크**:

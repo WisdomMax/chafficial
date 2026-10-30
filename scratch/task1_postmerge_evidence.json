@@ -1,0 +1,31 @@
+{
+  "verified_at": "2026-10-31T00:10:00+09:00",
+  "duplicate_listings_count": 0,
+  "vehicles_before": 1875,
+  "vehicles_after": 1801,
+  "deleted_duplicates_count": 74,
+  "canonical_preserved_count": 74,
+  "earliest_canonical_case": {
+    "listing_id": "i/+cCv/cow+hCxGuAsTYew==",
+    "canonical_vehicle_id": "e6670a2e-c532-435e-b34a-b4a3ff9a677c",
+    "duplicate_vehicle_id": "051cac78-e5f6-4fa3-bc40-0d15e1e895a1",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "3143",
+    "model_name": "디스커버리 스포츠 2.0 TD4 SE",
+    "reason": "EARLIEST_CREATED_CANONICAL",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  "core_entities": {
+    "customers": 28,
+    "consultations": 29,
+    "transactions": 37
+  },
+  "integrity_check": "ok",
+  "foreign_key_violations": 0
+}
