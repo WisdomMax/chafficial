@@ -383,7 +383,126 @@ class VehicleDetailRenderer {
               </div>
             </div>
 
-            <!-- 2. 핵심 기본 제원표 (DIRECTIVE 075-A TASK 1: 모던 2열 반응형 그리드 & 시각적 위계 정립) -->
+            <!-- 2. 주요 옵션 10개 요약 및 전체 옵션 펼치기 (사용자 요청: 상단 최우선 배치) -->
+            <div class="bg-white rounded-xl border border-[#E5E8EC] p-4 sm:p-5 space-y-3.5 shadow-2xs">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base sm:text-lg font-bold text-[#171C24] whitespace-nowrap">주요 옵션</h3>
+                  <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#171B1E] text-white">10대 핵심 사양</span>
+                </div>
+                <span class="text-xs text-slate-400">실차 확인 사양</span>
+              </div>
+              <div id="vdrOptionsContainer">
+                ${this.renderOptionsSection(d)}
+              </div>
+              <!-- 면책 고지 문구 (사용자 요구 반영) -->
+              <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed pt-2 border-t border-slate-100 break-keep">
+                ※ 차량 옵션 정보는 전산 등록 기준이며, 실제 차량과 다를 수 있으므로 계약 시 실차를 반드시 확인하시기 바랍니다.
+              </p>
+            </div>
+
+            <!-- 3. 투명 총 구매비용 및 가정한 예시 금리 금융 계산기 (사용자 요청: 가격/비용 상단 최우선 배치) -->
+            <div class="bg-white rounded-lg border border-[#E5E8EC] p-4 sm:p-5 space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <div class="flex items-center justify-between gap-2">
+                  <h3 class="text-base sm:text-lg font-bold text-[#171C24] tracking-tight">총 구매비용 계산</h3>
+                  <span class="text-[11px] sm:text-xs text-slate-400 shrink-0 font-medium">사전 안내용 견적</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">취등록세·부대비용 포함 실구매 예상 견적</p>
+              </div>
+              
+              <div class="space-y-2 text-xs sm:text-sm">
+                <div class="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
+                  <span>차량 정찰 판매가</span>
+                  <span class="font-bold text-slate-900">${targetPriceFormatted}</span>
+                </div>
+                <div class="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
+                  <span>예상 이전등록세 (취득세 7% 기준 예시)</span>
+                  <span class="font-bold text-slate-900">${acquisitionTaxEst.toLocaleString('ko-KR')}만원</span>
+                </div>
+                <div class="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
+                  <span>공채 및 이전대행 부대비용 (미확정 예상 안내)</span>
+                  <span class="font-bold text-slate-900">약 ${bondAndFeeEst}만원</span>
+                </div>
+                <div class="flex justify-between py-2.5 bg-slate-50 px-3 rounded text-slate-900 font-bold text-sm sm:text-base border border-slate-200">
+                  <span>총 예상 구매비용</span>
+                  <span class="text-[#171B1E] text-base sm:text-lg font-bold">${totalPurchaseCostEst.toLocaleString('ko-KR')}만원</span>
+                </div>
+                <p class="text-[11px] text-slate-400">
+                  ※ 취득세 감면 대상 및 지역별 공채 할인율에 따라 실제 이전비용은 차이가 발생할 수 있는 미확정 비용입니다.
+                </p>
+              </div>
+
+              <!-- 스마트 금융 할부 시뮬레이터 -->
+              <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                  <span class="font-bold text-slate-800">스마트 할부 계산기</span>
+                  <span class="text-amber-700 font-medium">※ 가정한 예시 금리 기준 시뮬레이션</span>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label class="block text-slate-500 mb-1">선수금 비율</label>
+                    <select id="vdrCalcDownPayment" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#171B1E]">
+                      <option value="0">0% (무보증 전액할부)</option>
+                      <option value="10" selected>10% (${Math.round((d.target_price || 0) * 0.1).toLocaleString('ko-KR')}만원)</option>
+                      <option value="20">20% (${Math.round((d.target_price || 0) * 0.2).toLocaleString('ko-KR')}만원)</option>
+                      <option value="30">30% (${Math.round((d.target_price || 0) * 0.3).toLocaleString('ko-KR')}만원)</option>
+                      <option value="50">50% (${Math.round((d.target_price || 0) * 0.5).toLocaleString('ko-KR')}만원)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-slate-500 mb-1">할부 기간</label>
+                    <select id="vdrCalcMonths" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#171B1E]">
+                      <option value="24">24개월</option>
+                      <option value="36">36개월</option>
+                      <option value="48">48개월</option>
+                      <option value="60" selected>60개월</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-slate-500 mb-1">가정한 예시 금리</label>
+                    <select id="vdrCalcRate" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#171B1E]">
+                      <option value="0.045">연 4.5% (최저 우대금리 가정)</option>
+                      <option value="0.055">연 5.5% (우대금리 가정)</option>
+                      <option value="0.059" selected>연 5.9% (표준 예시금리)</option>
+                      <option value="0.069">연 6.9% (일반 예시금리)</option>
+                      <option value="0.079">연 7.9% (예시금리)</option>
+                      <option value="0.099">연 9.9% (예시금리)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="bg-slate-900 text-white p-3.5 sm:p-4 rounded-xl space-y-2.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs text-slate-300 font-medium">월 예상 납입금 (원리금 균등)</span>
+                    <span id="vdrCalcMonthlyResult" class="text-base sm:text-lg font-bold text-[#C8FF3D] font-mono">
+                      계산 중...
+                    </span>
+                  </div>
+                  <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span class="text-slate-400 block text-[11px]">총 예상 이자</span>
+                      <span id="vdrCalcOnlyInterest" class="text-slate-200 font-semibold font-mono">약 0만원</span>
+                    </div>
+                    <div class="text-right">
+                      <span class="text-slate-400 block text-[11px]">총 상환 원리금</span>
+                      <span id="vdrCalcTotalRepay" class="text-slate-200 font-semibold font-mono">약 0만원</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 예상 구매비용 안내서 인쇄·저장 버튼 (DIRECTIVE 062 P2) -->
+                <div class="pt-2 flex justify-end">
+                  <button id="vdrBtnOpenEstimate" onclick="window.__vdrInstance.openEstimateModal()" class="px-3.5 py-2 rounded-lg bg-white hover:bg-slate-50 text-[#171B1E] border border-[#CBD5E1] text-xs font-bold inline-flex items-center cursor-pointer transition-colors shadow-2xs">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-1.5 text-slate-700"></i>
+                    예상 구매비용 안내서 저장·인쇄
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. 핵심 기본 제원표 (DIRECTIVE 075-A TASK 1: 모던 2열 반응형 그리드 & 시각적 위계 정립) -->
             <div class="bg-white rounded-lg border border-[#E7E9E5] p-5 space-y-4">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-1">
                 <h3 class="text-base sm:text-lg font-bold text-[#171B1E] flex items-center gap-2 whitespace-nowrap break-keep">
@@ -581,125 +700,6 @@ class VehicleDetailRenderer {
                 <div class="pt-3 border-t border-slate-100 space-y-2">
                   <span class="text-xs font-semibold text-slate-700">주요 소모품 점검</span>
                   ${this.renderConsumablesGrid(d)}
-                </div>
-              </div>
-            </div>
-
-            <!-- 5. 주요 옵션 10개 요약 및 전체 옵션 펼치기 (DIRECTIVE 088 TASK 5, 6) -->
-            <div class="bg-white rounded-xl border border-[#E5E8EC] p-4 sm:p-5 space-y-3.5 shadow-2xs">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                  <h3 class="text-base sm:text-lg font-bold text-[#171C24] whitespace-nowrap">주요 옵션</h3>
-                  <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#171B1E] text-white">10대 핵심 사양</span>
-                </div>
-                <span class="text-xs text-slate-400">실차 확인 사양</span>
-              </div>
-              <div id="vdrOptionsContainer">
-                ${this.renderOptionsSection(d)}
-              </div>
-              <!-- 면책 고지 문구 (사용자 요구 반영) -->
-              <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed pt-2 border-t border-slate-100 break-keep">
-                ※ 차량 옵션 정보는 전산 등록 기준이며, 실제 차량과 다를 수 있으므로 계약 시 실차를 반드시 확인하시기 바랍니다.
-              </p>
-            </div>
-
-            <!-- 6. K Car 스타일 투명 총 구매비용 및 가정한 예시 금리 금융 계산기 (모바일 2줄 정돈) -->
-            <div class="bg-white rounded-lg border border-[#E5E8EC] p-4 sm:p-5 space-y-4">
-              <div class="border-b border-slate-100 pb-3">
-                <div class="flex items-center justify-between gap-2">
-                  <h3 class="text-base sm:text-lg font-bold text-[#171C24] tracking-tight">총 구매비용 계산</h3>
-                  <span class="text-[11px] sm:text-xs text-slate-400 shrink-0 font-medium">사전 안내용 견적</span>
-                </div>
-                <p class="text-xs text-slate-500 mt-1">취등록세·부대비용 포함 실구매 예상 견적</p>
-              </div>
-              
-              <div class="space-y-2 text-xs sm:text-sm">
-                <div class="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
-                  <span>차량 정찰 판매가</span>
-                  <span class="font-bold text-slate-900">${targetPriceFormatted}</span>
-                </div>
-                <div class="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
-                  <span>예상 이전등록세 (취득세 7% 기준 예시)</span>
-                  <span class="font-bold text-slate-900">${acquisitionTaxEst.toLocaleString('ko-KR')}만원</span>
-                </div>
-                <div class="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
-                  <span>공채 및 이전대행 부대비용 (미확정 예상 안내)</span>
-                  <span class="font-bold text-slate-900">약 ${bondAndFeeEst}만원</span>
-                </div>
-                <div class="flex justify-between py-2.5 bg-slate-50 px-3 rounded text-slate-900 font-bold text-sm sm:text-base border border-slate-200">
-                  <span>총 예상 구매비용</span>
-                  <span class="text-[#171B1E] text-base sm:text-lg font-bold">${totalPurchaseCostEst.toLocaleString('ko-KR')}만원</span>
-                </div>
-                <p class="text-[11px] text-slate-400">
-                  ※ 취득세 감면 대상 및 지역별 공채 할인율에 따라 실제 이전비용은 차이가 발생할 수 있는 미확정 비용입니다.
-                </p>
-              </div>
-
-              <!-- 스마트 금융 할부 시뮬레이터 -->
-              <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
-                  <span class="font-bold text-slate-800">스마트 할부 계산기</span>
-                  <span class="text-amber-700 font-medium">※ 가정한 예시 금리 기준 시뮬레이션</span>
-                </div>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <label class="block text-slate-500 mb-1">선수금 비율</label>
-                    <select id="vdrCalcDownPayment" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#171B1E]">
-                      <option value="0">0% (무보증 전액할부)</option>
-                      <option value="10" selected>10% (${Math.round((d.target_price || 0) * 0.1).toLocaleString('ko-KR')}만원)</option>
-                      <option value="20">20% (${Math.round((d.target_price || 0) * 0.2).toLocaleString('ko-KR')}만원)</option>
-                      <option value="30">30% (${Math.round((d.target_price || 0) * 0.3).toLocaleString('ko-KR')}만원)</option>
-                      <option value="50">50% (${Math.round((d.target_price || 0) * 0.5).toLocaleString('ko-KR')}만원)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-slate-500 mb-1">할부 기간</label>
-                    <select id="vdrCalcMonths" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#171B1E]">
-                      <option value="24">24개월</option>
-                      <option value="36">36개월</option>
-                      <option value="48">48개월</option>
-                      <option value="60" selected>60개월</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-slate-500 mb-1">가정한 예시 금리</label>
-                    <select id="vdrCalcRate" onchange="window.__vdrInstance.updateLoanCalc()" class="w-full p-2 border border-[#E5E8EC] rounded bg-slate-50 text-slate-800 focus:outline-none focus:border-[#171B1E]">
-                      <option value="0.045">연 4.5% (최저 우대금리 가정)</option>
-                      <option value="0.055">연 5.5% (우대금리 가정)</option>
-                      <option value="0.059" selected>연 5.9% (표준 예시금리)</option>
-                      <option value="0.069">연 6.9% (일반 예시금리)</option>
-                      <option value="0.079">연 7.9% (예시금리)</option>
-                      <option value="0.099">연 9.9% (예시금리)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div class="bg-slate-900 text-white p-3.5 sm:p-4 rounded-xl space-y-2.5">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs text-slate-300 font-medium">월 예상 납입금 (원리금 균등)</span>
-                    <span id="vdrCalcMonthlyResult" class="text-base sm:text-lg font-bold text-[#C8FF3D] font-mono">
-                      계산 중...
-                    </span>
-                  </div>
-                  <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span class="text-slate-400 block text-[11px]">총 예상 이자</span>
-                      <span id="vdrCalcOnlyInterest" class="text-slate-200 font-semibold font-mono">약 0만원</span>
-                    </div>
-                    <div class="text-right">
-                      <span class="text-slate-400 block text-[11px]">총 상환 원리금</span>
-                      <span id="vdrCalcTotalRepay" class="text-slate-200 font-semibold font-mono">약 0만원</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 예상 구매비용 안내서 인쇄·저장 버튼 (DIRECTIVE 062 P2) -->
-                <div class="pt-2 flex justify-end">
-                  <button id="vdrBtnOpenEstimate" onclick="window.__vdrInstance.openEstimateModal()" class="px-3.5 py-2 rounded-lg bg-white hover:bg-slate-50 text-[#171B1E] border border-[#CBD5E1] text-xs font-bold inline-flex items-center cursor-pointer transition-colors shadow-2xs">
-                    <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-1.5 text-slate-700"></i>
-                    예상 구매비용 안내서 저장·인쇄
-                  </button>
                 </div>
               </div>
             </div>
