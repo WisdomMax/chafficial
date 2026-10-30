@@ -1,0 +1,48 @@
+{
+  "verified_at": "2026-10-31T00:03:00+09:00",
+  "verified_count": 5,
+  "records": [
+    {
+      "listing_id": "KB5+r92iDSPMPoF29e/9mA==",
+      "platform": "CARMANAGER",
+      "vehicle_id": "50e30f23-dc6c-4d83-8fbb-f0b8ca93df67",
+      "model_name": "올뉴 K3 1.6 트렌디",
+      "all_columns_matched": true
+    },
+    {
+      "listing_id": "kBYAJHA7MyKZsNQYunZImQ==",
+      "platform": "CARMANAGER",
+      "vehicle_id": "d8418de4-954f-4a43-b91b-ee8a29b8ebbc",
+      "model_name": "올 뉴 쏘렌토 디젤 4WD 2.2 노블레스 스페셜",
+      "all_columns_matched": true
+    },
+    {
+      "listing_id": "kBLkL1Hq/p3sxNUvcVR+GA==",
+      "platform": "CARMANAGER",
+      "vehicle_id": "3ff8fac4-418a-4abc-8de4-123584cf81bd",
+      "model_name": "더 넥스트 스파크 LTZ",
+      "all_columns_matched": true
+    },
+    {
+      "listing_id": "kBG+SmFwDEEas0uMhdq/sw==",
+      "platform": "CARMANAGER",
+      "vehicle_id": "75a0970f-d769-44ad-bfbb-bbcfdce7b28a",
+      "model_name": "몬데오 4세대 2.0 TDCI 트렌드",
+      "all_columns_matched": true
+    },
+    {
+      "listing_id": "encar_sw_102938",
+      "platform": "ENCAR",
+      "vehicle_id": "21d55cd6-ccdd-4005-bab2-1edd433de0ed",
+      "model_name": "기아 K8 2.5 가솔린 노블레스",
+      "all_columns_matched": true
+    }
+  ],
+  "integrity_check": "ok",
+  "foreign_key_violations": 0,
+  "core_entities": {
+    "customers": 28,
+    "consultations": 29,
+    "transactions": 37
+  }
+}

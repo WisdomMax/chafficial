@@ -1,0 +1,1186 @@
+[
+  {
+    "listing_id": "/WE/4Otqx4FfC1sQz9f1xw==",
+    "canonical_vehicle_id": "9b899a13-0c60-4c49-ba13-2deb6f5e7f94",
+    "duplicate_vehicle_id": "68845045-5007-44a7-9155-707852200eef",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "4799",
+    "model_name": "스타리아 4WD 디젤 라운지 인스퍼레이션 9인승",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "/cyKH6VOS/MzYI0YozovtQ==",
+    "canonical_vehicle_id": "d1bb4419-e5f1-4d0a-9c57-c810e7b73346",
+    "duplicate_vehicle_id": "aff27470-cc87-4f46-957a-78eab3025b14",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8364",
+    "model_name": "XC40 B4 AWD 인스크립션",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 16,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "1KrWElM56X0lJbLBEY7++Q==",
+    "canonical_vehicle_id": "c360f808-abc8-484b-9de6-e7c2ad5bbb89",
+    "duplicate_vehicle_id": "69b6e041-fb3f-4266-bc2d-4b115c88a093",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8340",
+    "model_name": "E-클래스 W213 E200 아방가르드",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "2I0GyazAY08y9yy6Z8huzQ==",
+    "canonical_vehicle_id": "fac75fc1-b00d-4907-8c6d-af97d60b98ff",
+    "duplicate_vehicle_id": "fde4e6a6-1b14-483a-b695-985b939e349e",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "5264",
+    "model_name": "1시리즈 (F40) 120i M 스포츠",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "2KnbzSkK94Oz7cuz714LGw==",
+    "canonical_vehicle_id": "ae8afa5e-7ef0-4ec6-bc57-5d76ffcf19de",
+    "duplicate_vehicle_id": "0e5a37ac-283b-4ef1-9eef-d7732404652a",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "3504",
+    "model_name": "ES300h 7세대 이그제큐티브",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 17,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "3h5NP5jIwPtr3687nafyew==",
+    "canonical_vehicle_id": "42fcb3b4-8530-419b-ad9a-8c2c1f0d2680",
+    "duplicate_vehicle_id": "4b54570a-4ec4-47b5-b0d9-491f19fa56cb",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "1203",
+    "model_name": "그랜저 (GN7) LPG 3.5 2WD 프리미엄",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 29,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "4nZFum6AihgzcrdPlwvcCw==",
+    "canonical_vehicle_id": "dbb2a1ab-bffe-42b4-bec5-79111c7d66dd",
+    "duplicate_vehicle_id": "2408231d-d41b-49f8-96f8-8e07e42a7531",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "7507",
+    "model_name": "쿠퍼 클럽맨 HIGH 2세대",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 33,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "5tInfdpZow6UXAXJhqI5MA==",
+    "canonical_vehicle_id": "11620698-4269-4f25-83e9-e0491980f870",
+    "duplicate_vehicle_id": "fe877829-ec0f-41b1-960f-677349974d3f",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "9337",
+    "model_name": "[내장탑]포터2 슈퍼캡/초장축/(CRDi) 슈퍼",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "7KGNlS/pNfqueiMENUscLQ==",
+    "canonical_vehicle_id": "57addf60-3588-47fb-a450-ae7f09496e12",
+    "duplicate_vehicle_id": "b8e6c12a-fb7f-4c66-b76e-d77615afe5d2",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "3366",
+    "model_name": "싼타페 TM 디젤 2.0 2WD 프리미엄",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "7oY25fWZIsrXfTjXLn1XFQ==",
+    "canonical_vehicle_id": "c30b3798-6b03-4b89-b41d-67acd686889f",
+    "duplicate_vehicle_id": "15235b47-251e-45f9-889d-fdafbda2ce79",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "9612",
+    "model_name": "파사트GT(B8) 2.0 TDI 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "8Fj/qQ+8507stdzYylN1Tw==",
+    "canonical_vehicle_id": "5e2ccd0e-7a75-42df-9ccf-e4b9a4b5cb9e",
+    "duplicate_vehicle_id": "3fd46ff4-8e7a-4d5b-ae6f-b73c7b83469d",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8452",
+    "model_name": "캐스퍼 1.0 가솔린 터보 인스퍼레이션",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "AU95A1JaAJrFZktZMnVsWQ==",
+    "canonical_vehicle_id": "bbb6938a-bcba-4d8d-a3d2-3d4227f22d4d",
+    "duplicate_vehicle_id": "2c4c4405-837f-493a-90f6-676f325b6704",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "9951",
+    "model_name": "카니발 4세대 디젤 9인승 시그니처",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 18,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "Aspqjqm0oHj+cBv+UVGPHw==",
+    "canonical_vehicle_id": "e5443f63-f731-4bd0-abfd-d48026da1381",
+    "duplicate_vehicle_id": "6cefe620-ccc0-4b71-ad1b-a438f7e557a3",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "3816",
+    "model_name": "더 뉴 그랜저 IG 2.5 캘리그래피",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "BD5e8wiXNHb+7qIQKMKg9Q==",
+    "canonical_vehicle_id": "86603470-dab3-4890-aa2a-3faed5c03b4d",
+    "duplicate_vehicle_id": "333ca2d3-fa2a-401a-8290-2fd1cebdbc6c",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2566",
+    "model_name": "디 올 뉴 팰리세이드 하이브리드 HEV 2.5T 4WD 9인승 캘리그래피",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 18,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "CYIeJoyvjF/CltcNwirgdg==",
+    "canonical_vehicle_id": "439451ef-31aa-417d-8a4c-da47d8d36c13",
+    "duplicate_vehicle_id": "874f436f-dba1-4ce1-b041-49ed84e96111",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2761",
+    "model_name": "CLS클래스 C257 CLS 53 4MATIC+ AMG",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "D2hh+enQmTE1HRLRNpqJVQ==",
+    "canonical_vehicle_id": "08ea3d33-5497-4cb3-8d74-27975a2dfab4",
+    "duplicate_vehicle_id": "01f86a10-369a-4f58-adad-44f49e53f653",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2469",
+    "model_name": "더 뉴 레이 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "DAVM4S8gPnz7ThoXioM8kg==",
+    "canonical_vehicle_id": "c2a7b041-d4fe-4645-b5e2-9d2b383b168a",
+    "duplicate_vehicle_id": "5fed84d0-3783-468d-b024-07470c564cfd",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2939",
+    "model_name": "디 올 뉴 니로 시그니처",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 16,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "DjkZgpx2TZdQpqqzhwRlMA==",
+    "canonical_vehicle_id": "015e754a-f626-45ec-b324-499c7df9a270",
+    "duplicate_vehicle_id": "5f9f2071-6bb1-4cf3-ac33-8d77036bd225",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "9768",
+    "model_name": "르반떼 2.0 GT AWD",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "EN1t8AjsAi6UVKMVRpU5fg==",
+    "canonical_vehicle_id": "df447174-9369-4efd-8f31-bd72b220380a",
+    "duplicate_vehicle_id": "7aefdb4b-3b80-4c4f-a534-8c45ed9ff2b4",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "5884",
+    "model_name": "XC60(2세대) B5 AWD 인스크립션",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 17,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "ElgwV6BFvkHOe8i0y/xRwg==",
+    "canonical_vehicle_id": "0556efbe-353d-4117-b733-dd2a50b6ff79",
+    "duplicate_vehicle_id": "fdadf89f-0099-4b10-a4e5-6ae10633d6b2",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "5731",
+    "model_name": "아반떼 AD 1.6 GDI 밸류 플러스",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "Ems+MygL83DqvpRE2Y9jbQ==",
+    "canonical_vehicle_id": "6fd5810f-9971-409a-9054-54c92259b736",
+    "duplicate_vehicle_id": "0c107df9-7919-406a-96e6-4f6ac019041d",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "0982",
+    "model_name": "[파워게이트]봉고3 1.0톤/킹캡/초장축/(CRDi) 럭셔리",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "GTkTbaN4YxQj857riUSRJg==",
+    "canonical_vehicle_id": "dbd5ad7c-711f-49fc-9e77-53bba7cec4c5",
+    "duplicate_vehicle_id": "0ef34a06-5fb2-402a-a446-c16e4415780f",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "9700",
+    "model_name": "XC90 2세대 2.0 T8 AWD 인스크립션",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "H42HIywDSElVKfT2siUsKA==",
+    "canonical_vehicle_id": "8cf7306e-22cb-4fa0-968f-04b91462bcd4",
+    "duplicate_vehicle_id": "85391dc8-053b-4c00-813c-3a893edbb37d",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2144",
+    "model_name": "더 뉴 카니발 디젤 9인승 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 33,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "HFVpbbwGwJ0SMC6wPwgjDQ==",
+    "canonical_vehicle_id": "a4f7b09e-5d69-4d45-ab7f-7f3700e62aa2",
+    "duplicate_vehicle_id": "e3d0cb53-c248-44a0-9532-411e619ccf3c",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8779",
+    "model_name": "EQ900 3.8 GDI AWD 럭셔리",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "HUbdRm2Akw2QwbM+pH0TFg==",
+    "canonical_vehicle_id": "994234af-3d48-49e7-a805-2bda4bf678a5",
+    "duplicate_vehicle_id": "d3a83877-5975-4cdb-94a4-65abc7c516ac",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8144",
+    "model_name": "G클래스 W463 G63 AMG",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "KQrSaEiBC2qjJxqF0gmc0w==",
+    "canonical_vehicle_id": "99416cc6-04a3-423f-b8f6-b4e6b52b928f",
+    "duplicate_vehicle_id": "54585e2d-e946-4624-993e-063f87b5147e",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "9714",
+    "model_name": "8시리즈 (G15) M850i xDrive 그란 쿠페",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "KTfvx8dq/5wN9TJ4XGQeew==",
+    "canonical_vehicle_id": "9dff3bb1-1cc3-4425-bc03-c5a2dd7cd68c",
+    "duplicate_vehicle_id": "fe8d7831-adef-4868-8316-4bae1d6893aa",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "6897",
+    "model_name": "쏘렌토 4세대(MQ4) 디젤 2.2 4WD 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "LUZMkXlUdwbMelWGMJbA4g==",
+    "canonical_vehicle_id": "66383aa7-abbc-48ef-ae22-9d71b1057046",
+    "duplicate_vehicle_id": "162120e6-bcff-4e1c-a091-79ff0870826f",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2543",
+    "model_name": "더 뉴 G70 가솔린 2.0T 2WD",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "Lww7zKX+Pq4cVRVFpUgSdA==",
+    "canonical_vehicle_id": "e9e6dafc-4740-4580-a7bd-687643da91b7",
+    "duplicate_vehicle_id": "044a1da4-ed68-4cbe-a3e4-51393ce5077e",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "UNVERIFIED",
+    "model_name": "X4 (F26)  xDrive 20d",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 3,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "M5MXT4S88j6zqlW4SAU+kA==",
+    "canonical_vehicle_id": "e121c375-77d7-4707-83d2-c2141da6f61e",
+    "duplicate_vehicle_id": "339584f6-3f6e-47c8-bc55-ca7d6b16c231",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "3047",
+    "model_name": "더 뉴 G70 가솔린 2.0T 4WD 기본형",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 16,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "MYb5FUhlUCoA+cpX/UUs1w==",
+    "canonical_vehicle_id": "81c58680-a986-4aa8-9952-ee93809fd43c",
+    "duplicate_vehicle_id": "985e6c70-8be4-4dea-8067-ac67a34dcbca",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "7933",
+    "model_name": "X7 (G07) xDrive 40d M 스포츠",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "MlGyvJt2GiXIY4UNYFrvDg==",
+    "canonical_vehicle_id": "198edf34-94df-409d-9a31-66958624125d",
+    "duplicate_vehicle_id": "431f0504-6d95-4925-9094-7280e719988a",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "5098",
+    "model_name": "올 뉴 렉스턴 (Y450) 디젤 2.2 4WD 시그니처",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "NkLUpaL9Zj+f+8aKv68WUw==",
+    "canonical_vehicle_id": "6d1df5cd-5eec-43a4-8345-57352f640618",
+    "duplicate_vehicle_id": "4dc99ec3-0bb5-4546-a3fe-ae5973218ad4",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "1229",
+    "model_name": "더 뉴 레이 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 18,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "NnRMHgVYa7KrlM9/WGmO8Q==",
+    "canonical_vehicle_id": "bb9d63ee-c6ee-47ee-b58e-ef9e27880bd8",
+    "duplicate_vehicle_id": "6250b0eb-7b41-474c-9b4e-e74b58fdd1ed",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "7231",
+    "model_name": "벤틀리뉴플라잉스퍼(FLYING SPUR)",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "OpWIE/iPDvKOWbDpE7D0dA==",
+    "canonical_vehicle_id": "8f23e153-9e49-4c3a-a009-f169d32ff969",
+    "duplicate_vehicle_id": "af396cf0-8c8b-491d-9029-96e848f1939b",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "1696",
+    "model_name": "X6 (G06) xDrive 40i M 스포츠",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "PyU3CLCwzOfW3/TaeWh7Sg==",
+    "canonical_vehicle_id": "313efaa4-d116-4f18-a6ee-847616d6fa90",
+    "duplicate_vehicle_id": "faf220e7-14e3-4d2a-83d9-96e863cc9e58",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "4987",
+    "model_name": "G80(RG3) 2.5 가솔린 터보 AWD 기본형",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "QW6ILam8ISHFcV/xWsKrog==",
+    "canonical_vehicle_id": "cc5717e4-c484-4d45-9170-598e78b7a39e",
+    "duplicate_vehicle_id": "94af57f5-dcab-408c-a378-0cff95ed3648",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8894",
+    "model_name": "벨로스터(JS) 2.0 N",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 17,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "QdO1qxiduFM0kDM6J0iwRQ==",
+    "canonical_vehicle_id": "9ed69090-39b3-4dbb-a811-7e1e3b3dfadd",
+    "duplicate_vehicle_id": "aba2433d-6711-4f29-a2da-9bbfb4c54e9e",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "0260",
+    "model_name": "렉스턴 스포츠 4WD 디젤 2.2 노블레스",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "Qigor35puyhUk/p/lNRGnQ==",
+    "canonical_vehicle_id": "b48ac16c-1fd2-4bb6-b6b0-0394914c9e73",
+    "duplicate_vehicle_id": "9de71162-6db3-4d8c-b9ee-0af651c4c90f",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "3137",
+    "model_name": "더뉴 K3 1.6 VGT 트렌디",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "Rsf+Xs0MgBugWZC0bPDrjg==",
+    "canonical_vehicle_id": "c01e68ff-83f8-4203-bf9a-f240d2ccb1e6",
+    "duplicate_vehicle_id": "ec7468d8-e9b3-4fa8-af04-7d0196b3f30e",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8316",
+    "model_name": "더 뉴 K5 2세대 가솔린 2.0 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 19,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "TObCN6LYRpJmwFnA9I8UrA==",
+    "canonical_vehicle_id": "651e18fa-6c0e-4d7e-a5a0-1b3887b297ac",
+    "duplicate_vehicle_id": "d652de7d-4e2e-4a7b-85e8-26a071028fe0",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2016",
+    "model_name": "E-클래스 W213 E300 아방가르드",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "TrpLJB9Qw8OMlEx1jBwiZA==",
+    "canonical_vehicle_id": "7c7d5869-47d6-42a4-8fd6-374d8dd08fd8",
+    "duplicate_vehicle_id": "85edf808-d92d-444a-80c2-6d063ac131b9",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "4438",
+    "model_name": "[카고]포터2 1.0톤/슈퍼캡/초장축/(CRDi) 스마트",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "WQyQfVAnbGJ+BqtZ4LGdMw==",
+    "canonical_vehicle_id": "394c0055-b138-483d-bdaa-ee436576ee01",
+    "duplicate_vehicle_id": "00638076-fb5f-45b5-9943-ab109ae20c9f",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8565",
+    "model_name": "Q7 (4M) 45 TDI 콰트로 프리미엄",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "a4Y12nEpf4a1bIevPncXTA==",
+    "canonical_vehicle_id": "dd41c97e-1aea-4441-8813-f686f7f0d8e7",
+    "duplicate_vehicle_id": "a1416561-2ed2-44a5-97d5-428cf2cf2aa3",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "5976",
+    "model_name": "[카고]포터2 1.0톤/슈퍼캡/초장축/(CRDi) 스마트",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 18,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "cVYFSWNF8SsvoBJeIC6TDA==",
+    "canonical_vehicle_id": "3449e684-35f8-423c-8532-396b3e10f93e",
+    "duplicate_vehicle_id": "6c904333-bceb-438e-a250-6dcc41d81729",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8176",
+    "model_name": "카이엔(PO536) 3.0 쿠페",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "dIDvRTWqzSi+7vn0lOXigw==",
+    "canonical_vehicle_id": "226f35a1-fb5b-42ea-bd36-b45d898f1953",
+    "duplicate_vehicle_id": "9892b616-685e-4094-9ab1-62be98a8ca84",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "3180",
+    "model_name": "랭글러 (JL) 2.0 오버랜드 4도어 파워탑",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "dRXKqpyuuCpZedVRMLqEXA==",
+    "canonical_vehicle_id": "c2e45356-9fc2-43a3-b35e-cde35131e6c7",
+    "duplicate_vehicle_id": "ef0afad3-c6a8-4579-9baa-9a328210e3cf",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "9496",
+    "model_name": "싼타페 TM 가솔린 2.0T 2WD 인스퍼레이션",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "fAaaTmNRqBBhN+T/8xpmyw==",
+    "canonical_vehicle_id": "ea0787fd-2130-4474-85ab-9f132500c38d",
+    "duplicate_vehicle_id": "8ef8f483-27e7-44d9-afda-804b99bf740f",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "5117",
+    "model_name": "올 뉴 K7 2.4 GDI 리미티드 에디션",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "fae0gPaydS/20d1j2PEEoQ==",
+    "canonical_vehicle_id": "e52893b3-70a2-4e91-afcd-372f6d8a2e22",
+    "duplicate_vehicle_id": "81811713-5e5c-4c5c-8de5-4a04c8a3c676",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "1008",
+    "model_name": "스팅어 가솔린 2.0 터보 AWD 플래티넘",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "gNTTgqmFaL1meeWKlWowOg==",
+    "canonical_vehicle_id": "11bebf79-0756-4c89-83bd-a115126ea5fe",
+    "duplicate_vehicle_id": "9febfff2-eba4-4c86-a43b-6265ba2981d8",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8982",
+    "model_name": "그랜드 스타렉스 밴 5인승 스마트",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "i/+cCv/cow+hCxGuAsTYew==",
+    "canonical_vehicle_id": "e6670a2e-c532-435e-b34a-b4a3ff9a677c",
+    "duplicate_vehicle_id": "051cac78-e5f6-4fa3-bc40-0d15e1e895a1",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "3143",
+    "model_name": "디스커버리 스포츠 2.0 TD4 SE",
+    "reason": "EARLIEST_CREATED_CANONICAL",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "i2l315N4rHFikAPyWU9xyg==",
+    "canonical_vehicle_id": "2e0e91a3-957f-427e-98c7-cfc623c20601",
+    "duplicate_vehicle_id": "01e69a98-43fe-4afd-8019-522505bf7108",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8811",
+    "model_name": "싼타페 TM 가솔린 2.0T 2WD 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "ks/VzKBfSNAAPhVqYwGFFw==",
+    "canonical_vehicle_id": "188c90b2-5765-4256-8d4d-72da2e1b119d",
+    "duplicate_vehicle_id": "cfaccedb-5911-430a-b314-9ed7f85ee654",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "4343",
+    "model_name": "G70 2.0T AWD 스포츠 패키지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 16,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "lgWjRake8mdsu6X9vqhfFw==",
+    "canonical_vehicle_id": "3158851e-01d2-454c-a19a-baa24fb66cc3",
+    "duplicate_vehicle_id": "da07d445-61f2-484f-a80e-a256956fd741",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2634",
+    "model_name": "스포티지 5세대 (NQ5) 2.0 디젤 2WD 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "mP5X3N4fJ4RAkP4ouIXQhA==",
+    "canonical_vehicle_id": "83099a4c-2a64-408b-af11-1ec6d1953cb9",
+    "duplicate_vehicle_id": "100e70e6-b8e5-4a79-850d-4a97f51f0c96",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "1603",
+    "model_name": "기블리 3.0",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "nHbVBlnx+mS9XC3W1DTc2A==",
+    "canonical_vehicle_id": "183e51eb-3599-48b4-b81a-0557e5202f95",
+    "duplicate_vehicle_id": "8f7209e2-1fd9-47ee-b1bf-734112abd824",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "7636",
+    "model_name": "스타리아 2WD 디젤 투어러 모던 11인승",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 16,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "nKk7nw9WIKDR5XsqGQGbtw==",
+    "canonical_vehicle_id": "5c51ed90-8152-4877-b844-0d4347a1a206",
+    "duplicate_vehicle_id": "4e6e2a17-e787-464d-a68e-6bed273cce13",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "7402",
+    "model_name": "레인지로버 이보크 2.0 TD4 SE",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "o9lLRtYYAk6niCeZvPeaKg==",
+    "canonical_vehicle_id": "ba0146fe-8256-4360-b8e3-afc69f78ddcf",
+    "duplicate_vehicle_id": "cfd8525e-2309-4841-93af-cb4b44fc6184",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8281",
+    "model_name": "더 뉴 레이 1인승 밴 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "oS7qbFhVAbrNsZ9q9hhHxg==",
+    "canonical_vehicle_id": "32e36fac-4cc5-47a7-af31-a91ab284c28a",
+    "duplicate_vehicle_id": "880c8df6-977c-47dc-87ad-6f983340ad15",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "1683",
+    "model_name": "더 뉴 그랜드 스타렉스 2WD 밴 3인승 스마트",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "pzjxy4ULwrfcW9IJypRS7A==",
+    "canonical_vehicle_id": "399158b6-209b-4278-86bb-e2314fae8461",
+    "duplicate_vehicle_id": "da5015c3-a1f2-4379-829a-b6aa7442e588",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "0619",
+    "model_name": "올 뉴 쏘렌토 디젤 4WD 2.2 노블레스 스페셜",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "q49VhQTba38dvBI2QXwVnA==",
+    "canonical_vehicle_id": "26fbc0de-b3a6-432e-8dd6-0fa6b66219ca",
+    "duplicate_vehicle_id": "70ef7465-1d66-4c30-9bc0-a6ae70ffb55f",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "1217",
+    "model_name": "그랜저 (GN7) LPG 3.5 2WD 익스클루시브",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "r1xoF4lg40V+enCChwXgow==",
+    "canonical_vehicle_id": "218a774a-a60b-4f94-8804-0d24a89710b3",
+    "duplicate_vehicle_id": "6d4db4f9-7096-4d74-a5bd-174542255430",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2843",
+    "model_name": "익스플로러 6세대 2.3 AWD 리미티드",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 15,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "rpfLrjQ/LO0eyfS6NJQBGA==",
+    "canonical_vehicle_id": "604e36f1-7df9-466e-9705-08d659432fc7",
+    "duplicate_vehicle_id": "7e935bfe-1826-4b6c-9d5b-e14848cbefa9",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "5497",
+    "model_name": "G80 3.3 GDI AWD 프리미엄 럭셔리",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 2,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "tmGXlrlhKQQh8p7+VjPcyQ==",
+    "canonical_vehicle_id": "f114c702-a3c7-4c73-8ec3-10c172d9715a",
+    "duplicate_vehicle_id": "a89b5d55-9fba-47a6-9053-df2d478e89a6",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8324",
+    "model_name": "X7 (G07) xDrive 40i M 스포츠",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "uQ4G4fg1oLCq8NJYzKFi3Q==",
+    "canonical_vehicle_id": "56b73fbf-4b3c-4437-af4f-7b7d0ae853c5",
+    "duplicate_vehicle_id": "321428ae-7496-45f9-8de8-be7a6b382a84",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "0183",
+    "model_name": "쿠퍼 클럽맨 기본형",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 14,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "uU0wXNequrqZsOWqoadU/A==",
+    "canonical_vehicle_id": "af1cf2bd-f572-438d-939e-e5307d51050e",
+    "duplicate_vehicle_id": "bd288452-ca9f-411b-9a2b-0c0bf977c93f",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "0177",
+    "model_name": "[하이내장탑]봉고3 1.0톤/하이탑",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "ufpQ+SjVjUqNuwP5PiGz+g==",
+    "canonical_vehicle_id": "e536f9d9-e8ba-4d1d-9f7f-1d1a84f12017",
+    "duplicate_vehicle_id": "cf9c0529-41e1-4be5-83e5-9bf59ed30040",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "7567",
+    "model_name": "더 뉴 카니발 4세대 디젤 9인승 하이리무진 시그니처",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "vB3hKEFn+FfKWzKYuz5HnQ==",
+    "canonical_vehicle_id": "33648fca-975d-4f8d-8d47-00d1f4a39cad",
+    "duplicate_vehicle_id": "edcca93e-443b-46df-973b-770e48acf7ef",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "2967",
+    "model_name": "더 뉴 렉스턴 스포츠 디젤 2.2 4WD 노블레스",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 15,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "vhaAD4/h84Kx8mJMm8MK/w==",
+    "canonical_vehicle_id": "5f3c5e2e-26ef-4fb6-bebd-8a81650cbc26",
+    "duplicate_vehicle_id": "e2283125-821c-4d96-9b95-07152639529c",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "7976",
+    "model_name": "그랜저 IG 2.4 GDI 프리미엄 기본형",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "wbPLppFVBK24g1RsGkUp+A==",
+    "canonical_vehicle_id": "f3061e93-823f-4440-9d33-081af56aaacc",
+    "duplicate_vehicle_id": "4c8a7de5-5394-4dd5-a12f-f92af8f21a46",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "8333",
+    "model_name": "카니발 4세대 디젤 9인승 시그니처",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 16,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "y1k7Ewh3ZwcnPzBQDtf8JQ==",
+    "canonical_vehicle_id": "dc52fbef-993e-491f-8723-185a85bdf223",
+    "duplicate_vehicle_id": "6694273a-c90b-4c2a-85c3-aba7826deebe",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "3437",
+    "model_name": "쿠퍼 5도어 HIGH 3세대",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 17,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "zBNI5wIJbNvip+LVYAlATA==",
+    "canonical_vehicle_id": "f25ff4d8-6b3f-44ae-a6da-6225aa51d353",
+    "duplicate_vehicle_id": "07ee0734-1165-45d8-b855-b7ca1e9bc9b4",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "4081",
+    "model_name": "[카고]포터2 1.0톤/더블캡/초장축/(CRDi) 스마트",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "zUqA78vkw2okO6SCIncs8A==",
+    "canonical_vehicle_id": "5326e587-4936-4730-9c0e-eecb477fe58c",
+    "duplicate_vehicle_id": "395d366c-7966-469d-b377-69aaf35343d7",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "5017",
+    "model_name": "쏘렌토 4세대(MQ4) 디젤 2.2 2WD 프레스티지",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 0,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  },
+  {
+    "listing_id": "zWr3xAv9Zyh5nXU3zaKYbA==",
+    "canonical_vehicle_id": "6ebddf1b-0dd7-4d8e-8957-37ce2c73cefb",
+    "duplicate_vehicle_id": "7461fac6-844c-45a4-a963-bcf95e918637",
+    "canonical_status": "AVAILABLE",
+    "duplicate_status": "DRAFT",
+    "plate_number": "5589",
+    "model_name": "캐스퍼 1.0 가솔린 터보 인스퍼레이션",
+    "reason": "PRESERVE_OWNED_SHOP_MASTER",
+    "fk_references_to_migrate": {
+      "photos": 21,
+      "listings": 1,
+      "consultations": 0,
+      "transactions": 0
+    }
+  }
+]

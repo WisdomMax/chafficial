@@ -5,6 +5,26 @@
 
 ---
 
+## [DIRECTIVE 117] 74건 중복 차량 마스터 정밀 병합 완수 및 SQLite 원자적 예산기 구축
+- **일시:** 2026-10-31 00:05 KST
+- **수행 태스크**:
+  1. **TASK 1 (정상 복원 5건 백업본 대조 정밀 검증)**:
+     - 백업본(`chamart_online_backup_directive115_20261030_234504.db`)과 운영 DB 컬럼 단위 100% 일치 확인 (`scratch/task1_restoration_final_evidence.json`).
+     - 고객(28명), 상담(29건), 거래(37건) 무손실 보존 확인.
+  2. **TASK 2 (중복 차량 마스터 74건 전수 병합)**:
+     - 독립 테스트 DB에서 사전 검증 후 운영 DB 적용 (`scratch/audit_and_consolidate_74_duplicates.py`).
+     - 우리 상사 보유 AVAILABLE 마스터 대표 선정, 사진 667건 대표 마스터로 안전 이전, 중복 DRAFT 마스터 74건 삭제.
+     - 병합 후 동일 CARMANAGER listing_id 중복: **정확히 0건**, PRAGMA integrity_check OK, 외래키 0건 위반.
+  3. **TASK 3 (SQLite 기반 프로세스 안전 원자적 예산기)**:
+     - `SqliteAtomicBudgetEnforcer` 신설 (`src/chaficial/platform/sourcing/atomic_budget_enforcer.py`).
+     - 다중 스레드 10개 동시 150회 차감 경쟁 테스트 -> 정확히 50건 성공, 100건 차단 100% Pass (`scratch/test_multiprocess_budget_atomic.py`).
+  4. **TASK 5 (CANDIDATE 격리 SQL 검증)**:
+     - 다운스트림 시세 분석 및 AI 학습 쿼리에서 `REVIEW_PENDING` 매물 혼입 0건 실측 검증 완료 (`scratch/test_candidate_quarantine_sql.py`).
+  5. **TASK 6 (마스터 문서 복구)**:
+     - `CHA_FICIAL_MASTER_CHECKLIST.md`에 ISSUE-43~49 및 C-8, C-9 [IMPLEMENTED / AUDIT_PENDING] 등록 완료.
+
+---
+
 ## [DIRECTIVE 116] 과잉 삭제 정상 매물 5건 원자적 복원, 사전 차단 예산기 및 74건 집합 일치 증명
 - **일시:** 2026-10-30 23:57 KST
 - **수행 태스크**:
