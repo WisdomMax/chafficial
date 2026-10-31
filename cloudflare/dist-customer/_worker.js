@@ -88,11 +88,16 @@ export default {
         // 3) publishing_status 승인 상태 필수
         // 4) status IN ('AVAILABLE', 'FOR_SALE') 필수 (판매완료/중지/삭제 원천 차단)
         // 5) 승인된 실차 사진(approval_status='APPROVED' & public_visibility='PUBLIC')만 집계/채택
+        // 6) 제휴 상사명(raw_seller_name) 연동
         let sql = `SELECT 
           id, plate_number, model_name, manufacturer, trim, year, mileage, 
           fuel_type, transmission, color, target_price, 
           listing_ownership_type, is_priority_exposure, priority_rank, 
           status, publishing_status, options_json,
+          (SELECT vl.raw_seller_name 
+           FROM vehicle_listings vl 
+           WHERE vl.vehicle_id = vehicles.id 
+           LIMIT 1) as seller_company_name,
           (SELECT vp.photo_url 
            FROM vehicle_photos vp 
            WHERE vp.vehicle_id = vehicles.id 
@@ -250,11 +255,14 @@ export default {
             options: options,
             listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
             is_chamart_owned: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED'),
+            seller_company: v.seller_company_name || ((v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED') ? '차마트 직영' : '제휴 상사'),
             is_priority_exposure: !!v.is_priority_exposure,
             priority_rank: v.priority_rank || 0,
             status: v.status || 'AVAILABLE',
             publishing_status: v.publishing_status || 'APPROVED',
-            branch_name: '차마트 장한평 본사 직영점'
+            branch_name: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED') 
+              ? '차마트 장한평 본사 직영점' 
+              : (v.seller_company_name ? `${v.seller_company_name} (제휴 상사)` : '차마트 제휴 상사')
           };
         });
 
@@ -334,6 +342,18 @@ export default {
         let options = [];
         try { if (v.options_json) options = JSON.parse(v.options_json); } catch (e) {}
 
+        // DIRECTIVE 132-A FINAL CLOSEOUT TASK 1: 실제 판매 상사 정보 및 플랫폼 역할 구분
+        const listing = await db.prepare(
+          'SELECT * FROM vehicle_listings WHERE vehicle_id = ? LIMIT 1'
+        ).bind(vehicleId).first();
+
+        const isChamartOwned = (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED');
+        const sellerName = isChamartOwned ? '차마트 직영' : (listing?.raw_seller_name || '제휴 상사');
+        const sellerLocation = isChamartOwned 
+          ? '서울특별시 성동구 용답동 장한평 자동차매매단지' 
+          : (listing?.raw_seller_location || '서울 성동구 용답동 장안모터프라자');
+        const branchName = isChamartOwned ? '차마트 장한평 본사 직영점' : `${sellerName} (제휴 상사)`;
+
         const detail = {
           id: v.id,
           plate_number: v.plate_number,
@@ -373,20 +393,22 @@ export default {
             owner_change_count: null
           },
           dealer_info: {
-            company: v.branch_name || '차마트 제휴/직영 상사',
-            contact: '02-2244-8800',
-            address: '서울시 성동구·동대문구 장한평 매매단지'
+            company: sellerName,
+            role: isChamartOwned ? '차마트 직영 판매' : '제휴 상사 위탁 판매',
+            platform_role: '차마트 온라인 중개 플랫폼 (실차 정보 중개 및 방문 예약)',
+            contact: null, // DIRECTIVE 132-A: 임의 가짜 전화번호 02-2244-8800 영구 삭제! 고객센터 또는 방문 예약 이용
+            address: sellerLocation
           },
           price_comparison: {
             market_average_price: null,
             difference_amount: null,
             advantage_text: '실차 진단 및 정밀 시세 분석 대기'
           },
-          branch_name: '차마트 장한평 본사 직영점',
+          branch_name: branchName,
           is_public: !!v.is_public,
           publishing_status: v.publishing_status || 'APPROVED',
           listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
-          is_chamart_owned: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED'),
+          is_chamart_owned: isChamartOwned,
           is_priority_exposure: !!v.is_priority_exposure,
           updated_at: v.updated_at || new Date().toISOString()
         };

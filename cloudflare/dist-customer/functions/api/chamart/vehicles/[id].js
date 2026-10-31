@@ -68,6 +68,18 @@ export async function onRequestGet({ request, params, env }) {
     let options = [];
     try { if (v.options_json) options = JSON.parse(v.options_json); } catch (e) {}
 
+    // DIRECTIVE 132-A FINAL CLOSEOUT TASK 1: 실제 판매 상사 정보 및 플랫폼 역할 구분
+    const listing = await db.prepare(
+      'SELECT * FROM vehicle_listings WHERE vehicle_id = ? LIMIT 1'
+    ).bind(vehicleId).first();
+
+    const isChamartOwned = (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED');
+    const sellerName = isChamartOwned ? '차마트 직영' : (listing?.raw_seller_name || '제휴 상사');
+    const sellerLocation = isChamartOwned 
+      ? '서울특별시 성동구 용답동 장한평 자동차매매단지' 
+      : (listing?.raw_seller_location || '서울 성동구 용답동 장안모터프라자');
+    const branchName = isChamartOwned ? '차마트 장한평 본사 직영점' : `${sellerName} (제휴 상사)`;
+
     const detail = {
       id: v.id,
       plate_number: v.plate_number,
@@ -103,24 +115,27 @@ export async function onRequestGet({ request, params, env }) {
         total_loss: null,
         flood: null,
         inspection_status: v.inspection_record_url ? '성능점검부 확인 완료' : '성능점검 서류 확인 대기',
+        mortgage_status: '자동차등록원부(을부) 조회 대기 (현장 실차 확인 시 열람 가능)',
         insurance_history_count: null,
         owner_change_count: null
       },
       dealer_info: {
-        company: v.branch_name || '차마트 제휴/직영 상사',
-        contact: '02-2244-8800',
-        address: '서울시 성동구·동대문구 장한평 매매단지'
+        company: sellerName,
+        role: isChamartOwned ? '차마트 직영 판매' : '제휴 상사 위탁 판매',
+        platform_role: '차마트 온라인 중개 플랫폼 (실차 정보 중개 및 방문 예약)',
+        contact: null, // DIRECTIVE 132-A: 임의 가짜 전화번호 02-2244-8800 영구 삭제! 고객센터 또는 방문 예약 이용
+        address: sellerLocation
       },
       price_comparison: {
         market_average_price: null,
         difference_amount: null,
         advantage_text: '실차 진단 및 정밀 시세 분석 대기'
       },
-      branch_name: '차마트 장한평 본사 직영점',
+      branch_name: branchName,
       is_public: !!v.is_public,
       publishing_status: v.publishing_status || 'APPROVED',
       listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
-      is_chamart_owned: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED'),
+      is_chamart_owned: isChamartOwned,
       is_priority_exposure: !!v.is_priority_exposure,
       updated_at: v.updated_at || new Date().toISOString()
     };

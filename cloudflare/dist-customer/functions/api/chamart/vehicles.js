@@ -50,6 +50,10 @@ export async function onRequestGet({ request, env, waitUntil }) {
       fuel_type, transmission, color, target_price, 
       listing_ownership_type, is_priority_exposure, priority_rank, 
       status, publishing_status, options_json,
+      (SELECT vl.raw_seller_name 
+       FROM vehicle_listings vl 
+       WHERE vl.vehicle_id = vehicles.id 
+       LIMIT 1) as seller_company_name,
       (SELECT vp.photo_url 
        FROM vehicle_photos vp 
        WHERE vp.vehicle_id = vehicles.id 
@@ -202,11 +206,14 @@ export async function onRequestGet({ request, env, waitUntil }) {
         options: options,
         listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
         is_chamart_owned: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED'),
+        seller_company: v.seller_company_name || ((v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED') ? '차마트 직영' : '제휴 상사'),
         is_priority_exposure: !!v.is_priority_exposure,
         priority_rank: v.priority_rank || 0,
         status: v.status || 'AVAILABLE',
         publishing_status: v.publishing_status || 'APPROVED',
-        branch_name: '차마트 장한평 본사 직영점'
+        branch_name: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED') 
+          ? '차마트 장한평 본사 직영점' 
+          : (v.seller_company_name ? `${v.seller_company_name} (제휴 상사)` : '차마트 제휴 상사')
       };
     });
 

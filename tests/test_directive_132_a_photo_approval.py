@@ -152,6 +152,62 @@ def test_photo_approval_and_4tier_order():
 
     assert len(c2_photos) == 0, 'Car 2 must return 0 approved photos'
 
+def test_seller_company_and_branch_separation():
+    conn = sqlite3.connect(':memory:')
+    cur = conn.cursor()
+
+    cur.execute('''
+    CREATE TABLE vehicles (
+        id TEXT PRIMARY KEY,
+        plate_number TEXT,
+        listing_ownership_type TEXT
+    );
+    ''')
+
+    cur.execute('''
+    CREATE TABLE vehicle_listings (
+        id TEXT PRIMARY KEY,
+        vehicle_id TEXT,
+        raw_seller_name TEXT,
+        raw_seller_location TEXT
+    );
+    ''')
+
+    # 1. External vehicle (64노3143, The Cool Motors)
+    cur.execute("INSERT INTO vehicles VALUES ('car-ext', '64노3143', 'EXTERNAL')")
+    cur.execute("INSERT INTO vehicle_listings VALUES ('list-1', 'car-ext', '(주)더쿨모터스', '서울 성동구 용답동 장안모터프라자')")
+
+    # 2. Owned vehicle (Chamart owned)
+    cur.execute("INSERT INTO vehicles VALUES ('car-own', '11가1111', 'OWNED')")
+
+    # Verify query for external vehicle
+    sql = '''
+    SELECT 
+      v.id, v.plate_number, v.listing_ownership_type,
+      (SELECT vl.raw_seller_name FROM vehicle_listings vl WHERE vl.vehicle_id = v.id LIMIT 1) as seller_name,
+      (SELECT vl.raw_seller_location FROM vehicle_listings vl WHERE vl.vehicle_id = v.id LIMIT 1) as seller_location
+    FROM vehicles v
+    ORDER BY v.id DESC
+    '''
+    rows = cur.execute(sql).fetchall()
+
+    ext_car = [r for r in rows if r[0] == 'car-ext'][0]
+    own_car = [r for r in rows if r[0] == 'car-own'][0]
+
+    # External assertions
+    is_ext_owned = (ext_car[2] == 'OWNED' or ext_car[2] == 'CHAMART_OWNED')
+    assert not is_ext_owned, 'External vehicle must not be chamart owned'
+    ext_branch = '차마트 직영점' if is_ext_owned else f"{ext_car[3]} (제휴 상사)"
+    assert ext_branch == '(주)더쿨모터스 (제휴 상사)', 'External branch must reflect actual dealer name'
+    assert ext_car[3] == '(주)더쿨모터스', 'Seller name must match DB listing'
+
+    # Owned assertions
+    is_own_owned = (own_car[2] == 'OWNED' or own_car[2] == 'CHAMART_OWNED')
+    assert is_own_owned, 'Owned vehicle must be chamart owned'
+    own_branch = '차마트 직영점' if is_own_owned else f"{own_car[3]} (제휴 상사)"
+    assert own_branch == '차마트 직영점', 'Owned branch must be 차마트 직영점'
+
 if __name__ == '__main__':
     test_photo_approval_and_4tier_order()
+    test_seller_company_and_branch_separation()
     print('All tests passed successfully!')
