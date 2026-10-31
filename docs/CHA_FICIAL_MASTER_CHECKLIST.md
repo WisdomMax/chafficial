@@ -264,7 +264,7 @@
 ### 5. DIRECTIVE 132-A: 실매물 1호 공개 직전 승인 게이트 이행 (ISSUE-128 ~ ISSUE-130)
 - **ISSUE-128 [P0 실매물 1호 승인 게이트 - (주)더쿨모터스 판매 권한 검증 및 D1 비공개 스테이징]**:
   - 조치:
-    1. **판매 권한 및 제원 검증**: (주)더쿨모터스(장안모터프라자) 위탁 매물 `64노3143`(제시번호 `2026099548`), 카매니저 실차 사진 9장 권한, 판매가 1,090만원, 차대번호 `SALCA2BN5JH761441`, 최초등록일 `2018-09-14`, 근저당 해제 상태 전수 확인 및 증거 보존.
+    1. **판매 권한 및 제원 검증**: (주)더쿨모터스(장안모터프라자) 위탁 매물 `64노3143`(제시번호 `2026099548`), 카매니저 실차 사진 9장 권한, 판매가 1,090만원, 차대번호 `SALCA2BN5JH761441`, 최초등록일 `2018-09-14`, 저당 정보는 KB차차차 저당 1건 확인에 따라 '자동차등록원부(을부) 조회 대기'로 정직하게 보존.
     2. **D1 비공개 스테이징**: 원격 D1 DB에 중복 없이 등록 완료 (`id = 'e6670a2e-c532-435e-b34a-b4a3ff9a677c'`, `is_public = 0`, `publishing_status = 'PENDING_REVIEW'`, `is_demo = 0`, `listing_ownership_type = 'EXTERNAL'`).
     3. **제시번호 & 실차 사진 9장 매핑**: `vehicle_listings` 제시번호 `2026099548` 1:1 매핑, `vehicle_photos` 카매니저 정식 실차 사진 9장 등록 완료 (`approval_status = 'PENDING'`, `public_visibility = 'PRIVATE'`).
     4. **고객 API 미노출 검증**: `GET /api/chamart/vehicles` 응답 0건(`[]`) 유지, 상세 API `GET /api/chamart/vehicles/e6670a2e...` 404 차단 실측 완료.
@@ -282,4 +282,6 @@
   - 조치:
     1. **판매 상사와 직영 역할 명확 분리**: `listing_ownership_type`이 `OWNED`/`CHAMART_OWNED`일 때만 직영 표기, `EXTERNAL` 매물은 `vehicle_listings` 테이블의 실제 상사명(`(주)더쿨모터스`) 및 제휴 상사 표기 강제.
     2. **허위 대표번호/고정 주소 전면 삭제**: `dealer_info.contact: null`, 주소는 DB의 실제 `raw_seller_location` 연동, 플랫폼 역할(`차마트 온라인 중개 플랫폼`) 명시.
-    3. **단위 테스트 추가**: EXTERNAL vs OWNED 상사명/지점명 분리 검증 100% 통과. Cloudflare Pages 프로덕션 재배포(`bd95a8d8`).
+    3. **단위 테스트 추가**: EXTERNAL vs OWNED 상사명/지점명 분리 검증 100% 통과.
+- **ISSUE-131 [P0 상사 소재지 예외 고정값 완전 삭제 및 최종 상용 게이트 종결]**:
+  - 조치: 제휴 상사 소재지 fallback에서 하드코딩 주소를 제거하고 `null` 또는 `'소재지 확인 대기'`로 통일. 전체 감사 기록 정합성 일치 및 사용자 최종 공개 결정 대기열 유지.

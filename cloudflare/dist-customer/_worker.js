@@ -351,7 +351,7 @@ export default {
         const sellerName = isChamartOwned ? '차마트 직영' : (listing?.raw_seller_name || '제휴 상사');
         const sellerLocation = isChamartOwned 
           ? '서울특별시 성동구 용답동 장한평 자동차매매단지' 
-          : (listing?.raw_seller_location || '서울 성동구 용답동 장안모터프라자');
+          : (listing?.raw_seller_location || '소재지 확인 대기');
         const branchName = isChamartOwned ? '차마트 장한평 본사 직영점' : `${sellerName} (제휴 상사)`;
 
         const detail = {
