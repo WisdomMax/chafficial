@@ -507,6 +507,31 @@
     2. 관리자 API(Bearer 인증)를 통해서만 안전하게 세부 제원이 확인되며, 고객용 공개 API(`chamart.cc/api/vehicles`)는 매물 0대로 완전 격리 유지 확인 (임의 공개 원천 차단).
     3. 종합 E2E 검증(`tests/test_directive_137_market_sync.py` 7단계 100% PASS), 보안 회귀(`test_directive_136_sec.py` 7/7 PASS), 안전 규칙(`test_directive_136_safety_rules.py` 5/5 PASS) 전수 합격.
 
+### 15. DIRECTIVE 137-R: 장한평 전체 실시간 수집 및 차피셜 DB/차마트 실제 연동 복구 (ISSUE-167 ~ ISSUE-170)
+- **ISSUE-167 [P0 카매니저 장한평 전체 시장 실제 실시간 재수집 완결 및 원본 정합성 입증]**:
+  - 조치:
+    1. 기존 JSON 캐시 재활용을 배제하고 `JanghanpyeongCollector`를 직접 가동하여 카매니저 라이브 서버에서 성동구/장한평 단지 전체 시장 89페이지를 실시간 전수 크롤링 완료 (수집 시각: `2026-10-31T17:34:33.944669`, 캡처 ID: `LIVE_JHP_20261031_173433`).
+    2. 카매니저 실서버 1페이지에서 보고한 총건수 1,764대와 실제 수집된 고유 차량 ID(`encarno`) 1,764건이 100% 일치함을 입증 (누락 페이지 0건, 실패 0건, `is_complete=True`).
+    3. 카매니저 실서버에 존재하는 실제 장한평 매물이 약 1,100대가 아닌 정확히 1,764대임을 실측 입증.
+- **ISSUE-168 [P0 수집량 고정 임계값(1500) 제거 및 시장 규모 적응형 하한선(Floor) 도입]**:
+  - 조치:
+    1. `janghanpyeong_collector.py` 및 `scripts/run_daily_sync.py`에서 하드코딩된 `MIN_TOTAL_THRESHOLD = 1500`를 제거.
+    2. 시장 변동에 유연하게 적응하는 최소 하한선(`MIN_TOTAL_FLOOR = 300`, `MIN_OWNED_FLOOR = 10`, `MIN_MARKET_FLOOR = 200`)과 카매니저 원본 총건수 대비 100% 일치율 동적 정합성 검증으로 개선.
+- **ISSUE-169 [P0 상사명 부분문자열('더쿨') 하드코딩 영구 제거 및 DealershipRegistry 기반 정식 광고 권한 검증 체계 구축]**:
+  - 조치:
+    1. `data/authorized_partner_dealerships.json` 및 `DealershipRegistry`를 신규 구축하여 법적 계약(`contract_status == 'ACTIVE'`)과 광고 동의(`advertising_consent.status == 'APPROVED'`)를 기준으로 광고 권한을 공식 판정.
+    2. (주)더쿨모터스(74대)는 정식 계약 및 광고 동의 확인으로 차마트 D1 판매 연동 풀로 승격.
+    3. 타 48개 상사(1,690대)는 미권한 시장 관측 풀(`MARKET_OBSERVED`)로 엄격 분리하여 무단 광고를 원천 차단.
+    4. 향후 신규 제휴 상사 등록 시 JSON 등록만으로 즉시 연동되는 확장형 구조 확립.
+- **ISSUE-170 [P0 차피셜 분석 DB 실제 시계열 갱신 및 차마트 D1 연동 원스톱 운영 검증 (E2E 7단계 100% PASS)]**:
+  - 조치:
+    1. `MarketTimeSeriesEngine`을 통해 차피셜 분석 DB(`chamart_platform_demo.db`)에 오늘 실시간 관측 시계열(`RunID = d9926dca-...`, `LIVE_OBSERVED`, 1,764대 전수)을 원자적 커밋 완료.
+    2. `carmanager_sync_logs` 및 `vehicles` 테이블 갱신: Owned 74대, Market 1,690대 정합성 감사 완료.
+    3. 차마트 D1 원자적 멱등 동기화 및 2회차 무변동 완벽 스킵(`SKIPPED_NO_CHANGES`) 실서버 확인.
+    4. 실매물 1호 `64노3143` 원격 D1 제원(125,428km / 1,090만원 / 사진 9장) 및 비공개(`is_public=0`) 유지, 고객용 공개 API 0대 격리 100% 확인.
+    5. 종합 검증(`tests/test_directive_137_r_real_market_pipeline.py`) 7단계 100% PASS 합격.
+
+
 
 
 

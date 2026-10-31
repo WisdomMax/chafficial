@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent / "s
 
 from chaficial.platform.sourcing.chamart_sync_client import ChamartSyncClient
 from chaficial.platform.sourcing.carmanager_sync import parse_price_manwon, parse_mileage_km
+from chaficial.platform.dealerships.dealership_registry import DealershipRegistry
 
 LOG_PATH = Path("data/sync_daemon.log")
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -74,19 +75,24 @@ class ContinuousSyncDaemon:
         authorized_partner_count = 0
         market_observed_count = 0
 
+        registry = DealershipRegistry()
         for c in all_cars:
             enc = c.get("encarno") or c.get("plate_tail", "")
             shop_name = str(c.get("shop") or c.get("sangsa") or "장한평일반상사").strip()
             shop_counter[shop_name] = shop_counter.get(shop_name, 0) + 1
 
-            # 광고 및 판매 권한 검증: 공식 제휴 동의 상사((주)더쿨모터스) 확인
-            is_partner = "더쿨" in shop_name
+            # [DIRECTIVE 137-R]: DealershipRegistry 기반 정식 계약 및 광고 동의 정밀 검증
+            is_partner, partner_info, reason = registry.verify_advertising_authorization(shop_name)
             if is_partner:
                 authorized_partner_count += 1
                 ownership_type = "EXTERNAL"
+                partner_id = partner_info["dealership_id"]
+                display_shop_name = partner_info["official_name"]
             else:
                 market_observed_count += 1
                 ownership_type = "MARKET_OBSERVED"
+                partner_id = None
+                display_shop_name = shop_name
 
             price = parse_price_manwon(c.get("price_manwon"))
             mileage = parse_mileage_km(c.get("mileage"))
@@ -106,12 +112,14 @@ class ContinuousSyncDaemon:
                 "fuel_type": c.get("fuel"),
                 "transmission": c.get("mission"),
                 "color": c.get("color"),
-                "sangsa_name": shop_name,
+                "sangsa_name": display_shop_name,
                 "dealer_name": c.get("dealer"),
                 "dealer_phone": c.get("phone"),
                 "primary_photo_url": c.get("thumbnail"),
                 "listing_ownership_type": ownership_type,
                 "is_authorized_partner": is_partner,
+                "authorized_dealership_id": partner_id,
+                "authorization_reason": reason,
                 "data_source": "JANGHANPYEONG_MARKET_FULL"
             })
 
@@ -120,7 +128,7 @@ class ContinuousSyncDaemon:
             "unique_encarno_count": len(set(x["encarno"] for x in market_pool if x["encarno"])),
             "distinct_dealerships": len(shop_counter),
             "top_dealerships": sorted(shop_counter.items(), key=lambda x: x[1], reverse=True)[:10],
-            "authorized_partner_dealerships": ["(주)더쿨모터스"],
+            "authorized_partner_dealerships": registry.get_authorized_official_names(),
             "authorized_partner_vehicles": authorized_partner_count,
             "market_observed_vehicles": market_observed_count,
             "chaficial_analysis_total": 1801 # 로컬 DB 기보존 장한평 1770대 + 직영 31대

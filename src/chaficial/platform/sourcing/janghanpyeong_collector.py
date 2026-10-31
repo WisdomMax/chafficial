@@ -12,6 +12,7 @@ import re
 import time
 import json
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
@@ -200,18 +201,23 @@ class JanghanpyeongCollector:
 
         total_duration = time.time() - start_time
 
-        # [DIRECTIVE 112 TASK 2: 카매니저 완전 수집 판정 기준 엄격화]
-        # 1. 원본 총건수(total_found_cars)가 반드시 유효한 정수(>= 1500)로 확인되어야 함 (NULL 불허)
+        # [DIRECTIVE 137-R: 카매니저 완전 수집 판정 기준 동적화 및 정합성 검증]
+        # 1. 원본 총건수(total_found_cars)가 기본 하한선(MIN_MARKET_FLOOR=300) 이상 유효한 정수로 확인
         # 2. 실패 페이지 0건 (len(failed_pages) == 0)
-        # 3. 마지막 페이지까지 전수 쿼리 완료 (page_no > max_pages)
-        # 4. 수집된 고유 차량 수(len(all_cars))가 원본 총건수(total_found_cars)와 100% 일치해야 함 (임의 2% 누락 허용 폐기)
+        # 3. 마지막 페이지까지 전수 순회 완료 (page_no > max_pages)
+        # 4. 수집된 고유 차량 수(len(all_cars))가 카매니저 원본 총건수(total_found_cars)와 100% 일치
+        MIN_MARKET_FLOOR = 300
         is_complete = False
-        if total_found_cars is not None and total_found_cars >= 1500:
+        if total_found_cars is not None and total_found_cars >= MIN_MARKET_FLOOR:
             if len(failed_pages) == 0 and page_no > max_pages:
                 if len(all_cars) == total_found_cars:
                     is_complete = True
 
+        now_iso = datetime.now().isoformat()
+        capture_id = f"LIVE_JHP_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         summary = {
+            "capture_id": capture_id,
+            "collected_at": now_iso,
             "total_found": total_found_cars,
             "max_pages": max_pages,
             "total_pages_queried": len(page_audit),

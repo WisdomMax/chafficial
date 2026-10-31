@@ -1,0 +1,52 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-10-31T17:33:00+09:00",
+  "registry_description": "차마트 공식 제휴 상사 및 광고 권한 레지스트리 (DIRECTIVE 137-R)",
+  "partner_dealerships": [
+    {
+      "dealership_id": "DEALER-THECOOL-001",
+      "official_name": "(주)더쿨모터스",
+      "business_registration_number": "204-86-38410",
+      "representative_name": "홍길동",
+      "address": "서울특별시 성동구 자동차시장1길 70, 장한평매매단지",
+      "contact_phone": "02-2244-1234",
+      "contract_status": "ACTIVE",
+      "advertising_consent": {
+        "status": "APPROVED",
+        "consent_type": "CONTINUOUS_PARTNER_AGREEMENT",
+        "granted_at": "2026-10-25T00:00:00+09:00",
+        "valid_until": "2027-10-24T23:59:59+09:00",
+        "allowed_platforms": ["CHAMART_WEB", "CHAMART_MOBILE", "CHAFICIAL_AI"],
+        "max_vehicle_quota": 200,
+        "document_archive_ref": "DOC-AUTH-THECOOL-202610-001"
+      },
+      "danji_match_keys": [
+        "(주)더쿨모터스",
+        "더쿨모터스",
+        "더쿨"
+      ]
+    }
+  ],
+  "pending_review_dealerships": [
+    {
+      "dealership_id": "DEALER-SEONIN-002",
+      "official_name": "선인자동차",
+      "contract_status": "IN_NEGOTIATION",
+      "advertising_consent": {
+        "status": "UNAUTHORIZED",
+        "consent_type": "NONE"
+      },
+      "danji_match_keys": ["선인자동차"]
+    },
+    {
+      "dealership_id": "DEALER-DKDREAM-003",
+      "official_name": "디케이드림카",
+      "contract_status": "IN_NEGOTIATION",
+      "advertising_consent": {
+        "status": "UNAUTHORIZED",
+        "consent_type": "NONE"
+      },
+      "danji_match_keys": ["디케이드림카"]
+    }
+  ]
+}
