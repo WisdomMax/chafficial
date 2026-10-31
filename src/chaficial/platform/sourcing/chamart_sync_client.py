@@ -124,14 +124,14 @@ class ChamartSyncClient:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
             "Idempotency-Key": idempotency_key,
-            "User-Agent": "Chaficial-Sync-Engine/1.0"
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 (ChaficialSync)"
         }
 
         last_error = None
         for attempt in range(max_retries):
             try:
                 req = urllib.request.Request(url, data=raw_bytes, headers=headers, method="POST")
-                with urllib.request.urlopen(req, timeout=12) as resp:
+                with urllib.request.urlopen(req, timeout=30) as resp:
                     body = resp.read().decode("utf-8")
                     return json.loads(body)
             except urllib.error.HTTPError as e:
@@ -222,7 +222,7 @@ class ChamartSyncClient:
             url,
             headers={
                 "Authorization": f"Bearer {self.api_key}",
-                "User-Agent": "Chaficial-Sync-Engine/1.0"
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 (ChaficialSync)"
             },
             method="GET"
         )

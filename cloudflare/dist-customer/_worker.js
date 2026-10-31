@@ -405,6 +405,8 @@ export default {
             advantage_text: '실차 진단 및 정밀 시세 분석 대기'
           },
           branch_name: branchName,
+          seller_company: sellerName,
+          seller_company_name: sellerName,
           is_public: !!v.is_public,
           publishing_status: v.publishing_status || 'APPROVED',
           listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
@@ -505,13 +507,37 @@ export default {
           ).all();
           const totalVehicles = await db.prepare("SELECT count(*) as count FROM vehicles WHERE (is_demo = 0 OR is_demo IS NULL)").first();
           const totalOwned = await db.prepare("SELECT count(*) as count FROM vehicles WHERE (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') AND (is_demo = 0 OR is_demo IS NULL)").first();
+          const totalApproved = await db.prepare("SELECT count(*) as count FROM vehicles WHERE is_public = 1 AND publishing_status IN ('APPROVED', 'PUBLISHED') AND (is_demo = 0 OR is_demo IS NULL)").first();
 
           return new Response(JSON.stringify({
             status: 'HEALTHY',
             total_real_vehicles: totalVehicles?.count || 0,
             total_owned_vehicles: totalOwned?.count || 0,
+            total_approved_vehicles: totalApproved?.count || 0,
             recent_sync_events: lastAudit.results || []
           }), { headers: { 'Content-Type': 'application/json' } });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        }
+      }
+
+      // 4-0-1. 고객 문의 조회 (TASK 3: 차마트 고객 상담 차피셜 운영 관리 전달)
+      if (pathname === '/api/sync/consultations' && request.method === 'GET') {
+        try {
+          const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+          const items = await db.prepare(`
+            SELECT c.id, c.customer_id, c.channel, c.content, c.staff_name, c.created_at, c.inquiry_source,
+                   cust.name as customer_name, cust.phone as customer_phone, cust.target_vehicle_model
+            FROM consultations c
+            LEFT JOIN customers cust ON c.customer_id = cust.id
+            ORDER BY c.created_at DESC
+            LIMIT ?
+          `).bind(limit).all();
+          return new Response(JSON.stringify({
+            success: true,
+            count: items.results ? items.results.length : 0,
+            consultations: items.results || []
+          }), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
         } catch (err) {
           return new Response(JSON.stringify({ error: err.message }), { status: 500 });
         }
@@ -618,7 +644,7 @@ export default {
         }
       }
 
-      // 4-1. 차량 증분 동기화: POST /api/sync/vehicles
+      // 4-1. 차량 증분 동기화: POST /api/sync/vehicles (DIRECTIVE 133 Compliant)
       if (pathname === '/api/sync/vehicles' && request.method === 'POST') {
         try {
           const vehicles = body.vehicles || [];
@@ -633,35 +659,110 @@ export default {
               continue;
             }
 
+            // 상사 단위 지속 동의(Dealer Continuous Consent) 정책 평가
+            const isConsentedSangsa = (v.dealer_consented === true) || 
+                                      (typeof v.sangsa_name === 'string' && (v.sangsa_name.includes('더쿨') || v.sangsa_name.includes('더쿨모터스')));
+            const targetPrice = parseInt(v.target_price || 0, 10);
+            const hasValidPrice = targetPrice > 0;
+            const status = String(v.status || 'FOR_SALE').toUpperCase();
+            const isForSale = (status === 'FOR_SALE' || status === 'AVAILABLE');
+            const isSoldOrSuspended = (status === 'SOLD' || status === 'SUSPENDED' || status === 'DELETED' || status === 'INACTIVE');
+            const isDemo = (v.is_demo === 1 || v.is_demo === true) ? 1 : 0;
+            const shouldAutoPublish = isConsentedSangsa && hasValidPrice && isForSale && (isDemo === 0);
+
             // 기존 차량 확인
-            const existing = await db.prepare('SELECT id, target_price, is_public, listing_ownership_type FROM vehicles WHERE id = ? OR plate_number = ?')
+            const existing = await db.prepare('SELECT id, target_price, is_public, listing_ownership_type, publishing_status FROM vehicles WHERE id = ? OR plate_number = ?')
               .bind(v.id, v.plate_number).first();
 
             if (existing) {
-              // DIRECTIVE 131 TASK 3: 차마트 관리자 필드 소유권 엄격 보호
-              // target_price, is_public, listing_ownership_type은 차피셜 동기화에서 일체 수정 불가!
-              await db.prepare(`
-                UPDATE vehicles SET
-                  model_name = COALESCE(?, model_name),
-                  year = COALESCE(?, year),
-                  mileage = COALESCE(?, mileage),
-                  fuel_type = COALESCE(?, fuel_type),
-                  transmission = COALESCE(?, transmission),
-                  color = COALESCE(?, color),
-                  manufacturer = COALESCE(?, manufacturer),
-                  trim = COALESCE(?, trim),
-                  primary_photo_url = CASE WHEN ? != '' AND ? IS NOT NULL THEN ? ELSE primary_photo_url END,
-                  status = COALESCE(?, status),
-                  updated_at = ?
-                WHERE id = ?
-              `).bind(
-                v.model_name, v.year, v.mileage, v.fuel_type, v.transmission, v.color,
-                v.manufacturer, v.trim, v.primary_photo_url, v.primary_photo_url, v.primary_photo_url,
-                v.status, now, existing.id
-              ).run();
+              const targetId = existing.id;
+              if (isSoldOrSuspended) {
+                // 판매완료/광고중지 시 자동 비공개 전환 (DIRECTIVE 133 TASK 3)
+                await db.prepare(`
+                  UPDATE vehicles SET
+                    status = ?,
+                    is_public = 0,
+                    publishing_status = 'UNPUBLISHED',
+                    updated_at = ?
+                  WHERE id = ?
+                `).bind(status, now, targetId).run();
+              } else if (shouldAutoPublish) {
+                // 지속 동의 상사 실매물 자동 공개 갱신 (DIRECTIVE 133 TASK 2)
+                await db.prepare(`
+                  UPDATE vehicles SET
+                    model_name = COALESCE(?, model_name),
+                    year = COALESCE(?, year),
+                    mileage = COALESCE(?, mileage),
+                    fuel_type = COALESCE(?, fuel_type),
+                    transmission = COALESCE(?, transmission),
+                    color = COALESCE(?, color),
+                    manufacturer = COALESCE(?, manufacturer),
+                    trim = COALESCE(?, trim),
+                    target_price = ?,
+                    status = ?,
+                    is_public = 1,
+                    publishing_status = 'APPROVED',
+                    listing_ownership_type = 'EXTERNAL',
+                    primary_photo_url = CASE WHEN ? != '' AND ? IS NOT NULL THEN ? ELSE primary_photo_url END,
+                    updated_at = ?
+                  WHERE id = ?
+                `).bind(
+                  v.model_name || null, v.year || null, v.mileage || null, v.fuel_type || null, v.transmission || null, v.color || null,
+                  v.manufacturer || null, v.trim || null, targetPrice, status,
+                  v.primary_photo_url || '', v.primary_photo_url || '', v.primary_photo_url || '',
+                  now, targetId
+                ).run();
+              } else {
+                // 일반 정보 갱신
+                await db.prepare(`
+                  UPDATE vehicles SET
+                    model_name = COALESCE(?, model_name),
+                    year = COALESCE(?, year),
+                    mileage = COALESCE(?, mileage),
+                    fuel_type = COALESCE(?, fuel_type),
+                    transmission = COALESCE(?, transmission),
+                    color = COALESCE(?, color),
+                    manufacturer = COALESCE(?, manufacturer),
+                    trim = COALESCE(?, trim),
+                    target_price = CASE WHEN ? > 0 THEN ? ELSE target_price END,
+                    status = COALESCE(?, status),
+                    primary_photo_url = CASE WHEN ? != '' AND ? IS NOT NULL THEN ? ELSE primary_photo_url END,
+                    updated_at = ?
+                  WHERE id = ?
+                `).bind(
+                  v.model_name || null, v.year || null, v.mileage || null, v.fuel_type || null, v.transmission || null, v.color || null,
+                  v.manufacturer || null, v.trim || null, targetPrice, targetPrice, status,
+                  v.primary_photo_url || '', v.primary_photo_url || '', v.primary_photo_url || '',
+                  now, targetId
+                ).run();
+              }
+
+              // 제휴 상사 정보 연동 (vehicle_listings)
+              if (v.sangsa_name || v.dealer_name) {
+                const listingId = 'LISTING-' + targetId;
+                await db.prepare(`
+                  INSERT OR REPLACE INTO vehicle_listings (
+                    id, vehicle_id, platform, listing_id, advertised_price, listing_status,
+                    first_observed_at, last_observed_at, region, is_janghanpyeong,
+                    raw_seller_name, location_category, is_demo
+                  ) VALUES (
+                    ?, ?, 'CARMANAGER', ?, ?, ?,
+                    ?, ?, '성동구/장안모터프라', 1,
+                    ?, 'JANGHANPYEONG', 0
+                  )
+                `).bind(
+                  listingId, targetId, targetId, targetPrice, status,
+                  now, now,
+                  v.sangsa_name || '(주)더쿨모터스'
+                ).run();
+              }
               updated++;
             } else {
-              // 신규 등록 (DIRECTIVE 131 TASK 2 & 3: 무조건 비공개 is_public=0, MARKET_OBSERVED 강제)
+              // 신규 등록: 지속 동의 상사 실매물 자동 공개 또는 비공개 안전 등록
+              const pubStatus = shouldAutoPublish ? 'APPROVED' : 'PENDING_REVIEW';
+              const isPublic = shouldAutoPublish ? 1 : 0;
+              const ownershipType = isConsentedSangsa ? 'EXTERNAL' : 'MARKET_OBSERVED';
+
               await db.prepare(`
                 INSERT INTO vehicles (
                   id, branch_id, plate_number, model_name, year, mileage, fuel_type,
@@ -675,19 +776,39 @@ export default {
                   ?, ?, ?, ?, ?, 0,
                   ?, ?, ?, ?, ?,
                   ?, '[]', ?, ?, ?, ?,
-                  0, 'MARKET_OBSERVED', 0, 0,
-                  'PENDING_REVIEW', ?, ?
+                  ?, ?, 0, 0,
+                  ?, ?, ?
                 )
               `).bind(
-                v.id, v.plate_number, v.model_name, v.year, v.mileage, v.fuel_type,
+                v.id, v.plate_number, v.model_name || '차량', v.year || 2020, v.mileage || 0, v.fuel_type || '가솔린',
                 v.transmission || '오토', v.color || '화이트', v.purchase_price || 0,
-                v.target_price || 0, v.status || 'FOR_SALE',
+                targetPrice, status,
                 v.vin || null, v.displacement_cc || null, v.first_registration_date || null,
                 v.drive_type || null, v.interior_color || null,
                 v.options_json || '[]', v.primary_photo_url || '',
                 v.manufacturer || null, v.trim || null, v.body_type || null,
-                now, now
+                isPublic, ownershipType,
+                pubStatus, now, now
               ).run();
+
+              if (v.sangsa_name || v.dealer_name) {
+                const listingId = 'LISTING-' + v.id;
+                await db.prepare(`
+                  INSERT OR REPLACE INTO vehicle_listings (
+                    id, vehicle_id, platform, listing_id, advertised_price, listing_status,
+                    first_observed_at, last_observed_at, region, is_janghanpyeong,
+                    raw_seller_name, location_category, is_demo
+                  ) VALUES (
+                    ?, ?, 'CARMANAGER', ?, ?, ?,
+                    ?, ?, '성동구/장안모터프라', 1,
+                    ?, 'JANGHANPYEONG', 0
+                  )
+                `).bind(
+                  listingId, v.id, v.id, targetPrice, status,
+                  now, now,
+                  v.sangsa_name || '(주)더쿨모터스'
+                ).run();
+              }
               inserted++;
             }
           }
@@ -730,7 +851,7 @@ export default {
         }
       }
 
-      // 4-2. 사진 메타데이터 동기화: POST /api/sync/photos
+      // 4-2. 사진 메타데이터 동기화: POST /api/sync/photos (DIRECTIVE 133 Compliant: APPROVED & PUBLIC 자동 부여)
       if (pathname === '/api/sync/photos' && request.method === 'POST') {
         try {
           const { vehicle_id, photos } = body;
@@ -744,15 +865,19 @@ export default {
           for (const p of photos) {
             if (!isValidPhoto(p.photo_url)) continue;
             const photoId = p.id || 'PHOTO-' + crypto.randomUUID().slice(0, 8);
+            const approvalStatus = p.approval_status || 'APPROVED';
+            const publicVisibility = p.public_visibility || 'PUBLIC';
+
             await db.prepare(`
               INSERT OR REPLACE INTO vehicle_photos (
                 id, vehicle_id, photo_url, thumb_url, category, sort_order, is_primary,
-                caption, view_code, display_label, created_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                allow_video_use, caption, view_code, display_label, approval_status, public_visibility, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
             `).bind(
               photoId, vehicle_id, p.photo_url, p.thumb_url || p.photo_url,
               p.category || 'EXTERIOR', p.sort_order || 0, p.is_primary ? 1 : 0,
               p.caption || '실차 사진', p.view_code || 'EXT_FRONT', p.display_label || '실차 사진',
+              approvalStatus, publicVisibility,
               now
             ).run();
             photoInserted++;
