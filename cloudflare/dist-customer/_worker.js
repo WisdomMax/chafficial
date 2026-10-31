@@ -659,23 +659,65 @@ export default {
               continue;
             }
 
-            // 상사 단위 지속 동의(Dealer Continuous Consent) 정책 평가
-            const isConsentedSangsa = (v.dealer_consented === true) || 
-                                      (typeof v.sangsa_name === 'string' && (v.sangsa_name.includes('더쿨') || v.sangsa_name.includes('더쿨모터스')));
+            // DIRECTIVE 133-R TASK 2: 서버 기반 상사 동의 및 권한 검증 (클라이언트 불리언 선언 신뢰 절대 금지)
+            const sangsaName = (v.sangsa_name || '').trim();
+            let isAuthorizedDealer = false;
+            if (sangsaName) {
+              const dealer = await db.prepare(
+                "SELECT id, dealership_name, partnership_status FROM dealers WHERE (dealership_name = ? OR name = ?) AND partnership_status = 'ACTIVE'"
+              ).bind(sangsaName, sangsaName).first();
+              if (dealer) {
+                isAuthorizedDealer = true;
+              }
+            }
+
+            // DIRECTIVE 133-R TASK 1 & 3: 실제 전체 번호판 정규식 엄격 검증 (더쿨-XXXX 같은 임시 번호판 자동 공개 전면 차단)
+            const cleanPlate = (v.plate_number || '').replace(/\s+/g, '');
+            const plateRegex = /^\d{2,3}[가-힣]\d{4}$/;
+            const hasValidFullPlate = plateRegex.test(cleanPlate);
+
+            // DIRECTIVE 133-R TASK 2: 실매물 1호 64노3143 사용자 명시 승인 전까지 비공개 게이트 보호
+            const isGateProtectedVehicle = (cleanPlate === '64노3143' || v.id === 'e6670a2e-c532-435e-b34a-b4a3ff9a677c');
+
             const targetPrice = parseInt(v.target_price || 0, 10);
             const hasValidPrice = targetPrice > 0;
             const status = String(v.status || 'FOR_SALE').toUpperCase();
             const isForSale = (status === 'FOR_SALE' || status === 'AVAILABLE');
             const isSoldOrSuspended = (status === 'SOLD' || status === 'SUSPENDED' || status === 'DELETED' || status === 'INACTIVE');
             const isDemo = (v.is_demo === 1 || v.is_demo === true) ? 1 : 0;
-            const shouldAutoPublish = isConsentedSangsa && hasValidPrice && isForSale && (isDemo === 0);
+
+            // 모든 엄격 조건(검증 상사 + 전체 번호판 + 유효 가격 + 판매중 + 실차 + 비보호 차량) 충족 시에만 자동 공개
+            const shouldAutoPublish = isAuthorizedDealer && hasValidFullPlate && hasValidPrice && isForSale && (isDemo === 0) && !isGateProtectedVehicle;
+
+            // 미확인 제원 임의 기본값 금지 (DIRECTIVE 133-R TASK 3)
+            const vYear = v.year ? parseInt(v.year, 10) : null;
+            const vMileage = (typeof v.mileage === 'number' && v.mileage >= 0) ? v.mileage : null;
+            const vFuel = v.fuel_type || null;
+            const vTransmission = v.transmission || null;
+            const vColor = v.color || null;
 
             // 기존 차량 확인
-            const existing = await db.prepare('SELECT id, target_price, is_public, listing_ownership_type, publishing_status FROM vehicles WHERE id = ? OR plate_number = ?')
-              .bind(v.id, v.plate_number).first();
+            const existing = await db.prepare('SELECT id, target_price, is_public, status, listing_ownership_type, publishing_status FROM vehicles WHERE id = ? OR plate_number = ?')
+              .bind(v.id, cleanPlate).first();
 
             if (existing) {
               const targetId = existing.id;
+
+              // DIRECTIVE 133-R TASK 3: SOLD 상태 전이 가드 (단순 원본 재전송으로 판매완료/비공개 매물 재공개 절대 차단)
+              if (existing.status === 'SOLD' || existing.publishing_status === 'UNPUBLISHED') {
+                if (!isSoldOrSuspended) {
+                  // 이미 판매완료 또는 비공개된 차량은 관리자 승인 없이 동기화로 재공개하지 않고 메타데이터만 갱신
+                  await db.prepare(`
+                    UPDATE vehicles SET
+                      model_name = COALESCE(?, model_name),
+                      updated_at = ?
+                    WHERE id = ?
+                  `).bind(v.model_name || null, now, targetId).run();
+                  updated++;
+                  continue;
+                }
+              }
+
               if (isSoldOrSuspended) {
                 // 판매완료/광고중지 시 자동 비공개 전환 (DIRECTIVE 133 TASK 3)
                 await db.prepare(`
@@ -687,7 +729,7 @@ export default {
                   WHERE id = ?
                 `).bind(status, now, targetId).run();
               } else if (shouldAutoPublish) {
-                // 지속 동의 상사 실매물 자동 공개 갱신 (DIRECTIVE 133 TASK 2)
+                // 검증된 상사 실매물 자동 공개 갱신
                 await db.prepare(`
                   UPDATE vehicles SET
                     model_name = COALESCE(?, model_name),
@@ -707,13 +749,15 @@ export default {
                     updated_at = ?
                   WHERE id = ?
                 `).bind(
-                  v.model_name || null, v.year || null, v.mileage || null, v.fuel_type || null, v.transmission || null, v.color || null,
+                  v.model_name || null, vYear, vMileage, vFuel, vTransmission, vColor,
                   v.manufacturer || null, v.trim || null, targetPrice, status,
                   v.primary_photo_url || '', v.primary_photo_url || '', v.primary_photo_url || '',
                   now, targetId
                 ).run();
               } else {
-                // 일반 정보 갱신
+                // 미검증, 임시번호, 게이트보호 차량: 안전한 비공개 상태 유지
+                const finalPub = isGateProtectedVehicle ? 'PENDING_REVIEW' : (existing.publishing_status === 'APPROVED' ? 'PENDING_REVIEW' : existing.publishing_status);
+                const finalPublic = 0; // 검증 미충족 시 무조건 비공개
                 await db.prepare(`
                   UPDATE vehicles SET
                     model_name = COALESCE(?, model_name),
@@ -726,12 +770,15 @@ export default {
                     trim = COALESCE(?, trim),
                     target_price = CASE WHEN ? > 0 THEN ? ELSE target_price END,
                     status = COALESCE(?, status),
+                    is_public = ?,
+                    publishing_status = ?,
                     primary_photo_url = CASE WHEN ? != '' AND ? IS NOT NULL THEN ? ELSE primary_photo_url END,
                     updated_at = ?
                   WHERE id = ?
                 `).bind(
-                  v.model_name || null, v.year || null, v.mileage || null, v.fuel_type || null, v.transmission || null, v.color || null,
+                  v.model_name || null, vYear, vMileage, vFuel, vTransmission, vColor,
                   v.manufacturer || null, v.trim || null, targetPrice, targetPrice, status,
+                  finalPublic, finalPub,
                   v.primary_photo_url || '', v.primary_photo_url || '', v.primary_photo_url || '',
                   now, targetId
                 ).run();
@@ -758,10 +805,10 @@ export default {
               }
               updated++;
             } else {
-              // 신규 등록: 지속 동의 상사 실매물 자동 공개 또는 비공개 안전 등록
+              // 신규 등록: 전체 번호판 및 상사 인가 검증 충족 시에만 APPROVED, 미충족 시 무조건 PENDING_REVIEW & is_public=0
               const pubStatus = shouldAutoPublish ? 'APPROVED' : 'PENDING_REVIEW';
               const isPublic = shouldAutoPublish ? 1 : 0;
-              const ownershipType = isConsentedSangsa ? 'EXTERNAL' : 'MARKET_OBSERVED';
+              const ownershipType = isAuthorizedDealer ? 'EXTERNAL' : 'MARKET_OBSERVED';
 
               await db.prepare(`
                 INSERT INTO vehicles (
@@ -780,8 +827,8 @@ export default {
                   ?, ?, ?
                 )
               `).bind(
-                v.id, v.plate_number, v.model_name || '차량', v.year || 2020, v.mileage || 0, v.fuel_type || '가솔린',
-                v.transmission || '오토', v.color || '화이트', v.purchase_price || 0,
+                v.id, cleanPlate, v.model_name || '차량', vYear, vMileage, vFuel,
+                vTransmission, vColor, v.purchase_price || 0,
                 targetPrice, status,
                 v.vin || null, v.displacement_cc || null, v.first_registration_date || null,
                 v.drive_type || null, v.interior_color || null,
