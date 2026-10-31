@@ -413,8 +413,23 @@ export default {
       const db = env.DB;
       if (!db) return new Response(JSON.stringify({ error: 'DB binding not found' }), { status: 500 });
 
-      // DIRECTIVE 130 P1 멱등성: 클라이언트 Idempotency-Key 헤더 검증
+      // DIRECTIVE 130 P1 멱등성: 클라이언트 Idempotency-Key 헤더 검증 및 실제 중복 실행 원천 차단
       const idempotencyKey = request.headers.get('Idempotency-Key') || '';
+      if (idempotencyKey) {
+        const processed = await db.prepare(
+          "SELECT id FROM admin_audit_logs WHERE target_id = ? AND action LIKE 'CHAFICIAL_SYNC_%' LIMIT 1"
+        ).bind(idempotencyKey).first();
+        if (processed) {
+          return new Response(JSON.stringify({
+            success: true,
+            idempotent_replay: true,
+            message: '이미 안전하게 처리된 동일 요청입니다 (Idempotent Replay Hit)',
+            idempotency_key: idempotencyKey
+          }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
 
       // 4-1. 차량 증분 동기화: POST /api/sync/vehicles
       if (pathname === '/api/sync/vehicles' && request.method === 'POST') {
@@ -461,10 +476,11 @@ export default {
               ).run();
               updated++;
             } else {
-              // 신규 등록 (DIRECTIVE 130 P0/P1 보안 보정: 관리자 승인 전 기본 비공개 is_public=0 및 소속 엄격 검증)
+              // 신규 등록 (DIRECTIVE 130 P0/P1 보안 보정: 관리자 승인 전 무조건 비공개 is_public=0 절대 강제 및 소속 엄격 검증)
               const validOwnershipTypes = ['OWNED', 'CHAMART_OWNED', 'DEALER_PARTNER', 'CONSIGNED', 'MARKET_OBSERVED'];
               const finalOwnership = validOwnershipTypes.includes(v.listing_ownership_type) ? v.listing_ownership_type : 'MARKET_OBSERVED';
-              const finalIsPublic = (v.is_public === 1 || v.is_public === true) ? 1 : 0; // 기본값 엄격 비공개(0)
+              // 클라이언트의 is_public 전송값과 무관하게 무조건 0 강제 (관리자 직접 승인 전 자동 공개 경로 원천 봉쇄)
+              const finalIsPublic = 0;
 
               await db.prepare(`
                 INSERT INTO vehicles (
@@ -498,12 +514,13 @@ export default {
             }
           }
 
-          // 감사 로그 기록 (멱등성 키 포함)
+          // 감사 로그 기록 (멱등성 키 기반 중복 검증용 target_id 저장)
           const logId = 'AUDIT-' + crypto.randomUUID().slice(0, 8);
+          const targetKey = idempotencyKey || ('BATCH-' + logId);
           await db.prepare(`
             INSERT INTO admin_audit_logs (id, user_id, action, target_type, target_id, details_json, created_at)
-            VALUES (?, 'SYSTEM_SYNC', 'CHAFICIAL_SYNC_VEHICLES', 'VEHICLES_BATCH', 'BATCH', ?, ?)
-          `).bind(logId, JSON.stringify({ inserted, updated, skipped, total: vehicles.length, source: body.source || 'CHAFICIAL', idempotency_key: idempotencyKey }), now).run();
+            VALUES (?, 'SYSTEM_SYNC', 'CHAFICIAL_SYNC_VEHICLES', 'VEHICLES_BATCH', ?, ?, ?)
+          `).bind(logId, targetKey, JSON.stringify({ inserted, updated, skipped, total: vehicles.length, source: body.source || 'CHAFICIAL', idempotency_key: idempotencyKey }), now).run();
 
           return new Response(JSON.stringify({
             success: true,
@@ -598,12 +615,13 @@ export default {
             count++;
           }
 
-          // 감사 로그 기록
+          // 감사 로그 기록 (멱등성 키 기반 중복 검증용 target_id 저장)
           const logId = 'AUDIT-' + crypto.randomUUID().slice(0, 8);
+          const targetKey = idempotencyKey || ('STATUS-' + logId);
           await db.prepare(`
             INSERT INTO admin_audit_logs (id, user_id, action, target_type, target_id, details_json, created_at)
             VALUES (?, 'SYSTEM_SYNC', 'CHAFICIAL_SYNC_STATUS', 'STATUS_BATCH', ?, ?, ?)
-          `).bind(logId, normStatus, JSON.stringify({ count, vehicle_ids, status: normStatus, reason, unpublished: shouldUnpublish }), now).run();
+          `).bind(logId, targetKey, JSON.stringify({ count, vehicle_ids, status: normStatus, reason, unpublished: shouldUnpublish, idempotency_key: idempotencyKey }), now).run();
 
           return new Response(JSON.stringify({ 
             success: true, 
