@@ -360,3 +360,20 @@
     3. 실제 권한 증빙을 갖춘 직영 5대(`64노3143`, `277노8340`, `358고4799`, `160버5497`, `145더8176`)를 비공개(`is_public = 0, PENDING_REVIEW`)로 완벽 보존하고, 사용자 명시적 최종 승인 전까지 공개하지 않는 안전 게이트 준수.
     4. Cloudflare Pages 프로덕션 배포 완료 (`04f4057e`). 공개 API 실측 0대(`[]`) 및 테스트 식별자 400 거부 실측 완료.
 
+### 9. DIRECTIVE 135: 카매니저 실시간 수집과 차마트 D1 동기화 단절 복구 (ISSUE-143 ~ ISSUE-146)
+- **ISSUE-143 [P0 실시간 수집기 연동 - CarManagerLiveClient 세션 기반 실시간 인벤토리 수집]**:
+  - 원인: 데몬이 고정 로컬 JSON만 단순 파싱하여 실시간 카매니저 세션과의 연결 단절.
+  - 조치: `CarManagerLiveClient.fetch_live_my_cars()`를 데몬 수집 파이프라인에 직접 통합. 실시간 세션 조회 실측 성공(14대 직접 확인) 및 실패 시 검증된 스냅샷(74대) 안전 보존(Fallback) 아키텍처 완성.
+- **ISSUE-144 [P0 실제 동기화 활성화 - dry_run 제거 및 D1 HTTP 200 검증 체크포인트 갱신]**:
+  - 원인: 데몬 `run_forever()`가 강제 `dry_run=True`로 실행되어 실제 D1에 반영되지 않고 가짜 체크포인트가 저장되던 결함.
+  - 조치: `dry_run=False`로 전환하여 15대 단위 안전 청크로 실제 D1 전송 실측 (`updated: 74, skipped: 0`). D1 서버의 `success: true` 응답을 확인한 경우에만 해시 체크포인트를 갱신하도록 무결성 보장.
+- **ISSUE-145 [P0 원본 ID 기반 61대 비공개 연결 - plate_number 부재 시 skipped 결함 수정]**:
+  - 원인: `_worker.js`에서 `!v.plate_number` 검사로 인해 번호판 앞자리가 마스킹된 61대 매물이 무조건 skipped 처리되던 아키텍처 결함.
+  - 조치: `_worker.js` 수정: `!v.id`만 검사하고, 유효 번호판이 없으면 `plate_number = NULL` 및 `registration_number = encarno`로 매핑하여 D1에 안전하게 `is_public = 0, PENDING_REVIEW`로 100% 적재 성공. Cloudflare Pages 재배포 완료 (`7677e103`).
+- **ISSUE-146 [P0 엔드투엔드 단일 파이프라인 실증 - 무변동 스킵 및 증분 감지 100% PASS]**:
+  - 조치:
+    1. 최초 동기화 사이클: 74대 전수 D1 동기화 완료 (`updated: 74`).
+    2. 두 번째 무변동 사이클: 카매니저 실시간 조회 후 변경 매물 0대 감지 ➡️ D1 전송 생략 (`SKIPPED_NO_CHANGES`) 100% 실측.
+    3. 단위 테스트 `tests/test_directive_135_e2e.py` 작성 및 4개 스텝 100% 통과 (실시간 수집, 원본 ID 매칭, 무변동 스킵, 1건 증분 변동 감지).
+
+

@@ -654,7 +654,8 @@ export default {
           const now = new Date().toISOString();
 
           for (const v of vehicles) {
-            if (!v.id || !v.plate_number) {
+            // DIRECTIVE 135 TASK 3: 고유 ID 기반 61대 비공개 연결 (전체 번호판 부재 시에도 식별 ID로 적재 허용)
+            if (!v.id) {
               skipped++;
               continue;
             }
@@ -682,12 +683,14 @@ export default {
               }
             }
 
-            // DIRECTIVE 133-R & 134: 실제 전체 번호판 정규식 엄격 검증
+            // DIRECTIVE 133-R & 134 & 135: 실제 전체 번호판 정규식 엄격 검증
+            // 유효한 전체 번호판이 없으면 DB에는 엄격히 NULL 저장 (가상 번호판 날조 원천 차단)
             const cleanPlate = (v.plate_number || '').replace(/\s+/g, '');
             const plateRegex = /^\d{2,3}[가-힣]\d{4}$/;
             const hasValidFullPlate = plateRegex.test(cleanPlate);
+            const dbPlate = hasValidFullPlate ? cleanPlate : null;
 
-            // DIRECTIVE 134 TASK 4: 사용자 최종 승인 전까지 모든 차량 비공개 게이트 보호
+            // DIRECTIVE 134 TASK 4 & 135: 사용자 최종 승인 전까지 모든 차량 비공개 게이트 보호
             // 64노3143 및 신규 동기화 매물은 최종 사용자 승인 전까지 PENDING_REVIEW 유지
             const isGateProtectedVehicle = (cleanPlate === '64노3143' || v.id === 'e6670a2e-c532-435e-b34a-b4a3ff9a677c');
 
@@ -698,7 +701,7 @@ export default {
             const isSoldOrSuspended = (status === 'SOLD' || status === 'SUSPENDED' || status === 'DELETED' || status === 'INACTIVE');
             const isDemo = (v.is_demo === 1 || v.is_demo === true) ? 1 : 0;
 
-            // DIRECTIVE 134: 사용자 최종 승인 게이트 원칙에 따라 신규/동기화 매물은 비공개(PENDING_REVIEW)로 안전 적재
+            // DIRECTIVE 134 & 135: 사용자 최종 승인 게이트 원칙에 따라 신규/동기화 매물은 비공개(PENDING_REVIEW)로 안전 적재
             // (상사 동의 및 전체 번호판 검증 완료 시에도 사용자 최종 승인이 있어야 APPROVED로 전환)
             const shouldAutoPublish = false;
 
@@ -709,9 +712,15 @@ export default {
             const vTransmission = v.transmission || null;
             const vColor = v.color || null;
 
-            // 기존 차량 확인
-            const existing = await db.prepare('SELECT id, target_price, is_public, status, listing_ownership_type, publishing_status FROM vehicles WHERE id = ? OR plate_number = ?')
-              .bind(v.id, cleanPlate).first();
+            // 기존 차량 확인 (번호판 유효 시 번호판 또는 ID로 대조, 미보유 시 ID로만 대조)
+            let existing = null;
+            if (dbPlate) {
+              existing = await db.prepare('SELECT id, target_price, is_public, status, listing_ownership_type, publishing_status FROM vehicles WHERE id = ? OR plate_number = ?')
+                .bind(v.id, dbPlate).first();
+            } else {
+              existing = await db.prepare('SELECT id, target_price, is_public, status, listing_ownership_type, publishing_status FROM vehicles WHERE id = ?')
+                .bind(v.id).first();
+            }
 
             if (existing) {
               const targetId = existing.id;
@@ -800,6 +809,7 @@ export default {
               // 제휴 상사 정보 연동 (vehicle_listings)
               if (v.sangsa_name || v.dealer_name) {
                 const listingId = 'LISTING-' + targetId;
+                const origListingId = v.registration_number || targetId;
                 await db.prepare(`
                   INSERT OR REPLACE INTO vehicle_listings (
                     id, vehicle_id, platform, listing_id, advertised_price, listing_status,
@@ -811,7 +821,7 @@ export default {
                     ?, 'JANGHANPYEONG', 0
                   )
                 `).bind(
-                  listingId, targetId, targetId, targetPrice, status,
+                  listingId, targetId, origListingId, targetPrice, status,
                   now, now,
                   v.sangsa_name || '(주)더쿨모터스'
                 ).run();
@@ -840,7 +850,7 @@ export default {
                   ?, ?, ?
                 )
               `).bind(
-                v.id, cleanPlate, v.model_name || '차량', vYear, vMileage, vFuel,
+                v.id, dbPlate, v.model_name || '차량', vYear, vMileage, vFuel,
                 vTransmission, vColor, v.purchase_price || 0,
                 targetPrice, status,
                 v.vin || null, v.displacement_cc || null, v.first_registration_date || null,
@@ -853,6 +863,7 @@ export default {
 
               if (v.sangsa_name || v.dealer_name) {
                 const listingId = 'LISTING-' + v.id;
+                const origListingId = v.registration_number || v.id;
                 await db.prepare(`
                   INSERT OR REPLACE INTO vehicle_listings (
                     id, vehicle_id, platform, listing_id, advertised_price, listing_status,
@@ -864,7 +875,7 @@ export default {
                     ?, 'JANGHANPYEONG', 0
                   )
                 `).bind(
-                  listingId, v.id, v.id, targetPrice, status,
+                  listingId, v.id, origListingId, targetPrice, status,
                   now, now,
                   v.sangsa_name || '(주)더쿨모터스'
                 ).run();
