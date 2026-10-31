@@ -24,8 +24,8 @@ class ChamartSyncClient:
     def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db", target_url: str = DEFAULT_PROD_URL, api_key: Optional[str] = None):
         self.db_path = db_path
         self.target_url = (os.environ.get("CHAMART_API_URL") or target_url).rstrip("/")
-        # DIRECTIVE 130 P0 보안 보정: 하드코딩 기본 토큰 폐기, 환경변수 또는 명시적 인자 필수
-        self.api_key = os.environ.get("CHAMART_SYNC_API_KEY") or api_key
+        # DIRECTIVE 130/136-SEC P0 보안 보정: 하드코딩 기본 토큰 폐기, 환경변수 또는 명시적 인자 필수
+        self.api_key = os.environ.get("CHAMART_SYNC_TOKEN") or os.environ.get("CHAMART_SYNC_API_KEY") or api_key
         if not self.api_key:
             sec_file = Path("data/.chamart_sync_secret")
             if sec_file.exists():

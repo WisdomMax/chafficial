@@ -5,7 +5,8 @@ from playwright.async_api import async_playwright
 
 ARTIFACT_DIR = "/Users/wisdom/.gemini/antigravity/brain/9c682aef-6bb4-4339-9f02-f135b6a8f8c6"
 TARGET_URL = "https://chamart.cc"
-ADMIN_API_PATH = "/api/admin/vehicles/64노3143?token=chamart-sync-secret-2026"
+ADMIN_TOKEN = os.environ.get("CHAMART_ADMIN_TOKEN", "")
+ADMIN_API_PATH = "/api/admin/vehicles/64노3143"
 
 async def run():
     async with async_playwright() as p:
@@ -15,18 +16,21 @@ async def run():
         pc_context = await browser.new_context(viewport={"width": 1280, "height": 950})
         pc_page = await pc_context.new_page()
         await pc_page.goto(TARGET_URL, wait_until="networkidle")
-        await pc_page.wait_for_timeout(2000)
+        await pc_page.wait_for_timeout(3000)
 
         pc_zero_path = os.path.join(ARTIFACT_DIR, "directive136_pc_public_list_zero.png")
         await pc_page.screenshot(path=pc_zero_path)
         print("Captured PC public list (0 items):", pc_zero_path)
 
-        # 2. PC 관리자 검수 화면: 브라우저에서 실제 D1 관리자 API 호출 후 렌더링 (TASK 4)
+        # 2. PC 관리자 검수 화면: 브라우저에서 실제 D1 관리자 API 호출 후 렌더링 (TASK 4 & DIRECTIVE 136-SEC)
         try:
+            await pc_page.wait_for_timeout(2000)
             render_res = await pc_page.evaluate(f"""
                 async () => {{
-                    // D1 실제 관리자 API 직접 fetch (하드코딩 주입 배제)
-                    const res = await fetch('{ADMIN_API_PATH}');
+                    // D1 실제 관리자 API 직접 fetch (Bearer 헤더 인증)
+                    const res = await fetch('{ADMIN_API_PATH}', {{
+                        headers: {{ 'Authorization': 'Bearer {ADMIN_TOKEN}' }}
+                    }});
                     if (!res.ok) return {{ success: false, error: 'FETCH_FAILED', status: res.status }};
                     const realD1Data = await res.json();
 
@@ -63,11 +67,14 @@ async def run():
         await mb_page.screenshot(path=mb_zero_path)
         print("Captured Mobile public list (0 items):", mb_zero_path)
 
-        # 4. 모바일 관리자 검수 화면: 브라우저에서 실제 D1 관리자 API 호출 후 렌더링 (TASK 4)
+        # 4. 모바일 관리자 검수 화면: 브라우저에서 실제 D1 관리자 API 호출 후 렌더링 (TASK 4 & DIRECTIVE 136-SEC)
         try:
+            await mb_page.wait_for_timeout(2000)
             render_res_mb = await mb_page.evaluate(f"""
                 async () => {{
-                    const res = await fetch('{ADMIN_API_PATH}');
+                    const res = await fetch('{ADMIN_API_PATH}', {{
+                        headers: {{ 'Authorization': 'Bearer {ADMIN_TOKEN}' }}
+                    }});
                     if (!res.ok) return {{ success: false, error: 'FETCH_FAILED', status: res.status }};
                     const realD1Data = await res.json();
 

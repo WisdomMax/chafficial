@@ -439,6 +439,32 @@
     1. 제휴 상사 (주)더쿨모터스(`dealer-thecool-motors`, 대표자 `유동호`, `marketing_consent_verified = 1`, `photo_consent_verified = 1`) 검증 완료.
     2. 사용자가 향후 실매물 공개를 승인하면, 해당 차량은 가격이 바뀌어도 공개 상태를 유지하고, 카매니저에서 판매완료/광고중지 시 자동으로 차마트에서 내려가는 완전 자동화 라이프사이클 체계 확립.
 
+### 12. DIRECTIVE 136-SEC: 관리자 API 인증 취약점 긴급 보정 및 운영 보안 검증 (ISSUE-156 ~ ISSUE-159)
+- **ISSUE-156 [P0 하드코딩 기본 토큰 영구 완전 폐기 및 Cloudflare Secret 엄격 검증]**:
+  - 원인: `_worker.js`에 임시 fallback 인증값(`chamart-sync-secret-2026`)이 남아있어 Cloudflare Secret 미설정 시에도 기본 문자열로 관리자 API 접근이 허용될 수 있는 중대 보안 취약점.
+  - 조치:
+    1. `_worker.js`에서 fallback 문자열 및 기본값 영구 완전 제거.
+    2. Cloudflare Secret(`env.CHAMART_ADMIN_TOKEN`)이 16자 이상 문자열로 명시 설정되지 않은 경우 어떠한 요청도 허용하지 않고 즉시 `401 Unauthorized` (`UNAUTHORIZED_ADMIN_ACCESS`) 차단.
+    3. 코드베이스, 테스트 코드, 스크린샷 캡처 스크립트 전체에서 하드코딩 토큰을 완전 제거하고 환경변수/암호화 시크릿 기반으로 전면 리팩토링.
+- **ISSUE-157 [P0 ?token= URL 쿼리 파라미터 인증 완전 차단 및 Bearer 헤더 단일화]**:
+  - 원인: URL 파라미터(`?token=...`)를 통한 토큰 전달 시 브라우저 히스토리, 웹서버/CDN 접근 로그, 리퍼러 헤더 등에 비밀값이 노출될 수 있음.
+  - 조치:
+    1. `_worker.js`에서 `url.searchParams.get('token')` 파싱 로직 원천 제거.
+    2. 관리자 접근 시 오직 `Authorization: Bearer <token>` 및 `X-Chamart-Admin-Key` 헤더만 허용.
+    3. `tests/test_directive_136_sec.py`를 통해 `?token=...` 요청 시 401 차단 실서버 검증 완료.
+- **ISSUE-158 [P0 동기화 토큰과 관리자 토큰 분리 및 타이밍 공격 방지 안전 비교]**:
+  - 조치:
+    1. 데몬 동기화 인증(`CHAMART_SYNC_TOKEN` / `SYNC_API_KEY`)과 관리자 조회 인증(`CHAMART_ADMIN_TOKEN`)을 물리적/논리적으로 엄격 분리 (`verifySyncAuth` vs `verifyAdminAuth`).
+    2. 관리자 토큰으로 동기화 엔드포인트 호출 시 401 차단, 동기화 토큰으로 관리자 엔드포인트 호출 시 401 차단 상호 격리 검증 완료.
+    3. 문자열 타이밍 분석 공격을 방지하기 위해 비트 XOR 기반 `constantTimeEqual` 비교 함수 적용.
+- **ISSUE-159 [P0 관리자 API 반환 정보 축소 및 실서버 전수 보안 검증 (100% PASS)]**:
+  - 조치:
+    1. 관리자 엔드포인트에서 `SELECT v.*` 내부 컬럼 덤프를 전면 제거하고 필수 제원 및 승인된 사진 9장(`LIMIT 20`)만 선별 반환 (`dealer_id`, `options_json`, `memo` 등 내부 필드 배제).
+    2. Cloudflare Pages production 환경에 `wrangler pages secret put`을 통해 `CHAMART_ADMIN_TOKEN`, `CHAMART_SYNC_TOKEN`을 안전하게 주입하고 재배포 (`e034a1e4.chamart.pages.dev`, 프로덕션 `https://chamart.cc`).
+    3. 종합 보안 검증(`tests/test_directive_136_sec.py`): 토큰 부재(401), 폐기 토큰(401), URL 쿼리(401), Sync 토큰 관리자 접근(401), Admin 토큰 동기화 접근(401), 정상 Bearer 인증(200 OK), 고객 공개 0대 격리 7개 전 케이스 100% 통과.
+    4. 기존 136 동기화 파이프라인 E2E 테스트(`tests/test_directive_136_e2e.py` 7단계 전체 100% PASS) 및 안전 규칙 단위 테스트(`test_directive_136_safety_rules.py` 5/5 PASS) 회귀 검증 완료.
+    5. Bearer 인증 기반 실제 D1 관리자 화면 스크린샷 4종 갱신 보존.
+
 
 
 

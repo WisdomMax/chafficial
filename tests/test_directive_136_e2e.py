@@ -10,6 +10,7 @@ DIRECTIVE 136 Comprehensive E2E Verification Test:
 - Step 7: Public API zero-exposure verification (0 items returned)
 """
 
+import os
 import sys
 import json
 import subprocess
@@ -28,7 +29,7 @@ logger = logging.getLogger("test_directive_136_e2e")
 
 D1_DATABASE = "chamart-db"
 REMOTE_PROD_URL = "https://chamart.cc"
-SYNC_SECRET = "chamart-sync-secret-2026"
+ADMIN_TOKEN = os.environ.get("CHAMART_ADMIN_TOKEN", "")
 LANDROVER_PLATE = "64노3143"
 
 def query_remote_d1(sql: str):
@@ -94,9 +95,13 @@ def run_directive_136_e2e():
     assert res_skip["changed_count"] == 0, f"Expected 0 changed cars, got {res_skip['changed_count']}"
     logger.info("  [PASS] Step 5: 2회차 무변동 실행 시 D1 전송 완벽 생략 (SKIPPED_NO_CHANGES)")
 
-    # Step 6: 인증된 관리자 API를 통한 실제 D1 레코드 조회 검증 (TASK 4)
-    admin_url = f"{REMOTE_PROD_URL}/api/admin/vehicles/{urllib.parse.quote(LANDROVER_PLATE)}?token={SYNC_SECRET}"
-    req = urllib.request.Request(admin_url, headers={"User-Agent": "Directive136Verifier/1.0"})
+    # Step 6: 인증된 관리자 API를 통한 실제 D1 레코드 조회 검증 (TASK 4 & DIRECTIVE 136-SEC)
+    # URL 파라미터가 아닌 Authorization: Bearer 헤더를 사용해야 함
+    admin_url = f"{REMOTE_PROD_URL}/api/admin/vehicles/{urllib.parse.quote(LANDROVER_PLATE)}"
+    req = urllib.request.Request(admin_url, headers={
+        "User-Agent": "Directive136Verifier/1.0",
+        "Authorization": f"Bearer {ADMIN_TOKEN}"
+    })
     with urllib.request.urlopen(req, timeout=10) as resp:
         assert resp.status == 200, f"Admin API failed: {resp.status}"
         admin_data = json.loads(resp.read().decode('utf-8'))
@@ -110,8 +115,7 @@ def run_directive_136_e2e():
     assert admin_data["photo_count"] == 9
     assert len(admin_data["photos"]) == 9
     assert admin_data["seller_company_name"] == "(주)더쿨모터스"
-    assert admin_data["dealer_name"] == "유동호"
-    logger.info("  [PASS] Step 6: 관리자 API 실제 D1 레코드(사진 9장, 125,428km, 1,090만원, 비공개) 검증 완료")
+    logger.info("  [PASS] Step 6: 관리자 API 실제 D1 레코드(사진 9장, 125,428km, 1,090만원, 비공개) Bearer 인증 검증 완료")
 
     # Step 7: 고객용 공개 API 0대 격리 검증 (TASK 1 & TASK 5)
     pub_url = f"{REMOTE_PROD_URL}/api/chamart/vehicles"

@@ -32,16 +32,46 @@ function isValidPhoto(url) {
 
 const NO_PHOTO_FALLBACK = '/static/img/no_photo.svg';
 
-// DIRECTIVE 130 P0 보안 보정: 하드코딩된 기본 토큰 전면 폐기, Cloudflare Secret(SYNC_API_KEY) 엄격 필수 검증
+// DIRECTIVE 136-SEC P0 보안 보정:
+// 1) 하드코딩 기본 토큰 영구 완전 폐기
+// 2) ?token= URL 쿼리 파라미터 인증 완전 차단 (오직 Authorization: Bearer 및 헤더 인증만 허용)
+// 3) Cloudflare Secret 미설정 시 즉시 401 차단
+// 4) 동기화 토큰(CHAMART_SYNC_TOKEN / SYNC_API_KEY)과 관리자 토큰(CHAMART_ADMIN_TOKEN) 분리
+
+function constantTimeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 function verifySyncAuth(request, env) {
-  const auth = request.headers.get('Authorization') || '';
-  const token = auth.replace(/^Bearer\s+/i, '').trim();
-  const expected = env.SYNC_API_KEY;
-  if (!expected || typeof expected !== 'string' || expected.length < 16) {
-    // 환경변수 미설정 시 어떠한 요청도 허용하지 않고 즉시 차단
+  const allowedTokens = [env.CHAMART_SYNC_TOKEN, env.SYNC_API_KEY].filter(t => t && typeof t === 'string' && t.length >= 16);
+  if (allowedTokens.length === 0) {
     return false;
   }
-  return token === expected;
+  const auth = (request.headers.get('Authorization') || '').trim();
+  const bearerToken = auth.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || '';
+  const headerToken = (request.headers.get('X-Chamart-Sync-Key') || request.headers.get('X-Sync-Token') || '').trim();
+  const token = bearerToken || headerToken;
+  if (!token) return false;
+  return allowedTokens.some(expected => constantTimeEqual(token, expected));
+}
+
+function verifyAdminAuth(request, env) {
+  const expected = env.CHAMART_ADMIN_TOKEN;
+  if (!expected || typeof expected !== 'string' || expected.length < 16) {
+    return false;
+  }
+  const auth = (request.headers.get('Authorization') || '').trim();
+  const bearerToken = auth.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || '';
+  const headerToken = (request.headers.get('X-Chamart-Admin-Key') || request.headers.get('X-Admin-Token') || '').trim();
+  const token = bearerToken || headerToken;
+  if (!token) return false;
+  return constantTimeEqual(token, expected);
 }
 
 export default {
@@ -50,13 +80,17 @@ export default {
     const pathname = url.pathname;
 
     // =========================================================================
-    // 0. DIRECTIVE 136 TASK 4: 인증된 관리자 전용 실매물 상세 조회 API (D1 실시간 데이터 1:1 반환)
+    // 0. DIRECTIVE 136-SEC: 인증된 관리자 전용 실매물 상세 조회 API (D1 실시간 데이터 1:1 반환)
+    //    - 오직 Authorization: Bearer / X-Chamart-Admin-Key 헤더만 허용 (?token= 완전 차단)
+    //    - CHAMART_ADMIN_TOKEN 분리 검증 (Secret 미설정 시 즉시 401 차단)
+    //    - 반환 정보 최소화 (SELECT v.* 제거, 필수 제원 및 사진만)
     // =========================================================================
-    if ((pathname.startsWith('/api/admin/vehicles/') || pathname.startsWith('/api/sync/vehicle-detail/')) && request.method === 'GET') {
-      const syncSecret = env.CHAMART_SYNC_TOKEN || 'chamart-sync-secret-2026';
-      const reqToken = request.headers.get('X-Admin-Token') || request.headers.get('X-Sync-Token') || url.searchParams.get('token');
-      if (reqToken !== syncSecret) {
-        return new Response(JSON.stringify({ error: 'UNAUTHORIZED_ADMIN_ACCESS' }), {
+    if (pathname.startsWith('/api/admin/vehicles/') && request.method === 'GET') {
+      if (!verifyAdminAuth(request, env)) {
+        return new Response(JSON.stringify({ 
+          error: 'UNAUTHORIZED_ADMIN_ACCESS',
+          message: '유효한 관리자 인증 토큰이 필요합니다. Authorization: Bearer 헤더를 사용하세요.'
+        }), {
           status: 401,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
@@ -73,9 +107,13 @@ export default {
 
       try {
         const vehicle = await db.prepare(`
-          SELECT v.*,
-            (SELECT vl.raw_seller_name FROM vehicle_listings vl WHERE vl.vehicle_id = v.id LIMIT 1) as seller_company_name,
-            (SELECT d.name FROM dealers d WHERE d.id = v.dealer_id OR d.dealership_name LIKE '%더쿨%' LIMIT 1) as dealer_name
+          SELECT 
+            v.id, v.plate_number, v.model_name, v.manufacturer, v.trim, v.year, v.mileage,
+            v.fuel_type, v.transmission, v.color, v.target_price,
+            v.listing_ownership_type, v.is_priority_exposure, v.priority_rank,
+            v.status, v.publishing_status, v.is_public, v.is_demo,
+            v.created_at, v.updated_at,
+            (SELECT vl.raw_seller_name FROM vehicle_listings vl WHERE vl.vehicle_id = v.id LIMIT 1) as seller_company_name
           FROM vehicles v
           WHERE v.id = ? OR v.plate_number = ?
           LIMIT 1
@@ -88,12 +126,13 @@ export default {
           });
         }
 
-        // 연결된 사진 목록 조회
+        // 연결된 사진 목록 조회 (필수 컬럼만)
         const photosRes = await db.prepare(`
           SELECT id, photo_url, thumb_url, category, sort_order, is_primary, public_visibility, approval_status
           FROM vehicle_photos
           WHERE vehicle_id = ?
           ORDER BY sort_order ASC, id ASC
+          LIMIT 20
         `).bind(vehicle.id).all();
 
         const photos = (photosRes.results || []).map(p => ({
@@ -107,7 +146,25 @@ export default {
         }));
 
         const responseData = {
-          ...vehicle,
+          id: vehicle.id,
+          plate_number: vehicle.plate_number,
+          model_name: vehicle.model_name,
+          manufacturer: vehicle.manufacturer,
+          trim: vehicle.trim,
+          year: vehicle.year,
+          mileage: vehicle.mileage,
+          fuel_type: vehicle.fuel_type,
+          transmission: vehicle.transmission,
+          color: vehicle.color,
+          target_price: vehicle.target_price,
+          listing_ownership_type: vehicle.listing_ownership_type,
+          is_priority_exposure: vehicle.is_priority_exposure,
+          priority_rank: vehicle.priority_rank,
+          status: vehicle.status,
+          publishing_status: vehicle.publishing_status,
+          is_public: vehicle.is_public,
+          is_demo: vehicle.is_demo,
+          seller_company_name: vehicle.seller_company_name,
           photos: photos,
           photo_count: photos.length,
           _source: 'CLOUDFLARE_D1_REAL_RECORD',
