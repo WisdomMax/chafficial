@@ -1,14 +1,41 @@
 import asyncio
 import os
 import json
+import urllib.request
+import urllib.parse
 from playwright.async_api import async_playwright
 
 ARTIFACT_DIR = "/Users/wisdom/.gemini/antigravity/brain/9c682aef-6bb4-4339-9f02-f135b6a8f8c6"
 TARGET_URL = "https://chamart.cc"
 ADMIN_TOKEN = os.environ.get("CHAMART_ADMIN_TOKEN", "")
-ADMIN_API_PATH = "/api/admin/vehicles/64노3143"
+LANDROVER_PLATE = "64노3143"
+
+def fetch_admin_vehicle_data_server_side():
+    """
+    DIRECTIVE 136-SEC-R 지침 준수:
+    브라우저 page.evaluate() 내부 문자열에 토큰을 삽입하지 않고,
+    서버 측(Python)에서 Bearer 인증으로 데이터를 안전하게 사전 조회.
+    """
+    endpoint = f"{TARGET_URL}/api/admin/vehicles/{urllib.parse.quote(LANDROVER_PLATE)}"
+    req = urllib.request.Request(endpoint, headers={
+        "User-Agent": "AdminCaptureScript/1.0",
+        "Authorization": f"Bearer {ADMIN_TOKEN}"
+    })
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        if resp.status != 200:
+            raise RuntimeError(f"Server-side fetch failed: HTTP {resp.status}")
+        return json.loads(resp.read().decode('utf-8'))
 
 async def run():
+    # 0. 서버 측에서 D1 실제 원본 데이터를 안전하게 사전 조회 (브라우저 토큰 노출 제로)
+    real_d1_data = fetch_admin_vehicle_data_server_side()
+    print("[Server-Side Auth] Successfully fetched D1 vehicle data:", {
+        "plate": real_d1_data.get("plate_number"),
+        "price": real_d1_data.get("target_price"),
+        "photos": real_d1_data.get("photo_count"),
+        "_source": real_d1_data.get("_source")
+    })
+
     async with async_playwright() as p:
         browser = await p.chromium.launch()
 
@@ -22,32 +49,23 @@ async def run():
         await pc_page.screenshot(path=pc_zero_path)
         print("Captured PC public list (0 items):", pc_zero_path)
 
-        # 2. PC 관리자 검수 화면: 브라우저에서 실제 D1 관리자 API 호출 후 렌더링 (TASK 4 & DIRECTIVE 136-SEC)
+        # 2. PC 관리자 검수 화면: 서버 측에서 인증 조회한 데이터를 순수 주입하여 렌더링 (토큰 주입 배제)
         try:
             await pc_page.wait_for_timeout(2000)
-            render_res = await pc_page.evaluate(f"""
-                async () => {{
-                    // D1 실제 관리자 API 직접 fetch (Bearer 헤더 인증)
-                    const res = await fetch('{ADMIN_API_PATH}', {{
-                        headers: {{ 'Authorization': 'Bearer {ADMIN_TOKEN}' }}
-                    }});
-                    if (!res.ok) return {{ success: false, error: 'FETCH_FAILED', status: res.status }};
-                    const realD1Data = await res.json();
-
-                    // 프론트엔드 전역 저장 및 상세 렌더러 호출
-                    window.publicVehicles = [realD1Data];
-                    openVehicleDetail(realD1Data.id);
-
-                    return {{
+            render_res = await pc_page.evaluate("""
+                (data) => {
+                    window.publicVehicles = [data];
+                    openVehicleDetail(data.id);
+                    return {
                         success: true,
-                        plate: realD1Data.plate_number,
-                        price: realD1Data.target_price,
-                        mileage: realD1Data.mileage,
-                        source: realD1Data._source,
-                        photoCount: realD1Data.photo_count
-                    }};
-                }}
-            """)
+                        plate: data.plate_number,
+                        price: data.target_price,
+                        mileage: data.mileage,
+                        source: data._source,
+                        photoCount: data.photo_count
+                    };
+                }
+            """, real_d1_data)
             print("Rendered D1 Real Data on PC:", render_res)
             await pc_page.wait_for_timeout(3000)
 
@@ -67,30 +85,23 @@ async def run():
         await mb_page.screenshot(path=mb_zero_path)
         print("Captured Mobile public list (0 items):", mb_zero_path)
 
-        # 4. 모바일 관리자 검수 화면: 브라우저에서 실제 D1 관리자 API 호출 후 렌더링 (TASK 4 & DIRECTIVE 136-SEC)
+        # 4. 모바일 관리자 검수 화면: 서버 측 인증 데이터 순수 주입 렌더링 (토큰 주입 배제)
         try:
             await mb_page.wait_for_timeout(2000)
-            render_res_mb = await mb_page.evaluate(f"""
-                async () => {{
-                    const res = await fetch('{ADMIN_API_PATH}', {{
-                        headers: {{ 'Authorization': 'Bearer {ADMIN_TOKEN}' }}
-                    }});
-                    if (!res.ok) return {{ success: false, error: 'FETCH_FAILED', status: res.status }};
-                    const realD1Data = await res.json();
-
-                    window.publicVehicles = [realD1Data];
-                    openVehicleDetail(realD1Data.id);
-
-                    return {{
+            render_res_mb = await mb_page.evaluate("""
+                (data) => {
+                    window.publicVehicles = [data];
+                    openVehicleDetail(data.id);
+                    return {
                         success: true,
-                        plate: realD1Data.plate_number,
-                        price: realD1Data.target_price,
-                        mileage: realD1Data.mileage,
-                        source: realD1Data._source,
-                        photoCount: realD1Data.photo_count
-                    }};
-                }}
-            """)
+                        plate: data.plate_number,
+                        price: data.target_price,
+                        mileage: data.mileage,
+                        source: data._source,
+                        photoCount: data.photo_count
+                    };
+                }
+            """, real_d1_data)
             print("Rendered D1 Real Data on Mobile:", render_res_mb)
             await mb_page.wait_for_timeout(3000)
 

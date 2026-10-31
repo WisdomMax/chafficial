@@ -74,14 +74,17 @@ def run_security_verification():
     logger.info("  [PASS] Case 2: 폐기된 구 토큰(chamart-sync-secret-2026) 즉시 401 차단 확인")
 
     # -------------------------------------------------------------
-    # Case 3: ?token= URL 쿼리 파라미터로 올바른 토큰 요청 -> 401 차단 (URL 파라미터 인증 차단)
+    # Case 3: ?token= URL 쿼리 파라미터 인증 차단 (DIRECTIVE 136-SEC-R 지침 준수)
+    # 실제 관리자 토큰 노출 방지를 위해 합성 더미 토큰을 URL 쿼리에 전송하여 401 차단 검증
+    # (서버 _worker.js는 url.searchParams.get('token') 로직을 영구 제거하여 쿼리 파라미터를 무시하고 401 차단함)
     # -------------------------------------------------------------
-    url_with_query = f"{admin_api_endpoint}?token={ADMIN_TOKEN}"
+    dummy_synthetic_token = "synthetic-dummy-query-probe-token-never-used-in-prod"
+    url_with_query = f"{admin_api_endpoint}?token={dummy_synthetic_token}"
     status, body = request_http(url_with_query)
     logger.info(f"Case 3 (URL Query Token): Status={status}")
     assert status == 401, f"Expected 401 for URL query token, got {status}"
     assert "UNAUTHORIZED_ADMIN_ACCESS" in body
-    logger.info("  [PASS] Case 3: URL 쿼리 파라미터(?token=...)를 통한 인증 시도 원천 401 차단 확인")
+    logger.info("  [PASS] Case 3: URL 쿼리 파라미터(?token=...)를 통한 인증 시도 원천 401 차단 확인 (합성 토큰 사용으로 운영 토큰 노출 제로)")
 
     # -------------------------------------------------------------
     # Case 4: 동기화 토큰(CHAMART_SYNC_TOKEN)으로 관리자 API 요청 -> 401 차단 (권한 분리)

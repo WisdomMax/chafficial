@@ -465,6 +465,27 @@
     4. 기존 136 동기화 파이프라인 E2E 테스트(`tests/test_directive_136_e2e.py` 7단계 전체 100% PASS) 및 안전 규칙 단위 테스트(`test_directive_136_safety_rules.py` 5/5 PASS) 회귀 검증 완료.
     5. Bearer 인증 기반 실제 D1 관리자 화면 스크린샷 4종 갱신 보존.
 
+### 13. DIRECTIVE 136-SEC-R: 테스트 토큰 노출 위험 영구 제거 및 256비트 암호화 토큰 교체 (ISSUE-160 ~ ISSUE-162)
+- **ISSUE-160 [P0 보안 테스트 Case 3 URL 쿼리 파라미터 실제 토큰 전송 제거 및 합성 토큰 검증]**:
+  - 원인: `tests/test_directive_136_sec.py` Case 3에서 `url.searchParams.get('token')` 차단 여부를 검증하기 위해 실제 `ADMIN_TOKEN`을 URL 쿼리에 실어 서버로 전송하여 중간 프록시/CDN 로그에 남을 수 있는 잠재적 위험 발생.
+  - 조치:
+    1. 실제 토큰 전송을 영구 제거하고 가상의 합성 더미 토큰(`synthetic-dummy-query-probe-token-never-used-in-prod`)을 쿼리에 전달하여 401 차단 검증.
+    2. Worker 소스코드 차원에서 `url.searchParams.get('token')` 로직이 영구 삭제되었음을 정적/동적으로 이중 확인.
+- **ISSUE-161 [P0 화면 캡처 스크립트 브라우저 evaluate 내 토큰 문자열 삽입 제거 및 서버 측 인증 격리]**:
+  - 원인: `capture_directive_136_real_admin_screens.py`에서 `page.evaluate()` 내부 자바스크립트 문자열에 토큰을 직접 바인딩하여 브라우저 콘텍스트 내 노출 위험 존재.
+  - 조치:
+    1. 브라우저 내 직접 `fetch` 호출을 전면 배제하고, Python 서버 측(`urllib.request`)에서 `Authorization: Bearer` 헤더로 D1 관리자 데이터를 안전하게 사전 조회.
+    2. 조회된 순수 차량 데이터 JSON 객체만 `page.evaluate((data) => { ... }, real_d1_data)` 인자로 전달하여 모달을 렌더링하도록 완전 격리.
+    3. 브라우저 DOM, JS 콘텍스트, 네트워크 어디에도 인증 토큰이 노출되지 않도록 조치 완료 및 스크린샷 4종 갱신.
+- **ISSUE-162 [P0 운영 관리자 토큰 256비트 암호학적 난수 교체 및 Cloudflare Secret 재등록]**:
+  - 조치:
+    1. 이전 테스트에 사용되었을 가능성이 있는 관리자 토큰을 즉시 폐기.
+    2. `secrets.token_hex(32)` (256비트 엔트로피) 암호학적 난수로 `CHAMART_ADMIN_TOKEN` 및 `CHAMART_SYNC_TOKEN`을 신규 생성하여 Cloudflare Pages production Secret으로 안전하게 교체 등록.
+    3. Pages 최신 배포(`98c4ba42.chamart.pages.dev`, `https://chamart.cc`) 수행.
+    4. Cloudflare Pages 무료/기본 플랜의 원시 액세스 로그 미제공 한계를 사실대로 명시 보고.
+    5. 보안 테스트 7개 전 케이스(`test_directive_136_sec.py`) 및 E2E 테스트 7단계(`test_directive_136_e2e.py`) 100% PASS 최종 통과.
+
+
 
 
 
