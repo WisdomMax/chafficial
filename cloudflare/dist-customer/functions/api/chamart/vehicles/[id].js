@@ -36,9 +36,15 @@ export async function onRequestGet({ request, params, env }) {
       });
     }
 
-    const photosRes = await db.prepare(
-      'SELECT * FROM vehicle_photos WHERE vehicle_id = ? ORDER BY is_primary DESC, sort_order ASC'
-    ).bind(vehicleId).all();
+    // DIRECTIVE 132-A TASK 3: 승인된 공개 사진만 조회 (approval_status='APPROVED' & public_visibility='PUBLIC')
+    // 미승인 사진이나 임의 대체 사진은 100% 제외
+    const photosRes = await db.prepare(`
+      SELECT * FROM vehicle_photos 
+      WHERE vehicle_id = ? 
+        AND approval_status = 'APPROVED' 
+        AND public_visibility = 'PUBLIC'
+      ORDER BY is_primary DESC, sort_order ASC
+    `).bind(vehicleId).all();
 
     let validPhotos = (photosRes.results || [])
       .filter(p => isValidPhoto(p.photo_url))
@@ -49,15 +55,7 @@ export async function onRequestGet({ request, params, env }) {
         category: p.category || 'EXTERIOR'
       }));
 
-    if (validPhotos.length === 0 && isValidPhoto(v.primary_photo_url)) {
-      validPhotos.push({
-        photo_url: v.primary_photo_url,
-        caption: '실차 전면',
-        display_label: '전면',
-        category: 'EXTERIOR'
-      });
-    }
-
+    // 승인된 실차 사진이 전무한 경우 정직한 '사진 준비 중' 1장 설정 (미승인 primary_photo_url 우회 절대 금지)
     if (validPhotos.length === 0) {
       validPhotos.push({
         photo_url: NO_PHOTO_FALLBACK,

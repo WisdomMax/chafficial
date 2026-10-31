@@ -44,12 +44,36 @@ export async function onRequestGet({ request, env, waitUntil }) {
     const fuelType = url.searchParams.get('fuel_type') || '';
     const sort = url.searchParams.get('sort') || 'recommended';
 
-    // DIRECTIVE 131 TASK 2: 고객 공개 정보 엄격 진실성 보장
+    // DIRECTIVE 131 TASK 2 & DIRECTIVE 132-A TASK 3: 고객 공개 정보 및 승인 사진 엄격 검증
     let sql = `SELECT 
       id, plate_number, model_name, manufacturer, trim, year, mileage, 
-      fuel_type, transmission, color, target_price, primary_photo_url, 
+      fuel_type, transmission, color, target_price, 
       listing_ownership_type, is_priority_exposure, priority_rank, 
-      status, publishing_status, options_json
+      status, publishing_status, options_json,
+      (SELECT vp.photo_url 
+       FROM vehicle_photos vp 
+       WHERE vp.vehicle_id = vehicles.id 
+         AND vp.approval_status = 'APPROVED' 
+         AND vp.public_visibility = 'PUBLIC'
+         AND (vp.photo_url LIKE 'http://%' OR vp.photo_url LIKE 'https://%')
+         AND vp.photo_url NOT LIKE '%placeholder%'
+         AND vp.photo_url NOT LIKE '%no_photo%'
+         AND vp.photo_url NOT LIKE '%unsplash%'
+         AND vp.photo_url NOT LIKE '%ui_fixtures%'
+         AND vp.photo_url NOT LIKE '%demo%'
+       ORDER BY vp.is_primary DESC, vp.sort_order ASC 
+       LIMIT 1) as approved_primary_photo_url,
+      (SELECT COUNT(*) 
+       FROM vehicle_photos vp 
+       WHERE vp.vehicle_id = vehicles.id 
+         AND vp.approval_status = 'APPROVED' 
+         AND vp.public_visibility = 'PUBLIC'
+         AND (vp.photo_url LIKE 'http://%' OR vp.photo_url LIKE 'https://%')
+         AND vp.photo_url NOT LIKE '%placeholder%'
+         AND vp.photo_url NOT LIKE '%no_photo%'
+         AND vp.photo_url NOT LIKE '%unsplash%'
+         AND vp.photo_url NOT LIKE '%ui_fixtures%'
+         AND vp.photo_url NOT LIKE '%demo%') as approved_photo_count
     FROM vehicles 
     WHERE is_public = 1 
       AND is_demo = 0
@@ -106,23 +130,26 @@ export async function onRequestGet({ request, env, waitUntil }) {
       params.push(fuelType.trim());
     }
 
-    // DIRECTIVE 130 TASK 2: 4단계 노출 순위
+    // DIRECTIVE 130 & DIRECTIVE 132-A TASK 3: 4단계 노출 순위 (승인된 실차 사진 기준)
+    const hasApprovedPhotoSubquery = `EXISTS (
+      SELECT 1 FROM vehicle_photos vp 
+      WHERE vp.vehicle_id = vehicles.id 
+        AND vp.approval_status = 'APPROVED' 
+        AND vp.public_visibility = 'PUBLIC'
+        AND (vp.photo_url LIKE 'http://%' OR vp.photo_url LIKE 'https://%')
+        AND vp.photo_url NOT LIKE '%placeholder%'
+        AND vp.photo_url NOT LIKE '%no_photo%'
+        AND vp.photo_url NOT LIKE '%unsplash%'
+        AND vp.photo_url NOT LIKE '%ui_fixtures%'
+        AND vp.photo_url NOT LIKE '%demo%'
+    )`;
+
     const tierOrderClause = `
       (CASE 
         WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') 
-             AND (primary_photo_url LIKE 'http://%' OR primary_photo_url LIKE 'https://%')
-             AND primary_photo_url NOT LIKE '%placeholder%'
-             AND primary_photo_url NOT LIKE '%no_photo%'
-             AND primary_photo_url NOT LIKE '%unsplash%'
-             AND primary_photo_url NOT LIKE '%ui_fixtures%'
-             AND primary_photo_url NOT LIKE '%demo%' THEN 1
+             AND ${hasApprovedPhotoSubquery} THEN 1
         WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') THEN 2
-        WHEN (primary_photo_url LIKE 'http://%' OR primary_photo_url LIKE 'https://%')
-             AND primary_photo_url NOT LIKE '%placeholder%'
-             AND primary_photo_url NOT LIKE '%no_photo%'
-             AND primary_photo_url NOT LIKE '%unsplash%'
-             AND primary_photo_url NOT LIKE '%ui_fixtures%'
-             AND primary_photo_url NOT LIKE '%demo%' THEN 3
+        WHEN ${hasApprovedPhotoSubquery} THEN 3
         ELSE 4
       END) ASC`;
 
@@ -152,8 +179,9 @@ export async function onRequestGet({ request, env, waitUntil }) {
         if (v.options_json) options = JSON.parse(v.options_json);
       } catch (e) {}
 
-      const hasRealPhoto = isValidPhoto(v.primary_photo_url);
-      const finalPhoto = hasRealPhoto ? v.primary_photo_url : NO_PHOTO_FALLBACK;
+      // DIRECTIVE 132-A TASK 3: 승인된 사진만 채택, 미승인/부재 시 예외 없이 no_photo.svg 강제
+      const hasRealPhoto = (v.approved_photo_count > 0) && isValidPhoto(v.approved_primary_photo_url);
+      const finalPhoto = hasRealPhoto ? v.approved_primary_photo_url : NO_PHOTO_FALLBACK;
 
       return {
         id: v.id,
@@ -170,7 +198,7 @@ export async function onRequestGet({ request, env, waitUntil }) {
         monthly_payment_estimate: Math.round((v.target_price || 0) * 10000 / 48 / 10000),
         primary_photo_url: finalPhoto,
         has_real_photo: hasRealPhoto,
-        photo_count: hasRealPhoto ? 1 : 0,
+        photo_count: v.approved_photo_count || 0,
         options: options,
         listing_ownership_type: v.listing_ownership_type || 'UNKNOWN',
         is_chamart_owned: (v.listing_ownership_type === 'OWNED' || v.listing_ownership_type === 'CHAMART_OWNED'),

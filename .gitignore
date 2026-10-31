@@ -49,6 +49,9 @@ directive_*.txt
 aside_*.txt
 gpt_*.txt
 
+# Private Auth Proofs & PII
+data/chamart/auth_proofs/
+
 # Cloudflare & Node caches
 .wrangler/
 .npm-cache/
