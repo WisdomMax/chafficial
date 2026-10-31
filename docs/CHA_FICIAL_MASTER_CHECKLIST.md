@@ -252,3 +252,11 @@
   - 조치: D1 공개 승인 매물 4대(`88오 1512`, `99다 3635`, `77조 7788`, `88오 5001`) 전수 검사 결과 상사/직영 판매 권한 미증명 매물로 확인되어 `is_public = 0`, `publishing_status = 'PENDING_REVIEW'`로 안전 격리. 공개 목록 내 가상·미확인 매물 노출 0건 입증.
 - **ISSUE-124 [P0 멱등성 락 지연 완료 덮어쓰기 방어 (Optimistic Locking Guard)]**:
   - 조치: 60초 임대 만료 후 구 작업자의 지연 완료 처리가 신규 작업자를 덮어쓰지 못하도록 `WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?` 조건부 갱신 강제. stale worker overwrite 원천 차단.
+
+### 4. DIRECTIVE 132: 최종 운영 안전성 검증 및 차마트 실매물 시범 등록 (ISSUE-125 ~ ISSUE-127)
+- **ISSUE-125 [P0 멱등성 완성 - Fencing Token & Lease Expiry Guard]**:
+  - 조치: 60초 임대 만료 후 구 작업자의 지연 완료 시 `completeRes.meta.changes === 0` 검증 도입하여 성공 응답 반환 금지(`409 IDEMPOTENCY_LEASE_EXPIRED`). `FAILED` 전환도 현재 락 소유자(`activeLockUpdatedAt`)만 갱신 가능하도록 엄격화.
+- **ISSUE-126 [P0 운영 무결성 - Cloudflare 배포 식별자 및 Git 추적성 실측]**:
+  - 조치: `scripts/verify_directive_131_full.py` 동적 타임스탬프 및 커밋 해시 자동 주입, Cloudflare Pages 배포 식별자(`35791b91`) 및 Git 커밋 1:1 대응 검증.
+- **ISSUE-127 [P0 실매물 시범 등록 - 카매니저 실매물 5대 선별 및 승인 대기열 적재]**:
+  - 조치: 장한평 전시장 (주)더쿨모터스 실매물 1호 `64노3143` (랜드로버 디스커버리 스포츠 1,090만원, 제시번호 2026099548, 실차 사진 9장 완비) 100% 검증 완료. 후보 2~5호(벤츠 E-클래스, 스타리아, G80, 랭글러) 가격/사진 등록 대기열 편성(`reports/DIRECTIVE_132_REAL_VEHICLE_CANDIDATES.json`). 사용자 최종 승인 전 비공개 안전 유지.

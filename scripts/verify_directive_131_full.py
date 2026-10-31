@@ -1,5 +1,5 @@
 """
-DIRECTIVE 131-R / HOTFIX-A 전수 데이터 보존, 복원 및 운영 무결성 검증 스크립트
+DIRECTIVE 132 전수 데이터 보존, 복원 및 운영 무결성 검증 스크립트
 엄격한 실측 원칙: D1 쿼리 실패 시 fallback 기본값 사용을 일절 금지하며, 즉시 예외 발생 후 종료.
 """
 
@@ -9,6 +9,7 @@ import json
 import os
 import sys
 import tempfile
+import datetime
 from pathlib import Path
 
 def run_cmd(cmd):
@@ -16,14 +17,20 @@ def run_cmd(cmd):
     return p.stdout.strip(), p.stderr.strip(), p.returncode
 
 def main():
+    now_iso = datetime.datetime.now().astimezone().isoformat()
+    git_sha, _, _ = run_cmd("git rev-parse HEAD")
+    git_branch, _, _ = run_cmd("git rev-parse --abbrev-ref HEAD")
+
     report = {
-        "directive": "131-R_HOTFIX-A",
-        "timestamp": "2026-10-31T10:05:00+09:00",
+        "directive": "132",
+        "timestamp": now_iso,
+        "git_commit": git_sha,
+        "git_branch": git_branch,
         "tasks": {}
     }
 
     # 1. D1 운영 DB 실제 수치 전수 감사 (fallback 절대 금지)
-    print("[*] Auditing Cloudflare D1 real counts (Strict Live Query)...")
+    print(f"[*] Auditing Cloudflare D1 real counts at {now_iso}...")
     sql_audit = """
     SELECT 
       (SELECT count(*) FROM vehicles WHERE is_demo = 0) as real_vehicles,
@@ -110,10 +117,7 @@ def main():
         if os.path.exists(tmp_db_path):
             os.remove(tmp_db_path)
 
-    # 3. Git commit & Cloudflare Pages deployment SHA correspondence
-    git_sha, _, _ = run_cmd("git rev-parse HEAD")
-    git_branch, _, _ = run_cmd("git rev-parse --abbrev-ref HEAD")
-    
+    # 3. 배포 정보 추적성
     report["tasks"]["TASK_4_deployment_traceability"] = {
         "git_commit": git_sha,
         "git_branch": git_branch,

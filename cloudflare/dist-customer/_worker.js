@@ -663,15 +663,22 @@ export default {
           };
 
           // 멱등성 테이블 COMPLETED 업데이트
-          await db.prepare(
+          const completeRes = await db.prepare(
             "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?"
           ).bind(JSON.stringify(resultObj), now, idempotencyKey, activeLockUpdatedAt).run();
+
+          if (completeRes.meta.changes === 0) {
+            return new Response(JSON.stringify({
+              error: '멱등성 임대 만료: 처리 도중 락 소유권이 만료되어 작업 결과가 무효화되었습니다.',
+              code: 'IDEMPOTENCY_LEASE_EXPIRED'
+            }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+          }
 
           return new Response(JSON.stringify(resultObj), { headers: { 'Content-Type': 'application/json' } });
         } catch (err) {
           await db.prepare(
-            "UPDATE sync_idempotency_keys SET status = 'FAILED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
-          ).bind(JSON.stringify({ error: err.message }), new Date().toISOString(), idempotencyKey).run();
+            "UPDATE sync_idempotency_keys SET status = 'FAILED', response_json = ?, updated_at = ? WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?"
+          ).bind(JSON.stringify({ error: err.message }), new Date().toISOString(), idempotencyKey, activeLockUpdatedAt).run();
           return new Response(JSON.stringify({ error: err.message }), { status: 500 });
         }
       }
@@ -706,15 +713,22 @@ export default {
 
           const resultObj = { success: true, vehicle_id, photo_count: photoInserted, idempotency_key: idempotencyKey };
 
-          await db.prepare(
+          const completeRes = await db.prepare(
             "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?"
           ).bind(JSON.stringify(resultObj), now, idempotencyKey, activeLockUpdatedAt).run();
+
+          if (completeRes.meta.changes === 0) {
+            return new Response(JSON.stringify({
+              error: '멱등성 임대 만료: 처리 도중 락 소유권이 만료되어 작업 결과가 무효화되었습니다.',
+              code: 'IDEMPOTENCY_LEASE_EXPIRED'
+            }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+          }
 
           return new Response(JSON.stringify(resultObj), { headers: { 'Content-Type': 'application/json' } });
         } catch (err) {
           await db.prepare(
-            "UPDATE sync_idempotency_keys SET status = 'FAILED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
-          ).bind(JSON.stringify({ error: err.message }), new Date().toISOString(), idempotencyKey).run();
+            "UPDATE sync_idempotency_keys SET status = 'FAILED', response_json = ?, updated_at = ? WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?"
+          ).bind(JSON.stringify({ error: err.message }), new Date().toISOString(), idempotencyKey, activeLockUpdatedAt).run();
           return new Response(JSON.stringify({ error: err.message }), { status: 500 });
         }
       }

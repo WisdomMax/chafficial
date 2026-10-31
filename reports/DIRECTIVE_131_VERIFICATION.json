@@ -1,6 +1,8 @@
 {
-  "directive": "131-R_HOTFIX-A",
-  "timestamp": "2026-10-31T10:05:00+09:00",
+  "directive": "132",
+  "timestamp": "2026-10-31T10:16:37.770061+09:00",
+  "git_commit": "48cdbcef9fa044132074bec2ba2f77784b6c76fe",
+  "git_branch": "feat/directive-052-security-publishing-content-remediation",
   "tasks": {
     "TASK_1_and_2_data_audit_and_quarantine": {
       "status": "PASS",
@@ -29,7 +31,7 @@
       "verified_loss": 0
     },
     "TASK_4_deployment_traceability": {
-      "git_commit": "74c4f7a205b20cadd446479e6da82b6576788274",
+      "git_commit": "48cdbcef9fa044132074bec2ba2f77784b6c76fe",
       "git_branch": "feat/directive-052-security-publishing-content-remediation",
       "cloudflare_project": "chamart",
       "production_branch": "main",
