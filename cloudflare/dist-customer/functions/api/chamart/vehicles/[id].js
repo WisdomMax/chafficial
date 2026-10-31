@@ -19,13 +19,14 @@ export async function onRequestGet({ request, params, env }) {
   }
 
   try {
-    // DIRECTIVE 130 P0 접근제어: 공개 승인 매물 및 순수 실차량만 조회 (더미/격리/미승인 원천 차단)
+    // DIRECTIVE 131 TASK 2: 상세 조회 엄격 검증 (공개승인 1, 실차 0, 판매중 매물 필수, 그 외 무조건 404)
     const v = await db.prepare(`
       SELECT * FROM vehicles 
       WHERE id = ? 
-        AND (is_public = 1 OR is_public IS NULL) 
-        AND (is_demo = 0 OR is_demo IS NULL) 
-        AND (status NOT IN ('DELETED', 'QUARANTINED', 'SUSPENDED') OR status IS NULL)
+        AND is_public = 1 
+        AND is_demo = 0 
+        AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED' OR publishing_status IS NULL)
+        AND status IN ('AVAILABLE', 'FOR_SALE')
     `).bind(vehicleId).first();
 
     if (!v) {

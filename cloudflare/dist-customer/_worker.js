@@ -61,16 +61,21 @@ export default {
         const fuelType = url.searchParams.get('fuel_type') || '';
         const sort = url.searchParams.get('sort') || 'recommended';
 
-        // DIRECTIVE 130 TASK 1 & 2: 더미(is_demo=1) 제외, 공개 승인 매물만
+        // DIRECTIVE 131 TASK 2: 고객 공개 정보 엄격 진실성 보장
+        // 1) is_public = 1 필수
+        // 2) is_demo = 0 필수
+        // 3) publishing_status 승인 상태 필수
+        // 4) status IN ('AVAILABLE', 'FOR_SALE') 필수 (판매완료/중지/삭제 원천 차단)
         let sql = `SELECT 
           id, plate_number, model_name, manufacturer, trim, year, mileage, 
           fuel_type, transmission, color, target_price, primary_photo_url, 
           listing_ownership_type, is_priority_exposure, priority_rank, 
           status, publishing_status, options_json
         FROM vehicles 
-        WHERE (is_public = 1 OR is_public IS NULL) 
-          AND (is_demo = 0 OR is_demo IS NULL)
-          AND (status IN ('AVAILABLE', 'FOR_SALE') OR status IS NULL)`;
+        WHERE is_public = 1 
+          AND is_demo = 0
+          AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED' OR publishing_status IS NULL)
+          AND status IN ('AVAILABLE', 'FOR_SALE')`;
         const params = [];
 
         if (search.trim()) {
@@ -219,13 +224,14 @@ export default {
       }
 
       try {
-        // DIRECTIVE 130 P0 접근제어: 공개 승인 매물 및 순수 실차량만 조회 (더미/격리/미승인 원천 차단)
+        // DIRECTIVE 131 TASK 2: 상세 조회 엄격 검증 (공개승인 1, 실차 0, 판매중 매물 필수, 그 외 무조건 404)
         const v = await db.prepare(`
           SELECT * FROM vehicles 
           WHERE id = ? 
-            AND (is_public = 1 OR is_public IS NULL) 
-            AND (is_demo = 0 OR is_demo IS NULL) 
-            AND (status NOT IN ('DELETED', 'QUARANTINED', 'SUSPENDED') OR status IS NULL)
+            AND is_public = 1 
+            AND is_demo = 0 
+            AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED' OR publishing_status IS NULL)
+            AND status IN ('AVAILABLE', 'FOR_SALE')
         `).bind(vehicleId).first();
 
         if (!v) {
@@ -400,7 +406,7 @@ export default {
     }
 
     // =========================================================================
-    // 4. TASK 3: 차피셜 ↔ 차마트 안전한 자동 동기화 HTTPS API
+    // 4. TASK 1 & 3: 원자적 멱등성 보장 및 안전한 HTTPS 동기화 API
     // =========================================================================
     if (pathname.startsWith('/api/sync/')) {
       if (!verifySyncAuth(request, env)) {
@@ -413,28 +419,94 @@ export default {
       const db = env.DB;
       if (!db) return new Response(JSON.stringify({ error: 'DB binding not found' }), { status: 500 });
 
-      // DIRECTIVE 130 P1 멱등성: 클라이언트 Idempotency-Key 헤더 검증 및 실제 중복 실행 원천 차단
-      const idempotencyKey = request.headers.get('Idempotency-Key') || '';
-      if (idempotencyKey) {
-        const processed = await db.prepare(
-          "SELECT id FROM admin_audit_logs WHERE target_id = ? AND action LIKE 'CHAFICIAL_SYNC_%' LIMIT 1"
-        ).bind(idempotencyKey).first();
-        if (processed) {
+      // 4-0. 상태 조회는 멱등성 키 검사 예외
+      if (pathname === '/api/sync/status' && request.method === 'GET') {
+        try {
+          const lastAudit = await db.prepare(
+            "SELECT * FROM admin_audit_logs WHERE action LIKE '%SYNC%' ORDER BY created_at DESC LIMIT 5"
+          ).all();
+          const totalVehicles = await db.prepare("SELECT count(*) as count FROM vehicles WHERE (is_demo = 0 OR is_demo IS NULL)").first();
+          const totalOwned = await db.prepare("SELECT count(*) as count FROM vehicles WHERE (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') AND (is_demo = 0 OR is_demo IS NULL)").first();
+
           return new Response(JSON.stringify({
-            success: true,
-            idempotent_replay: true,
-            message: '이미 안전하게 처리된 동일 요청입니다 (Idempotent Replay Hit)',
-            idempotency_key: idempotencyKey
-          }), {
-            headers: { 'Content-Type': 'application/json' }
-          });
+            status: 'HEALTHY',
+            total_real_vehicles: totalVehicles?.count || 0,
+            total_owned_vehicles: totalOwned?.count || 0,
+            recent_sync_events: lastAudit.results || []
+          }), { headers: { 'Content-Type': 'application/json' } });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        }
+      }
+
+      // 변경 요청(POST)에 대한 원자적 멱등성 검증 (TASK 1)
+      const idempotencyKey = (request.headers.get('Idempotency-Key') || '').trim();
+      if (!idempotencyKey) {
+        return new Response(JSON.stringify({
+          error: '멱등성 키 누락: 모든 데이터 변경 요청은 Idempotency-Key 헤더가 필수입니다.',
+          code: 'MISSING_IDEMPOTENCY_KEY'
+        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
+      // 페이로드 본문 및 SHA-256 해시 계산
+      const bodyText = await request.text();
+      let body;
+      try {
+        body = JSON.parse(bodyText);
+      } catch (e) {
+        return new Response(JSON.stringify({ error: '유효하지 않은 JSON 본문입니다.' }), { status: 400 });
+      }
+
+      const encoder = new TextEncoder();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(bodyText));
+      const currentPayloadHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      const nowIso = new Date().toISOString();
+
+      // 원자적 멱등성 락 획득 (INSERT PK 충돌 제약 활용)
+      try {
+        await db.prepare(`
+          INSERT INTO sync_idempotency_keys (idempotency_key, endpoint, payload_hash, status, created_at, updated_at)
+          VALUES (?, ?, ?, 'IN_PROGRESS', ?, ?)
+        `).bind(idempotencyKey, pathname, currentPayloadHash, nowIso, nowIso).run();
+      } catch (insertErr) {
+        // 이미 동일한 키가 존재함: 상태 및 페이로드 해시 검증
+        const existingKey = await db.prepare(
+          "SELECT endpoint, payload_hash, status, response_json FROM sync_idempotency_keys WHERE idempotency_key = ?"
+        ).bind(idempotencyKey).first();
+
+        if (existingKey) {
+          // 페이로드 불일치 -> 409 Conflict
+          if (existingKey.payload_hash !== currentPayloadHash) {
+            return new Response(JSON.stringify({
+              error: '멱등성 키 충돌: 동일한 Idempotency-Key로 다른 페이로드가 전송되었습니다.',
+              code: 'IDEMPOTENCY_PAYLOAD_MISMATCH'
+            }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+          }
+
+          // 이미 완료된 동일 요청 -> 저장된 결과 즉시 반환 (원자적 캐시 반환, 중복 연산 0건!)
+          if (existingKey.status === 'COMPLETED' && existingKey.response_json) {
+            return new Response(existingKey.response_json, {
+              status: 200,
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-Idempotent-Replay': 'true'
+              }
+            });
+          }
+
+          // 처리 중인 동시 요청 -> 409 Conflict
+          if (existingKey.status === 'IN_PROGRESS') {
+            return new Response(JSON.stringify({
+              error: '동일한 멱등성 키를 가진 요청이 현재 처리 중입니다 (동시 요청 방어).',
+              code: 'IDEMPOTENCY_IN_PROGRESS'
+            }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+          }
         }
       }
 
       // 4-1. 차량 증분 동기화: POST /api/sync/vehicles
       if (pathname === '/api/sync/vehicles' && request.method === 'POST') {
         try {
-          const body = await request.json();
           const vehicles = body.vehicles || [];
           let inserted = 0;
           let updated = 0;
@@ -448,12 +520,12 @@ export default {
             }
 
             // 기존 차량 확인
-            const existing = await db.prepare('SELECT id, target_price, is_public FROM vehicles WHERE id = ? OR plate_number = ?')
+            const existing = await db.prepare('SELECT id, target_price, is_public, listing_ownership_type FROM vehicles WHERE id = ? OR plate_number = ?')
               .bind(v.id, v.plate_number).first();
 
             if (existing) {
-              // 관리자 가격 및 공개 상태 소유권 보호:
-              // 동기화에서 기존 운영 target_price나 is_public을 무단 덮어쓰지 않음
+              // DIRECTIVE 131 TASK 3: 차마트 관리자 필드 소유권 엄격 보호
+              // target_price, is_public, listing_ownership_type은 차피셜 동기화에서 일체 수정 불가!
               await db.prepare(`
                 UPDATE vehicles SET
                   model_name = COALESCE(?, model_name),
@@ -465,23 +537,17 @@ export default {
                   manufacturer = COALESCE(?, manufacturer),
                   trim = COALESCE(?, trim),
                   primary_photo_url = CASE WHEN ? != '' AND ? IS NOT NULL THEN ? ELSE primary_photo_url END,
-                  listing_ownership_type = COALESCE(?, listing_ownership_type),
                   status = COALESCE(?, status),
                   updated_at = ?
                 WHERE id = ?
               `).bind(
                 v.model_name, v.year, v.mileage, v.fuel_type, v.transmission, v.color,
                 v.manufacturer, v.trim, v.primary_photo_url, v.primary_photo_url, v.primary_photo_url,
-                v.listing_ownership_type, v.status, now, existing.id
+                v.status, now, existing.id
               ).run();
               updated++;
             } else {
-              // 신규 등록 (DIRECTIVE 130 P0/P1 보안 보정: 관리자 승인 전 무조건 비공개 is_public=0 절대 강제 및 소속 엄격 검증)
-              const validOwnershipTypes = ['OWNED', 'CHAMART_OWNED', 'DEALER_PARTNER', 'CONSIGNED', 'MARKET_OBSERVED'];
-              const finalOwnership = validOwnershipTypes.includes(v.listing_ownership_type) ? v.listing_ownership_type : 'MARKET_OBSERVED';
-              // 클라이언트의 is_public 전송값과 무관하게 무조건 0 강제 (관리자 직접 승인 전 자동 공개 경로 원천 봉쇄)
-              const finalIsPublic = 0;
-
+              // 신규 등록 (DIRECTIVE 131 TASK 2 & 3: 무조건 비공개 is_public=0, MARKET_OBSERVED 강제)
               await db.prepare(`
                 INSERT INTO vehicles (
                   id, branch_id, plate_number, model_name, year, mileage, fuel_type,
@@ -489,14 +555,14 @@ export default {
                   vin, displacement_cc, first_registration_date, drive_type, interior_color,
                   options_json, timeline_json, primary_photo_url, manufacturer, trim, body_type,
                   is_public, listing_ownership_type, is_priority_exposure, priority_rank,
-                  created_at, updated_at
+                  publishing_status, created_at, updated_at
                 ) VALUES (
                   ?, '61fea9a4-58f0-42bd-862c-14fd16d0d21c', ?, ?, ?, ?, ?,
                   ?, ?, ?, ?, ?, 0,
                   ?, ?, ?, ?, ?,
                   ?, '[]', ?, ?, ?, ?,
-                  ?, ?, 0, 0,
-                  ?, ?
+                  0, 'MARKET_OBSERVED', 0, 0,
+                  'PENDING_REVIEW', ?, ?
                 )
               `).bind(
                 v.id, v.plate_number, v.model_name, v.year, v.mileage, v.fuel_type,
@@ -506,31 +572,39 @@ export default {
                 v.drive_type || '2WD', v.interior_color || '블랙',
                 v.options_json || '[]', v.primary_photo_url || '',
                 v.manufacturer || '', v.trim || '', v.body_type || '세단',
-                finalIsPublic,
-                finalOwnership,
                 now, now
               ).run();
               inserted++;
             }
           }
 
-          // 감사 로그 기록 (멱등성 키 기반 중복 검증용 target_id 저장)
+          // 감사 로그 기록
           const logId = 'AUDIT-' + crypto.randomUUID().slice(0, 8);
-          const targetKey = idempotencyKey || ('BATCH-' + logId);
           await db.prepare(`
             INSERT INTO admin_audit_logs (id, user_id, action, target_type, target_id, details_json, created_at)
             VALUES (?, 'SYSTEM_SYNC', 'CHAFICIAL_SYNC_VEHICLES', 'VEHICLES_BATCH', ?, ?, ?)
-          `).bind(logId, targetKey, JSON.stringify({ inserted, updated, skipped, total: vehicles.length, source: body.source || 'CHAFICIAL', idempotency_key: idempotencyKey }), now).run();
+          `).bind(logId, idempotencyKey, JSON.stringify({ inserted, updated, skipped, total: vehicles.length, source: body.source || 'CHAFICIAL', idempotency_key: idempotencyKey }), now).run();
 
-          return new Response(JSON.stringify({
+          const resultObj = {
             success: true,
             inserted,
             updated,
             skipped,
             total: vehicles.length,
+            idempotency_key: idempotencyKey,
             timestamp: now
-          }), { headers: { 'Content-Type': 'application/json' } });
+          };
+
+          // 멱등성 테이블 COMPLETED 업데이트
+          await db.prepare(
+            "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
+          ).bind(JSON.stringify(resultObj), now, idempotencyKey).run();
+
+          return new Response(JSON.stringify(resultObj), { headers: { 'Content-Type': 'application/json' } });
         } catch (err) {
+          await db.prepare(
+            "UPDATE sync_idempotency_keys SET status = 'FAILED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
+          ).bind(JSON.stringify({ error: err.message }), new Date().toISOString(), idempotencyKey).run();
           return new Response(JSON.stringify({ error: err.message }), { status: 500 });
         }
       }
@@ -538,7 +612,6 @@ export default {
       // 4-2. 사진 메타데이터 동기화: POST /api/sync/photos
       if (pathname === '/api/sync/photos' && request.method === 'POST') {
         try {
-          const body = await request.json();
           const { vehicle_id, photos } = body;
           if (!vehicle_id || !Array.isArray(photos)) {
             return new Response(JSON.stringify({ error: 'vehicle_id and photos array required' }), { status: 400 });
@@ -564,10 +637,17 @@ export default {
             photoInserted++;
           }
 
-          return new Response(JSON.stringify({ success: true, vehicle_id, photo_count: photoInserted }), {
-            headers: { 'Content-Type': 'application/json' }
-          });
+          const resultObj = { success: true, vehicle_id, photo_count: photoInserted, idempotency_key: idempotencyKey };
+
+          await db.prepare(
+            "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
+          ).bind(JSON.stringify(resultObj), now, idempotencyKey).run();
+
+          return new Response(JSON.stringify(resultObj), { headers: { 'Content-Type': 'application/json' } });
         } catch (err) {
+          await db.prepare(
+            "UPDATE sync_idempotency_keys SET status = 'FAILED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
+          ).bind(JSON.stringify({ error: err.message }), new Date().toISOString(), idempotencyKey).run();
           return new Response(JSON.stringify({ error: err.message }), { status: 500 });
         }
       }
@@ -575,13 +655,12 @@ export default {
       // 4-3. 상태 동기화 (판매완료/광고중지): POST /api/sync/status
       if (pathname === '/api/sync/status' && request.method === 'POST') {
         try {
-          const body = await request.json();
           const { vehicle_ids, status, reason } = body;
           if (!Array.isArray(vehicle_ids) || !status) {
             return new Response(JSON.stringify({ error: 'vehicle_ids array and status required' }), { status: 400 });
           }
 
-          // DIRECTIVE 130 P1: 허용 상태 화이트리스트 검증
+          // DIRECTIVE 131: 허용 상태 화이트리스트 검증
           const allowedStatuses = ['AVAILABLE', 'FOR_SALE', 'RESERVED', 'SOLD', 'SUSPENDED', 'DELETED', 'INACTIVE'];
           const normStatus = String(status).toUpperCase();
           if (!allowedStatuses.includes(normStatus)) {
@@ -615,43 +694,30 @@ export default {
             count++;
           }
 
-          // 감사 로그 기록 (멱등성 키 기반 중복 검증용 target_id 저장)
+          // 감사 로그 기록
           const logId = 'AUDIT-' + crypto.randomUUID().slice(0, 8);
-          const targetKey = idempotencyKey || ('STATUS-' + logId);
           await db.prepare(`
             INSERT INTO admin_audit_logs (id, user_id, action, target_type, target_id, details_json, created_at)
             VALUES (?, 'SYSTEM_SYNC', 'CHAFICIAL_SYNC_STATUS', 'STATUS_BATCH', ?, ?, ?)
-          `).bind(logId, targetKey, JSON.stringify({ count, vehicle_ids, status: normStatus, reason, unpublished: shouldUnpublish, idempotency_key: idempotencyKey }), now).run();
+          `).bind(logId, idempotencyKey, JSON.stringify({ count, vehicle_ids, status: normStatus, reason, unpublished: shouldUnpublish, idempotency_key: idempotencyKey }), now).run();
 
-          return new Response(JSON.stringify({ 
+          const resultObj = { 
             success: true, 
             updated_count: count, 
             status: normStatus,
-            unpublished: shouldUnpublish 
-          }), {
-            headers: { 'Content-Type': 'application/json' }
-          });
-        } catch (err) {
-          return new Response(JSON.stringify({ error: err.message }), { status: 500 });
-        }
-      }
+            unpublished: shouldUnpublish,
+            idempotency_key: idempotencyKey
+          };
 
-      // 4-4. 동기화 상태 조회: GET /api/sync/status
-      if (pathname === '/api/sync/status' && request.method === 'GET') {
-        try {
-          const lastAudit = await db.prepare(
-            "SELECT * FROM admin_audit_logs WHERE action LIKE '%SYNC%' ORDER BY created_at DESC LIMIT 5"
-          ).all();
-          const totalVehicles = await db.prepare("SELECT count(*) as count FROM vehicles WHERE (is_demo = 0 OR is_demo IS NULL)").first();
-          const totalOwned = await db.prepare("SELECT count(*) as count FROM vehicles WHERE (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') AND (is_demo = 0 OR is_demo IS NULL)").first();
+          await db.prepare(
+            "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
+          ).bind(JSON.stringify(resultObj), now, idempotencyKey).run();
 
-          return new Response(JSON.stringify({
-            status: 'HEALTHY',
-            total_real_vehicles: totalVehicles?.count || 0,
-            total_owned_vehicles: totalOwned?.count || 0,
-            recent_sync_events: lastAudit.results || []
-          }), { headers: { 'Content-Type': 'application/json' } });
+          return new Response(JSON.stringify(resultObj), { headers: { 'Content-Type': 'application/json' } });
         } catch (err) {
+          await db.prepare(
+            "UPDATE sync_idempotency_keys SET status = 'FAILED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
+          ).bind(JSON.stringify({ error: err.message }), new Date().toISOString(), idempotencyKey).run();
           return new Response(JSON.stringify({ error: err.message }), { status: 500 });
         }
       }

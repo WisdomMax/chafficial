@@ -197,14 +197,34 @@
 
 ---
 
-## G. Cloudflare 차마트 운영 및 차피셜 DB 동기화 (DIRECTIVE 130)
+## G. Cloudflare 차마트 운영 및 차피셜 DB 동기화 (DIRECTIVE 130 / 131)
 
-- [ ] 🟡 **G-1. Cloudflare 운영 DB 및 배포 환경 감사**: 로컬 SQLite(1,801대) 및 D1(268대) 스키마·데이터 전수 감사, SQL 풀 백업(2.8MB) 생성 및 복원 100% 무결성 검증 완료
-- [ ] 🟡 **G-2. 더미 데이터 격리 및 정리**: 100대 가상 데모 차량 및 2,000장 가상 사진을 `quarantined_*` 테이블로 안전 격리 완료, 본 테이블 실차량 168대 및 상담·거래 데이터 100% 보존
+- [ ] 🟡 **G-1. Cloudflare 운영 DB 및 배포 환경 감사**: 로컬 SQLite(1,801대) 및 D1(168대 실차, 100대 격리) 스키마·데이터 전수 감사, SQL 풀 백업(2.8MB) 생성 및 복원 100% 무결성 검증 완료
+- [ ] 🟡 **G-2. 더미 데이터 격리 및 정리**: 100대 가상 데모 차량 및 2,000장 가상 사진을 `quarantined_*` 테이블로 안전 격리 완료, 본 테이블 실차량 168대 및 상담 30건, 거래 37건 100% 보존
 - [ ] 🟡 **G-3. 실제 차량 사진 정합성 확보**: 모델명 기반 임의 사진 매핑(`resolveRealCarPhoto`) 및 가상 30장 생성기 완전 폐기, 실제 승인 사진만 노출하고 부재 시 정직한 '사진 준비 중' SVG 적용
 - [ ] 🟡 **G-4. 차마트 우선 노출 4단계 적용**: (1) 차마트 직영+실사진 (2) 차마트 직영+사진없음 (3) 타사+실사진 (4) 타사+사진없음 4단계 티어 우선 쿼리 및 프론트엔드 연동 완료
-- [ ] 🟡 **G-5. 차량 ID 매핑 및 API 연동**: 고유 차량 ID 및 출처 ID 매핑, Bearer 토큰 기반 보안 HTTPS API(`POST /api/sync/vehicles`, `POST /api/sync/photos`, `POST /api/sync/status`) 엔드포인트 구현
-- [ ] 🟡 **G-6. 자동 증분 동기화 및 복구**: 아웃박스 패턴 기반 `chamart_sync_outbox` 테이블 구축, 오프라인 시 로컬 큐 안전 보존, 네트워크 복구 시 자동 증분 전송 및 재시도 검증 통과
-- [ ] 🟡 **G-7. 데이터 권한·보안·공개 무결성**: 관리자 지정 가격 및 공개 상태의 소유권 보호(동기화 시 덮어쓰기 방어), 미승인 매물 자동 공개 차단, 감사 로그(`admin_audit_logs`) 자동 기록
-- [ ] 🟡 **G-8. 실제 운영 환경 통합 검증**: Cloudflare Pages 프로덕션(`main` 브랜치) 배포, `https://chamart.cc` 및 `https://chamart.pages.dev` 실서버 엔드투엔드 브라우저 렌더링 검증
+- [ ] 🟡 **G-5. 원자적 멱등성 및 동기화 보안 (ISSUE-110, ISSUE-115)**: 전용 D1 테이블 `sync_idempotency_keys` 구축, PK 충돌 기반 원자적 락 획득, 키 누락 시 400 거부, 동일 키/동일 페이로드 캐시 리플레이(중복 연산 0건), 상이 페이로드 409 거부, 하드코딩 기본 토큰 완전 폐기 및 환경변수 강제
+- [ ] 🟡 **G-6. 자동 증분 동기화 및 복구 (ISSUE-114, ISSUE-116)**: 아웃박스 패턴 `chamart_sync_outbox`, 지수 백오프 재시도 및 SHA-256 Idempotency-Key 전송, 관리자 소유권 필드(`target_price`, `is_public`, `listing_ownership_type`) 수정 불가 완전 격리, 판매완료 시 `is_public=0` 자동 비공개 전환
+- [ ] 🟡 **G-7. 고객 공개 정보 진실성 및 접근 제어 (ISSUE-111, ISSUE-112, ISSUE-113)**: 상세페이지 가상 보증(무사고/침수/시세80만원차액) 전면 삭제 및 '진단 대기' 정직한 표기, 비공개 매물 상세 직접 접근 시 404 차단, 신규 동기화 매물 무조건 `is_public=0` 강제
+- [ ] 🟡 **G-8. 실제 운영 환경 통합 검증**: Cloudflare Pages 프로덕션(`main` 브랜치) 배포, `https://chamart.cc` 및 `https://chamart.pages.dev` 실서버 엔드투엔드 브라우저 렌더링 검증 (목록 카드 높이 104px 슬림화)
 - [ ] 🟡 **G-9. AI 자동등록 확장 기반**: `ai_vision_analysis_json`, `ai_recommended_primary_photo`, `ai_confidence_score`, `ai_review_status` 등 GPT 비전 다중 업로드 및 자동등록 확장 스키마 마이그레이션 완료
+
+---
+
+## H. DIRECTIVE 130 / 131 독립 감사 및 결함 조치 이력 (Audit Remediation)
+
+### 1. DIRECTIVE 130 1차·2차 독립 감사 결함 전수 조치 현황 (ISSUE-110 ~ ISSUE-116)
+- **ISSUE-110 [P0 보안 - 기본 인증 토큰 하드코딩 노출]**:
+  - 조치: `_worker.js` 및 `chamart_sync_client.py` 내 `DEFAULT_SYNC_TOKEN` 전면 삭제. `env.SYNC_API_KEY` 미설정 또는 16자 미만 시 즉시 401 Unauthorized 차단.
+- **ISSUE-111 [P0 진실성 - 상세페이지 허위 정보 생성]**:
+  - 조치: 실제 카히스토리/성능점검부 미확인 매물에 대한 가상 `is_accident_free: true`, `total_loss: false`, `시세 대비 80만원 저렴` 날조 하드코딩 전면 삭제. 데이터 부재 시 `null`, `'성능점검 서류 확인 대기'`, `'실차 진단 및 정밀 시세 분석 대기'` 정직한 표기 적용.
+- **ISSUE-112 [P0 접근 제어 - 비공개 차량 상세 URL 접근]**:
+  - 조치: 상세 API에 `WHERE id = ? AND is_public = 1 AND is_demo = 0 AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED' OR publishing_status IS NULL) AND status IN ('AVAILABLE', 'FOR_SALE')` 엄격 적용. 미승인·더미·판매완료 매물 직접 접근 시 404 Not Found 반환.
+- **ISSUE-113 [P0 노출 제어 - 신규 차량 자동 공개 경로]**:
+  - 조치: 클라이언트 페이로드 전송값과 무관하게 신규 동기화 차량은 무조건 `is_public = 0` (비공개) 강제 고정. 관리자 직접 검토/승인 전 노출 원천 봉쇄.
+- **ISSUE-114 [P1 일관성 - 판매완료 시 비공개 미전환 및 임의 상태값]**:
+  - 조치: 허용 상태 화이트리스트(`['AVAILABLE', 'FOR_SALE', 'RESERVED', 'SOLD', 'SUSPENDED', 'DELETED', 'INACTIVE']`) 검증 도입. `SOLD`, `SUSPENDED`, `DELETED`, `INACTIVE` 수신 시 `is_public = 0` 자동 전환.
+- **ISSUE-115 [P0 신뢰성 - 멱등성 서버 검증 부재 및 동시성 경합]**:
+  - 조치: 전용 테이블 `sync_idempotency_keys` 구축, PK 충돌 기반 원자적 락 획득 메커니즘 실장. 키 누락 시 400 거부, 동일 키/동일 페이로드 완료 건 즉시 캐시 리플레이(중복 INSERT 0건), 상이 페이로드 409 충돌 차단. 동일 요청 10개 동시 실행 race condition 단위 테스트 통과.
+- **ISSUE-116 [P1 소유권 - 차피셜 동기화의 관리자 필드 침범]**:
+  - 조치: `UPDATE vehicles` 시 `target_price`(관리자 판매가), `is_public`(공개 여부), `listing_ownership_type`(직영 소속 여부)을 UPDATE 구문에서 완전 제외. 운영 DB의 관리자 고유 권한 100% 보존.

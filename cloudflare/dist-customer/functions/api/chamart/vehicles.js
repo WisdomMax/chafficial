@@ -44,15 +44,17 @@ export async function onRequestGet({ request, env, waitUntil }) {
     const fuelType = url.searchParams.get('fuel_type') || '';
     const sort = url.searchParams.get('sort') || 'recommended';
 
+    // DIRECTIVE 131 TASK 2: 고객 공개 정보 엄격 진실성 보장
     let sql = `SELECT 
       id, plate_number, model_name, manufacturer, trim, year, mileage, 
       fuel_type, transmission, color, target_price, primary_photo_url, 
       listing_ownership_type, is_priority_exposure, priority_rank, 
       status, publishing_status, options_json
     FROM vehicles 
-    WHERE (is_public = 1 OR is_public IS NULL) 
-      AND (is_demo = 0 OR is_demo IS NULL)
-      AND (status IN ('AVAILABLE', 'FOR_SALE') OR status IS NULL)`;
+    WHERE is_public = 1 
+      AND is_demo = 0
+      AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED' OR publishing_status IS NULL)
+      AND status IN ('AVAILABLE', 'FOR_SALE')`;
     const params = [];
 
     if (search.trim()) {
