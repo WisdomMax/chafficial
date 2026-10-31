@@ -260,3 +260,12 @@
   - 조치: `scripts/verify_directive_131_full.py` 동적 타임스탬프 및 커밋 해시 자동 주입, Cloudflare Pages 배포 식별자(`35791b91`) 및 Git 커밋 1:1 대응 검증.
 - **ISSUE-127 [P0 실매물 시범 등록 - 카매니저 실매물 5대 선별 및 승인 대기열 적재]**:
   - 조치: 장한평 전시장 (주)더쿨모터스 실매물 1호 `64노3143` (랜드로버 디스커버리 스포츠 1,090만원, 제시번호 2026099548, 실차 사진 9장 완비) 100% 검증 완료. 후보 2~5호(벤츠 E-클래스, 스타리아, G80, 랭글러) 가격/사진 등록 대기열 편성(`reports/DIRECTIVE_132_REAL_VEHICLE_CANDIDATES.json`). 사용자 최종 승인 전 비공개 안전 유지.
+
+### 5. DIRECTIVE 132-A: 실매물 1호 공개 직전 승인 게이트 이행 (ISSUE-128)
+- **ISSUE-128 [P0 실매물 1호 승인 게이트 - (주)더쿨모터스 판매 권한 검증 및 D1 비공개 스테이징]**:
+  - 조치:
+    1. **판매 권한 및 제원 검증**: (주)더쿨모터스(장안모터프라자) 위탁 매물 `64노3143`(제시번호 `2026099548`), 카매니저 실차 사진 9장 권한, 판매가 1,090만원, 차대번호 `SALCA2BN5JH761441`, 최초등록일 `2018-09-14`, 근저당 해제 상태 전수 확인 및 증거 보존.
+    2. **D1 비공개 스테이징**: 원격 D1 DB에 중복 없이 등록 완료 (`id = 'e6670a2e-c532-435e-b34a-b4a3ff9a677c'`, `is_public = 0`, `publishing_status = 'PENDING_REVIEW'`, `is_demo = 0`, `listing_ownership_type = 'EXTERNAL'`).
+    3. **제시번호 & 실차 사진 9장 매핑**: `vehicle_listings` 제시번호 `2026099548` 1:1 매핑, `vehicle_photos` 카매니저 정식 실차 사진 9장 등록 완료 (`approval_status = 'PENDING'`, `public_visibility = 'PRIVATE'`).
+    4. **고객 API 미노출 검증**: `GET /api/chamart/vehicles` 응답 0건(`[]`) 유지, 상세 API `GET /api/chamart/vehicles/e6670a2e...` 404 차단 실측 완료.
+    5. **사용자 승인 게이트**: 사용자 명시적 최종 승인 전까지 `is_public=0` 엄격 유지.

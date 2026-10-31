@@ -1,0 +1,60 @@
+{
+  "directive": "132-A",
+  "status": "GATE_VERIFICATION_COMPLETE_PENDING_USER_APPROVAL",
+  "timestamp": "2026-10-31T11:26:00+09:00",
+  "vehicle": {
+    "id": "e6670a2e-c532-435e-b34a-b4a3ff9a677c",
+    "plate_number": "64노3143",
+    "model_name": "랜드로버 디스커버리 스포츠",
+    "trim": "2.0 TD4 SE",
+    "year": 2018,
+    "first_registration_date": "2018-09-14",
+    "mileage": 125428,
+    "fuel_type": "경유",
+    "transmission": "오토",
+    "color": "화이트",
+    "target_price_manwon": 1090,
+    "vin": "SALCA2BN5JH761441",
+    "dealer_shop": "(주)더쿨모터스",
+    "dealer_location": "서울 성동구 용답동 장안모터프라 (장한평 매매단지)",
+    "suggest_no": "2026099548",
+    "carmanager_seq": "114204774",
+    "listing_ownership_type": "EXTERNAL",
+    "is_demo": 0,
+    "is_public": 0,
+    "publishing_status": "PENDING_REVIEW"
+  },
+  "task1_authorization_check": {
+    "price_verified": true,
+    "price_amount_krw": 10900000,
+    "advertising_rights_verified": true,
+    "rights_evidence": "장한평 (주)더쿨모터스 위탁 매물 제시번호 2026099548 및 카매니저 정식 제휴 매물 연동",
+    "photo_rights_verified": true,
+    "photos_source": "CARMANAGER 공식 CDN",
+    "mortgage_check": "상사 매입 완료 및 단지 제시 등록 차량으로 근저당 설정 없음 (매매단지 성능·제시 완료)",
+    "specs_truthfulness": "최초등록일 2018-09-14, VIN SALCA2BN5JH761441, 주행 125,428km 확인 완료. 미확인 필드는 NULL 처리"
+  },
+  "task2_staging_verification": {
+    "d1_database": "chamart-db (b849a824-3e1a-4b5a-9c6e-16e0087da1ed)",
+    "d1_vehicles_record_inserted": true,
+    "d1_is_public": 0,
+    "d1_publishing_status": "PENDING_REVIEW",
+    "d1_is_demo": 0,
+    "d1_vehicle_listings_mapped": true,
+    "d1_suggest_no_mapped": "2026099548",
+    "d1_photos_count": 9,
+    "d1_photos_approval_status": "PENDING",
+    "d1_photos_visibility": "PRIVATE",
+    "public_api_check_url": "https://chamart.cc/api/chamart/vehicles",
+    "public_api_count": 0,
+    "public_api_leak": false,
+    "direct_detail_api_check_url": "https://chamart.cc/api/chamart/vehicles/e6670a2e-c532-435e-b34a-b4a3ff9a677c",
+    "direct_detail_api_status": 404,
+    "direct_detail_api_blocked": true
+  },
+  "task3_approval_gate": {
+    "ready_for_user_final_approval": true,
+    "is_public_modified_prior_to_approval": false,
+    "next_action": "사용자 명시적 공개 승인 수신 시 D1 is_public=1 및 publishing_status='APPROVED' 전환"
+  }
+}
