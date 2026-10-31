@@ -1,12 +1,33 @@
 // Cloudflare Pages Worker for Chamart (DIRECTIVE 130 Compliant)
 // Strict Real-Vehicle Only: Zero Fabricated Photos, 4-Tier Exposure Ranking, Sync API
 
-function isValidPhoto(url) {
+function isValidRealVehiclePhoto(url) {
   if (!url || typeof url !== 'string') return false;
   const u = url.trim().toLowerCase();
   if (!u) return false;
-  if (u.includes('placeholder') || u.includes('slots') || u.includes('sample_car') || u.includes('no_photo')) return false;
-  return true;
+  if (
+    u.includes('placeholder') ||
+    u.includes('slots') ||
+    u.includes('sample_car') ||
+    u.includes('demo_car') ||
+    u.includes('demo_graphic') ||
+    u.includes('ui_fixtures') ||
+    u.includes('no_photo') ||
+    u.includes('unsplash.com') ||
+    u.startsWith('/static/img/vehicles/') ||
+    u.startsWith('/static/img/real_photos/') ||
+    u.startsWith('/static/img/ui_fixtures/')
+  ) {
+    return false;
+  }
+  if (u.startsWith('http://') || u.startsWith('https://')) {
+    return true;
+  }
+  return false;
+}
+
+function isValidPhoto(url) {
+  return isValidRealVehiclePhoto(url);
 }
 
 const NO_PHOTO_FALLBACK = '/static/img/no_photo.svg';
@@ -74,7 +95,7 @@ export default {
         FROM vehicles 
         WHERE is_public = 1 
           AND is_demo = 0
-          AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED' OR publishing_status IS NULL)
+          AND publishing_status IN ('APPROVED', 'PUBLISHED')
           AND status IN ('AVAILABLE', 'FOR_SALE')`;
         const params = [];
 
@@ -135,9 +156,19 @@ export default {
         const tierOrderClause = `
           (CASE 
             WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') 
-                 AND (primary_photo_url IS NOT NULL AND primary_photo_url != '' AND primary_photo_url NOT LIKE '%placeholder%' AND primary_photo_url NOT LIKE '%no_photo%') THEN 1
+                 AND (primary_photo_url LIKE 'http://%' OR primary_photo_url LIKE 'https://%')
+                 AND primary_photo_url NOT LIKE '%placeholder%'
+                 AND primary_photo_url NOT LIKE '%no_photo%'
+                 AND primary_photo_url NOT LIKE '%unsplash%'
+                 AND primary_photo_url NOT LIKE '%ui_fixtures%'
+                 AND primary_photo_url NOT LIKE '%demo%' THEN 1
             WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') THEN 2
-            WHEN (primary_photo_url IS NOT NULL AND primary_photo_url != '' AND primary_photo_url NOT LIKE '%placeholder%' AND primary_photo_url NOT LIKE '%no_photo%') THEN 3
+            WHEN (primary_photo_url LIKE 'http://%' OR primary_photo_url LIKE 'https://%')
+                 AND primary_photo_url NOT LIKE '%placeholder%'
+                 AND primary_photo_url NOT LIKE '%no_photo%'
+                 AND primary_photo_url NOT LIKE '%unsplash%'
+                 AND primary_photo_url NOT LIKE '%ui_fixtures%'
+                 AND primary_photo_url NOT LIKE '%demo%' THEN 3
             ELSE 4
           END) ASC`;
 
@@ -201,7 +232,7 @@ export default {
         const resp = new Response(JSON.stringify(enriched), {
           headers: {
             'Content-Type': 'application/json; charset=utf-8',
-            'Cache-Control': 'public, max-age=60, s-maxage=120',
+            'Cache-Control': 'public, max-age=0, must-revalidate',
             'Access-Control-Allow-Origin': '*'
           }
         });
@@ -230,7 +261,7 @@ export default {
           WHERE id = ? 
             AND is_public = 1 
             AND is_demo = 0 
-            AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED' OR publishing_status IS NULL)
+            AND publishing_status IN ('APPROVED', 'PUBLISHED')
             AND status IN ('AVAILABLE', 'FOR_SALE')
         `).bind(vehicleId).first();
 
@@ -475,7 +506,15 @@ export default {
         ).bind(idempotencyKey).first();
 
         if (existingKey) {
-          // 페이로드 불일치 -> 409 Conflict
+          // 1) 엔드포인트 상이 -> 409 거부
+          if (existingKey.endpoint !== pathname) {
+            return new Response(JSON.stringify({
+              error: '멱등성 키 충돌: 동일한 Idempotency-Key가 다른 엔드포인트에서 사용되었습니다.',
+              code: 'IDEMPOTENCY_ENDPOINT_MISMATCH'
+            }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+          }
+
+          // 2) 페이로드 불일치 -> 409 Conflict 거부
           if (existingKey.payload_hash !== currentPayloadHash) {
             return new Response(JSON.stringify({
               error: '멱등성 키 충돌: 동일한 Idempotency-Key로 다른 페이로드가 전송되었습니다.',
@@ -483,7 +522,7 @@ export default {
             }), { status: 409, headers: { 'Content-Type': 'application/json' } });
           }
 
-          // 이미 완료된 동일 요청 -> 저장된 결과 즉시 반환 (원자적 캐시 반환, 중복 연산 0건!)
+          // 3) 이미 완료된 동일 요청 -> 저장된 결과 즉시 리플레이
           if (existingKey.status === 'COMPLETED' && existingKey.response_json) {
             return new Response(existingKey.response_json, {
               status: 200,
@@ -494,12 +533,37 @@ export default {
             });
           }
 
-          // 처리 중인 동시 요청 -> 409 Conflict
-          if (existingKey.status === 'IN_PROGRESS') {
-            return new Response(JSON.stringify({
-              error: '동일한 멱등성 키를 가진 요청이 현재 처리 중입니다 (동시 요청 방어).',
-              code: 'IDEMPOTENCY_IN_PROGRESS'
-            }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+          // 4) 실패(FAILED)한 경우 -> 안전한 재시도 허용 (status = 'IN_PROGRESS'로 원자적 재선점)
+          if (existingKey.status === 'FAILED') {
+            const reacquire = await db.prepare(
+              "UPDATE sync_idempotency_keys SET status = 'IN_PROGRESS', response_json = NULL, updated_at = ? WHERE idempotency_key = ? AND status = 'FAILED'"
+            ).bind(nowIso, idempotencyKey).run();
+            if (reacquire.meta.changes === 0) {
+              return new Response(JSON.stringify({
+                error: '동일한 멱등성 키를 가진 재시도 요청이 이미 처리 중입니다.',
+                code: 'IDEMPOTENCY_CONCURRENT_RETRY'
+              }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+            }
+          } else if (existingKey.status === 'IN_PROGRESS') {
+            // 5) 60초 초과 Stale Lock 타임아웃 재선점
+            const updatedAt = new Date(existingKey.updated_at || existingKey.created_at).getTime();
+            const nowTime = new Date().getTime();
+            if (nowTime - updatedAt > 60000) {
+              const reclaimStale = await db.prepare(
+                "UPDATE sync_idempotency_keys SET status = 'IN_PROGRESS', response_json = NULL, updated_at = ? WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?"
+              ).bind(nowIso, idempotencyKey, existingKey.updated_at).run();
+              if (reclaimStale.meta.changes === 0) {
+                return new Response(JSON.stringify({
+                  error: '동일한 멱등성 키를 가진 요청이 현재 처리 중입니다 (동시 요청 방어).',
+                  code: 'IDEMPOTENCY_IN_PROGRESS'
+                }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+              }
+            } else {
+              return new Response(JSON.stringify({
+                error: '동일한 멱등성 키를 가진 요청이 현재 처리 중입니다 (동시 요청 방어).',
+                code: 'IDEMPOTENCY_IN_PROGRESS'
+              }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+            }
           }
         }
       }
@@ -568,10 +632,10 @@ export default {
                 v.id, v.plate_number, v.model_name, v.year, v.mileage, v.fuel_type,
                 v.transmission || '오토', v.color || '화이트', v.purchase_price || 0,
                 v.target_price || 0, v.status || 'FOR_SALE',
-                v.vin || '', v.displacement_cc || 1999, v.first_registration_date || `${v.year}-01-01`,
-                v.drive_type || '2WD', v.interior_color || '블랙',
+                v.vin || null, v.displacement_cc || null, v.first_registration_date || null,
+                v.drive_type || null, v.interior_color || null,
                 v.options_json || '[]', v.primary_photo_url || '',
-                v.manufacturer || '', v.trim || '', v.body_type || '세단',
+                v.manufacturer || null, v.trim || null, v.body_type || null,
                 now, now
               ).run();
               inserted++;

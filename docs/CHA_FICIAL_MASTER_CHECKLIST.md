@@ -228,3 +228,17 @@
   - 조치: 전용 테이블 `sync_idempotency_keys` 구축, PK 충돌 기반 원자적 락 획득 메커니즘 실장. 키 누락 시 400 거부, 동일 키/동일 페이로드 완료 건 즉시 캐시 리플레이(중복 INSERT 0건), 상이 페이로드 409 충돌 차단. 동일 요청 10개 동시 실행 race condition 단위 테스트 통과.
 - **ISSUE-116 [P1 소유권 - 차피셜 동기화의 관리자 필드 침범]**:
   - 조치: `UPDATE vehicles` 시 `target_price`(관리자 판매가), `is_public`(공개 여부), `listing_ownership_type`(직영 소속 여부)을 UPDATE 구문에서 완전 제외. 운영 DB의 관리자 고유 권한 100% 보존.
+
+### 2. DIRECTIVE 131-R / P0 HOTFIX-A 결함 조치 이력 (ISSUE-117 ~ ISSUE-120)
+- **ISSUE-117 [P0 시연 잔존 - 제네시스 GV70 (073서 7777) 가상 매물 운영 D1 최상단 노출]**:
+  - 원인: 과거 시연용 등록 매물이 `is_demo=0`, `is_public=1`, `priority_rank=100`, `publishing_status='APPROVED'`로 남아있어 차마트 1위 노출.
+  - 조치: 차량 ID `76d8576a-5c6f-4555-b9f0-89db74cb30b8` 단건 지정을 통해 `is_demo=1`, `is_public=0`, `publishing_status='UNPUBLISHED'`, `priority_rank=0`으로 안전 비공개 격리 완료. 변경 전 D1 백업(3.0MB) 및 레코드 감사 JSON 확보. 상세 URL 직접 조회 시 404 차단 검증.
+- **ISSUE-118 [P0 노출 정책 - `publishing_status IS NULL` 허용 및 허위 기본값 누수]**:
+  - 원인: 목록/상세 API SQL에 `publishing_status IS NULL` 허용문 잔존으로 미승인 차량 노출 여지 발생, 신규 등록 시 `displacement_cc=1999`, `drive_type='2WD'`, `year-01-01` 등 허위 기본값 저장.
+  - 조치: 목록 및 상세 API에 `publishing_status IN ('APPROVED', 'PUBLISHED')` 필수화(`IS NULL` 완전 제거). 신규 등록 시 미확인 제원은 전부 `null` 저장.
+- **ISSUE-119 [P0 사진 정합성 - 가상 에셋의 실차 사진 오판별 및 하드코딩 무사고 태그]**:
+  - 원인: `isValidPhoto()`가 단순 문자열 일부만 체크하여 `/static/img/ui_fixtures/`, `/static/img/vehicles/` 등을 실차 사진으로 인정, 프론트엔드 카드에 무조건 '무사고' 배지 하드코딩.
+  - 조치: `isValidRealVehiclePhoto()`로 개편하여 시연·픽스처·더미 에셋 전면 차단, 실제 수집 사진(`http://`, `https://`)만 허용하고 부재 시 정직한 `no_photo.svg` 강제. 프론트엔드 카드 하드코딩 무사고 태그 전면 삭제.
+- **ISSUE-120 [P0 멱등성 실패 복구 & 엣지 캐시 즉시 만료]**:
+  - 원인: `sync_idempotency_keys`에서 `FAILED` 키 재선점 불가, 엔드포인트 상이 시 미검증, 목록 API 엣지 캐시(60초)로 판매완료 즉시 미반영.
+  - 조치: 엔드포인트 상이 시 `409 IDEMPOTENCY_ENDPOINT_MISMATCH`, `status='FAILED'` 원자적 재선점 허용, 60초 초과 stale lock 재선점 구현. 목록 API `Cache-Control: public, max-age=0, must-revalidate` 적용. D1 마이그레이션 `0002_directive_131_idempotency.sql` 배포.

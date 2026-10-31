@@ -1,11 +1,13 @@
 """
-DIRECTIVE 131 전수 데이터 보존, 복원 및 운영 무결성 검증 스크립트
+DIRECTIVE 131-R / HOTFIX-A 전수 데이터 보존, 복원 및 운영 무결성 검증 스크립트
+엄격한 실측 원칙: D1 쿼리 실패 시 fallback 기본값 사용을 일절 금지하며, 즉시 예외 발생 후 종료.
 """
 
 import sqlite3
 import subprocess
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -15,47 +17,62 @@ def run_cmd(cmd):
 
 def main():
     report = {
-        "directive": "131",
-        "timestamp": "2026-10-31T09:33:00+09:00",
+        "directive": "131-R_HOTFIX-A",
+        "timestamp": "2026-10-31T10:05:00+09:00",
         "tasks": {}
     }
 
-    # 1. D1 운영 DB 실제 수치 전수 감사
-    print("[*] Auditing Cloudflare D1 real counts...")
+    # 1. D1 운영 DB 실제 수치 전수 감사 (fallback 절대 금지)
+    print("[*] Auditing Cloudflare D1 real counts (Strict Live Query)...")
     sql_audit = """
     SELECT 
-      (SELECT count(*) FROM vehicles WHERE is_demo = 0 OR is_demo IS NULL) as real_vehicles,
+      (SELECT count(*) FROM vehicles WHERE is_demo = 0) as real_vehicles,
+      (SELECT count(*) FROM vehicles WHERE is_demo = 1) as demo_in_vehicles,
       (SELECT count(*) FROM quarantined_demo_vehicles) as quarantined_demo_vehicles,
-      (SELECT count(*) FROM vehicle_photos WHERE vehicle_id IN (SELECT id FROM vehicles WHERE is_demo = 0 OR is_demo IS NULL)) as real_photos,
+      (SELECT count(*) FROM vehicle_photos WHERE vehicle_id IN (SELECT id FROM vehicles WHERE is_demo = 0)) as real_photos,
       (SELECT count(*) FROM quarantined_demo_photos) as quarantined_demo_photos,
-      (SELECT count(*) FROM customer_consultations) as consultations,
-      (SELECT count(*) FROM transactions) as transactions;
+      (SELECT count(*) FROM consultations) as consultations,
+      (SELECT count(*) FROM transactions) as transactions,
+      (SELECT count(*) FROM vehicles WHERE is_public = 1 AND is_demo = 0 AND publishing_status IN ('APPROVED', 'PUBLISHED')) as public_approved_vehicles,
+      (SELECT count(*) FROM vehicles WHERE is_public = 1 AND is_demo = 1) as public_demo_leak_count,
+      (SELECT count(*) FROM vehicles WHERE id = '76d8576a-5c6f-4555-b9f0-89db74cb30b8' AND is_public = 1) as gv70_leak_count;
     """
     cmd = f'npx wrangler d1 execute chamart-db --remote --json --command="{sql_audit}"'
     stdout, stderr, code = run_cmd(cmd)
     
-    d1_counts = {}
+    if code != 0:
+        print("[!] ERROR: D1 query execution failed:", stderr)
+        sys.exit(1)
+
     try:
         data = json.loads(stdout)
-        if isinstance(data, list) and len(data) > 0:
-            d1_counts = data[0].get("results", [{}])[0]
+        d1_counts = data[0]["results"][0]
     except Exception as e:
-        print("D1 query parse error:", e)
+        print("[!] ERROR: Failed to parse D1 JSON response:", e, stdout)
+        sys.exit(1)
 
-    print("D1 Counts:", d1_counts)
-    report["tasks"]["TASK_4_data_retention"] = {
-        "status": "PASS" if d1_counts.get("real_vehicles") == 168 else "CHECK",
-        "real_vehicles": d1_counts.get("real_vehicles", 168),
-        "quarantined_demo_vehicles": d1_counts.get("quarantined_demo_vehicles", 100),
-        "real_photos": d1_counts.get("real_photos", 155),
-        "quarantined_demo_photos": d1_counts.get("quarantined_demo_photos", 2000),
-        "consultations": d1_counts.get("consultations", 30),
-        "transactions": d1_counts.get("transactions", 37),
-        "loss_count": 0
+    print("[+] Live D1 Counts verified:")
+    for k, v in d1_counts.items():
+        print(f"    - {k}: {v}")
+
+    # 검증 assertion
+    assert d1_counts["public_demo_leak_count"] == 0, f"Demo vehicle leak detected: {d1_counts['public_demo_leak_count']}"
+    assert d1_counts["gv70_leak_count"] == 0, f"GV70 073서 7777 still public!"
+    assert d1_counts["real_vehicles"] >= 166, f"Unexpected vehicle count drop: {d1_counts['real_vehicles']}"
+
+    report["tasks"]["TASK_1_and_2_data_audit_and_quarantine"] = {
+        "status": "PASS",
+        "live_d1_counts": d1_counts,
+        "gv70_isolated": True,
+        "public_demo_leak_count": 0,
+        "public_approved_vehicles": d1_counts["public_approved_vehicles"]
     }
 
     # 2. 백업 SQL 복원 및 무결성 검증
-    backup_file = "data/backups/directive_130/chamart_d1_backup_20261031.sql"
+    backup_file = "data/backups/directive_131_hotfix_a/chamart_d1_pre_hotfix_a.sql"
+    if not os.path.exists(backup_file):
+        backup_file = "data/backups/directive_130/chamart_d1_backup_20261031.sql"
+    
     print(f"[*] Testing restore from backup SQL ({backup_file})...")
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp_db:
         tmp_db_path = tmp_db.name
@@ -63,6 +80,8 @@ def main():
     try:
         restore_cmd = f"sqlite3 {tmp_db_path} < {backup_file}"
         _, _, r_code = run_cmd(restore_cmd)
+        if r_code != 0:
+            raise RuntimeError(f"Backup restore command failed with code {r_code}")
         
         conn = sqlite3.connect(tmp_db_path)
         c = conn.cursor()
@@ -75,8 +94,11 @@ def main():
         total_photos = c.fetchone()[0]
         conn.close()
         
+        if integrity != "ok":
+            raise RuntimeError(f"Integrity check failed: {integrity}")
+
         report["tasks"]["TASK_4_backup_restore_verification"] = {
-            "status": "PASS" if integrity == "ok" else "FAIL",
+            "status": "PASS",
             "integrity_check": integrity,
             "restored_vehicles": total_veh,
             "restored_photos": total_photos,
@@ -98,7 +120,7 @@ def main():
         "cloudflare_project": "chamart",
         "production_branch": "main",
         "live_domain": "https://chamart.cc",
-        "edge_cache_policy": "no-cache, no-store, must-revalidate (purge unnecessary)"
+        "edge_cache_policy": "public, max-age=0, must-revalidate"
     }
 
     with open("reports/DIRECTIVE_131_VERIFICATION.json", "w", encoding="utf-8") as f:

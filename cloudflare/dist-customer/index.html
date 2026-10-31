@@ -238,7 +238,7 @@
             display: none !important;
         }
     </style>
-    <link rel="stylesheet" href="/static/css/chamart-refined.css?v=20261031_list_slim_v1">
+    <link rel="stylesheet" href="/static/css/chamart-refined.css?v=20261031_hotfix_a">
 </head>
 <body class="cm-skin min-h-screen flex flex-col bg-[#F5F6F4] text-[#171B1E] is-home-mode">
 
@@ -3322,15 +3322,22 @@
             syncUrlParams();
         }
 
-        // DIRECTIVE 130 TASK 2: 정직한 실차 사진 렌더러 (타 차량 오연결 및 가짜 사진 매핑 완전 제거)
+        // DIRECTIVE 131-R / HOTFIX-A: 정직한 실차 사진 렌더러 (시연 자산, 픽스처, 더미 사진 영구 배제)
         function resolveFrontendCarPhoto(v) {
             let p = v.primary_photo_url || (v.photos && v.photos.length > 0 ? (v.photos[0].photo_url || v.photos[0].url || v.photos[0]) : '');
             if (typeof p !== 'string') p = '';
             p = p.trim();
-            if (!p || p.includes('placeholder') || p.includes('slots') || p.includes('no_photo')) {
+            const lower = p.toLowerCase();
+            if (!p || lower.includes('placeholder') || lower.includes('slots') || lower.includes('no_photo') ||
+                lower.includes('ui_fixtures') || lower.includes('sample_car') || lower.includes('demo_car') ||
+                lower.includes('demo_graphic') || lower.includes('unsplash.com') ||
+                lower.startsWith('/static/img/vehicles/') || lower.startsWith('/static/img/real_photos/')) {
                 return '/static/img/no_photo.svg';
             }
-            return p;
+            if (lower.startsWith('http://') || lower.startsWith('https://')) {
+                return p;
+            }
+            return '/static/img/no_photo.svg';
         }
 
         function createVehicleListRow(v, favorites, compareIds) {
@@ -3360,8 +3367,8 @@
                             <span>${v.year}년식</span> · <span>${mileageFormatted}</span> · <span>${v.fuel_type || '가솔린'}</span> · <span>${v.branch_location || '차마트 장한평 직영'}</span>
                         </div>
                         <div class="cm-vehicle-row__extras">
-                            <span class="cm-tag-verified">무사고 진단</span>
-                            <span class="cm-tag-record">성능점검부 완료</span>
+                            
+                            
                             <span style="font-size:11px;color:#94a3b8;">${v.plate_number || ''}</span>
                         </div>
                     </div>
@@ -3398,7 +3405,7 @@
                     <!-- 좌측: 당근마켓형 정사각 썸네일 (컴팩트 64~80px) -->
                     <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0 bg-slate-100">
                         <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='/static/img/no_photo.svg'">
-                        <span class="absolute top-1 left-1 bg-[#171B1E]/85 backdrop-blur-xs text-[#C8FF3D] text-[9px] font-bold px-1 rounded">무사고</span>
+                        
                     </div>
 
                     <!-- 중앙: 핵심 스펙 및 모델명 -->
@@ -3469,7 +3476,7 @@
                         <h3 class="cm-feed-card__title">${titleParts.mainTitle}</h3>
                         ${titleParts.subTrim ? `<p class="cm-feed-card__trim">${titleParts.subTrim}</p>` : ''}
                         <div class="cm-card-specs">
-                            <span>${yearDisplay}</span><span>${mileageFormatted}</span><span>${v.fuel_type || '가솔린'}</span><span class="text-emerald-700 font-semibold">무사고 진단</span>
+                            <span>${yearDisplay}</span><span>${mileageFormatted}</span><span>${v.fuel_type || '가솔린'}</span>
                         </div>
                         <div class="cm-feed-card__price">${priceFormatted}</div>
                         <p class="cm-feed-card__monthly">월 약 ${estMonth}만원 (60개월)</p>
@@ -3502,7 +3509,7 @@
                 <article class="${ChamartPreferred.isOwned(v) ? 'cm-preferred-card ' : ''}cm-album-card relative group" tabindex="0" role="link" aria-label="${titleParts.mainTitle} 상세보기" onkeydown="if(event.target===this && event.key==='Enter') openVehicleDetail('${v.id}')" onclick="openVehicleDetail('${v.id}')">
                     <div class="cm-album-card__photo relative">
                         <img src="${photoUrl}" alt="${titleParts.mainTitle}" class="vehicle-photo" loading="lazy" onerror="this.src='/static/img/no_photo.svg'">
-                        ${ChamartPreferred.isOwned(v) ? '<div class="cm-preferred-album-badge">' + ChamartPreferred.badge(v) + '</div>' : '<span class="cm-album-card__badge-tag">무사고</span>'}
+                        ${ChamartPreferred.isOwned(v) ? '<div class="cm-preferred-album-badge">' + ChamartPreferred.badge(v) + '</div>' : ''}
                         
                         <!-- 찜(하트) 버튼 -->
                         <button type="button" class="cm-album-card__fav-btn ${isFav ? 'is-active' : ''}" onclick="event.stopPropagation(); toggleFavoriteVehicle('${v.id}')" aria-label="관심차량 찜" data-fav-btn="${v.id}">

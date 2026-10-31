@@ -1,60 +1,40 @@
 {
-  "directive": "131",
-  "audit_timestamp": "2026-10-31T09:33:34+09:00",
+  "directive": "131-R_HOTFIX-A",
+  "timestamp": "2026-10-31T10:05:00+09:00",
   "tasks": {
-    "TASK_1_atomic_idempotency": {
+    "TASK_1_and_2_data_audit_and_quarantine": {
       "status": "PASS",
-      "table": "sync_idempotency_keys",
-      "mechanism": "Primary Key Atomic Lock + In-Progress Detection + Response Replay Cache",
-      "concurrency_10_requests_test": "PASS (0 duplicate inserts)",
-      "payload_mismatch_409_test": "PASS",
-      "missing_key_400_test": "PASS"
-    },
-    "TASK_2_public_truthfulness": {
-      "status": "PASS",
-      "list_query_enforcement": "is_public = 1 AND is_demo = 0 AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED') AND status IN ('AVAILABLE', 'FOR_SALE')",
-      "detail_query_enforcement": "Strict 404 for unapproved, demo, sold, suspended vehicles",
-      "synthetic_claims_removed": [
-        "is_accident_free: true (removed)",
-        "total_loss: false (removed)",
-        "flood: false (removed)",
-        "price_difference: -80만원 (removed)"
-      ]
-    },
-    "TASK_3_ownership_and_photo_integrity": {
-      "status": "PASS",
-      "admin_fields_protected_from_sync_update": [
-        "target_price",
-        "is_public",
-        "listing_ownership_type"
-      ],
-      "new_sync_vehicle_default": {
-        "is_public": 0,
-        "listing_ownership_type": "MARKET_OBSERVED",
-        "publishing_status": "PENDING_REVIEW"
+      "live_d1_counts": {
+        "real_vehicles": 166,
+        "demo_in_vehicles": 2,
+        "quarantined_demo_vehicles": 100,
+        "real_photos": 155,
+        "quarantined_demo_photos": 2000,
+        "consultations": 30,
+        "transactions": 37,
+        "public_approved_vehicles": 4,
+        "public_demo_leak_count": 0,
+        "gv70_leak_count": 0
       },
-      "photo_integrity": "Unapproved or placeholder URLs excluded from 4-tier exposure ranking"
+      "gv70_isolated": true,
+      "public_demo_leak_count": 0,
+      "public_approved_vehicles": 4
     },
-    "TASK_4_data_retention_and_restore": {
+    "TASK_4_backup_restore_verification": {
       "status": "PASS",
-      "d1_real_vehicles": 168,
-      "d1_quarantined_demo_vehicles": 100,
-      "d1_real_photos": 155,
-      "d1_quarantined_demo_photos": 2000,
-      "d1_consultations": 30,
-      "d1_transactions": 37,
-      "loss_count": 0,
-      "backup_restore_verification": {
-        "integrity_check": "ok",
-        "backup_file": "data/backups/directive_130/chamart_d1_backup_20261031.sql",
-        "verified_loss": 0
-      },
-      "deployment_traceability": {
-        "cloudflare_project": "chamart",
-        "production_branch": "main",
-        "live_domain": "https://chamart.cc",
-        "edge_cache_headers": "no-cache, no-store, must-revalidate"
-      }
+      "integrity_check": "ok",
+      "restored_vehicles": 168,
+      "restored_photos": 155,
+      "backup_path": "data/backups/directive_131_hotfix_a/chamart_d1_pre_hotfix_a.sql",
+      "verified_loss": 0
+    },
+    "TASK_4_deployment_traceability": {
+      "git_commit": "7d83afbecf70d0af492a0563ce1dcc79d2d783c0",
+      "git_branch": "feat/directive-052-security-publishing-content-remediation",
+      "cloudflare_project": "chamart",
+      "production_branch": "main",
+      "live_domain": "https://chamart.cc",
+      "edge_cache_policy": "public, max-age=0, must-revalidate"
     }
   }
 }

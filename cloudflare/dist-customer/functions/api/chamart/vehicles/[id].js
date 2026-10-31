@@ -25,7 +25,7 @@ export async function onRequestGet({ request, params, env }) {
       WHERE id = ? 
         AND is_public = 1 
         AND is_demo = 0 
-        AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED' OR publishing_status IS NULL)
+        AND publishing_status IN ('APPROVED', 'PUBLISHED')
         AND status IN ('AVAILABLE', 'FOR_SALE')
     `).bind(vehicleId).first();
 

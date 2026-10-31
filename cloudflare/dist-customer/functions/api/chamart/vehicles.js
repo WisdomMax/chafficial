@@ -53,7 +53,7 @@ export async function onRequestGet({ request, env, waitUntil }) {
     FROM vehicles 
     WHERE is_public = 1 
       AND is_demo = 0
-      AND (publishing_status = 'APPROVED' OR publishing_status = 'PUBLISHED' OR publishing_status IS NULL)
+      AND publishing_status IN ('APPROVED', 'PUBLISHED')
       AND status IN ('AVAILABLE', 'FOR_SALE')`;
     const params = [];
 
@@ -110,9 +110,19 @@ export async function onRequestGet({ request, env, waitUntil }) {
     const tierOrderClause = `
       (CASE 
         WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') 
-             AND (primary_photo_url IS NOT NULL AND primary_photo_url != '' AND primary_photo_url NOT LIKE '%placeholder%' AND primary_photo_url NOT LIKE '%no_photo%') THEN 1
+             AND (primary_photo_url LIKE 'http://%' OR primary_photo_url LIKE 'https://%')
+             AND primary_photo_url NOT LIKE '%placeholder%'
+             AND primary_photo_url NOT LIKE '%no_photo%'
+             AND primary_photo_url NOT LIKE '%unsplash%'
+             AND primary_photo_url NOT LIKE '%ui_fixtures%'
+             AND primary_photo_url NOT LIKE '%demo%' THEN 1
         WHEN (listing_ownership_type = 'OWNED' OR listing_ownership_type = 'CHAMART_OWNED') THEN 2
-        WHEN (primary_photo_url IS NOT NULL AND primary_photo_url != '' AND primary_photo_url NOT LIKE '%placeholder%' AND primary_photo_url NOT LIKE '%no_photo%') THEN 3
+        WHEN (primary_photo_url LIKE 'http://%' OR primary_photo_url LIKE 'https://%')
+             AND primary_photo_url NOT LIKE '%placeholder%'
+             AND primary_photo_url NOT LIKE '%no_photo%'
+             AND primary_photo_url NOT LIKE '%unsplash%'
+             AND primary_photo_url NOT LIKE '%ui_fixtures%'
+             AND primary_photo_url NOT LIKE '%demo%' THEN 3
         ELSE 4
       END) ASC`;
 
@@ -175,7 +185,7 @@ export async function onRequestGet({ request, env, waitUntil }) {
     const resp = new Response(JSON.stringify(enriched), {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'public, max-age=60, s-maxage=120',
+        'Cache-Control': 'public, max-age=0, must-revalidate',
         'Access-Control-Allow-Origin': '*'
       }
     });
