@@ -659,24 +659,36 @@ export default {
               continue;
             }
 
-            // DIRECTIVE 133-R TASK 2: 서버 기반 상사 동의 및 권한 검증 (클라이언트 불리언 선언 신뢰 절대 금지)
+            // DIRECTIVE 134 TASK 1: 운영 환경 테스트/프로브 식별자 원천 차단
+            const testIdentifierRegex = /^(TEST|PROBE|DEMO|MOCK|TEMP)-/i;
+            if (testIdentifierRegex.test(v.id) || testIdentifierRegex.test(v.plate_number || '') || testIdentifierRegex.test(v.registration_number || '')) {
+              return new Response(JSON.stringify({
+                error: '테스트/프로브 식별자는 운영 환경에 동기화할 수 없습니다.',
+                code: 'TEST_IDENTIFIER_PROHIBITED_IN_PROD',
+                rejected_id: v.id,
+                rejected_plate: v.plate_number
+              }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+            }
+
+            // DIRECTIVE 134 TASK 1: 서버 기반 상사 동의 및 증빙 검증 (ACTIVE + marketing_consent_verified = 1)
             const sangsaName = (v.sangsa_name || '').trim();
             let isAuthorizedDealer = false;
             if (sangsaName) {
               const dealer = await db.prepare(
-                "SELECT id, dealership_name, partnership_status FROM dealers WHERE (dealership_name = ? OR name = ?) AND partnership_status = 'ACTIVE'"
+                "SELECT id, dealership_name, partnership_status, marketing_consent_verified FROM dealers WHERE (dealership_name = ? OR name = ?) AND partnership_status = 'ACTIVE' AND marketing_consent_verified = 1"
               ).bind(sangsaName, sangsaName).first();
               if (dealer) {
                 isAuthorizedDealer = true;
               }
             }
 
-            // DIRECTIVE 133-R TASK 1 & 3: 실제 전체 번호판 정규식 엄격 검증 (더쿨-XXXX 같은 임시 번호판 자동 공개 전면 차단)
+            // DIRECTIVE 133-R & 134: 실제 전체 번호판 정규식 엄격 검증
             const cleanPlate = (v.plate_number || '').replace(/\s+/g, '');
             const plateRegex = /^\d{2,3}[가-힣]\d{4}$/;
             const hasValidFullPlate = plateRegex.test(cleanPlate);
 
-            // DIRECTIVE 133-R TASK 2: 실매물 1호 64노3143 사용자 명시 승인 전까지 비공개 게이트 보호
+            // DIRECTIVE 134 TASK 4: 사용자 최종 승인 전까지 모든 차량 비공개 게이트 보호
+            // 64노3143 및 신규 동기화 매물은 최종 사용자 승인 전까지 PENDING_REVIEW 유지
             const isGateProtectedVehicle = (cleanPlate === '64노3143' || v.id === 'e6670a2e-c532-435e-b34a-b4a3ff9a677c');
 
             const targetPrice = parseInt(v.target_price || 0, 10);
@@ -686,8 +698,9 @@ export default {
             const isSoldOrSuspended = (status === 'SOLD' || status === 'SUSPENDED' || status === 'DELETED' || status === 'INACTIVE');
             const isDemo = (v.is_demo === 1 || v.is_demo === true) ? 1 : 0;
 
-            // 모든 엄격 조건(검증 상사 + 전체 번호판 + 유효 가격 + 판매중 + 실차 + 비보호 차량) 충족 시에만 자동 공개
-            const shouldAutoPublish = isAuthorizedDealer && hasValidFullPlate && hasValidPrice && isForSale && (isDemo === 0) && !isGateProtectedVehicle;
+            // DIRECTIVE 134: 사용자 최종 승인 게이트 원칙에 따라 신규/동기화 매물은 비공개(PENDING_REVIEW)로 안전 적재
+            // (상사 동의 및 전체 번호판 검증 완료 시에도 사용자 최종 승인이 있어야 APPROVED로 전환)
+            const shouldAutoPublish = false;
 
             // 미확인 제원 임의 기본값 금지 (DIRECTIVE 133-R TASK 3)
             const vYear = v.year ? parseInt(v.year, 10) : null;

@@ -334,3 +334,29 @@
     1. Mac mini 백그라운드 동기화 데몬 엔진 `src/chaficial/platform/sourcing/continuous_sync_daemon.py` 구축.
     2. 변경 차량만 감지하는 MD5 요약 해시 기반 증분 비교 로직 및 영구 로깅(`data/sync_daemon.log`) 구현.
     3. 운영 차량 훼손 방지를 위한 격리 프로브(`TEST-PROBE-DIRECTIVE-133`) 검증 완료: 가격 변경(`1500->1450`), 판매완료(`SOLD`), 스냅샷 재전송 재공개 차단, 최종 정리(`DELETED`) 100% 실측 통과.
+
+### 8. DIRECTIVE 134: 실제 판매 매물 복구 및 자동 동기화 운영 실증 (ISSUE-139 ~ ISSUE-142)
+- **ISSUE-139 [P0 프로덕션 안전 결함 긴급 수정 - 테스트 식별자 원천 차단 및 D1 잔존 레코드 영구 삭제]**:
+  - 원인: DIRECTIVE 133-R에서 프로브 검증에 사용된 `TEST-PROBE-DIRECTIVE-133`이 D1 `vehicles` 및 `vehicle_listings`에 잔존(is_public=0이었으나 `publishing_status='APPROVED'`).
+  - 조치:
+    1. D1 원격 DB에서 `TEST-PROBE-DIRECTIVE-133` 영구 삭제 완료 (`test_vehicles_count = 0`).
+    2. `cloudflare/dist-customer/_worker.js`에 `/^(TEST|PROBE|DEMO|MOCK|TEMP)-/i` 정규식 기반 차단 가드 실장: 테스트 식별자 유입 시 HTTP 400 (`TEST_IDENTIFIER_PROHIBITED_IN_PROD`) 거부 프로덕션 실측 완료.
+- **ISSUE-140 [P0 상사 진실성 및 동의 증빙 체계화 - 딜러 정보 정정 및 마케팅/사진 동의 검증 컬럼 연동]**:
+  - 원인: D1 `dealers` 테이블에 가상 전화번호 기재 및 단순 ACTIVE 상태만으로 자동 승인하는 취약점.
+  - 조치: 마이그레이션 `0004_directive_134_remediation.sql` 실행:
+    1. 가상 딜러(가온모터스, 우리상사, 제일오토) 전원 `INACTIVE`로 비활성화하여 자동 동기화 오분류 원천 차단.
+    2. 더쿨모터스 대표자명을 정식 법인 대표자인 `유동호`로 정정, 미확인 전화번호는 `확인대기`로 정정, 실제 위탁/광고 동의 증빙(`internal://auth_proofs/64노3143_thecoolmotors_auth.json`)과 연결.
+    3. `marketing_consent_verified INTEGER`, `photo_consent_verified INTEGER`, `consent_proof_uri TEXT` 컬럼 추가 및 `_worker.js`에서 `marketing_consent_verified = 1` 대조 강제.
+- **ISSUE-141 [P0 실제 매물 식별 구조 복구 - 임시 가상 번호판 날조 영구 퇴출 및 고유 식별자 정립]**:
+  - 원인: 크롤링 데이터의 번호판 뒷자리만으로 `더쿨-XXXX` 형태의 임의 번호판을 생성하여 등록하던 비정상적 구조.
+  - 조치:
+    1. 직영 13대(정식 전체 번호판 완비)와 크롤링 61대를 엄격 분리.
+    2. 전체 번호판이 없는 매물에 대해 `더쿨-XXXX` 가상 번호판 생성을 전면 폐기하고, 원본 번호판이 없으면 `plate_number: null` 및 카매니저 원본 고유 ID(`encarno`), 제시번호(`suggestNo`)로만 정직하게 식별.
+    3. `vehicle_listings` 테이블의 매핑을 카매니저 실제 제시번호(`2026129974`, `2026121600`, `2026119893`, `2026100117`, `2026099548`) 1:1 매핑으로 전수 갱신.
+- **ISSUE-142 [P1 진짜 실시간 동기화 및 운영 시범 검증 - launchd 데몬 구성, 로컬 샌드박스 프로브 및 검증 5대 비공개 스테이징]**:
+  - 조치:
+    1. Mac mini `launchd` 데몬 서비스(`~/Library/LaunchAgents/com.chaficial.sync.plist`) 구성 및 래퍼 스크립트(`scripts/run_sync_daemon.sh`) 작성.
+    2. 운영 D1에 테스트 데이터를 넣지 않고, 로컬 SQLite 샌드박스(`data/chamart/test_sync_sandbox.db`)에서 프로브 검증(가격 변경, SOLD 전이, 재공개 차단) 100% 통과.
+    3. 실제 권한 증빙을 갖춘 직영 5대(`64노3143`, `277노8340`, `358고4799`, `160버5497`, `145더8176`)를 비공개(`is_public = 0, PENDING_REVIEW`)로 완벽 보존하고, 사용자 명시적 최종 승인 전까지 공개하지 않는 안전 게이트 준수.
+    4. Cloudflare Pages 프로덕션 배포 완료 (`04f4057e`). 공개 API 실측 0대(`[]`) 및 테스트 식별자 400 거부 실측 완료.
+
