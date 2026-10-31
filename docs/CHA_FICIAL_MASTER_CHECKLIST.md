@@ -376,4 +376,32 @@
     2. 두 번째 무변동 사이클: 카매니저 실시간 조회 후 변경 매물 0대 감지 ➡️ D1 전송 생략 (`SKIPPED_NO_CHANGES`) 100% 실측.
     3. 단위 테스트 `tests/test_directive_135_e2e.py` 작성 및 4개 스텝 100% 통과 (실시간 수집, 원본 ID 매칭, 무변동 스킵, 1건 증분 변동 감지).
 
+### 10. DIRECTIVE 135-R: 실시간 수집-D1 동기화 무결성 및 실매물 1호 검수 증빙 완성 (ISSUE-147 ~ ISSUE-150)
+- **ISSUE-147 [P0 가상 번호판 날조 원천 배제 및 정식 원본 식별체계 확립]**:
+  - 조치:
+    1. `더쿨-XXXX` 등 임의 번호판 완전 폐기, 원본 번호판 미확보 차량은 `plate_number: null` 및 카매니저 원본 고유 ID(`encarno`), 제시번호로 1:1 정식 식별.
+    2. `_worker.js`에서 유효 정규식을 통과한 번호판만 바인딩하고 그렇지 않으면 엄격히 `null`로 보존.
+- **ISSUE-148 [P0 실시간 라이브 세션 직영 매물 + 캐시 스냅샷 무결 파이프라인 E2E 실측]**:
+  - 조치:
+    1. `tests/test_directive_135_r_real_e2e.py` 작성 및 실측 실행.
+    2. Step 1: 카매니저 실시간 관리자 세션 연동 성공 (직영 13대 실시간 수집 + 단지 61대 스냅샷 캐시 통합 = 총 74대).
+    3. Step 2: 원본 판매/광고중지 상태 정밀 매핑 (`FOR_SALE`, `IN_REVIEW`, 가격 미기재 ➡️ `IN_REVIEW`).
+    4. Step 3: Cloudflare D1 15대 단위 5개 청크 실제 전송 완료 (`updated: 74, skipped: 0, inserted: 0`).
+    5. Step 4: 2회차 연속 동기화 사이클 실행 시 변경 매물 0대 감지 ➡️ Cloudflare D1 전송 완벽 생략 (`SKIPPED_NO_CHANGES`) 실측 통과.
+    6. Step 5: Mac mini launchd 상주 서비스(`com.chaficial.sync`) 등록 상태 및 로그 정상 확인. (5개 스텝 100% PASS).
+- **ISSUE-149 [P0 실매물 1호 64노3143 사진 레코드 중복 제거 및 9장 비공개 격리 확정]**:
+  - 조치:
+    1. D1 `vehicle_photos` 테이블에서 1번 사진 URL 중복 레코드(`PHOTO-e6670a2e...-1`) 영구 삭제.
+    2. 정품 카매니저 실차 사진 정확히 9장 확정 보존 (`sort_order: 1~9`, `category: EXTERIOR/INTERIOR`, `public_visibility: 'PRIVATE'`, `approval_status: 'PENDING'`).
+    3. 차량 레코드 상태: `is_public = 0`, `publishing_status = 'PENDING_REVIEW'`, `status = 'IN_REVIEW'`, `listing_ownership_type = 'EXTERNAL'`.
+- **ISSUE-150 [P0 고객용 공개 API 0대 격리 및 관리자 검수 증빙 패키지 확보]**:
+  - 조치:
+    1. 프로덕션 고객용 공개 API(`https://chamart.cc/api/chamart/vehicles`) 응답 0대(`[]`) 및 상세 URL 직접 접근 시 HTTP 404 차단 실측 완료.
+    2. Playwright를 통한 화면 캡처 4종 생성 및 아티팩트 보존:
+       - `directive135_r_pc_list_blocked.png` (PC 목록 0대 비공개 격리 입증)
+       - `directive135_r_mobile_list_blocked.png` (모바일 목록 0대 비공개 격리 입증)
+       - `directive135_r_pc_detail_preview.png` (실매물 1호 64노3143 PC 관리자 검수 프리뷰)
+       - `directive135_r_mobile_detail_preview.png` (실매물 1호 64노3143 모바일 관리자 검수 프리뷰)
+
+
 

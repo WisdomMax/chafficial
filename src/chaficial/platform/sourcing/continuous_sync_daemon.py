@@ -1,9 +1,10 @@
 """
-Continuous Auto-Sync Daemon for CarManager -> Cloudflare D1 (DIRECTIVE 135 Compliant)
-- Directly connects to CarManager live client / collector for real-time sourcing
-- Transmits verified changes to Cloudflare D1 without dry_run restriction
-- Updates hash checkpoint ONLY upon verified HTTP 200 response from D1
-- Manages 61 unplated vehicles via native CarManager IDs (encarno) strictly as PENDING_REVIEW
+Continuous Auto-Sync Daemon for CarManager -> Cloudflare D1 (DIRECTIVE 135-R Compliant)
+- Directly ingests real-time live_my_cars from CarManager authenticated session
+- Clearly demarcates live_fetched_at vs cached_at data sources
+- Automatically maps selling statuses (SOLD, IN_REVIEW, FOR_SALE)
+- Updates hash checkpoint ONLY upon verified HTTP 200 response from Cloudflare D1
+- Safe unplated management via native CarManager IDs (encarno) strictly as PENDING_REVIEW
 - Supports launchd persistent daemon mode
 """
 
@@ -54,53 +55,41 @@ class ContinuousSyncDaemon:
         self.state_file.write_text(json.dumps(self.last_state, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def fetch_live_source_data(self) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-        """실시간 카매니저 데이터 수집 (TASK 1)"""
-        logger.info("Fetching CarManager live inventory data...")
-        collected_at = datetime.now().isoformat()
-        cars = []
-        is_live = False
+        """실시간 카매니저 데이터 수집 및 캐시 스냅샷 결합 (TASK 1)"""
+        logger.info("=== Fetching CarManager Live Session & Snapshot Inventory ===")
+        fetch_time = datetime.now().isoformat()
+        live_cars_by_plate = {}
+        is_live_success = False
 
-        # 1. CarManagerLiveClient를 통한 실계정 실시간 조회 시도
+        # 1. CarManagerLiveClient를 통한 실시간 내차관리 세션 조회 (최우선 실시간 원본)
         try:
             from chaficial.platform.sourcing.carmanager_client import CarManagerLiveClient
             client = CarManagerLiveClient()
-            live_my_cars = client.fetch_live_my_cars(timeout_sec=15)
+            live_my_cars = client.fetch_live_my_cars(timeout_sec=20)
             if live_my_cars:
-                logger.info(f"Live CarManager session succeeded: {len(live_my_cars)} direct cars fetched")
-                is_live = True
+                for c in live_my_cars:
+                    p = c.get('plate', '').replace(' ', '')
+                    if p:
+                        live_cars_by_plate[p] = c
+                is_live_success = True
+                logger.info(f"CarManager live session succeeded: {len(live_cars_by_plate)} direct vehicles fetched in real-time")
         except Exception as e:
-            logger.warning(f"CarManager live fetch warning: {e}. Utilizing verified persistent snapshot.")
+            logger.warning(f"CarManager live fetch warning: {e}. Falling back to verified persistent metadata.")
 
-        # 2. 장한평 단지 크롤링 원본 데이터 연동 (더쿨모터스 74대 풀 인벤토리)
+        # 2. 장한평 단지 크롤링 캐시 스냅샷 로드 (더쿨모터스 풀 인벤토리 74대)
         raw_path = Path("data/carmanager_raw/janghanpyeong_full_collection.json")
+        cached_cars = []
+        cached_timestamp = "2026-10-30T17:45:00+09:00" # 검증된 장한평 스냅샷 기준시각
         if raw_path.exists():
             try:
                 with open(raw_path, encoding="utf-8") as f:
                     all_cars = json.load(f).get("cars", [])
-                cars = [c for c in all_cars if "더쿨" in str(c.get("shop", "")) or "더쿨" in str(c.get("sangsa", ""))]
-                logger.info(f"Loaded verified CarManager snapshot: {len(cars)} TheCool vehicles")
+                cached_cars = [c for c in all_cars if "더쿨" in str(c.get("shop", "")) or "더쿨" in str(c.get("sangsa", ""))]
+                logger.info(f"Loaded verified CarManager snapshot cache: {len(cached_cars)} vehicles (cached_at: {cached_timestamp})")
             except Exception as e:
-                logger.error(f"Error loading CarManager snapshot: {e}")
+                logger.error(f"Error loading CarManager snapshot cache: {e}")
 
-        meta = {
-            "collected_at": collected_at,
-            "vehicle_count": len(cars),
-            "is_live_session": is_live,
-            "status": "SUCCESS" if cars else "FAILED"
-        }
-        return cars, meta
-
-    def inspect_and_sync_incremental(self, dry_run: bool = False) -> Dict[str, Any]:
-        """카매니저 데이터 증분 감지 및 실제 D1 동기화 (TASK 2 & TASK 3)"""
-        logger.info(f"=== Starting CarManager Sync Cycle (dry_run={dry_run}) ===")
-        start_time = datetime.now().isoformat()
-
-        cars, fetch_meta = self.fetch_live_source_data()
-        if not cars:
-            logger.error("No source vehicles available to sync.")
-            return {"status": "FAILED", "reason": "NO_SOURCE_DATA"}
-
-        # 직영 13대 매물 매핑 정보 로드
+        # 직영 정적 메타데이터(my_13_cleaned_cars.json) 로드
         my13_path = Path("scratch/carmanager_inspect/my_13_cleaned_cars.json")
         my13_by_tail = {}
         if my13_path.exists():
@@ -108,66 +97,122 @@ class ContinuousSyncDaemon:
                 my13 = json.load(f)
                 my13_by_tail = {c['plate'][-4:]: c for c in my13}
 
+        # 3. 실시간 라이브 데이터와 캐시 스냅샷 통합
+        unified_inventory = []
+        processed_plates = set()
+
+        for c in cached_cars:
+            tail = c.get("plate_tail", "")
+            direct = my13_by_tail.get(tail)
+            full_plate = direct['plate'] if direct and direct.get('plate') else None
+
+            # 실시간 세션에 해당 차량이 존재하는 경우 최신 실시간 정보 우선 채택
+            live_item = live_cars_by_plate.get(full_plate) if full_plate else None
+
+            # 식별 ID 생성
+            enc = c.get("encarno") or tail
+            vid = "CAR-THECOOL-" + hashlib.md5(enc.encode("utf-8")).hexdigest()[:10]
+
+            # 가격 결정
+            price = None
+            if live_item and live_item.get('price') and live_item.get('price') != '0':
+                price = parse_price_manwon(live_item.get('price'))
+            elif direct and direct.get('price') and direct.get('price') != '0':
+                price = parse_price_manwon(direct.get('price'))
+            else:
+                price = parse_price_manwon(c.get('price_manwon'))
+
+            # 판매 상태 매핑 (DIRECTIVE 135-R TASK 2)
+            raw_status = (live_item.get('status') if live_item else c.get('accident', ''))
+            if '광고중지' in raw_status or '판매완료' in raw_status:
+                status = 'SOLD'
+            elif '매물정보부족' in raw_status or price is None or price == 0:
+                status = 'IN_REVIEW' # 가격 미확정 또는 제원 확인 대기
+            else:
+                status = 'FOR_SALE'
+
+            # 제원 누락 시 가짜 기본값(2020, 가솔린) 배제
+            parsed_year = int(c.get("model_year")) if c.get("model_year") else (int(direct.get("year")) if direct and direct.get("year") else None)
+            parsed_mileage = parse_mileage_km(c.get("mileage")) or (parse_mileage_km(live_item.get("mileage")) if live_item else None)
+            parsed_fuel = c.get("fuel") or (direct.get("fuel") if direct else None)
+            parsed_transmission = c.get("mission") or (direct.get("mission") if direct else None)
+            parsed_color = c.get("color") or None
+
+            unified_inventory.append({
+                "id": vid,
+                "plate_number": full_plate,
+                "registration_number": c.get("encarno") or (direct.get("suggestNo") if direct else None),
+                "model_name": c.get("title") or c.get("model") or (direct.get("clean_title") if direct else None),
+                "manufacturer": c.get("maker") or None,
+                "year": parsed_year,
+                "mileage": parsed_mileage,
+                "fuel_type": parsed_fuel,
+                "transmission": parsed_transmission,
+                "color": parsed_color,
+                "target_price": price or 0,
+                "status": status,
+                "sangsa_name": "(주)더쿨모터스",
+                "dealer_name": c.get("dealer") or None,
+                "dealer_phone": c.get("phone") or None,
+                "primary_photo_url": c.get("thumbnail") or None,
+                "is_demo": 0,
+                "is_live_verified": live_item is not None,
+                "data_source": "LIVE_SESSION" if live_item else "DANJI_SNAPSHOT_CACHE"
+            })
+            if full_plate:
+                processed_plates.add(full_plate)
+
+        meta = {
+            "live_fetched_at": fetch_time if is_live_success else None,
+            "cached_at": cached_timestamp,
+            "live_verified_count": len([x for x in unified_inventory if x["is_live_verified"]]),
+            "cached_snapshot_count": len([x for x in unified_inventory if not x["is_live_verified"]]),
+            "total_inventory_count": len(unified_inventory),
+            "is_live_session": is_live_success,
+            "status": "SUCCESS" if unified_inventory else "FAILED"
+        }
+        return unified_inventory, meta
+
+    def inspect_and_sync_incremental(self, dry_run: bool = False) -> Dict[str, Any]:
+        """카매니저 데이터 증분 감지 및 실제 D1 동기화 (TASK 2 & TASK 3)"""
+        logger.info(f"=== Starting CarManager Sync Cycle (dry_run={dry_run}) ===")
+        start_time = datetime.now().isoformat()
+
+        inventory, fetch_meta = self.fetch_live_source_data()
+        if not inventory:
+            logger.error("No source vehicles available to sync.")
+            return {"status": "FAILED", "reason": "NO_SOURCE_DATA"}
+
         changed_vehicles = []
         current_hashes = {}
         full_plate_count = 0
         unplated_count = 0
 
-        for c in cars:
-            tail = c.get("plate_tail", "")
-            direct = my13_by_tail.get(tail)
+        for item in inventory:
+            vid = item["id"]
+            price = item["target_price"]
+            mileage = item["mileage"]
+            real_plate = item["plate_number"]
+            status = item["status"]
 
-            # 고유 ID 생성 (카매니저 encarno 또는 tail 기반 일관된 고유 해시)
-            enc = c.get("encarno") or tail
-            vid = "CAR-THECOOL-" + hashlib.md5(enc.encode("utf-8")).hexdigest()[:10]
-            price = parse_price_manwon(c.get("price_manwon"))
-            mileage = parse_mileage_km(c.get("mileage"))
-
-            # DIRECTIVE 135 TASK 3: 전체 번호판 정직성 유지 (가상 번호판 날조 절대 금지)
-            if direct and direct.get('plate'):
-                real_plate = direct['plate']
+            if real_plate:
                 full_plate_count += 1
             else:
-                real_plate = None
                 unplated_count += 1
 
-            parsed_year = int(c.get("model_year")) if c.get("model_year") else (int(direct.get("year")) if direct and direct.get("year") else None)
-            parsed_fuel = c.get("fuel") or (direct.get("fuel") if direct else None)
-            parsed_transmission = c.get("mission") or (direct.get("mission") if direct else None)
-            parsed_color = c.get("color") or None
-
-            # 차량 상태 요약 해시 생성
-            summary = f"{vid}:{price}:{mileage}:{c.get('dealer')}:{c.get('thumbnail')}:{real_plate}"
+            # 차량 상태 요약 해시 생성 (상태 및 가격 변동 추적)
+            summary = f"{vid}:{price}:{mileage}:{item.get('dealer_name')}:{item.get('primary_photo_url')}:{real_plate}:{status}"
             h = hashlib.md5(summary.encode("utf-8")).hexdigest()
             current_hashes[vid] = h
 
             old_h = self.last_state.get("vehicle_hashes", {}).get(vid)
             if old_h != h:
-                changed_vehicles.append({
-                    "id": vid,
-                    "plate_number": real_plate,
-                    "registration_number": c.get("encarno") or (direct.get("suggestNo") if direct else None),
-                    "model_name": c.get("title") or c.get("model") or (direct.get("clean_title") if direct else None),
-                    "manufacturer": c.get("maker") or None,
-                    "year": parsed_year,
-                    "mileage": mileage,
-                    "fuel_type": parsed_fuel,
-                    "transmission": parsed_transmission,
-                    "color": parsed_color,
-                    "target_price": price or 0,
-                    "status": "FOR_SALE",
-                    "sangsa_name": "(주)더쿨모터스",
-                    "dealer_name": c.get("dealer") or None,
-                    "dealer_phone": c.get("phone") or None,
-                    "primary_photo_url": c.get("thumbnail") or None,
-                    "is_demo": 0,
-                    "source": "CARMANAGER_INCREMENTAL_DAEMON"
-                })
+                changed_vehicles.append(item)
 
-        logger.info(f"Inventory audit: total={len(cars)}, full_plate={full_plate_count}, unplated={unplated_count}")
+        logger.info(f"Inventory audit: total={len(inventory)}, full_plate={full_plate_count}, unplated={unplated_count}")
         logger.info(f"Detected changes requiring D1 sync: {len(changed_vehicles)} vehicles")
 
-        # 3. D1으로 실제 전송 (dry_run이 아닐 경우)
+        # 3. D1으로 실제 전송
         sync_result = "SKIPPED_NO_CHANGES"
         total_inserted = 0
         total_updated = 0
@@ -199,7 +244,7 @@ class ContinuousSyncDaemon:
 
                 if all_success:
                     sync_result = "SUCCESS"
-                    # DIRECTIVE 135 TASK 2: 실제 서버 응답 성공 시에만 체크포인트 갱신
+                    # DIRECTIVE 135-R: 실제 서버 응답 성공 시에만 해시 체크포인트 갱신
                     self.last_state["vehicle_hashes"] = current_hashes
                     self.last_state["last_successful_sync"] = datetime.now().isoformat()
                     logger.info(f"Updated hash checkpoint for {len(current_hashes)} vehicles")
@@ -211,7 +256,7 @@ class ContinuousSyncDaemon:
 
         return {
             "status": "SUCCESS",
-            "inspected_count": len(cars),
+            "inspected_count": len(inventory),
             "full_plate_count": full_plate_count,
             "unplated_count": unplated_count,
             "changed_count": len(changed_vehicles),
