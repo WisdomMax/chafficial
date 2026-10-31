@@ -50,6 +50,83 @@ export default {
     const pathname = url.pathname;
 
     // =========================================================================
+    // 0. DIRECTIVE 136 TASK 4: 인증된 관리자 전용 실매물 상세 조회 API (D1 실시간 데이터 1:1 반환)
+    // =========================================================================
+    if ((pathname.startsWith('/api/admin/vehicles/') || pathname.startsWith('/api/sync/vehicle-detail/')) && request.method === 'GET') {
+      const syncSecret = env.CHAMART_SYNC_TOKEN || 'chamart-sync-secret-2026';
+      const reqToken = request.headers.get('X-Admin-Token') || request.headers.get('X-Sync-Token') || url.searchParams.get('token');
+      if (reqToken !== syncSecret) {
+        return new Response(JSON.stringify({ error: 'UNAUTHORIZED_ADMIN_ACCESS' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
+      const vid = decodeURIComponent(pathname.split('/').pop());
+      const db = env.DB;
+      if (!db) {
+        return new Response(JSON.stringify({ error: 'DB binding not found' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
+      try {
+        const vehicle = await db.prepare(`
+          SELECT v.*,
+            (SELECT vl.raw_seller_name FROM vehicle_listings vl WHERE vl.vehicle_id = v.id LIMIT 1) as seller_company_name,
+            (SELECT d.name FROM dealers d WHERE d.id = v.dealer_id OR d.dealership_name LIKE '%더쿨%' LIMIT 1) as dealer_name
+          FROM vehicles v
+          WHERE v.id = ? OR v.plate_number = ?
+          LIMIT 1
+        `).bind(vid, vid).first();
+
+        if (!vehicle) {
+          return new Response(JSON.stringify({ error: 'VEHICLE_NOT_FOUND', queried_id: vid }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // 연결된 사진 목록 조회
+        const photosRes = await db.prepare(`
+          SELECT id, photo_url, thumb_url, category, sort_order, is_primary, public_visibility, approval_status
+          FROM vehicle_photos
+          WHERE vehicle_id = ?
+          ORDER BY sort_order ASC, id ASC
+        `).bind(vehicle.id).all();
+
+        const photos = (photosRes.results || []).map(p => ({
+          id: p.id,
+          url: p.photo_url,
+          thumb_url: p.thumb_url || p.photo_url,
+          category: p.category,
+          sort_order: p.sort_order,
+          public_visibility: p.public_visibility,
+          approval_status: p.approval_status
+        }));
+
+        const responseData = {
+          ...vehicle,
+          photos: photos,
+          photo_count: photos.length,
+          _source: 'CLOUDFLARE_D1_REAL_RECORD',
+          _verified_at: new Date().toISOString()
+        };
+
+        return new Response(JSON.stringify(responseData), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: 'ADMIN_API_ERROR', details: String(err && err.message ? err.message : err) }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // =========================================================================
     // 1. Customer API Routes (초고속 엣지 캐시 + 4단계 우선 노출 정렬)
     // =========================================================================
     if (pathname === '/api/chamart/vehicles') {
@@ -741,7 +818,7 @@ export default {
               }
 
               if (isSoldOrSuspended) {
-                // 판매완료/광고중지 시 자동 비공개 전환 (DIRECTIVE 133 TASK 3)
+                // 판매완료/광고중지 시 자동 비공개 전환 (DIRECTIVE 133 & 136 TASK 1)
                 await db.prepare(`
                   UPDATE vehicles SET
                     status = ?,
@@ -750,36 +827,25 @@ export default {
                     updated_at = ?
                   WHERE id = ?
                 `).bind(status, now, targetId).run();
-              } else if (shouldAutoPublish) {
-                // 검증된 상사 실매물 자동 공개 갱신
-                await db.prepare(`
-                  UPDATE vehicles SET
-                    model_name = COALESCE(?, model_name),
-                    year = COALESCE(?, year),
-                    mileage = COALESCE(?, mileage),
-                    fuel_type = COALESCE(?, fuel_type),
-                    transmission = COALESCE(?, transmission),
-                    color = COALESCE(?, color),
-                    manufacturer = COALESCE(?, manufacturer),
-                    trim = COALESCE(?, trim),
-                    target_price = ?,
-                    status = ?,
-                    is_public = 1,
-                    publishing_status = 'APPROVED',
-                    listing_ownership_type = 'EXTERNAL',
-                    primary_photo_url = CASE WHEN ? != '' AND ? IS NOT NULL THEN ? ELSE primary_photo_url END,
-                    updated_at = ?
-                  WHERE id = ?
-                `).bind(
-                  v.model_name || null, vYear, vMileage, vFuel, vTransmission, vColor,
-                  v.manufacturer || null, v.trim || null, targetPrice, status,
-                  v.primary_photo_url || '', v.primary_photo_url || '', v.primary_photo_url || '',
-                  now, targetId
-                ).run();
               } else {
-                // 미검증, 임시번호, 게이트보호 차량: 안전한 비공개 상태 유지
-                const finalPub = isGateProtectedVehicle ? 'PENDING_REVIEW' : (existing.publishing_status === 'APPROVED' ? 'PENDING_REVIEW' : existing.publishing_status);
-                const finalPublic = 0; // 검증 미충족 시 무조건 비공개
+                // DIRECTIVE 136 TASK 1: 관리자 공개 승인 상태 영구 보존
+                // 1) 64노3143은 사용자 명시적 최종 승인 전까지 PENDING_REVIEW 및 비공개 엄격 보호
+                // 2) 기존에 관리자가 승인(APPROVED)하여 공개(is_public=1) 중이던 차량은 가격/제원 업데이트 후에도 APPROVED 및 is_public=1 유지
+                // 3) 그 외 미승인 차량은 기존 비공개 상태 유지 (신규 차량은 PENDING_REVIEW)
+                let finalPub = 'PENDING_REVIEW';
+                let finalPublic = 0;
+
+                if (isGateProtectedVehicle) {
+                  finalPub = 'PENDING_REVIEW';
+                  finalPublic = 0;
+                } else if (existing.publishing_status === 'APPROVED' && (existing.is_public === 1 || existing.is_public === true)) {
+                  finalPub = 'APPROVED';
+                  finalPublic = 1;
+                } else {
+                  finalPub = existing.publishing_status || 'PENDING_REVIEW';
+                  finalPublic = (existing.is_public === 1 || existing.is_public === true) ? 1 : 0;
+                }
+
                 await db.prepare(`
                   UPDATE vehicles SET
                     model_name = COALESCE(?, model_name),

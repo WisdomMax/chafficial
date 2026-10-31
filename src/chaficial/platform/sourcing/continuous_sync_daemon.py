@@ -113,7 +113,7 @@ class ContinuousSyncDaemon:
             enc = c.get("encarno") or tail
             vid = "CAR-THECOOL-" + hashlib.md5(enc.encode("utf-8")).hexdigest()[:10]
 
-            # 가격 결정
+            # 가격 결정 (실시간 1순위 -> 직영메타 2순위 -> 캐시 3순위)
             price = None
             if live_item and live_item.get('price') and live_item.get('price') != '0':
                 price = parse_price_manwon(live_item.get('price'))
@@ -122,20 +122,40 @@ class ContinuousSyncDaemon:
             else:
                 price = parse_price_manwon(c.get('price_manwon'))
 
-            # 판매 상태 매핑 (DIRECTIVE 135-R TASK 2)
+            # 판매 상태 정밀 매핑 (DIRECTIVE 136 TASK 2)
+            # 1) 실시간 라이브 세션 성공 시, 기존 직영 차량이 실시간 목록에서 사라졌으면 판매완료 단정이 아닌 상태 미확인(IN_REVIEW) 격리
+            # 2) '광고중지'와 '판매완료'를 SUSPENDED vs SOLD로 명확히 구분
+            # 3) 가격 0원 또는 매물정보부족은 IN_REVIEW로 격리
             raw_status = (live_item.get('status') if live_item else c.get('accident', ''))
-            if '광고중지' in raw_status or '판매완료' in raw_status:
-                status = 'SOLD'
+            if live_item is None and full_plate and len(live_cars_by_plate) > 0:
+                status = 'IN_REVIEW' # 실시간 세션에서 누락된 직영 매물: 상태 미확인 재검토
+            elif '광고중지' in raw_status:
+                status = 'SUSPENDED' # 광고중지 (SOLD와 분리)
+            elif '판매완료' in raw_status:
+                status = 'SOLD' # 실제 판매완료
             elif '매물정보부족' in raw_status or price is None or price == 0:
                 status = 'IN_REVIEW' # 가격 미확정 또는 제원 확인 대기
             else:
                 status = 'FOR_SALE'
 
-            # 제원 누락 시 가짜 기본값(2020, 가솔린) 배제
-            parsed_year = int(c.get("model_year")) if c.get("model_year") else (int(direct.get("year")) if direct and direct.get("year") else None)
-            parsed_mileage = parse_mileage_km(c.get("mileage")) or (parse_mileage_km(live_item.get("mileage")) if live_item else None)
-            parsed_fuel = c.get("fuel") or (direct.get("fuel") if direct else None)
-            parsed_transmission = c.get("mission") or (direct.get("mission") if direct else None)
+            # 제원 누락 시 가짜 기본값(2020, 가솔린) 배제 및 실시간/직영 실측치 1순위 채택
+            parsed_year = (int(live_item.get("year")) if live_item and live_item.get("year") else None) or \
+                          (int(direct.get("year")) if direct and direct.get("year") else None) or \
+                          (int(c.get("model_year")) if c.get("model_year") else None)
+
+            # 실측 주행거리 1순위 (반올림 없이 원본 125,428km 등 그대로 바인딩)
+            parsed_mileage = (parse_mileage_km(live_item.get("mileage")) if live_item else None) or \
+                             (parse_mileage_km(direct.get("mileage")) if direct else None) or \
+                             parse_mileage_km(c.get("mileage"))
+
+            parsed_fuel = (live_item.get("fuel") if live_item else None) or \
+                          (direct.get("fuel") if direct else None) or \
+                          c.get("fuel") or None
+
+            parsed_transmission = (live_item.get("mission") if live_item else None) or \
+                                  (direct.get("mission") if direct else None) or \
+                                  c.get("mission") or None
+
             parsed_color = c.get("color") or None
 
             unified_inventory.append({

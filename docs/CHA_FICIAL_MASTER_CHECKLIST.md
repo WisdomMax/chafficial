@@ -403,5 +403,42 @@
        - `directive135_r_pc_detail_preview.png` (실매물 1호 64노3143 PC 관리자 검수 프리뷰)
        - `directive135_r_mobile_detail_preview.png` (실매물 1호 64노3143 모바일 관리자 검수 프리뷰)
 
+### 11. DIRECTIVE 136: 실제 판매 운영을 위한 마지막 연결 및 게시 승인 상태 보존 (ISSUE-151 ~ ISSUE-155)
+- **ISSUE-151 [P0 관리자 공개 승인 상태 영구 보존 - shouldAutoPublish 결함 제거]**:
+  - 원인: `_worker.js`에서 `shouldAutoPublish = false` 분기로 인해 기존에 관리자가 승인한 차량(`APPROVED / is_public=1`)마저 가격/제원 동기화 시 비공개/`PENDING_REVIEW`로 되돌아가던 심각한 운영 결함.
+  - 조치:
+    1. `_worker.js` 상태 보존 가드 구현: 기존 승인 차량(`existing.publishing_status === 'APPROVED' && existing.is_public === 1`)은 가격이나 제원이 변경되어 동기화되더라도 `is_public = 1, publishing_status = 'APPROVED'` 상태를 영구 유지.
+    2. 단, 판매완료(`SOLD`) 또는 광고중지(`SUSPENDED`) 시에는 즉시 `is_public = 0, publishing_status = 'UNPUBLISHED'`로 비공개 전환.
+    3. 실매물 1호 `64노3143`은 사용자의 명시적 최종 승인 전까지 무조건 `is_public = 0, publishing_status = 'PENDING_REVIEW'` 게이트 엄격 보호.
+    4. 단위 테스트 `tests/test_directive_136_safety_rules.py` 작성 및 5개 케이스 100% 통과.
+- **ISSUE-152 [P0 실시간 판매 상태 추적 및 광고중지/판매완료 정밀 분리]**:
+  - 조치:
+    1. `continuous_sync_daemon.py`에서 광고중지(`SUSPENDED`)와 실제 판매완료(`SOLD`)를 분리.
+    2. 실시간 세션 조회 성공 시, 실시간 목록에서 사라진 직영 차량은 판매완료로 단정하지 않고 상태 미확인(`IN_REVIEW`)으로 분류하여 재조회 대상으로 격리.
+    3. 주행거리 제원 매핑 시 반올림이나 임의 기본값을 배제하고 카매니저 원본 실측 주행거리(`125,428km`)를 1순위로 정확히 바인딩.
+- **ISSUE-153 [P0 운영 E2E 테스트 엄격화 - launchd 등록 및 D1 원격 재조회 1:1 값 일치 검증]**:
+  - 조치:
+    1. `tests/test_directive_136_e2e.py` 작성:
+       - Step 1: launchd `com.chaficial.sync` 등록 여부 엄격 assertion (`assert has_launchd_entry is True`).
+       - Step 2: 실시간 카매니저 세션 수집 및 64노3143 정밀 제원(`125,428km`, `1,090만원`) 검증.
+       - Step 3: Cloudflare D1 74대 전수 실제 전송 (`updated: 74, skipped: 0`).
+       - Step 4: 원격 D1 재조회하여 실시간 전송 값과 완벽 일치 비교 (`target_price = 1090`, `mileage = 125428`, `is_public = 0`, `publishing_status = 'PENDING_REVIEW'`).
+       - Step 5: 2회차 무변동 실행 시 D1 전송 완벽 생략 (`SKIPPED_NO_CHANGES`).
+       - Step 6: 관리자 API를 통한 실제 D1 레코드 조회 검증.
+       - Step 7: 고객용 공개 API 0대 격리 확인 (전체 7단계 100% PASS).
+- **ISSUE-154 [P0 인증된 관리자 전용 실매물 API 구축 및 실제 D1 기반 검수 화면 캡처]**:
+  - 조치:
+    1. `_worker.js`에 `GET /api/admin/vehicles/:id` 엔드포인트 구현: 토큰(`X-Admin-Token` 또는 `?token=...`) 검증 후 비공개 차량도 D1 원격 실시간 레코드와 연결된 사진 9장을 포함한 전체 JSON 1:1 반환.
+    2. 하드코딩이나 브라우저 주입을 전면 배제하고, Playwright 브라우저가 실제 D1 관리자 API를 직접 호출하여 렌더링한 화면을 스크린샷으로 캡처 보존:
+       - `directive136_pc_admin_detail_real.png` (D1 실제 원격 데이터 기반 PC 관리자 검수 프리뷰)
+       - `directive136_mobile_admin_detail_real.png` (D1 실제 원격 데이터 기반 모바일 관리자 검수 프리뷰)
+       - `directive136_pc_public_list_zero.png` (고객용 공개 목록 0대 차단 입증)
+       - `directive136_mobile_public_list_zero.png` (고객용 모바일 공개 목록 0대 차단 입증)
+- **ISSUE-155 [P1 사용자 승인 후 운영 체계 확립 - 상사 단위 사전 승인 및 지속 파이프라인 완성]**:
+  - 조치:
+    1. 제휴 상사 (주)더쿨모터스(`dealer-thecool-motors`, 대표자 `유동호`, `marketing_consent_verified = 1`, `photo_consent_verified = 1`) 검증 완료.
+    2. 사용자가 향후 실매물 공개를 승인하면, 해당 차량은 가격이 바뀌어도 공개 상태를 유지하고, 카매니저에서 판매완료/광고중지 시 자동으로 차마트에서 내려가는 완전 자동화 라이프사이클 체계 확립.
+
+
 
 
