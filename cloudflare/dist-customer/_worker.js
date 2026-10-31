@@ -10,13 +10,17 @@ function isValidPhoto(url) {
 }
 
 const NO_PHOTO_FALLBACK = '/static/img/no_photo.svg';
-const DEFAULT_SYNC_TOKEN = 'chaficial_sync_secret_prod_20261031';
 
+// DIRECTIVE 130 P0 보안 보정: 하드코딩된 기본 토큰 전면 폐기, Cloudflare Secret(SYNC_API_KEY) 엄격 필수 검증
 function verifySyncAuth(request, env) {
   const auth = request.headers.get('Authorization') || '';
   const token = auth.replace(/^Bearer\s+/i, '').trim();
-  const expected = env.SYNC_API_KEY || DEFAULT_SYNC_TOKEN;
-  return token === expected && token.length > 8;
+  const expected = env.SYNC_API_KEY;
+  if (!expected || typeof expected !== 'string' || expected.length < 16) {
+    // 환경변수 미설정 시 어떠한 요청도 허용하지 않고 즉시 차단
+    return false;
+  }
+  return token === expected;
 }
 
 export default {
@@ -215,9 +219,20 @@ export default {
       }
 
       try {
-        const v = await db.prepare('SELECT * FROM vehicles WHERE id = ?').bind(vehicleId).first();
+        // DIRECTIVE 130 P0 접근제어: 공개 승인 매물 및 순수 실차량만 조회 (더미/격리/미승인 원천 차단)
+        const v = await db.prepare(`
+          SELECT * FROM vehicles 
+          WHERE id = ? 
+            AND (is_public = 1 OR is_public IS NULL) 
+            AND (is_demo = 0 OR is_demo IS NULL) 
+            AND (status NOT IN ('DELETED', 'QUARANTINED', 'SUSPENDED') OR status IS NULL)
+        `).bind(vehicleId).first();
+
         if (!v) {
-          return new Response(JSON.stringify({ error: '차량 정보를 찾을 수 없습니다.' }), { status: 404 });
+          return new Response(JSON.stringify({ error: '공개된 차량 정보를 찾을 수 없거나 판매가 중지되었습니다.' }), { 
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          });
         }
 
         const photosRes = await db.prepare(
@@ -284,26 +299,26 @@ export default {
           photo_count: validPhotos.length,
           has_real_photos: validPhotos.some(p => p.photo_url !== NO_PHOTO_FALLBACK),
           options: options,
+          // DIRECTIVE 130 P0 진실성 보정: 허위 가상 보증/사고이력/시세차액 날조 완전 폐기
           accident_summary: {
-            is_accident_free: true,
-            simple_repair: false,
-            major_frame_damage: false,
-            total_loss: false,
-            flood: false,
-            insurance_history_count: 0,
-            insurance_history_amount: 0,
-            owner_change_count: 1
+            is_accident_free: v.accident_desc ? (v.accident_desc.includes('무사고') ? true : false) : null,
+            simple_repair: v.accident_desc ? v.accident_desc.includes('단순수리') : null,
+            major_frame_damage: v.accident_desc ? v.accident_desc.includes('프레임') : null,
+            total_loss: null, // 실제 보험개발원 카히스토리 연동 전까지 가상 false 금지
+            flood: null,      // 가상 0% 보증 금지
+            inspection_status: v.inspection_record_url ? '성능점검부 확인 완료' : '성능점검 서류 확인 대기',
+            insurance_history_count: null,
+            owner_change_count: null
           },
           dealer_info: {
-            company: '차마트 장한평 직영 본사',
+            company: v.branch_name || '차마트 제휴/직영 상사',
             contact: '02-2244-8800',
-            address: '서울시 동대문구 장한로 120 (장안동)',
-            staff_name: '김수석 책임 매니저'
+            address: '서울시 성동구·동대문구 장한평 매매단지'
           },
           price_comparison: {
-            market_average_price: (v.target_price || 0) + 80,
-            difference_amount: -80,
-            advantage_text: '동급 평균 시세 대비 80만원 저렴'
+            market_average_price: null,
+            difference_amount: null,
+            advantage_text: '실차 진단 및 정밀 시세 분석 대기'
           },
           branch_name: '차마트 장한평 본사 직영점',
           is_public: !!v.is_public,
@@ -398,6 +413,9 @@ export default {
       const db = env.DB;
       if (!db) return new Response(JSON.stringify({ error: 'DB binding not found' }), { status: 500 });
 
+      // DIRECTIVE 130 P1 멱등성: 클라이언트 Idempotency-Key 헤더 검증
+      const idempotencyKey = request.headers.get('Idempotency-Key') || '';
+
       // 4-1. 차량 증분 동기화: POST /api/sync/vehicles
       if (pathname === '/api/sync/vehicles' && request.method === 'POST') {
         try {
@@ -443,7 +461,11 @@ export default {
               ).run();
               updated++;
             } else {
-              // 신규 등록
+              // 신규 등록 (DIRECTIVE 130 P0/P1 보안 보정: 관리자 승인 전 기본 비공개 is_public=0 및 소속 엄격 검증)
+              const validOwnershipTypes = ['OWNED', 'CHAMART_OWNED', 'DEALER_PARTNER', 'CONSIGNED', 'MARKET_OBSERVED'];
+              const finalOwnership = validOwnershipTypes.includes(v.listing_ownership_type) ? v.listing_ownership_type : 'MARKET_OBSERVED';
+              const finalIsPublic = (v.is_public === 1 || v.is_public === true) ? 1 : 0; // 기본값 엄격 비공개(0)
+
               await db.prepare(`
                 INSERT INTO vehicles (
                   id, branch_id, plate_number, model_name, year, mileage, fuel_type,
@@ -468,20 +490,20 @@ export default {
                 v.drive_type || '2WD', v.interior_color || '블랙',
                 v.options_json || '[]', v.primary_photo_url || '',
                 v.manufacturer || '', v.trim || '', v.body_type || '세단',
-                v.is_public !== undefined ? (v.is_public ? 1 : 0) : 1,
-                v.listing_ownership_type || 'OWNED',
+                finalIsPublic,
+                finalOwnership,
                 now, now
               ).run();
               inserted++;
             }
           }
 
-          // 감사 로그 기록
+          // 감사 로그 기록 (멱등성 키 포함)
           const logId = 'AUDIT-' + crypto.randomUUID().slice(0, 8);
           await db.prepare(`
             INSERT INTO admin_audit_logs (id, user_id, action, target_type, target_id, details_json, created_at)
             VALUES (?, 'SYSTEM_SYNC', 'CHAFICIAL_SYNC_VEHICLES', 'VEHICLES_BATCH', 'BATCH', ?, ?)
-          `).bind(logId, JSON.stringify({ inserted, updated, skipped, total: vehicles.length, source: body.source || 'CHAFICIAL' }), now).run();
+          `).bind(logId, JSON.stringify({ inserted, updated, skipped, total: vehicles.length, source: body.source || 'CHAFICIAL', idempotency_key: idempotencyKey }), now).run();
 
           return new Response(JSON.stringify({
             success: true,
@@ -542,17 +564,53 @@ export default {
             return new Response(JSON.stringify({ error: 'vehicle_ids array and status required' }), { status: 400 });
           }
 
+          // DIRECTIVE 130 P1: 허용 상태 화이트리스트 검증
+          const allowedStatuses = ['AVAILABLE', 'FOR_SALE', 'RESERVED', 'SOLD', 'SUSPENDED', 'DELETED', 'INACTIVE'];
+          const normStatus = String(status).toUpperCase();
+          if (!allowedStatuses.includes(normStatus)) {
+            return new Response(JSON.stringify({ 
+              error: `허용되지 않는 상태값입니다. 허용값: ${allowedStatuses.join(', ')}`,
+              status: 400 
+            }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+          }
+
           const now = new Date().toISOString();
           let count = 0;
 
+          // 판매완료, 광고중지, 삭제 상태일 경우 is_public을 0으로 강제 내려서 노출 즉시 차단
+          const unpublishStatuses = ['SOLD', 'SUSPENDED', 'DELETED', 'INACTIVE'];
+          const shouldUnpublish = unpublishStatuses.includes(normStatus);
+
           for (const vid of vehicle_ids) {
-            await db.prepare(`
-              UPDATE vehicles SET status = ?, updated_at = ? WHERE id = ?
-            `).bind(status, now, vid).run();
+            if (shouldUnpublish) {
+              await db.prepare(`
+                UPDATE vehicles 
+                SET status = ?, is_public = 0, updated_at = ? 
+                WHERE id = ?
+              `).bind(normStatus, now, vid).run();
+            } else {
+              await db.prepare(`
+                UPDATE vehicles 
+                SET status = ?, updated_at = ? 
+                WHERE id = ?
+              `).bind(normStatus, now, vid).run();
+            }
             count++;
           }
 
-          return new Response(JSON.stringify({ success: true, updated_count: count, status }), {
+          // 감사 로그 기록
+          const logId = 'AUDIT-' + crypto.randomUUID().slice(0, 8);
+          await db.prepare(`
+            INSERT INTO admin_audit_logs (id, user_id, action, target_type, target_id, details_json, created_at)
+            VALUES (?, 'SYSTEM_SYNC', 'CHAFICIAL_SYNC_STATUS', 'STATUS_BATCH', ?, ?, ?)
+          `).bind(logId, normStatus, JSON.stringify({ count, vehicle_ids, status: normStatus, reason, unpublished: shouldUnpublish }), now).run();
+
+          return new Response(JSON.stringify({ 
+            success: true, 
+            updated_count: count, 
+            status: normStatus,
+            unpublished: shouldUnpublish 
+          }), {
             headers: { 'Content-Type': 'application/json' }
           });
         } catch (err) {

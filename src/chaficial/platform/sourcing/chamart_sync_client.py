@@ -14,17 +14,22 @@ import sqlite3
 import hashlib
 import urllib.request
 import urllib.error
+from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 DEFAULT_PROD_URL = "https://chamart.cc"
-DEFAULT_SYNC_TOKEN = "chaficial_sync_secret_prod_20261031"
 
 class ChamartSyncClient:
     def __init__(self, db_path: str = "data/chamart/chamart_platform_demo.db", target_url: str = DEFAULT_PROD_URL, api_key: Optional[str] = None):
         self.db_path = db_path
         self.target_url = (os.environ.get("CHAMART_API_URL") or target_url).rstrip("/")
-        self.api_key = os.environ.get("CHAMART_SYNC_API_KEY") or api_key or DEFAULT_SYNC_TOKEN
+        # DIRECTIVE 130 P0 보안 보정: 하드코딩 기본 토큰 폐기, 환경변수 또는 명시적 인자 필수
+        self.api_key = os.environ.get("CHAMART_SYNC_API_KEY") or api_key
+        if not self.api_key:
+            sec_file = Path("data/.chamart_sync_secret")
+            if sec_file.exists():
+                self.api_key = sec_file.read_text(encoding="utf-8").strip()
         self._init_outbox()
 
     def _get_connection(self):
@@ -109,23 +114,41 @@ class ChamartSyncClient:
         conn.commit()
         conn.close()
 
-    def _send_request(self, endpoint: str, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """HTTPS API 안전 호출 (Bearer 토큰 인증 + 타임아웃 10초)"""
+    def _send_request(self, endpoint: str, payload: Dict[str, Any], max_retries: int = 3) -> Dict[str, Any]:
+        """HTTPS API 안전 호출 (Bearer 토큰 인증 + SHA-256 멱등성 키 + 지수 백오프 재시도)"""
         url = f"{self.target_url}{endpoint}"
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(
-            url,
-            data=data,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.api_key}",
-                "User-Agent": "Chaficial-Sync-Engine/1.0"
-            },
-            method="POST"
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            body = resp.read().decode("utf-8")
-            return json.loads(body)
+        raw_bytes = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        idempotency_key = hashlib.sha256(raw_bytes).hexdigest()
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+            "Idempotency-Key": idempotency_key,
+            "User-Agent": "Chaficial-Sync-Engine/1.0"
+        }
+
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                req = urllib.request.Request(url, data=raw_bytes, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    body = resp.read().decode("utf-8")
+                    return json.loads(body)
+            except urllib.error.HTTPError as e:
+                # 4xx 클라이언트 에러는 재시도하지 않고 즉시 예외 발생
+                if 400 <= e.code < 500:
+                    err_body = e.read().decode("utf-8") if e.fp else str(e)
+                    raise RuntimeError(f"HTTP {e.code}: {err_body}")
+                last_error = e
+            except Exception as e:
+                last_error = e
+
+            # 5xx 또는 네트워크 단절 시 지수 백오프 대기 (2^attempt * 0.5초)
+            if attempt < max_retries - 1:
+                backoff_sec = (2 ** attempt) * 0.5
+                time.sleep(backoff_sec)
+
+        raise last_error or RuntimeError("Request failed after retries")
 
     def drain_outbox(self, max_batch_size: int = 50) -> Dict[str, int]:
         """아웃박스 누락분 자동 전송 및 재시도 처리 (지수 백오프 적용)"""

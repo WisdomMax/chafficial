@@ -61,6 +61,36 @@ class TestChamartSyncPipeline(unittest.TestCase):
         self.assertEqual(retry_count, 1)
         self.assertIn("Connection refused", last_error)
 
+    def test_sha256_idempotency_header_and_backoff(self):
+        """SHA-256 멱등성 키 생성 및 지수 백오프 로직 검증"""
+        payload = {"vehicle_ids": ["car_001"], "status": "SOLD", "reason": "CONTRACT_DONE"}
+        
+        # urllib.request.urlopen을 모의하여 Idempotency-Key 헤더 확인
+        with patch("urllib.request.urlopen") as mock_urlopen:
+            mock_resp = MagicMock()
+            mock_resp.read.return_value = json.dumps({"success": True, "count": 1}).encode("utf-8")
+            mock_urlopen.return_value.__enter__.return_value = mock_resp
+            
+            self.client.api_key = "test_valid_secret_key_12345678"
+            res = self.client._send_request("/api/sync/status", payload)
+            
+            # 호출된 Request 객체에서 Idempotency-Key 검증
+            call_args = mock_urlopen.call_args
+            req_obj = call_args[0][0]
+            idempotency_header = req_obj.get_header("Idempotency-key")
+            
+            import hashlib
+            expected_hash = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
+            self.assertEqual(idempotency_header, expected_hash)
+            self.assertTrue(res.get("success"))
+
+    def test_security_no_hardcoded_token_fallback(self):
+        """하드코딩된 기본 비밀키 부재 및 엄격한 보안 차단 검증"""
+        # 환경변수나 파일이 없을 때 api_key가 None이어야 함
+        with patch.dict(os.environ, {}, clear=True):
+            client = ChamartSyncClient(db_path=self.test_db, api_key=None)
+            self.assertIsNone(client.api_key)
+
     def test_successful_drain(self):
         """정상 네트워크 상태에서 PENDING -> SENT 전이 검증"""
         v = {"id": "car_success_001", "plate_number": "33다3333", "model_name": "그랜저"}

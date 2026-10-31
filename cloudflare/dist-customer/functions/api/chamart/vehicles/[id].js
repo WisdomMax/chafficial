@@ -19,9 +19,20 @@ export async function onRequestGet({ request, params, env }) {
   }
 
   try {
-    const v = await db.prepare('SELECT * FROM vehicles WHERE id = ?').bind(vehicleId).first();
+    // DIRECTIVE 130 P0 접근제어: 공개 승인 매물 및 순수 실차량만 조회 (더미/격리/미승인 원천 차단)
+    const v = await db.prepare(`
+      SELECT * FROM vehicles 
+      WHERE id = ? 
+        AND (is_public = 1 OR is_public IS NULL) 
+        AND (is_demo = 0 OR is_demo IS NULL) 
+        AND (status NOT IN ('DELETED', 'QUARANTINED', 'SUSPENDED') OR status IS NULL)
+    `).bind(vehicleId).first();
+
     if (!v) {
-      return new Response(JSON.stringify({ error: '차량 정보를 찾을 수 없습니다.' }), { status: 404 });
+      return new Response(JSON.stringify({ error: '공개된 차량 정보를 찾을 수 없거나 판매가 중지되었습니다.' }), { 
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const photosRes = await db.prepare(
@@ -85,26 +96,26 @@ export async function onRequestGet({ request, params, env }) {
       photo_count: validPhotos.length,
       has_real_photos: validPhotos.some(p => p.photo_url !== NO_PHOTO_FALLBACK),
       options: options,
+      // DIRECTIVE 130 P0 진실성 보정: 허위 가상 보증/사고이력/시세차액 날조 완전 폐기
       accident_summary: {
-        is_accident_free: true,
-        simple_repair: false,
-        major_frame_damage: false,
-        total_loss: false,
-        flood: false,
-        insurance_history_count: 0,
-        insurance_history_amount: 0,
-        owner_change_count: 1
+        is_accident_free: v.accident_desc ? (v.accident_desc.includes('무사고') ? true : false) : null,
+        simple_repair: v.accident_desc ? v.accident_desc.includes('단순수리') : null,
+        major_frame_damage: v.accident_desc ? v.accident_desc.includes('프레임') : null,
+        total_loss: null,
+        flood: null,
+        inspection_status: v.inspection_record_url ? '성능점검부 확인 완료' : '성능점검 서류 확인 대기',
+        insurance_history_count: null,
+        owner_change_count: null
       },
       dealer_info: {
-        company: '차마트 장한평 직영 본사',
+        company: v.branch_name || '차마트 제휴/직영 상사',
         contact: '02-2244-8800',
-        address: '서울시 동대문구 장한로 120 (장안동)',
-        staff_name: '김수석 책임 매니저'
+        address: '서울시 성동구·동대문구 장한평 매매단지'
       },
       price_comparison: {
-        market_average_price: (v.target_price || 0) + 80,
-        difference_amount: -80,
-        advantage_text: '동급 평균 시세 대비 80만원 저렴'
+        market_average_price: null,
+        difference_amount: null,
+        advantage_text: '실차 진단 및 정밀 시세 분석 대기'
       },
       branch_name: '차마트 장한평 본사 직영점',
       is_public: !!v.is_public,
