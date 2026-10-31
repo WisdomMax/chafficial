@@ -312,26 +312,26 @@ export default {
         const detail = {
           id: v.id,
           plate_number: v.plate_number,
-          vin: v.vin || '',
+          vin: v.vin || null,
           manufacturer: v.manufacturer || (v.model_name.startsWith('기아') ? '기아' : v.model_name.startsWith('제네시스') ? '제네시스' : '현대'),
           model_name: v.model_name,
-          trim: v.trim || '기본형',
+          trim: v.trim || null,
           year: v.year,
-          first_registration_date: v.first_registration_date || `${v.year}-01-01`,
+          first_registration_date: v.first_registration_date || null,
           mileage: v.mileage,
-          displacement_cc: v.displacement_cc || 1999,
+          displacement_cc: v.displacement_cc || null,
           fuel_type: v.fuel_type,
           transmission: v.transmission,
-          drive_type: v.drive_type || '2WD',
-          body_type: v.body_type || '세단',
+          drive_type: v.drive_type || null,
+          body_type: v.body_type || null,
           color: v.color,
-          interior_color: v.interior_color || '블랙',
+          interior_color: v.interior_color || null,
           target_price: v.target_price,
           monthly_payment_estimate: Math.round((v.target_price || 0) * 10000 / 48 / 10000),
-          sales_conditions: v.sales_conditions || '당일 즉시 출고 가능, 침수·전손 100% 환불 보증',
-          ad_description: v.ad_description || `${v.model_name} 실차 무사고 확인 보증 매물입니다.`,
-          ad_highlights: v.ad_highlights || '장한평 실차 점검 완료, 실매물 인증',
-          ad_notices: v.ad_notices || '장한평 본사 100% 실매물, 예약 후 방문 시 시승 가능합니다.',
+          sales_conditions: v.sales_conditions || '실차 진단 및 상세 조건 확인 대기',
+          ad_description: v.ad_description || `${v.model_name} 실매물 차량입니다.`,
+          ad_highlights: v.ad_highlights || '실차 등록 정보 확인 대기',
+          ad_notices: v.ad_notices || '방문 예약 후 현장에서 실차 확인이 가능합니다.',
           photos: validPhotos,
           photo_count: validPhotos.length,
           has_real_photos: validPhotos.some(p => p.photo_url !== NO_PHOTO_FALLBACK),
@@ -494,6 +494,7 @@ export default {
       const nowIso = new Date().toISOString();
 
       // 원자적 멱등성 락 획득 (INSERT PK 충돌 제약 활용)
+      let activeLockUpdatedAt = nowIso;
       try {
         await db.prepare(`
           INSERT INTO sync_idempotency_keys (idempotency_key, endpoint, payload_hash, status, created_at, updated_at)
@@ -544,6 +545,7 @@ export default {
                 code: 'IDEMPOTENCY_CONCURRENT_RETRY'
               }), { status: 409, headers: { 'Content-Type': 'application/json' } });
             }
+            activeLockUpdatedAt = nowIso;
           } else if (existingKey.status === 'IN_PROGRESS') {
             // 5) 60초 초과 Stale Lock 타임아웃 재선점
             const updatedAt = new Date(existingKey.updated_at || existingKey.created_at).getTime();
@@ -558,6 +560,7 @@ export default {
                   code: 'IDEMPOTENCY_IN_PROGRESS'
                 }), { status: 409, headers: { 'Content-Type': 'application/json' } });
               }
+              activeLockUpdatedAt = nowIso;
             } else {
               return new Response(JSON.stringify({
                 error: '동일한 멱등성 키를 가진 요청이 현재 처리 중입니다 (동시 요청 방어).',
@@ -661,8 +664,8 @@ export default {
 
           // 멱등성 테이블 COMPLETED 업데이트
           await db.prepare(
-            "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
-          ).bind(JSON.stringify(resultObj), now, idempotencyKey).run();
+            "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?"
+          ).bind(JSON.stringify(resultObj), now, idempotencyKey, activeLockUpdatedAt).run();
 
           return new Response(JSON.stringify(resultObj), { headers: { 'Content-Type': 'application/json' } });
         } catch (err) {
@@ -704,8 +707,8 @@ export default {
           const resultObj = { success: true, vehicle_id, photo_count: photoInserted, idempotency_key: idempotencyKey };
 
           await db.prepare(
-            "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
-          ).bind(JSON.stringify(resultObj), now, idempotencyKey).run();
+            "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?"
+          ).bind(JSON.stringify(resultObj), now, idempotencyKey, activeLockUpdatedAt).run();
 
           return new Response(JSON.stringify(resultObj), { headers: { 'Content-Type': 'application/json' } });
         } catch (err) {
@@ -774,8 +777,8 @@ export default {
           };
 
           await db.prepare(
-            "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ?"
-          ).bind(JSON.stringify(resultObj), now, idempotencyKey).run();
+            "UPDATE sync_idempotency_keys SET status = 'COMPLETED', response_json = ?, updated_at = ? WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?"
+          ).bind(JSON.stringify(resultObj), now, idempotencyKey, activeLockUpdatedAt).run();
 
           return new Response(JSON.stringify(resultObj), { headers: { 'Content-Type': 'application/json' } });
         } catch (err) {

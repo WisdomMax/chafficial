@@ -242,3 +242,13 @@
 - **ISSUE-120 [P0 멱등성 실패 복구 & 엣지 캐시 즉시 만료]**:
   - 원인: `sync_idempotency_keys`에서 `FAILED` 키 재선점 불가, 엔드포인트 상이 시 미검증, 목록 API 엣지 캐시(60초)로 판매완료 즉시 미반영.
   - 조치: 엔드포인트 상이 시 `409 IDEMPOTENCY_ENDPOINT_MISMATCH`, `status='FAILED'` 원자적 재선점 허용, 60초 초과 stale lock 재선점 구현. 목록 API `Cache-Control: public, max-age=0, must-revalidate` 적용. D1 마이그레이션 `0002_directive_131_idempotency.sql` 배포.
+
+### 3. DIRECTIVE 131-R / HOTFIX-B 결함 조치 이력 (ISSUE-121 ~ ISSUE-124)
+- **ISSUE-121 [P0 상세정보 진실성 - 미확인 제원 기본값 및 가상 보증 문구 잔존]**:
+  - 조치: `_worker.js` 및 `functions/api/chamart/vehicles/[id].js` 내 배기량(1999cc), 구동방식(2WD), 연초일(`year-01-01`), 침수·전손 보증, 무사고 하드코딩 전면 삭제. 미확인 정보는 전부 `null` 또는 `'실차 진단 및 상세 조건 확인 대기'`로 통일.
+- **ISSUE-122 [P0 비교 화면 가상 에셋 누수 - `ui_fixtures/아반떼_01.jpg` 대체 사진]**:
+  - 조치: 차량 비교 모달 렌더러 내 하드코딩 대체 이미지 `/static/img/ui_fixtures/아반떼_01.jpg`를 전면 삭제하고 `resolveFrontendCarPhoto(v)`를 적용하여 정직한 `no_photo.svg` 강제.
+- **ISSUE-123 [P0 공개 권한 검증 - 4대 시연 매물 출처 미확인 비공개 전환]**:
+  - 조치: D1 공개 승인 매물 4대(`88오 1512`, `99다 3635`, `77조 7788`, `88오 5001`) 전수 검사 결과 상사/직영 판매 권한 미증명 매물로 확인되어 `is_public = 0`, `publishing_status = 'PENDING_REVIEW'`로 안전 격리. 공개 목록 내 가상·미확인 매물 노출 0건 입증.
+- **ISSUE-124 [P0 멱등성 락 지연 완료 덮어쓰기 방어 (Optimistic Locking Guard)]**:
+  - 조치: 60초 임대 만료 후 구 작업자의 지연 완료 처리가 신규 작업자를 덮어쓰지 못하도록 `WHERE idempotency_key = ? AND status = 'IN_PROGRESS' AND updated_at = ?` 조건부 갱신 강제. stale worker overwrite 원천 차단.

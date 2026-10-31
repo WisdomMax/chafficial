@@ -12,13 +12,13 @@
         "quarantined_demo_photos": 2000,
         "consultations": 30,
         "transactions": 37,
-        "public_approved_vehicles": 4,
+        "public_approved_vehicles": 0,
         "public_demo_leak_count": 0,
         "gv70_leak_count": 0
       },
       "gv70_isolated": true,
       "public_demo_leak_count": 0,
-      "public_approved_vehicles": 4
+      "public_approved_vehicles": 0
     },
     "TASK_4_backup_restore_verification": {
       "status": "PASS",
@@ -29,7 +29,7 @@
       "verified_loss": 0
     },
     "TASK_4_deployment_traceability": {
-      "git_commit": "7d83afbecf70d0af492a0563ce1dcc79d2d783c0",
+      "git_commit": "74c4f7a205b20cadd446479e6da82b6576788274",
       "git_branch": "feat/directive-052-security-publishing-content-remediation",
       "cloudflare_project": "chamart",
       "production_branch": "main",
