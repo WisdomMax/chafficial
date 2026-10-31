@@ -59,6 +59,8 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
                 print("[!] Aborting database writes completely (0 writes performed) to prevent false delisting.", file=sys.stderr)
                 sys.exit(1)
             all_cars = collect_res.get("cars", [])
+            summary = collect_res
+            capture_time = summary.get("collected_at") or datetime.now().isoformat()
             print(f"[+] Successfully harvested {len(all_cars)} verified complete cars from CarManager.")
         except Exception as e:
             print(f"[!] Live collection failed with exception: {e}", file=sys.stderr)
@@ -98,29 +100,28 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
         print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
         raise RuntimeError(f"Total harvested vehicle count ({len(all_cars)}) is below minimum floor ({MIN_TOTAL_FLOOR}).")
 
-    # [DIRECTIVE 137-R]: DealershipRegistry 기반 공식 제휴 상사 및 시장 관측 매물 분리
+    # [DIRECTIVE 137-CLOSE]: DealershipRegistry 기반 엄격한 동등 비교 및 카매니저 등록 / 광고 권한 분리
     registry = DealershipRegistry()
     owned_cars = []
     market_cars = []
+    ad_approved_count = 0
     for c in all_cars:
         shop = c.get("shop") or c.get("sangsa_name") or ""
-        is_auth, partner_info, reason = registry.verify_advertising_authorization(shop)
-        if is_auth:
+        dealership_res = registry.inspect_dealership(shop)
+        if dealership_res["is_partner_dealership"]:
+            partner_info = dealership_res["partner_info"]
             c["authorized_dealership_id"] = partner_info["dealership_id"]
             c["authorized_partner_name"] = partner_info["official_name"]
+            c["advertising_consent_status"] = partner_info.get("advertising_consent", {}).get("status", "PENDING_CONFIRMATION")
+            if dealership_res["is_advertising_approved"]:
+                ad_approved_count += 1
             owned_cars.append(c)
         else:
             market_cars.append(c)
 
-    print(f"[*] Partitioned vehicles by Registry: AUTHORIZED_PARTNERS={len(owned_cars)}대 | MARKET_OBSERVED={len(market_cars)}대")
+    print(f"[*] Partitioned vehicles by Registry: REGISTERED_PARTNERS={len(owned_cars)}대 (Ad-Approved={ad_approved_count}대) | MARKET_OBSERVED={len(market_cars)}대")
 
-    # 2. 제휴 상사 수집량 하한선 검증
-    if len(owned_cars) < MIN_OWNED_FLOOR:
-        print(f"[!] CRITICAL GUARD: Authorized partner vehicle count ({len(owned_cars)}) is below minimum floor ({MIN_OWNED_FLOOR}).", file=sys.stderr)
-        print("[!] Aborting database writes completely to protect owned inventory.", file=sys.stderr)
-        raise RuntimeError(f"Authorized partner vehicle count ({len(owned_cars)}) is below minimum floor ({MIN_OWNED_FLOOR}).")
-
-    # 3. 시장 관측 수집량 하한선 검증
+    # 2. 시장 관측 수집량 하한선 검증 (전체 장한평 시장 분석 데이터 무결성 보호)
     if len(market_cars) < MIN_MARKET_FLOOR:
         print(f"[!] CRITICAL GUARD: Market observed vehicle count ({len(market_cars)}) is below minimum floor ({MIN_MARKET_FLOOR}).", file=sys.stderr)
         print("[!] Aborting database writes completely (0 writes performed) to protect data integrity.", file=sys.stderr)
@@ -172,14 +173,29 @@ def run_sync_pipeline(use_live_collector: bool = False, max_pages: int = 89, dry
         if "SUCCESS" not in ts_res.get("status", "") and "ALREADY_RECORDED" not in ts_res.get("status", ""):
             raise RuntimeError(f"Market TimeSeries failed with status '{ts_res.get('status')}'.")
 
-        # 5. 우리 상사 운영 동기화 (시계열 성공 확인 후 실행)
-        owned_res = service.run_sync(
-            current_snapshot=owned_cars, scope="OWNED", min_expected_count=MIN_OWNED_FLOOR, 
-            dry_run=dry_run, connection=atomic_conn, observation_mode=observation_mode, observed_at=ts_started
-        )
-        print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
-        if owned_res.get("status") != "SUCCESS":
-            raise RuntimeError(f"Owned Sync failed with status '{owned_res.get('status')}'.")
+        # 5. 우리 상사 운영 동기화 (DIRECTIVE 137-CLOSE: 1대 이상이면 1~9대, 74대 모두 누락 없이 동기화, 0대일 때도 owned_res 안전 정의)
+        if len(owned_cars) > 0:
+            owned_res = service.run_sync(
+                current_snapshot=owned_cars, scope="OWNED", min_expected_count=1, 
+                dry_run=dry_run, connection=atomic_conn, observation_mode=observation_mode, observed_at=ts_started
+            )
+            print(f"[+] Owned Scope Sync: Inspected={owned_res['total_inspected']}, New={owned_res['new_inserted']}, PriceChanged={owned_res['price_changed']}, Status={owned_res['status']}")
+            if owned_res.get("status") != "SUCCESS":
+                raise RuntimeError(f"Owned Sync failed with status '{owned_res.get('status')}'.")
+        else:
+            owned_res = {
+                "sync_id": "SKIPPED_EMPTY",
+                "scope": "OWNED",
+                "started_at": ts_started or datetime.now().isoformat(),
+                "total_inspected": 0,
+                "new_inserted": 0,
+                "price_changed": 0,
+                "sold_count": 0,
+                "delisted_count": 0,
+                "unchanged_count": 0,
+                "status": "SKIPPED_EMPTY"
+            }
+            print("[*] Owned Scope Sync: Skipped (0 registered partner cars found, market analysis fully preserved).")
 
         # 6. 장한평 시장 운영 동기화
         market_res = service.run_sync(

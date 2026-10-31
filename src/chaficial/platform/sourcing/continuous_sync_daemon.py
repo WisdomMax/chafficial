@@ -81,8 +81,14 @@ class ContinuousSyncDaemon:
             shop_name = str(c.get("shop") or c.get("sangsa") or "장한평일반상사").strip()
             shop_counter[shop_name] = shop_counter.get(shop_name, 0) + 1
 
-            # [DIRECTIVE 137-R]: DealershipRegistry 기반 정식 계약 및 광고 동의 정밀 검증
-            is_partner, partner_info, reason = registry.verify_advertising_authorization(shop_name)
+            # [DIRECTIVE 137-CLOSE]: DealershipRegistry 기반 엄격한 동등 비교 및 상사 등록 / 광고 권한 분리
+            # D1 비공개 인벤토리 관리를 위해 공인 제휴/등록 상사를 식별하되, 광고 권한(is_ad_approved)은 별도 분리
+            dealership_audit = registry.inspect_dealership(shop_name)
+            is_partner = dealership_audit["is_partner_dealership"]
+            is_ad_approved = dealership_audit["is_advertising_approved"]
+            partner_info = dealership_audit["partner_info"]
+            reason = dealership_audit["reason"]
+
             if is_partner:
                 authorized_partner_count += 1
                 ownership_type = "EXTERNAL"
@@ -118,6 +124,7 @@ class ContinuousSyncDaemon:
                 "primary_photo_url": c.get("thumbnail"),
                 "listing_ownership_type": ownership_type,
                 "is_authorized_partner": is_partner,
+                "is_advertising_approved": is_ad_approved,
                 "authorized_dealership_id": partner_id,
                 "authorization_reason": reason,
                 "data_source": "JANGHANPYEONG_MARKET_FULL"

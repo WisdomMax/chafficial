@@ -104,39 +104,41 @@ def run_directive_137_r_verification():
     logger.info(f"  [PASS] Step 2: 시장 규모 적응형 하한선(Total={MIN_TOTAL_FLOOR}, Owned={MIN_OWNED_FLOOR}, Market={MIN_MARKET_FLOOR}) 및 동적 정합성 검증 확인")
 
     # -------------------------------------------------------------
-    # Step 3: DealershipRegistry Contract & Advertising Consent Verification
+    # Step 3: DealershipRegistry Dealership Registration & Advertising Consent Verification (Decoupled)
     # -------------------------------------------------------------
-    logger.info("=== Step 3: DealershipRegistry Verification (Zero Substring Hack) ===")
+    logger.info("=== Step 3: DealershipRegistry Verification (Strict Decoupling & Exact Matching) ===")
     registry = DealershipRegistry()
-    assert len(registry.partners) >= 1, "At least 1 active partner dealership required in registry"
+    assert len(registry.partners) >= 1, "At least 1 registered partner dealership required in registry"
     
-    # 더쿨모터스 검증
-    is_cool_auth, cool_info, cool_reason = registry.verify_advertising_authorization("(주)더쿨모터스")
-    assert is_cool_auth is True, "The Cool Motors must be authorized by registry"
-    assert cool_info["contract_status"] == "ACTIVE", "Contract must be ACTIVE"
-    assert cool_info["advertising_consent"]["status"] == "APPROVED", "Advertising consent must be APPROVED"
-    logger.info(f"The Cool Motors: is_auth={is_cool_auth}, id={cool_info['dealership_id']}, reason={cool_reason}")
+    # 더쿨모터스 검증 (DIRECTIVE 137-CLOSE: 카매니저 상사 등록은 ACTIVE, 차마트 광고 권한은 PENDING_CONFIRMATION)
+    cool_res = registry.inspect_dealership("(주)더쿨모터스")
+    assert cool_res["is_partner_dealership"] is True, "The Cool Motors must be registered dealership"
+    assert cool_res["is_advertising_approved"] is False, "The Cool Motors ad consent must remain PENDING_CONFIRMATION (Not approved)"
+    assert cool_res["partner_info"]["contract_status"] == "ACTIVE", "Contract must be ACTIVE"
+    assert cool_res["partner_info"]["advertising_consent"]["status"] == "PENDING_CONFIRMATION", "Advertising consent must be PENDING_CONFIRMATION"
+    logger.info(f"The Cool Motors: is_partner={cool_res['is_partner_dealership']}, is_ad_approved={cool_res['is_advertising_approved']}, reason={cool_res['reason']}")
 
     # 타 상사(선인자동차, 디케이드림카) 비인가 검증
-    is_seonin_auth, seonin_info, seonin_reason = registry.verify_advertising_authorization("선인자동차")
-    assert is_seonin_auth is False, "Seonin Motors must NOT be authorized for Chamart sales"
-    logger.info(f"Seonin Motors: is_auth={is_seonin_auth}, reason={seonin_reason}")
+    seonin_res = registry.inspect_dealership("선인자동차")
+    assert seonin_res["is_partner_dealership"] is False, "Seonin Motors must NOT be partner dealership"
+    assert seonin_res["is_advertising_approved"] is False, "Seonin Motors must NOT be ad approved"
+    logger.info(f"Seonin Motors: is_partner={seonin_res['is_partner_dealership']}, reason={seonin_res['reason']}")
 
     # 전체 1,764대 대상 레지스트리 분류 전수 검사
     partner_cars = []
     market_observed_cars = []
     for c in cars:
         shop = c.get("shop") or c.get("sangsa_name") or ""
-        auth, p_info, reason = registry.verify_advertising_authorization(shop)
-        if auth:
+        is_partner, p_info, reason = registry.identify_partner_dealership(shop)
+        if is_partner:
             partner_cars.append(c)
         else:
             market_observed_cars.append(c)
 
-    logger.info(f"Registry Split: Authorized Partners={len(partner_cars)}대, Market Observed={len(market_observed_cars)}대")
+    logger.info(f"Registry Split: Registered Partners={len(partner_cars)}대, Market Observed={len(market_observed_cars)}대")
     assert len(partner_cars) == 74, f"Expected 74 partner cars, got {len(partner_cars)}"
     assert len(market_observed_cars) == 1690, f"Expected 1690 observed cars, got {len(market_observed_cars)}"
-    logger.info("  [PASS] Step 3: DealershipRegistry 기반 정식 광고 권한 검증 완료 (제휴 74대 vs 시장관측 1,690대 완벽 분리)")
+    logger.info("  [PASS] Step 3: DealershipRegistry 기반 공인 상사 식별 및 광고 권한 분리 완료 (제휴 74대 vs 시장관측 1,690대 완벽 분리)")
 
     # -------------------------------------------------------------
     # Step 4: Chaficial AI Analysis DB Real Update Verification

@@ -1,29 +1,36 @@
 {
-  "version": "1.0.0",
-  "updated_at": "2026-10-31T17:33:00+09:00",
-  "registry_description": "차마트 공식 제휴 상사 및 광고 권한 레지스트리 (DIRECTIVE 137-R)",
+  "version": "1.2.0",
+  "updated_at": "2026-10-31T17:48:00+09:00",
+  "registry_description": "차마트 공식 제휴 상사 및 광고 권한 레지스트리 (DIRECTIVE 137-CLOSE)",
   "partner_dealerships": [
     {
       "dealership_id": "DEALER-THECOOL-001",
       "official_name": "(주)더쿨모터스",
-      "business_registration_number": "204-86-38410",
-      "representative_name": "홍길동",
-      "address": "서울특별시 성동구 자동차시장1길 70, 장한평매매단지",
-      "contact_phone": "02-2244-1234",
+      "danji_location": "서울특별시 성동구 용답동 자동차시장길, 장한평매매단지",
+      "verification_source": "CARMANAGER_OFFICIAL_DEALERSHIP_REGISTRATION",
       "contract_status": "ACTIVE",
+      "registered_dealers_count": 7,
+      "representative_dealers": [
+        {"name": "유동호", "phone": "010-5237-****", "role": "실매물 1호(64노3143) 전담 딜러 (연락처 마스킹 보호)"},
+        {"name": "김인원", "phone": "010-6214-****", "role": "소속 딜러 (연락처 마스킹 보호)"},
+        {"name": "김제철", "phone": "010-9556-****", "role": "소속 딜러 (연락처 마스킹 보호)"},
+        {"name": "조용준", "phone": "010-9265-****", "role": "소속 딜러 (연락처 마스킹 보호)"},
+        {"name": "이오덕", "phone": "010-2588-****", "role": "소속 딜러 (연락처 마스킹 보호)"},
+        {"name": "김민기", "phone": "010-7164-****", "role": "소속 딜러 (연락처 마스킹 보호)"},
+        {"name": "류태호", "phone": "010-8820-****", "role": "소속 딜러 (연락처 마스킹 보호)"}
+      ],
       "advertising_consent": {
-        "status": "APPROVED",
-        "consent_type": "CONTINUOUS_PARTNER_AGREEMENT",
-        "granted_at": "2026-10-25T00:00:00+09:00",
-        "valid_until": "2027-10-24T23:59:59+09:00",
-        "allowed_platforms": ["CHAMART_WEB", "CHAMART_MOBILE", "CHAFICIAL_AI"],
-        "max_vehicle_quota": 200,
-        "document_archive_ref": "DOC-AUTH-THECOOL-202610-001"
+        "status": "PENDING_CONFIRMATION",
+        "consent_type": "SEPARATE_ADVERTISING_AGREEMENT_REQUIRED",
+        "granted_at": null,
+        "allowed_platforms": [],
+        "max_vehicle_quota": 0,
+        "verification_evidence": "카매니저 공인 상사 등록 및 소속 딜러 7인 실차 매물(74대) 확인 완료 / 차마트 광고·사진 게재 권한은 상사 및 딜러별 개별 확인 대기 중(현재 미승인)"
       },
-      "danji_match_keys": [
+      "danji_exact_names": [
         "(주)더쿨모터스",
         "더쿨모터스",
-        "더쿨"
+        "주식회사 더쿨모터스"
       ]
     }
   ],
@@ -36,7 +43,11 @@
         "status": "UNAUTHORIZED",
         "consent_type": "NONE"
       },
-      "danji_match_keys": ["선인자동차"]
+      "danji_exact_names": [
+        "선인자동차",
+        "(주)선인자동차",
+        "주식회사 선인자동차"
+      ]
     },
     {
       "dealership_id": "DEALER-DKDREAM-003",
@@ -46,7 +57,11 @@
         "status": "UNAUTHORIZED",
         "consent_type": "NONE"
       },
-      "danji_match_keys": ["디케이드림카"]
+      "danji_exact_names": [
+        "디케이드림카",
+        "(주)디케이드림카",
+        "주식회사 디케이드림카"
+      ]
     }
   ]
 }

@@ -531,6 +531,43 @@
     4. 실매물 1호 `64노3143` 원격 D1 제원(125,428km / 1,090만원 / 사진 9장) 및 비공개(`is_public=0`) 유지, 고객용 공개 API 0대 격리 100% 확인.
     5. 종합 검증(`tests/test_directive_137_r_real_market_pipeline.py`) 7단계 100% PASS 합격.
 
+### 16. DIRECTIVE 137-FINAL-FIX: 실시간 운영 결함 및 상사 권한 실측 수정 (ISSUE-171 ~ ISSUE-173)
+- **ISSUE-171 [P0 `run_daily_sync.py --live` 실행 경로 내 `summary` 변수 미정의 결함 수정]**:
+  - 조치:
+    1. `use_live_collector=True` 경로에서 `collect_res` 반환 객체를 `summary = collect_res`로 즉시 바인딩하여 `capture_time`과 `capture_id` 추출 시 발생할 수 있는 잠재적 `NameError`를 원천 제거.
+- **ISSUE-172 [P0 더쿨모터스 임의 대표자('홍길동') 제거 및 카매니저 실측 등록 딜러 7인 메타데이터 동기화]**:
+  - 조치:
+    1. `authorized_partner_dealerships.json`에서 임의 문자열("홍길동") 및 가짜 계약번호를 전면 폐기.
+    2. 카매니저 실서버에 공인 등록된 실명 딜러 7인(유동호, 김인원, 김제철, 조용준, 이오덕, 김민기, 류태호) 및 실매물 1호 `64노3143` 전담 딜러(유동호, 010-5237-**** 마스킹 보호) 정보로 정확히 갱신.
+- **ISSUE-173 [P0 제휴 차량 수량 부족 시에도 장한평 전체 시장 분석 유지 보호 (파이프라인 결합도 분리)]**:
+  - 조치:
+    1. 제휴 매물(`owned_cars`)이 최소 하한선(`MIN_OWNED_FLOOR=10`) 미만일 때 전체 시장 동기화 파이프라인(`market_cars`, 1,690대)까지 중단되던 강결합 결함을 수정.
+    2. 제휴 상사 동기화만 안전하게 스킵(`skip_owned_sync=True`)하고, 장한평 전체 시장 관측 및 시계열 기록(`MarketTimeSeriesEngine`)은 100% 지속되도록 분리 보호.
+    3. 종합 E2E 7단계(`test_directive_137_r_real_market_pipeline.py`) 및 회귀 테스트 100% 통과 재확인.
+
+### 17. DIRECTIVE 137-CLOSE: 운영 오류 수정 및 광고 권한·개인정보 정정 (ISSUE-174 ~ ISSUE-177)
+- **ISSUE-174 [P0 제휴 매물 0~9대 동기화 보장 및 `owned_res` 안전 정의 (`UnboundLocalError` 원천 차단)]**:
+  - 조치:
+    1. `scripts/run_daily_sync.py`에서 `owned_cars`가 0대일 때 `owned_res`를 `SKIPPED_EMPTY` 상태의 명시적 딕셔너리로 안전 바인딩하여 스냅샷 아카이빙 시 `UnboundLocalError` 원천 차단.
+    2. 제휴 매물이 1대 이상이면 1~9대, 10대, 74대 등 모든 매물을 누락 없이 `service.run_sync(min_expected_count=1)`로 정상 동기화.
+    3. 격리된 테스트 DB에서 0대, 1대, 9대, 10대, 74대 시나리오를 전수 회귀 검증 완료 (`tests/test_directive_137_close_edge_cases.py` 7/7 PASS).
+- **ISSUE-175 [P0 상사 식별에서 부분문자열 매칭 영구 제거 및 정규화 동등 비교(`==`) 구축]**:
+  - 조치:
+    1. `src/chaficial/platform/dealerships/dealership_registry.py` 내 `any(k in cleaned_shop for k in match_keys)` 부분문자열 탐색 로직 전면 영구 삭제.
+    2. 상사 고유 ID, 공식 명칭, 등록된 정확한 별칭(`danji_exact_names`) 목록과의 엄격한 동등 비교(`==`)만 허용.
+    3. `"더쿨"`, `"더쿨자동차"`, `"더쿨모터스클럽"` 등 유사/부분문자열은 100% 매칭 거부(`UNREGISTERED_MARKET_OBSERVED_DEALERSHIP`) 검증 완료.
+- **ISSUE-176 [P0 카매니저 딜러 등록 정보와 차마트 광고·사진 게재 권한 분리 및 미승인(`PENDING_CONFIRMATION`) 정정]**:
+  - 조치:
+    1. 카매니저 공인 상사/딜러 등록 상태(`is_partner_dealership=True`)와 차마트 광고·사진 게재 권한(`is_advertising_approved=False`)을 명확히 분리.
+    2. 별도 서면/동의 증빙이 확인되지 않은 더쿨모터스 74대의 광고 권한을 `APPROVED`에서 `PENDING_CONFIRMATION`으로 전면 정정.
+    3. 공식 광고 권한 승인 대수: 0대, 광고 권한 확인 필요 대수: 74대, 고객용 홈페이지 공개 대수: 0대 유지.
+- **ISSUE-177 [P0 공개 GitHub 저장소 내 딜러 개인정보(휴대전화 번호) 마스킹 보호 및 비공개 격리]**:
+  - 조치:
+    1. `authorized_partner_dealerships.json` 및 공개 소스/문서 내 딜러 7인의 휴대전화 번호를 `010-XXXX-****` 형태로 마스킹 처리하여 프라이버시 보호.
+    2. 전체 평문 연락처는 로컬 비공개 설정 파일(`data/.dealership_contacts_private.json`, 권한 0600, `.gitignore` 적용)로 분리 격리.
+
+
+
 
 
 
