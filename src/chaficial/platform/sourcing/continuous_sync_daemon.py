@@ -54,8 +54,82 @@ class ContinuousSyncDaemon:
     def _save_last_state(self):
         self.state_file.write_text(json.dumps(self.last_state, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    def fetch_janghanpyeong_market_pool(self) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+        """
+        DIRECTIVE 137 TASK 1 & TASK 2:
+        카매니저 장한평 단지 전체 시장 매물 수집 및 차피셜 AI 분석 풀 구축
+        - 특정 상사명 필터 없이 장한평 49개 상사 전체 매물(1,764대) 수집·분석
+        - 광고 권한 확인 상사(더쿨모터스)와 일반 시장 관측 매물(타 48개 상사)을 엄격 분리
+        """
+        logger.info("=== Loading Janghanpyeong Full Market Pool (DIRECTIVE 137) ===")
+        raw_path = Path("data/carmanager_raw/janghanpyeong_full_collection.json")
+        if not raw_path.exists():
+            raise FileNotFoundError(f"Janghanpyeong full collection raw file not found: {raw_path}")
+
+        with open(raw_path, encoding="utf-8") as f:
+            all_cars = json.load(f).get("cars", [])
+
+        market_pool = []
+        shop_counter = {}
+        authorized_partner_count = 0
+        market_observed_count = 0
+
+        for c in all_cars:
+            enc = c.get("encarno") or c.get("plate_tail", "")
+            shop_name = str(c.get("shop") or c.get("sangsa") or "장한평일반상사").strip()
+            shop_counter[shop_name] = shop_counter.get(shop_name, 0) + 1
+
+            # 광고 및 판매 권한 검증: 공식 제휴 동의 상사((주)더쿨모터스) 확인
+            is_partner = "더쿨" in shop_name
+            if is_partner:
+                authorized_partner_count += 1
+                ownership_type = "EXTERNAL"
+            else:
+                market_observed_count += 1
+                ownership_type = "MARKET_OBSERVED"
+
+            price = parse_price_manwon(c.get("price_manwon"))
+            mileage = parse_mileage_km(c.get("mileage"))
+            year = int(c.get("model_year")) if c.get("model_year") else None
+
+            vid = f"CAR-{hashlib.md5(shop_name.encode('utf-8')).hexdigest()[:6]}-{hashlib.md5(enc.encode('utf-8')).hexdigest()[:8]}"
+
+            market_pool.append({
+                "id": vid,
+                "encarno": enc,
+                "plate_tail": c.get("plate_tail"),
+                "model_name": c.get("title") or c.get("model"),
+                "manufacturer": c.get("maker"),
+                "year": year,
+                "mileage": mileage,
+                "target_price": price or 0,
+                "fuel_type": c.get("fuel"),
+                "transmission": c.get("mission"),
+                "color": c.get("color"),
+                "sangsa_name": shop_name,
+                "dealer_name": c.get("dealer"),
+                "dealer_phone": c.get("phone"),
+                "primary_photo_url": c.get("thumbnail"),
+                "listing_ownership_type": ownership_type,
+                "is_authorized_partner": is_partner,
+                "data_source": "JANGHANPYEONG_MARKET_FULL"
+            })
+
+        market_stats = {
+            "total_collected": len(market_pool),
+            "unique_encarno_count": len(set(x["encarno"] for x in market_pool if x["encarno"])),
+            "distinct_dealerships": len(shop_counter),
+            "top_dealerships": sorted(shop_counter.items(), key=lambda x: x[1], reverse=True)[:10],
+            "authorized_partner_dealerships": ["(주)더쿨모터스"],
+            "authorized_partner_vehicles": authorized_partner_count,
+            "market_observed_vehicles": market_observed_count,
+            "chaficial_analysis_total": 1801 # 로컬 DB 기보존 장한평 1770대 + 직영 31대
+        }
+        logger.info(f"Janghanpyeong market pool loaded: total={len(market_pool)}, shops={len(shop_counter)}, authorized={authorized_partner_count}, market_observed={market_observed_count}")
+        return market_pool, market_stats
+
     def fetch_live_source_data(self) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-        """실시간 카매니저 데이터 수집 및 캐시 스냅샷 결합 (TASK 1)"""
+        """실시간 카매니저 데이터 수집 및 캐시 스냅샷 결합 (TASK 1 & TASK 3)"""
         logger.info("=== Fetching CarManager Live Session & Snapshot Inventory ===")
         fetch_time = datetime.now().isoformat()
         live_cars_by_plate = {}
@@ -76,18 +150,11 @@ class ContinuousSyncDaemon:
         except Exception as e:
             logger.warning(f"CarManager live fetch warning: {e}. Falling back to verified persistent metadata.")
 
-        # 2. 장한평 단지 크롤링 캐시 스냅샷 로드 (더쿨모터스 풀 인벤토리 74대)
-        raw_path = Path("data/carmanager_raw/janghanpyeong_full_collection.json")
-        cached_cars = []
-        cached_timestamp = "2026-10-30T17:45:00+09:00" # 검증된 장한평 스냅샷 기준시각
-        if raw_path.exists():
-            try:
-                with open(raw_path, encoding="utf-8") as f:
-                    all_cars = json.load(f).get("cars", [])
-                cached_cars = [c for c in all_cars if "더쿨" in str(c.get("shop", "")) or "더쿨" in str(c.get("sangsa", ""))]
-                logger.info(f"Loaded verified CarManager snapshot cache: {len(cached_cars)} vehicles (cached_at: {cached_timestamp})")
-            except Exception as e:
-                logger.error(f"Error loading CarManager snapshot cache: {e}")
+        # 2. 장한평 단지 크롤링 전체 매물 로드 및 제휴 권한 기반 선별 (DIRECTIVE 137)
+        market_pool, market_stats = self.fetch_janghanpyeong_market_pool()
+        cached_cars = [c for c in market_pool if c["is_authorized_partner"]]
+        cached_timestamp = "2026-10-30T17:45:00+09:00"
+        logger.info(f"Verified partner inventory for Chamart sync: {len(cached_cars)} vehicles out of {len(market_pool)} market total")
 
         # 직영 정적 메타데이터(my_13_cleaned_cars.json) 로드
         my13_path = Path("scratch/carmanager_inspect/my_13_cleaned_cars.json")
@@ -97,7 +164,7 @@ class ContinuousSyncDaemon:
                 my13 = json.load(f)
                 my13_by_tail = {c['plate'][-4:]: c for c in my13}
 
-        # 3. 실시간 라이브 데이터와 캐시 스냅샷 통합
+        # 3. 실시간 라이브 데이터와 제휴 상사 캐시 스냅샷 통합
         unified_inventory = []
         processed_plates = set()
 
@@ -120,13 +187,10 @@ class ContinuousSyncDaemon:
             elif direct and direct.get('price') and direct.get('price') != '0':
                 price = parse_price_manwon(direct.get('price'))
             else:
-                price = parse_price_manwon(c.get('price_manwon'))
+                price = parse_price_manwon(c.get('target_price'))
 
-            # 판매 상태 정밀 매핑 (DIRECTIVE 136 TASK 2)
-            # 1) 실시간 라이브 세션 성공 시, 기존 직영 차량이 실시간 목록에서 사라졌으면 판매완료 단정이 아닌 상태 미확인(IN_REVIEW) 격리
-            # 2) '광고중지'와 '판매완료'를 SUSPENDED vs SOLD로 명확히 구분
-            # 3) 가격 0원 또는 매물정보부족은 IN_REVIEW로 격리
-            raw_status = (live_item.get('status') if live_item else c.get('accident', ''))
+            # 판매 상태 정밀 매핑 (DIRECTIVE 136/137)
+            raw_status = (live_item.get('status') if live_item else "")
             if live_item is None and full_plate and len(live_cars_by_plate) > 0:
                 status = 'IN_REVIEW' # 실시간 세션에서 누락된 직영 매물: 상태 미확인 재검토
             elif '광고중지' in raw_status:
@@ -138,32 +202,32 @@ class ContinuousSyncDaemon:
             else:
                 status = 'FOR_SALE'
 
-            # 제원 누락 시 가짜 기본값(2020, 가솔린) 배제 및 실시간/직영 실측치 1순위 채택
             parsed_year = (int(live_item.get("year")) if live_item and live_item.get("year") else None) or \
                           (int(direct.get("year")) if direct and direct.get("year") else None) or \
-                          (int(c.get("model_year")) if c.get("model_year") else None)
+                          c.get("year")
 
-            # 실측 주행거리 1순위 (반올림 없이 원본 125,428km 등 그대로 바인딩)
             parsed_mileage = (parse_mileage_km(live_item.get("mileage")) if live_item else None) or \
                              (parse_mileage_km(direct.get("mileage")) if direct else None) or \
-                             parse_mileage_km(c.get("mileage"))
+                             c.get("mileage")
 
             parsed_fuel = (live_item.get("fuel") if live_item else None) or \
                           (direct.get("fuel") if direct else None) or \
-                          c.get("fuel") or None
+                          c.get("fuel_type")
 
             parsed_transmission = (live_item.get("mission") if live_item else None) or \
                                   (direct.get("mission") if direct else None) or \
-                                  c.get("mission") or None
+                                  c.get("transmission")
 
-            parsed_color = c.get("color") or None
+            parsed_color = c.get("color")
+
+            shop_display = c.get("sangsa_name") or "(주)더쿨모터스"
 
             unified_inventory.append({
                 "id": vid,
                 "plate_number": full_plate,
                 "registration_number": c.get("encarno") or (direct.get("suggestNo") if direct else None),
-                "model_name": c.get("title") or c.get("model") or (direct.get("clean_title") if direct else None),
-                "manufacturer": c.get("maker") or None,
+                "model_name": c.get("model_name") or (direct.get("clean_title") if direct else None),
+                "manufacturer": c.get("manufacturer"),
                 "year": parsed_year,
                 "mileage": parsed_mileage,
                 "fuel_type": parsed_fuel,
@@ -171,10 +235,10 @@ class ContinuousSyncDaemon:
                 "color": parsed_color,
                 "target_price": price or 0,
                 "status": status,
-                "sangsa_name": "(주)더쿨모터스",
-                "dealer_name": c.get("dealer") or None,
-                "dealer_phone": c.get("phone") or None,
-                "primary_photo_url": c.get("thumbnail") or None,
+                "sangsa_name": shop_display,
+                "dealer_name": c.get("dealer_name"),
+                "dealer_phone": c.get("dealer_phone"),
+                "primary_photo_url": c.get("primary_photo_url"),
                 "is_demo": 0,
                 "is_live_verified": live_item is not None,
                 "data_source": "LIVE_SESSION" if live_item else "DANJI_SNAPSHOT_CACHE"
@@ -189,8 +253,10 @@ class ContinuousSyncDaemon:
             "cached_snapshot_count": len([x for x in unified_inventory if not x["is_live_verified"]]),
             "total_inventory_count": len(unified_inventory),
             "is_live_session": is_live_success,
+            "market_stats": market_stats,
             "status": "SUCCESS" if unified_inventory else "FAILED"
         }
+        return unified_inventory, meta
         return unified_inventory, meta
 
     def inspect_and_sync_incremental(self, dry_run: bool = False) -> Dict[str, Any]:

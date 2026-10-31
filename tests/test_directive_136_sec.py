@@ -28,7 +28,12 @@ logger = logging.getLogger("test_directive_136_sec")
 PROD_URL = "https://chamart.cc"
 LANDROVER_PLATE = "64노3143"
 ADMIN_TOKEN = os.environ.get("CHAMART_ADMIN_TOKEN", "")
+if not ADMIN_TOKEN and Path("data/.chamart_admin_secret").exists():
+    ADMIN_TOKEN = Path("data/.chamart_admin_secret").read_text().strip()
+
 SYNC_TOKEN = os.environ.get("CHAMART_SYNC_TOKEN", "")
+if not SYNC_TOKEN and Path("data/.chamart_sync_secret").exists():
+    SYNC_TOKEN = Path("data/.chamart_sync_secret").read_text().strip()
 REVOKED_TOKEN = "chamart-sync-secret-2026"
 
 def request_http(url: str, method: str = "GET", headers: dict = None, data: bytes = None):
